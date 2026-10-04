@@ -269,7 +269,7 @@
                         <button id="fire-clock-modal-btn" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-red-600/30 transition flex items-center space-x-2">
                             <i class="fa-solid fa-clock"></i><span>消防員上下班打卡</span>
                         </button>
-                        <button id="fire-retro-clock-modal-btn" class="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-orange-600/30 transition flex items-center space-x-2">
+                        <button id="fire-retro-clock-modal-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-blue-600/30 transition flex items-center space-x-2">
                             <i class="fa-solid fa-clock-rotate-left"></i><span>補打卡登記 (自訂日期/時分)</span>
                         </button>
                         <button id="fire-report-modal-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
@@ -340,7 +340,7 @@
                                 <input type="date" id="fire-calc-end" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-red-500">
                             </div>
                         </div>
-                        <button id="fire-calc-btn" class="w-full bg-red-600 hover:bg-red-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-red-600/30 transition">計算指定期間執勤總時數</button>
+                        <button id="fire-calc-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">計算指定期間執勤總時數</button>
                         
                         <div id="fire-calc-result" class="hidden bg-slate-950 border border-slate-800 rounded-2xl p-6 space-y-3">
                             <h4 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">結算結果</h4>
@@ -582,7 +582,6 @@
                     </div>
                 </div>
                 
-                <!-- Police Suspect Fields (Dynamic wrapper) -->
                 <div id="police-suspect-fields" class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯身分證末五碼</label>
@@ -834,7 +833,6 @@
                 if (!btn) return;
                 const tabId = btn.getAttribute('data-tab');
                 
-                // Strict Unit Isolation Enforcement
                 if (tabId === 'police') {
                     if (!currentUser) {
                         alert('【權限阻擋】警務系統需要登入具備警察身分的帳號！');
@@ -1239,7 +1237,6 @@
                 const isAdmin = currentUser.role === 'admin';
                 const isHigh = currentUser.role === 'high';
 
-                // Police Unit Access Check
                 if (isAdmin || units.includes('police')) {
                     if (policeLock) policeLock.classList.add('hidden');
                     if (policeContent) policeContent.classList.remove('hidden');
@@ -1249,7 +1246,6 @@
                     if (policeLockMsg) policeLockMsg.innerText = '【權限防線】您當前登入的帳號不具備警察身分，依法規無法瀏覽警察勤務與案件中心！';
                 }
 
-                // Fire Unit Access Check
                 if (isAdmin || units.includes('fire')) {
                     if (fireLock) fireLock.classList.add('hidden');
                     if (fireContent) fireContent.classList.remove('hidden');
@@ -1259,7 +1255,6 @@
                     if (fireLockMsg) fireLockMsg.innerText = '【權限防線】您當前登入的帳號不具備消防身分，依法規無法瀏覽消防勤務中心！';
                 }
 
-                // Admin / High Command Access Check
                 if (isAdmin || isHigh) {
                     if (adminLock) adminLock.classList.add('hidden');
                     if (adminContent) adminContent.classList.remove('hidden');
@@ -1352,7 +1347,7 @@
             
             if (isRetro) {
                 if (modalTitleEl) {
-                    modalTitleEl.innerHTML = `<i class="fa-solid fa-clock-rotate-left ${dept === 'police' ? 'text-blue-500' : 'text-red-500'}"></i><span>${dept === 'police' ? '警務' : '消防'}「補打卡」作業 (自訂日期/時分)</span>`;
+                    modalTitleEl.innerHTML = `<i class="fa-solid fa-clock-rotate-left text-blue-500"></i><span>${dept === 'police' ? '警務' : '消防'}「補打卡」作業 (自訂日期/時分)</span>`;
                 }
                 if (dateWrapper) dateWrapper.classList.remove('hidden');
                 
@@ -1527,26 +1522,59 @@
                             <p class="text-slate-300 text-sm line-clamp-2">${r.content}</p>
                             <div class="flex flex-wrap gap-4 text-xs text-slate-400 pt-1">
                                 <div>填寫警員：<span class="text-slate-200 font-semibold">${r.author} (${r.id})</span></div>
-                                <div>嫌疑犯：<span class="text-slate-200 font-semibold">${r.suspectName}</span> (身分證末五碼: <span class="text-amber-400 font-mono">${r.suspectId}</span>)</div>
+                                <div>嫌疑犯：<span class="text-slate-200">${r.suspectName} (ID: ${r.suspectId})</span></div>
                             </div>
-                            ${r.remark ? `<div class="text-xs text-amber-400 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">長官批示：${r.remark}</div>` : ''}
                         </div>
-                        <div class="flex md:flex-col items-end justify-between md:justify-center gap-2">
-                            ${canEditOrDelete ? `
-                                <button onclick="openEditModal('policeReport', '${r.docId}')" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1">
-                                    <i class="fa-solid fa-pen"></i><span>編輯</span>
-                                </button>
-                                <button onclick="deleteRecord('policeReport', '${r.docId}')" class="bg-slate-800 hover:bg-slate-700 text-red-400 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1">
-                                    <i class="fa-solid fa-trash"></i><span>刪除</span>
+                        <div class="flex items-center space-x-2 self-start md:self-center">
+                            ${currentUser && (currentUser.role === 'admin' || currentUser.role === 'high') ? `
+                                <button onclick="openRemarkModal('policeReport', '${r.docId}')" class="bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white px-3 py-2 rounded-xl text-xs font-medium transition border border-amber-500/30 flex items-center space-x-1">
+                                    <i class="fa-solid fa-pen-nib"></i><span>長官批示</span>
                                 </button>
                             ` : ''}
-                            ${currentUser && (currentUser.role === 'admin' || currentUser.role === 'high') ? `
-                                <button onclick="openRemarkModal('policeReport', '${r.docId}')" class="bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition">
-                                    長官批註
-                                </button>
+                            ${canEditOrDelete ? `
+                                <button onclick="editPoliceReport('${r.docId}')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl text-xs font-medium transition"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="deletePoliceReport('${r.docId}')" class="bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white px-3 py-2 rounded-xl text-xs font-medium transition border border-red-500/20"><i class="fa-solid fa-trash"></i></button>
                             ` : ''}
                         </div>
                     </div>
+                `;
+            });
+        }
+
+        function renderPoliceClocks() {
+            const tbody = document.getElementById('police-clocks-tbody');
+            const dateFilter = document.getElementById('police-clocks-date-filter')?.value || '';
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+            let filtered = appData.policeClocks;
+            if (dateFilter) {
+                filtered = filtered.filter(c => c.time.startsWith(dateFilter));
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">尚無警務出勤打卡紀錄。</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(c => {
+                const isOn = c.status === '上班';
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="p-4 font-medium text-white">${c.name} <span class="text-xs text-slate-400 font-mono">(${c.id})</span></td>
+                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${isOn ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-300'}">${c.status}</span></td>
+                        <td class="p-4 text-slate-300 font-mono text-xs">${c.vehicle || '無'}</td>
+                        <td class="p-4 text-slate-300 text-xs">${c.time} ${c.isRetro ? '<span class="text-amber-400 font-semibold">[補打卡]</span>' : ''}</td>
+                        <td class="p-4 text-amber-400 text-xs">${c.remark || '無'}</td>
+                        <td class="p-4 text-right space-x-2">
+                            ${currentUser && (currentUser.role === 'admin' || currentUser.role === 'high') ? `
+                                <button onclick="openRemarkModal('policeClock', '${c.docId}')" class="bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition border border-amber-500/30">長官備註</button>
+                            ` : ''}
+                            ${currentUser && (currentUser.role === 'admin' || currentUser.role === 'high' || currentUser.account === c.id) ? `
+                                <button onclick="deletePoliceClock('${c.docId}')" class="text-red-400 hover:text-red-300 p-1.5"><i class="fa-solid fa-trash"></i></button>
+                            ` : ''}
+                        </td>
+                    </tr>
                 `;
             });
         }
@@ -1584,21 +1612,16 @@
                             <div class="flex flex-wrap gap-4 text-xs text-slate-400 pt-1">
                                 <div>填寫隊員：<span class="text-slate-200 font-semibold">${r.author} (${r.id})</span></div>
                             </div>
-                            ${r.remark ? `<div class="text-xs text-amber-400 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">長官批示：${r.remark}</div>` : ''}
                         </div>
-                        <div class="flex md:flex-col items-end justify-between md:justify-center gap-2">
-                            ${canEditOrDelete ? `
-                                <button onclick="openEditModal('fireReport', '${r.docId}')" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1">
-                                    <i class="fa-solid fa-pen"></i><span>編輯</span>
-                                </button>
-                                <button onclick="deleteRecord('fireReport', '${r.docId}')" class="bg-slate-800 hover:bg-slate-700 text-red-400 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1">
-                                    <i class="fa-solid fa-trash"></i><span>刪除</span>
+                        <div class="flex items-center space-x-2 self-start md:self-center">
+                            ${currentUser && (currentUser.role === 'admin' || currentUser.role === 'high') ? `
+                                <button onclick="openRemarkModal('fireReport', '${r.docId}')" class="bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white px-3 py-2 rounded-xl text-xs font-medium transition border border-amber-500/30 flex items-center space-x-1">
+                                    <i class="fa-solid fa-pen-nib"></i><span>長官批示</span>
                                 </button>
                             ` : ''}
-                            ${currentUser && (currentUser.role === 'admin' || currentUser.role === 'high') ? `
-                                <button onclick="openRemarkModal('fireReport', '${r.docId}')" class="bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition">
-                                    長官批註
-                                </button>
+                            ${canEditOrDelete ? `
+                                <button onclick="editFireReport('${r.docId}')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl text-xs font-medium transition"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="deleteFireReport('${r.docId}')" class="bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white px-3 py-2 rounded-xl text-xs font-medium transition border border-red-500/20"><i class="fa-solid fa-trash"></i></button>
                             ` : ''}
                         </div>
                     </div>
@@ -1606,19 +1629,97 @@
             });
         }
 
+        function renderFireClocks() {
+            const tbody = document.getElementById('fire-clocks-tbody');
+            const dateFilter = document.getElementById('fire-clocks-date-filter')?.value || '';
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+            let filtered = appData.fireClocks;
+            if (dateFilter) {
+                filtered = filtered.filter(c => c.time.startsWith(dateFilter));
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">尚無消防出勤打卡紀錄。</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(c => {
+                const isOn = c.status === '上班';
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="p-4 font-medium text-white">${c.name} <span class="text-xs text-slate-400 font-mono">(${c.id})</span></td>
+                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${isOn ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-slate-800 text-slate-300'}">${c.status}</span></td>
+                        <td class="p-4 text-slate-300 font-mono text-xs">${c.vehicle || '無'}</td>
+                        <td class="p-4 text-slate-300 text-xs">${c.time} ${c.isRetro ? '<span class="text-amber-400 font-semibold">[補打卡]</span>' : ''}</td>
+                        <td class="p-4 text-amber-400 text-xs">${c.remark || '無'}</td>
+                        <td class="p-4 text-right space-x-2">
+                            ${currentUser && (currentUser.role === 'admin' || currentUser.role === 'high') ? `
+                                <button onclick="openRemarkModal('fireClock', '${c.docId}')" class="bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition border border-amber-500/30">長官備註</button>
+                            ` : ''}
+                            ${currentUser && (currentUser.role === 'admin' || currentUser.role === 'high' || currentUser.account === c.id) ? `
+                                <button onclick="deleteFireClock('${c.docId}')" class="text-red-400 hover:text-red-300 p-1.5"><i class="fa-solid fa-trash"></i></button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function calculateMemberHours(dept) {
+            const memberId = document.getElementById(`${dept}-calc-member`).value;
+            const startDate = document.getElementById(`${dept}-calc-start`).value;
+            const endDate = document.getElementById(`${dept}-calc-end`).value;
+
+            if (!memberId || !startDate || !endDate) {
+                alert('請完整選擇人員並輸入「起始年月日」與「結束年月日」！');
+                return;
+            }
+
+            const clocks = (dept === 'police') ? appData.policeClocks : appData.fireClocks;
+            const userClocks = clocks.filter(c => c.id === memberId).sort((a, b) => new Date(a.time) - new Date(b.time));
+
+            let totalMinutes = 0;
+            let lastOnTime = null;
+            let sessionCount = 0;
+
+            userClocks.forEach(c => {
+                const cDate = c.time.split(' ')[0];
+                if (cDate >= startDate && cDate <= endDate) {
+                    if (c.status === '上班') {
+                        lastOnTime = new Date(c.time);
+                    } else if (c.status === '下班' && lastOnTime) {
+                        const offTime = new Date(c.time);
+                        const diffMin = (offTime - lastOnTime) / (1000 * 60);
+                        if (diffMin > 0) {
+                            totalMinutes += diffMin;
+                            sessionCount++;
+                        }
+                        lastOnTime = null;
+                    }
+                }
+            });
+
+            const totalHours = (totalMinutes / 60).toFixed(1);
+            const userObj = appData.users.find(u => u.account === memberId);
+            const memberName = userObj ? `${userObj.name} (${userObj.account})` : memberId;
+
+            const resultContainer = document.getElementById(`${dept}-calc-result`);
+            resultContainer.classList.remove('hidden');
+            document.getElementById(`${dept}-calc-member-name`).innerText = memberName;
+            document.getElementById(`${dept}-calc-total-hours`).innerText = `${totalHours} 小時`;
+            document.getElementById(`${dept}-calc-details`).innerText = `區間：${startDate} ~ ${endDate} (共完成 ${sessionCount} 筆完整上下班執勤配對)`;
+        }
+
         function openPoliceReportDetail(docId) {
             const r = appData.policeReports.find(item => item.docId === docId);
             if (!r) return;
-
-            document.getElementById('modal-report-detail').classList.remove('hidden');
             document.getElementById('detail-case-badge').innerText = r.caseId;
-            document.getElementById('detail-case-badge').className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20";
             document.getElementById('detail-title').innerText = r.title;
             document.getElementById('detail-author').innerText = `${r.author} (${r.id})`;
-            document.getElementById('detail-suspect-name').innerText = r.suspectName;
-            document.getElementById('detail-suspect-id').innerText = r.suspectId;
-            document.getElementById('detail-suspect-name-wrap').classList.remove('hidden');
-            document.getElementById('detail-suspect-id-wrap').classList.remove('hidden');
+            document.getElementById('detail-suspect-name').innerText = r.suspectName || '無';
+            document.getElementById('detail-suspect-id').innerText = r.suspectId || '無';
             document.getElementById('detail-time').innerText = r.createdAt;
             document.getElementById('detail-content').innerText = r.content;
 
@@ -1632,15 +1733,13 @@
 
             const remarkEl = document.getElementById('detail-remark');
             remarkEl.innerText = r.remark || '尚未有長官批示。';
+            document.getElementById('modal-report-detail').classList.remove('hidden');
         }
 
         function openFireReportDetail(docId) {
             const r = appData.fireReports.find(item => item.docId === docId);
             if (!r) return;
-
-            document.getElementById('modal-report-detail').classList.remove('hidden');
             document.getElementById('detail-case-badge').innerText = r.caseId;
-            document.getElementById('detail-case-badge').className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20";
             document.getElementById('detail-title').innerText = r.title;
             document.getElementById('detail-author').innerText = `${r.author} (${r.id})`;
             document.getElementById('detail-suspect-name-wrap').classList.add('hidden');
@@ -1658,208 +1757,151 @@
 
             const remarkEl = document.getElementById('detail-remark');
             remarkEl.innerText = r.remark || '尚未有長官批示。';
+            document.getElementById('modal-report-detail').classList.remove('hidden');
         }
 
-        function renderPoliceClocks() {
-            const tbody = document.getElementById('police-clocks-tbody');
-            const dateFilter = document.getElementById('police-clocks-date-filter')?.value;
-            if (!tbody) return;
-
-            tbody.innerHTML = '';
-            let list = appData.policeClocks;
-            if (dateFilter) {
-                list = list.filter(c => c.time.startsWith(dateFilter));
-            }
-
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">尚無警務打卡紀錄。</td></tr>`;
-                return;
-            }
-
-            list.forEach(c => {
-                const canDel = currentUser && (currentUser.role === 'admin' || currentUser.role === 'high' || c.id === currentUser.account);
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-800/40 transition">
-                        <td class="p-4 font-semibold text-white">${c.name} <span class="text-xs text-slate-400 font-mono">(${c.id})</span></td>
-                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${c.status === '上班' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-400'}">${c.status} ${c.isRetro ? '(補)' : ''}</span></td>
-                        <td class="p-4 text-slate-300 font-mono text-xs">${c.vehicle}</td>
-                        <td class="p-4 text-slate-300 text-xs">${c.time}</td>
-                        <td class="p-4 text-amber-400 text-xs">${c.remark || '--'}</td>
-                        <td class="p-4 text-right">
-                            ${canDel ? `<button onclick="deleteRecord('policeClock', '${c.docId}')" class="text-red-400 hover:text-red-300 p-1.5"><i class="fa-solid fa-trash"></i></button>` : ''}
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        function renderFireClocks() {
-            const tbody = document.getElementById('fire-clocks-tbody');
-            const dateFilter = document.getElementById('fire-clocks-date-filter')?.value;
-            if (!tbody) return;
-
-            tbody.innerHTML = '';
-            let list = appData.fireClocks;
-            if (dateFilter) {
-                list = list.filter(c => c.time.startsWith(dateFilter));
-            }
-
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">尚無消防打卡紀錄。</td></tr>`;
-                return;
-            }
-
-            list.forEach(c => {
-                const canDel = currentUser && (currentUser.role === 'admin' || currentUser.role === 'high' || c.id === currentUser.account);
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-800/40 transition">
-                        <td class="p-4 font-semibold text-white">${c.name} <span class="text-xs text-slate-400 font-mono">(${c.id})</span></td>
-                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${c.status === '上班' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-400'}">${c.status} ${c.isRetro ? '(補)' : ''}</span></td>
-                        <td class="p-4 text-slate-300 font-mono text-xs">${c.vehicle}</td>
-                        <td class="p-4 text-slate-300 text-xs">${c.time}</td>
-                        <td class="p-4 text-amber-400 text-xs">${c.remark || '--'}</td>
-                        <td class="p-4 text-right">
-                            ${canDel ? `<button onclick="deleteRecord('fireClock', '${c.docId}')" class="text-red-400 hover:text-red-300 p-1.5"><i class="fa-solid fa-trash"></i></button>` : ''}
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        function calculateMemberHours(dept) {
-            const memberId = document.getElementById(`${dept}-calc-member`).value;
-            const startDate = document.getElementById(`${dept}-calc-start`).value;
-            const endDate = document.getElementById(`${dept}-calc-end`).value;
-
-            if (!memberId || !startDate || !endDate) {
-                alert('請完整選擇人員並輸入起始與結束年月日區間！');
-                return;
-            }
-
-            const clocks = (dept === 'police') ? appData.policeClocks : appData.fireClocks;
-            const memberClocks = clocks.filter(c => c.id === memberId && c.time.substring(0, 10) >= startDate && c.time.substring(0, 10) <= endDate);
-            memberClocks.sort((a, b) => new Date(a.time) - new Date(b.time));
-
-            let totalMinutes = 0;
-            let lastOnDuty = null;
-            let shiftCount = 0;
-
-            memberClocks.forEach(c => {
-                const t = new Date(c.time).getTime();
-                if (c.status === '上班') {
-                    lastOnDuty = t;
-                } else if (c.status === '下班' && lastOnDuty !== null) {
-                    const diff = (t - lastOnDuty) / (1000 * 60);
-                    if (diff > 0 && diff < 24 * 60 * 60) {
-                        totalMinutes += diff;
-                        shiftCount++;
-                    }
-                    lastOnDuty = null;
-                }
-            });
-
-            const totalHours = (totalMinutes / 60).toFixed(1);
-            const memberObj = appData.users.find(u => u.account === memberId);
-            const memberName = memberObj ? `${memberObj.name} (${memberObj.account})` : memberId;
-
-            const resultContainer = document.getElementById(`${dept}-calc-result`);
-            resultContainer.classList.remove('hidden');
-            document.getElementById(`${dept}-calc-member-name`).innerText = memberName;
-            document.getElementById(`${dept}-calc-total-hours`).innerText = `${totalHours} 小時`;
-            document.getElementById(`${dept}-calc-details`).innerText = `統計區間：${startDate} 至 ${endDate} | 有效完整執勤班次：${shiftCount} 次`;
-        }
-
-        function openEditModal(type, docId) {
-            document.getElementById('modal-edit').classList.remove('hidden');
-            document.getElementById('edit-type').value = type;
-            document.getElementById('edit-id-key').value = docId;
-
-            const container = document.getElementById('edit-fields-container');
-            container.innerHTML = '';
-
-            if (type === 'policeReport' || type === 'fireReport') {
-                const item = appData[type === 'policeReport' ? 'policeReports' : 'fireReports'].find(r => r.docId === docId);
-                if (!item) return;
-                document.getElementById('edit-modal-title').innerText = '編輯案件報告';
-                container.innerHTML = `
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題</label>
-                        <input type="text" id="edit-rep-title" value="${item.title}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細經過與內容</label>
-                        <textarea id="edit-rep-content" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500">${item.content}</textarea>
-                    </div>
-                `;
-            }
-        }
-
-        async function submitEdit() {
-            const type = document.getElementById('edit-type').value;
-            const docId = document.getElementById('edit-id-key').value;
-
-            if (type === 'policeReport' || type === 'fireReport') {
-                const title = document.getElementById('edit-rep-title').value.trim();
-                const content = document.getElementById('edit-rep-content').value.trim();
-                const col = type === 'policeReport' ? 'policeReports' : 'fireReports';
-
-                await fm.updateDoc(fm.doc(db, col, docId), { title, content });
-                const target = appData[col].find(r => r.docId === docId);
-                if (target) {
-                    target.title = title;
-                    target.content = content;
-                }
-                await recordAdminLog('編輯報告', type, docId);
-                if (type === 'policeReport') renderPoliceReports();
-                else renderFireReports();
-            }
-
-            closeModal('modal-edit');
-            alert('修改已成功儲存並同步至雲端！');
-        }
-
-        async function deleteRecord(type, docId) {
-            if (!confirm('確定要永久刪除此筆紀錄嗎？')) return;
-
-            let col = '';
-            if (type === 'policeReport') col = 'policeReports';
-            else if (type === 'fireReport') col = 'fireReports';
-            else if (type === 'policeClock') col = 'policeClocks';
-            else if (type === 'fireClock') col = 'fireClocks';
-
-            await fm.deleteDoc(fm.doc(db, col, docId));
-            appData[col] = appData[col].filter(item => item.docId !== docId);
-            await recordAdminLog('刪除紀錄', type, docId);
-
-            if (type === 'policeReport') renderPoliceReports();
-            else if (type === 'fireReport') renderFireReports();
-            else if (type === 'policeClock') renderPoliceClocks();
-            else if (type === 'fireClock') renderFireClocks();
-
-            alert('紀錄已成功刪除！');
-        }
-
-        function openRemarkModal(type, docId) {
+        function openRemarkModal(targetType, docId) {
             document.getElementById('modal-remark').classList.remove('hidden');
-            document.getElementById('remark-target-type').value = type;
+            document.getElementById('remark-target-type').value = targetType;
             document.getElementById('remark-target-id-key').value = docId;
             document.getElementById('remark-text-input').value = '';
         }
 
         async function submitRemark() {
-            const type = document.getElementById('remark-target-type').value;
+            const targetType = document.getElementById('remark-target-type').value;
             const docId = document.getElementById('remark-target-id-key').value;
-            const remark = document.getElementById('remark-text-input').value.trim();
-            const col = type === 'policeReport' ? 'policeReports' : 'fireReports';
+            const remarkText = document.getElementById('remark-text-input').value.trim();
 
-            await fm.updateDoc(fm.doc(db, col, docId), { remark });
-            const target = appData[col].find(r => r.docId === docId);
-            if (target) target.remark = remark;
+            let colName = '';
+            let targetList = null;
+            if (targetType === 'policeReport') { colName = 'policeReports'; targetList = appData.policeReports; }
+            else if (targetType === 'fireReport') { colName = 'fireReports'; targetList = appData.fireReports; }
+            else if (targetType === 'policeClock') { colName = 'policeClocks'; targetList = appData.policeClocks; }
+            else if (targetType === 'fireClock') { colName = 'fireClocks'; targetList = appData.fireClocks; }
 
-            closeModal('modal-remark');
-            if (type === 'policeReport') renderPoliceReports();
-            else renderFireReports();
-            alert('長官批示備註已成功儲存！');
+            const item = targetList.find(i => i.docId === docId);
+            if (item) {
+                item.remark = remarkText;
+                await fm.updateDoc(fm.doc(db, colName, docId), { remark: remarkText });
+                await recordAdminLog('長官批示備註', targetType, item.caseId || item.id || docId);
+                
+                if (targetType === 'policeReport') renderPoliceReports();
+                else if (targetType === 'fireReport') renderFireReports();
+                else if (targetType === 'policeClock') renderPoliceClocks();
+                else if (targetType === 'fireClock') renderFireClocks();
+
+                closeModal('modal-remark');
+                alert('長官批示備註已成功更新！');
+            }
+        }
+
+        async function deletePoliceClock(docId) {
+            if (!confirm('確定要移除此筆警務打卡紀錄嗎？')) return;
+            await fm.deleteDoc(fm.doc(db, 'policeClocks', docId));
+            appData.policeClocks = appData.policeClocks.filter(c => c.docId !== docId);
+            await recordAdminLog('移除警務打卡', 'policeClock', docId);
+            renderPoliceClocks();
+        }
+
+        async function deleteFireClock(docId) {
+            if (!confirm('確定要移除此筆消防打卡紀錄嗎？')) return;
+            await fm.deleteDoc(fm.doc(db, 'fireClocks', docId));
+            appData.fireClocks = appData.fireClocks.filter(c => c.docId !== docId);
+            await recordAdminLog('移除消防打卡', 'fireClock', docId);
+            renderFireClocks();
+        }
+
+        async function deletePoliceReport(docId) {
+            if (!confirm('確定要移除此筆警務報告嗎？')) return;
+            const r = appData.policeReports.find(i => i.docId === docId);
+            await fm.deleteDoc(fm.doc(db, 'policeReports', docId));
+            appData.policeReports = appData.policeReports.filter(i => i.docId !== docId);
+            await recordAdminLog('移除警務報告', 'policeReport', r ? r.caseId : docId);
+            renderPoliceReports();
+        }
+
+        async function deleteFireReport(docId) {
+            if (!confirm('確定要移除此筆消防報告嗎？')) return;
+            const r = appData.fireReports.find(i => i.docId === docId);
+            await fm.deleteDoc(fm.doc(db, 'fireReports', docId));
+            appData.fireReports = appData.fireReports.filter(i => i.docId !== docId);
+            await recordAdminLog('移除消防報告', 'fireReport', r ? r.caseId : docId);
+            renderFireReports();
+        }
+
+        function editPoliceReport(docId) {
+            const r = appData.policeReports.find(i => i.docId === docId);
+            if (!r) return;
+            document.getElementById('modal-edit').classList.remove('hidden');
+            document.getElementById('edit-modal-title').innerText = '編輯警務案件報告';
+            document.getElementById('edit-type').value = 'policeReport';
+            document.getElementById('edit-id-key').value = docId;
+
+            document.getElementById('edit-fields-container').innerHTML = `
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題</label>
+                    <input type="text" id="edit-val-title" value="${r.title}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細經過</label>
+                    <textarea id="edit-val-content" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500">${r.content}</textarea>
+                </div>
+            `;
+        }
+
+        function editFireReport(docId) {
+            const r = appData.fireReports.find(i => i.docId === docId);
+            if (!r) return;
+            document.getElementById('modal-edit').classList.remove('hidden');
+            document.getElementById('edit-modal-title').innerText = '編輯消防災害報告';
+            document.getElementById('edit-type').value = 'fireReport';
+            document.getElementById('edit-id-key').value = docId;
+
+            document.getElementById('edit-fields-container').innerHTML = `
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題</label>
+                    <input type="text" id="edit-val-title" value="${r.title}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細經過</label>
+                    <textarea id="edit-val-content" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500">${r.content}</textarea>
+                </div>
+            `;
+        }
+
+        async function submitEdit() {
+            const type = document.getElementById('edit-type').value;
+            const docId = document.getElementById('edit-id-key').value;
+            const title = document.getElementById('edit-val-title').value.trim();
+            const content = document.getElementById('edit-val-content').value.trim();
+
+            if (!title || !content) {
+                alert('標題與內容不得為空！');
+                return;
+            }
+
+            if (type === 'policeReport') {
+                const r = appData.policeReports.find(i => i.docId === docId);
+                if (r) {
+                    r.title = title;
+                    r.content = content;
+                    await fm.updateDoc(fm.doc(db, 'policeReports', docId), { title, content });
+                    await recordAdminLog('編輯警務報告', 'policeReport', r.caseId);
+                    renderPoliceReports();
+                }
+            } else if (type === 'fireReport') {
+                const r = appData.fireReports.find(i => i.docId === docId);
+                if (r) {
+                    r.title = title;
+                    r.content = content;
+                    await fm.updateDoc(fm.doc(db, 'fireReports', docId), { title, content });
+                    await recordAdminLog('編輯消防報告', 'fireReport', r.caseId);
+                    renderFireReports();
+                }
+            }
+
+            closeModal('modal-edit');
+            alert('修改已成功儲存！');
         }
 
         function renderAdminUsers() {
@@ -1869,21 +1911,19 @@
 
             appData.users.forEach(u => {
                 const units = u.units || [u.unit];
-                const unitsHtml = units.map(un => {
-                    if (un === 'police') return '<span class="px-2 py-0.5 rounded text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 mr-1">警察局</span>';
-                    if (un === 'fire') return '<span class="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400 border border-red-500/20 mr-1">消防局</span>';
-                    return '<span class="px-2 py-0.5 rounded text-xs bg-purple-500/10 text-purple-400 border border-purple-500/20 mr-1">總管理處</span>';
-                }).join('');
-
+                const unitBadge = units.map(un => un === 'police' ? '<span class="px-2 py-0.5 rounded text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 mr-1">警察局</span>' : un === 'fire' ? '<span class="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400 border border-red-500/20 mr-1">消防局</span>' : '<span class="px-2 py-0.5 rounded text-xs bg-purple-500/10 text-purple-400 border border-purple-500/20 mr-1">總管理處</span>').join('');
+                
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/40 transition">
                         <td class="p-4 font-mono font-bold text-white">${u.account}</td>
-                        <td class="p-4 font-semibold text-slate-200">${u.name}</td>
-                        <td class="p-4">${unitsHtml}</td>
-                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : u.role === 'high' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-slate-800 text-slate-400'}">${u.role.toUpperCase()}</span></td>
-                        <td class="p-4 text-right">
-                            <button onclick="openEditUserModal('${u.account}')" class="bg-slate-800 hover:bg-slate-700 text-purple-400 px-3 py-1.5 rounded-xl text-xs font-medium transition mr-2">編輯帳號</button>
-                            ${u.account !== 'DSUENSX' ? `<button onclick="deleteUserAccount('${u.account}')" class="bg-slate-800 hover:bg-slate-700 text-red-400 px-3 py-1.5 rounded-xl text-xs font-medium transition">刪除</button>` : ''}
+                        <td class="p-4 text-slate-200 font-medium">${u.name}</td>
+                        <td class="p-4">${unitBadge}</td>
+                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : u.role === 'high' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${u.role.toUpperCase()}</span></td>
+                        <td class="p-4 text-right space-x-2">
+                            <button onclick="openEditUserModal('${u.account}')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-medium transition"><i class="fa-solid fa-user-pen"></i> 編輯</button>
+                            ${currentUser && currentUser.account !== u.account ? `
+                                <button onclick="deleteUserAccount('${u.account}')" class="text-red-400 hover:text-red-300 p-1.5"><i class="fa-solid fa-trash"></i></button>
+                            ` : ''}
                         </td>
                     </tr>
                 `;
@@ -1910,7 +1950,7 @@
             });
 
             if (!account || !name || !pass || selectedUnits.length === 0) {
-                alert('請完整填寫帳號、姓名、密碼，並至少勾選一個所屬單位！');
+                alert('請完整填寫帳號、RP名稱、密碼，並至少勾選一個所屬單位！');
                 return;
             }
 
@@ -1919,9 +1959,16 @@
                 return;
             }
 
+            const existing = appData.users.find(u => u.account.toLowerCase() === account.toLowerCase());
+            if (existing) {
+                alert('此帳號/編號已存在！');
+                return;
+            }
+
             const newUser = { account, name, units: selectedUnits, role, pass };
             await fm.setDoc(fm.doc(db, 'users', account), newUser);
             appData.users.push(newUser);
+            await recordAdminLog('新增公職帳號', 'user', account);
 
             closeModal('modal-create-user');
             renderAdminUsers();
@@ -1930,9 +1977,8 @@
         }
 
         function openEditUserModal(account) {
-            const u = appData.users.find(x => x.account === account);
+            const u = appData.users.find(item => item.account === account);
             if (!u) return;
-
             document.getElementById('modal-edit-user').classList.remove('hidden');
             document.getElementById('edit-user-original-account').value = u.account;
             document.getElementById('edit-user-account-input').value = u.account;
@@ -1947,8 +1993,8 @@
         }
 
         async function submitEditUser() {
-            const origAcc = document.getElementById('edit-user-original-account').value;
-            const newAcc = document.getElementById('edit-user-account-input').value.trim();
+            const origAccount = document.getElementById('edit-user-original-account').value;
+            const newAccount = document.getElementById('edit-user-account-input').value.trim();
             const newName = document.getElementById('edit-user-name-input').value.trim();
             const newRole = document.getElementById('edit-user-role-input').value;
             const newPass = document.getElementById('edit-user-password-input').value.trim();
@@ -1958,8 +2004,8 @@
                 selectedUnits.push(cb.value);
             });
 
-            if (!newAcc || !newName || selectedUnits.length === 0) {
-                alert('請填寫完整帳號、姓名並至少勾選一個單位！');
+            if (!newAccount || !newName || selectedUnits.length === 0) {
+                alert('帳號、RP名稱與至少一個單位不得為空！');
                 return;
             }
 
@@ -1968,41 +2014,47 @@
                 return;
             }
 
-            const target = appData.users.find(x => x.account === origAcc);
-            if (!target) return;
+            const u = appData.users.find(item => item.account === origAccount);
+            if (u) {
+                u.account = newAccount;
+                u.name = newName;
+                u.units = selectedUnits;
+                u.role = newRole;
+                if (newPass) u.pass = newPass;
 
-            target.account = newAcc;
-            target.name = newName;
-            target.units = selectedUnits;
-            target.role = newRole;
-            if (newPass) target.pass = newPass;
+                if (origAccount !== newAccount) {
+                    await fm.deleteDoc(fm.doc(db, 'users', origAccount));
+                }
+                await fm.setDoc(fm.doc(db, 'users', newAccount), u);
+                await recordAdminLog('編輯公職帳號', 'user', newAccount);
 
-            if (origAcc !== newAcc) {
-                await fm.deleteDoc(fm.doc(db, 'users', origAcc));
+                if (currentUser && currentUser.account === origAccount) {
+                    currentUser = u;
+                    updateUserUI();
+                }
+
+                closeModal('modal-edit-user');
+                renderAdminUsers();
+                populateMemberSelects();
+                alert('帳號資料已成功更新！');
             }
-            await fm.setDoc(fm.doc(db, 'users', newAcc), target);
-
-            closeModal('modal-edit-user');
-            renderAdminUsers();
-            populateMemberSelects();
-            alert('公職帳號資料已成功更新！');
         }
 
         async function deleteUserAccount(account) {
-            if (!confirm(`確定要刪除帳號 [${account}] 嗎？`)) return;
-
+            if (!confirm(`確定要刪除公職帳號 [${account}] 嗎？`)) return;
             await fm.deleteDoc(fm.doc(db, 'users', account));
             appData.users = appData.users.filter(u => u.account !== account);
+            await recordAdminLog('刪除公職帳號', 'user', account);
             renderAdminUsers();
             populateMemberSelects();
             alert('帳號已成功刪除！');
         }
 
         async function saveMemo() {
-            const memoContent = document.getElementById('admin-memo-textarea').value;
-            await fm.setDoc(fm.doc(db, 'systemSettings', 'adminMemo'), { content: memoContent });
-            appData.adminMemo = memoContent;
-            alert('管理員共同備忘錄已成功儲存！');
+            const content = document.getElementById('admin-memo-textarea').value;
+            appData.adminMemo = content;
+            await fm.setDoc(fm.doc(db, 'systemSettings', 'adminMemo'), { content });
+            alert('管理員共同備忘錄已成功儲存至雲端！');
         }
 
         function renderAdminOverview() {
