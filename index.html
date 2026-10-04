@@ -508,7 +508,7 @@
                         <div class="space-y-2">
                             <div class="flex items-center justify-between gap-4 text-sm">
                                 <span id="storage-used-text" class="text-slate-300 font-medium">當前已使用：-- KB</span>
-                                <span id="storage-percent-text" class="inline-flex items-center justify-center min-w-[4.5rem] px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 font-extrabold leading-none">0.00%</span>
+                                <span id="storage-percent-text" class="inline-flex items-center justify-center min-w-[4.5rem] px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 font-extrabold leading-none">0.0000%</span>
                             </div>
                             <div class="w-full bg-slate-950 rounded-full h-4 overflow-hidden border border-slate-800 p-0.5">
                                 <div id="storage-progress-bar" class="bg-gradient-to-r from-purple-600 to-blue-500 h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
@@ -1060,12 +1060,7 @@
 
             document.querySelectorAll('.police-sub-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const sub = btn.getAttribute('data-sub');
-                    if (sub === 'punishments' && !canUsePolicePunishment()) {
-                        showToast('警用懲處專區僅限警察高層與管理處使用。', 'warning', '權限不足');
-                        return;
-                    }
-                    switchPoliceSubTab(sub);
+                    switchPoliceSubTab(btn.getAttribute('data-sub'));
                 });
             });
 
@@ -1314,11 +1309,6 @@
         }
 
         function switchPoliceSubTab(sub) {
-            if (sub === 'punishments' && !canUsePolicePunishment()) {
-                showToast('警用懲處專區僅限警察高層與管理處使用。', 'warning', '權限不足');
-                sub = 'reports';
-            }
-
             ['reports', 'punishments', 'clocks', 'hours'].forEach(s => {
                 const el = document.getElementById(`police-sub-${s}`);
                 if (el) el.classList.add('hidden');
@@ -1568,6 +1558,23 @@
             document.getElementById('modal-punishment').classList.remove('hidden');
         }
 
+        function generateNextPunishmentId(dateObj = new Date()) {
+            const yyyy = dateObj.getFullYear();
+            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const dd = String(dateObj.getDate()).padStart(2, '0');
+            const dateKey = `${yyyy}${mm}${dd}`;
+            const prefix = `PUN-${dateKey}`;
+
+            let maxSerial = 0;
+            (appData.policePunishments || []).forEach(p => {
+                const punishmentId = String(p.id || p.docId || '');
+                const match = punishmentId.match(new RegExp(`^${prefix}(\\d+)$`));
+                if (match) maxSerial = Math.max(maxSerial, Number(match[1]) || 0);
+            });
+
+            return `${prefix}${String(maxSerial + 1).padStart(3, '0')}`;
+        }
+
         async function submitPunishment() {
             if (!canUsePolicePunishment()) {
                 showToast('權限不足：警用懲處僅限警察高層與管理處發布。', 'warning', '權限不足');
@@ -1591,8 +1598,9 @@
             const memberName = foundU ? foundU.name : '未知員警';
 
             const now = new Date();
+            const punishId = generateNextPunishmentId(now);
             const newPunish = {
-                id: 'PUN-' + Date.now().toString().slice(-6),
+                id: punishId,
                 memberId,
                 memberName,
                 item,
@@ -1745,7 +1753,7 @@
 
             const collectionName = dept === 'police' ? 'policeReports' : 'fireReports';
             try {
-                await fm.setDoc(fm.doc(db, collectionName, caseId), reportObj);
+                await fm.setDoc(fm.doc(db, collectionName, freshCaseId), reportObj);
                 if (dept === 'police') appData.policeReports.unshift(reportObj);
                 else appData.fireReports.unshift(reportObj);
 
@@ -1848,12 +1856,12 @@
                     </div>
                     <p class="text-sm text-slate-300 leading-relaxed line-clamp-3"><strong class="text-amber-400">懲處事由：</strong>${p.reason || '未提供懲處事由。'}</p>
                     <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
-                        <button onclick="viewPunishmentDetail('${punishKey}')" class="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center space-x-1 px-3 py-1.5 rounded-lg hover:bg-amber-500/10 transition">
+                        <button onclick="viewPunishmentDetail('${punishKey}')" class="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center space-x-1 px-3 py-1.5 rounded-lg hover:bg-amber-500/10 transition cursor-pointer">
                             <i class="fa-solid fa-expand mr-1"></i><span>點擊放大檢視</span>
                         </button>
                         <div class="flex items-center space-x-2">
                             ${canEditDelete ? `<button onclick="openEditPunishmentModal('${punishKey}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition"><i class="fa-solid fa-pen mr-1"></i>修改</button>` : ''}
-                            ${canEditDelete ? `<button onclick="deletePunishment('${punishKey}')" class="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition"><i class="fa-solid fa-trash-can mr-1"></i>移除</button>` : ''}
+                            ${canDeletePunishment() ? `<button onclick="deletePunishment('${punishKey}')" class="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition"><i class="fa-solid fa-trash-can mr-1"></i>移除</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -1873,6 +1881,12 @@
             if (currentUser.role === 'admin') return true;
             if (currentUser.role === 'high' && (currentUser.units || [currentUser.unit]).includes('police')) return true;
             return p && (p.authorAccount === currentUser.account || (!p.authorAccount && p.authorName === currentUser.name));
+        }
+
+        function canDeletePunishment() {
+            if (!currentUser) return false;
+            if (currentUser.role === 'admin') return true;
+            return currentUser.role === 'high' && (currentUser.units || [currentUser.unit]).includes('police');
         }
 
         function viewPunishmentDetail(punishId) {
@@ -1961,15 +1975,16 @@
         async function deletePunishment(punishId) {
             const p = appData.policePunishments.find(x => String(x.id || '') === String(punishId) || String(x.docId || '') === String(punishId));
             if (!p) return;
-            if (!canModifyPunishment(p)) {
-                showToast('權限不足：只有警察高層、管理處或該筆懲處發布者可以刪除。', 'warning', '權限不足');
+            if (!canDeletePunishment()) {
+                showToast('權限不足：只有警察高層與管理處可以移除警用懲處。', 'warning', '權限不足');
                 return;
             }
             if (!confirm('確定要刪除這筆警用懲處公告嗎？')) return;
 
             try {
                 await fm.deleteDoc(fm.doc(db, 'policePunishments', p.docId || p.id));
-                appData.policePunishments = appData.policePunishments.filter(x => (x.id || x.docId) !== (p.id || punishId));
+                const deletedKey = String(p.docId || p.id || punishId);
+                appData.policePunishments = appData.policePunishments.filter(x => String(x.docId || x.id || '') !== deletedKey);
                 await logAdminAction('刪除警用懲處', p.id || punishId);
                 renderPolicePunishments();
                 showToast('警用懲處公告已成功刪除。', 'success', '操作成功');
@@ -2575,13 +2590,36 @@
             });
         }
 
+        function estimateJsonBytes(value) {
+            try {
+                return new Blob([JSON.stringify(value)]).size;
+            } catch (e) {
+                return JSON.stringify(value || '').length;
+            }
+        }
+
         function renderAdminStorage() {
-            const totalDocs = appData.users.length + appData.policeReports.length + appData.fireReports.length + appData.policePunishments.length + appData.policeClocks.length + appData.fireClocks.length + appData.adminLogs.length;
-            const approxBytes = totalDocs * 1024; // 估算每筆文件約 1KB
+            const collections = [
+                appData.users,
+                appData.policeReports,
+                appData.fireReports,
+                appData.policePunishments,
+                appData.policeClocks,
+                appData.fireClocks,
+                appData.adminLogs
+            ];
+            const totalDocs = collections.reduce((sum, list) => sum + (list || []).length, 0);
+            const payloadBytes = collections.reduce((sum, list) => {
+                return sum + (list || []).reduce((inner, item) => inner + estimateJsonBytes(item), 0);
+            }, 0);
+            // 以 1 KB 作為 Firestore 每筆文件最低估算額，避免小資料量完全看不到。
+            const approxBytes = collections.reduce((sum, list) => {
+                return sum + (list || []).reduce((inner, item) => inner + Math.max(1024, estimateJsonBytes(item)), 0);
+            }, 0);
             const maxBytes = 1024 * 1024 * 1024; // 1GB
             const usedKb = (approxBytes / 1024).toFixed(1);
             const percentNumber = Math.min(100, Math.max(0, (approxBytes / maxBytes) * 100));
-            const percent = percentNumber.toFixed(2);
+            const percent = percentNumber < 0.0001 && totalDocs > 0 ? '<0.0001' : percentNumber.toFixed(4);
             const freeMb = Math.max(0, (maxBytes - approxBytes) / (1024 * 1024)).toFixed(1);
 
             const usedTextEl = document.getElementById('storage-used-text');
@@ -2590,9 +2628,10 @@
             const docsEl = document.getElementById('storage-docs-count');
             const freeEl = document.getElementById('storage-free-text');
 
-            if (usedTextEl) usedTextEl.textContent = `當前已使用：${usedKb} KB`;
+            if (usedTextEl) usedTextEl.textContent = `當前已使用：約 ${usedKb} KB`;
             if (percentTextEl) percentTextEl.textContent = `${percent}%`;
-            if (progressEl) progressEl.style.width = `${Math.max(percentNumber, 0.5)}%`;
+            if (percentTextEl) percentTextEl.title = `依目前載入資料估算：${payloadBytes.toLocaleString()} bytes 文件內容`;
+            if (progressEl) progressEl.style.width = `${Math.max(percentNumber, totalDocs > 0 ? 0.5 : 0)}%`;
             if (docsEl) docsEl.textContent = totalDocs;
             if (freeEl) freeEl.textContent = `${freeMb} MB`;
         }
