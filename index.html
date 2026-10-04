@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>新北市 RP 3.0 公職服務系統</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -20,19 +19,39 @@
             }
         }
     </script>
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Inter & Noto Sans TC Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; }
     </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBJi9v-oDJ54-Z61T5JKy44Mg22vZCPiw",
+            authDomain: "ntpcrp-cb0725.firebaseapp.com",
+            projectId: "ntpcrp-cb0725",
+            storageBucket: "ntpcrp-cb0725.firebasestorage.app",
+            messagingSenderId: "732852408820",
+            appId: "1:732852408820:web:ddb6f001d1b676acca29a1",
+            measurementId: "G-4ZSPFTRHZC"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.db = db;
+        window.firebaseModules = { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc };
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
 
     <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('home')">
+            <div class="flex items-center space-x-3 cursor-pointer" id="logo-home-btn">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-red-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
                     <i class="fa-solid fa-shield-halved text-white text-lg"></i>
                 </div>
@@ -43,43 +62,40 @@
             </div>
 
             <nav class="hidden md:flex items-center space-x-1">
-                <button onclick="switchTab('home')" id="nav-home" class="px-4 py-2 rounded-lg text-sm font-medium transition text-blue-400 bg-blue-500/10"><i class="fa-solid fa-house mr-2"></i>首頁大廳</button>
-                <button onclick="switchTab('police')" id="nav-police" class="px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-shield mr-2"></i>警務系統</button>
-                <button onclick="switchTab('fire')" id="nav-fire" class="px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-fire-extinguisher mr-2"></i>消防系統</button>
-                <button onclick="switchTab('admin')" id="nav-admin" class="px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-user-gear mr-2"></i>管理員中心</button>
+                <button id="nav-home" data-tab="home" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-blue-400 bg-blue-500/10"><i class="fa-solid fa-house mr-2"></i>首頁大廳</button>
+                <button id="nav-police" data-tab="police" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-shield mr-2"></i>警務系統</button>
+                <button id="nav-fire" data-tab="fire" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-fire-extinguisher mr-2"></i>消防系統</button>
+                <button id="nav-admin" data-tab="admin" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-user-gear mr-2"></i>管理員中心</button>
             </nav>
 
             <div class="flex items-center space-x-3">
                 <div id="user-badge" class="hidden items-center space-x-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 text-xs">
                     <span id="user-badge-role" class="w-2 h-2 rounded-full bg-emerald-500"></span>
                     <span id="user-badge-name" class="font-semibold text-slate-200"></span>
-                    <button onclick="logout()" class="text-slate-400 hover:text-red-400 ml-2" title="登出"><i class="fa-solid fa-right-from-bracket"></i></button>
+                    <button id="logout-btn" class="text-slate-400 hover:text-red-400 ml-2" title="登出"><i class="fa-solid fa-right-from-bracket"></i></button>
                 </div>
-                <button id="login-btn" onclick="openLoginModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-lg shadow-blue-600/30 transition flex items-center space-x-2">
+                <button id="login-modal-open-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-lg shadow-blue-600/30 transition flex items-center space-x-2">
                     <i class="fa-solid fa-right-to-bracket"></i>
                     <span>登入系統</span>
                 </button>
-                <button onclick="toggleMobileMenu()" class="md:hidden text-slate-300 hover:text-white p-2">
+                <button id="mobile-menu-toggle-btn" class="md:hidden text-slate-300 hover:text-white p-2">
                     <i class="fa-solid fa-bars text-xl"></i>
                 </button>
             </div>
         </div>
-        <!-- Mobile Menu -->
         <div id="mobile-menu" class="hidden md:hidden bg-slate-900 border-b border-slate-800 px-4 pt-2 pb-4 space-y-1">
-            <button onclick="switchTab('home'); toggleMobileMenu();" class="block w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800">首頁大廳</button>
-            <button onclick="switchTab('police'); toggleMobileMenu();" class="block w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800">警務系統</button>
-            <button onclick="switchTab('fire'); toggleMobileMenu();" class="block w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800">消防系統</button>
-            <button onclick="switchTab('admin'); toggleMobileMenu();" class="block w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800">管理員中心</button>
+            <button data-tab="home" class="mobile-nav-btn block w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800">首頁大廳</button>
+            <button data-tab="police" class="mobile-nav-btn block w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800">警務系統</button>
+            <button data-tab="fire" class="mobile-nav-btn block w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800">消防系統</button>
+            <button data-tab="admin" class="mobile-nav-btn block w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800">管理員中心</button>
         </div>
     </header>
 
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-        <!-- TAB: HOME -->
         <section id="tab-home" class="space-y-8">
             <div class="relative rounded-3xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-900">
                 <div class="absolute inset-0 z-0">
-                    <img id="cover-photo-img" src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1600" alt="Cover" class="w-full h-full object-cover opacity-40 transition-all duration-700">
+                    <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1600" alt="Cover" class="w-full h-full object-cover opacity-40 transition-all duration-700">
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"></div>
                 </div>
                 <div class="relative z-10 px-8 py-20 sm:py-28 max-w-3xl space-y-6">
@@ -87,10 +103,10 @@
                     <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">新北市公職人員<br><span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">勤務與案件管制系統</span></h1>
                     <p class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。本系統提供公職同仁線上打卡、執勤車輛登記、案件報告填寫及高層檢視審核，全面對應 RP 編號與 RP 名稱進行治安與救護管理。</p>
                     <div class="flex flex-wrap gap-4 pt-2">
-                        <button onclick="switchTab('police')" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
+                        <button data-tab="police" class="tab-shortcut-btn bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
                             <i class="fa-solid fa-shield"></i><span>進入警務系統</span>
                         </button>
-                        <button onclick="switchTab('fire')" class="bg-red-600 hover:bg-red-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-red-600/20 transition flex items-center space-x-2">
+                        <button data-tab="fire" class="tab-shortcut-btn bg-red-600 hover:bg-red-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-red-600/20 transition flex items-center space-x-2">
                             <i class="fa-solid fa-fire-extinguisher"></i><span>進入消防系統</span>
                         </button>
                     </div>
@@ -122,7 +138,6 @@
             </div>
         </section>
 
-        <!-- TAB: POLICE SYSTEM -->
         <section id="tab-police" class="hidden space-y-8">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
                 <div>
@@ -131,32 +146,30 @@
                     <p class="text-slate-400 text-sm mt-1">辦理員警出勤打卡、車輛登錄與各項治安案件通報與查詢。</p>
                 </div>
                 <div class="flex items-center space-x-3">
-                    <button onclick="openClockModal('police')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-blue-600/30 transition flex items-center space-x-2">
+                    <button id="police-clock-modal-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-blue-600/30 transition flex items-center space-x-2">
                         <i class="fa-solid fa-clock"></i><span>員警上下班打卡</span>
                     </button>
-                    <button onclick="openReportModal('police')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                    <button id="police-report-modal-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
                         <i class="fa-solid fa-file-pen"></i><span>填寫案件報告</span>
                     </button>
                 </div>
             </div>
 
             <div class="flex space-x-2 border-b border-slate-800 pb-2">
-                <button onclick="switchPoliceSubTab('reports')" id="btn-police-reports" class="px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white"><i class="fa-solid fa-folder-open mr-2"></i>歷史案件報告庫</button>
-                <button onclick="switchPoliceSubTab('clocks')" id="btn-police-clocks" class="px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900"><i class="fa-solid fa-clipboard-user mr-2"></i>即時出勤打卡紀錄</button>
+                <button id="btn-police-reports" data-sub="reports" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white"><i class="fa-solid fa-folder-open mr-2"></i>歷史案件報告庫</button>
+                <button id="btn-police-clocks" data-sub="clocks" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900"><i class="fa-solid fa-clipboard-user mr-2"></i>即時出勤打卡紀錄</button>
             </div>
 
-            <!-- Police Reports View -->
             <div id="police-sub-reports" class="space-y-4">
                 <div class="flex justify-between items-center">
                     <h3 class="text-lg font-bold text-slate-200">全體員警案件報告總覽</h3>
                     <div class="w-72">
-                        <input type="text" id="search-police-report" oninput="renderPoliceReports()" placeholder="搜尋警員RP名稱或報告內容..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                        <input type="text" id="search-police-report" placeholder="搜尋警員RP名稱或報告內容..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
                     </div>
                 </div>
                 <div id="police-reports-list" class="grid grid-cols-1 gap-4"></div>
             </div>
 
-            <!-- Police Clocks View -->
             <div id="police-sub-clocks" class="hidden space-y-4">
                 <h3 class="text-lg font-bold text-slate-200">員警出勤打卡歷史與狀態</h3>
                 <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
@@ -178,7 +191,6 @@
             </div>
         </section>
 
-        <!-- TAB: FIRE SYSTEM -->
         <section id="tab-fire" class="hidden space-y-8">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
                 <div>
@@ -187,32 +199,30 @@
                     <p class="text-slate-400 text-sm mt-1">辦理消防隊員出勤打卡、救災車輛登錄與災害/救護案件報告填寫。</p>
                 </div>
                 <div class="flex items-center space-x-3">
-                    <button onclick="openClockModal('fire')" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-red-600/30 transition flex items-center space-x-2">
+                    <button id="fire-clock-modal-btn" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-red-600/30 transition flex items-center space-x-2">
                         <i class="fa-solid fa-clock"></i><span>消防員上下班打卡</span>
                     </button>
-                    <button onclick="openReportModal('fire')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                    <button id="fire-report-modal-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
                         <i class="fa-solid fa-file-pen"></i><span>填寫消防案件報告</span>
                     </button>
                 </div>
             </div>
 
             <div class="flex space-x-2 border-b border-slate-800 pb-2">
-                <button onclick="switchFireSubTab('reports')" id="btn-fire-reports" class="px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white"><i class="fa-solid fa-folder-open mr-2"></i>歷史消防案件報告</button>
-                <button onclick="switchFireSubTab('clocks')" id="btn-fire-clocks" class="px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900"><i class="fa-solid fa-clipboard-user mr-2"></i>消防出勤打卡紀錄</button>
+                <button id="btn-fire-reports" data-sub="reports" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white"><i class="fa-solid fa-folder-open mr-2"></i>歷史消防案件報告</button>
+                <button id="btn-fire-clocks" data-sub="clocks" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900"><i class="fa-solid fa-clipboard-user mr-2"></i>消防出勤打卡紀錄</button>
             </div>
 
-            <!-- Fire Reports View -->
             <div id="fire-sub-reports" class="space-y-4">
                 <div class="flex justify-between items-center">
                     <h3 class="text-lg font-bold text-slate-200">全體消防隊員案件報告總覽</h3>
                     <div class="w-72">
-                        <input type="text" id="search-fire-report" oninput="renderFireReports()" placeholder="搜尋隊員RP名稱或內容..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-red-500">
+                        <input type="text" id="search-fire-report" placeholder="搜尋隊員RP名稱或內容..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-red-500">
                     </div>
                 </div>
                 <div id="fire-reports-list" class="grid grid-cols-1 gap-4"></div>
             </div>
 
-            <!-- Fire Clocks View -->
             <div id="fire-sub-clocks" class="hidden space-y-4">
                 <h3 class="text-lg font-bold text-slate-200">消防隊員出勤打卡歷史與狀態</h3>
                 <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
@@ -234,7 +244,6 @@
             </div>
         </section>
 
-        <!-- TAB: ADMIN CENTER -->
         <section id="tab-admin" class="hidden space-y-8">
             <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -243,19 +252,18 @@
                     <p class="text-slate-400 text-sm mt-1">管理員可新增帳號、設定公職單位、檢視全單位打卡與案件，並維護共同備忘錄。</p>
                 </div>
                 <div class="flex items-center space-x-3">
-                    <button onclick="openCreateUserModal()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-purple-600/30 transition flex items-center space-x-2">
+                    <button id="open-create-user-modal-btn" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-purple-600/30 transition flex items-center space-x-2">
                         <i class="fa-solid fa-user-plus"></i><span>新增公職帳號</span>
                     </button>
                 </div>
             </div>
 
             <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
-                <button onclick="switchAdminSubTab('users')" id="btn-admin-users" class="px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap"><i class="fa-solid fa-users mr-2"></i>帳號與人員管理</button>
-                <button onclick="switchAdminSubTab('memo')" id="btn-admin-memo" class="px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-note-sticky mr-2"></i>管理員共同備忘錄</button>
-                <button onclick="switchAdminSubTab('overview')" id="btn-admin-overview" class="px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-chart-line mr-2"></i>全單位總彙整</button>
+                <button id="btn-admin-users" data-sub="users" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap"><i class="fa-solid fa-users mr-2"></i>帳號與人員管理</button>
+                <button id="btn-admin-memo" data-sub="memo" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-note-sticky mr-2"></i>管理員共同備忘錄</button>
+                <button id="btn-admin-overview" data-sub="overview" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-chart-line mr-2"></i>全單位總彙整</button>
             </div>
 
-            <!-- Admin Users Tab -->
             <div id="admin-sub-users" class="space-y-4">
                 <h3 class="text-lg font-bold text-slate-200">系統所有公職人員與高層帳號</h3>
                 <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
@@ -274,21 +282,19 @@
                 </div>
             </div>
 
-            <!-- Admin Memo Tab -->
             <div id="admin-sub-memo" class="hidden space-y-4">
                 <div class="flex justify-between items-center">
                     <h3 class="text-lg font-bold text-slate-200">管理員共同備忘錄 (全體管理員可共同編輯)</h3>
-                    <button onclick="saveMemo()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                    <button id="save-memo-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center space-x-2">
                         <i class="fa-solid fa-floppy-disk"></i><span>儲存備忘錄</span>
                     </button>
                 </div>
                 <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
                     <textarea id="admin-memo-textarea" rows="8" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-200 text-sm focus:outline-none focus:border-purple-500" placeholder="在此輸入分局/分隊管理員共同交辦事項、輪班表或重要備忘..."></textarea>
-                    <p class="text-xs text-slate-500"><i class="fa-solid fa-circle-info mr-1"></i>備忘錄資料會自動同步至本系統記憶體中，供所有管理員查閱。</p>
+                    <p class="text-xs text-slate-500"><i class="fa-solid fa-circle-info mr-1"></i>備忘錄資料會自動同步至雲端資料庫中，供所有管理員查閱。</p>
                 </div>
             </div>
 
-            <!-- Admin Overview Tab -->
             <div id="admin-sub-overview" class="hidden space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
@@ -306,10 +312,8 @@
                 </div>
             </div>
         </section>
-
     </main>
 
-    <!-- MODAL: LOGIN -->
     <div id="modal-login" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
@@ -317,12 +321,12 @@
                     <i class="fa-solid fa-right-to-bracket text-blue-500"></i>
                     <span>公職系統登入</span>
                 </h3>
-                <button onclick="closeModal('modal-login')" class="text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-login"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">選擇測試帳號快速登入 或 自行輸入</label>
-                    <select id="login-quick-select" onchange="fillQuickLogin(this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                    <select id="login-quick-select" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
                         <option value="">-- 快速選擇測試帳號 --</option>
                         <option value="admin">總管理員 (Dsuensx)</option>
                         <option value="police_high">警務高層 (分局長)</option>
@@ -339,12 +343,11 @@
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">密碼</label>
                     <input type="password" id="login-password" placeholder="請輸入密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
                 </div>
-                <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">立即登入</button>
+                <button id="handle-login-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">立即登入</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: CLOCK IN/OUT -->
     <div id="modal-clock" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
@@ -352,7 +355,7 @@
                     <i class="fa-solid fa-clock text-blue-500"></i>
                     <span>出勤打卡作業</span>
                 </h3>
-                <button onclick="closeModal('modal-clock')" class="text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-clock"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -378,12 +381,11 @@
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">執勤駕駛車輛 (車牌或車號)</label>
                     <input type="text" id="clock-vehicle" placeholder="例如：巡邏車 242-P1 或 救護車 242-F1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
                 </div>
-                <button onclick="submitClock()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">確認送出打卡</button>
+                <button id="submit-clock-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">確認送出打卡</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: REPORT -->
     <div id="modal-report" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
@@ -391,7 +393,7 @@
                     <i class="fa-solid fa-file-pen text-blue-500"></i>
                     <span>填寫案件報告</span>
                 </h3>
-                <button onclick="closeModal('modal-report')" class="text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-report"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -420,12 +422,11 @@
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">相關影片連結 (YouTube, Streamable, 剪輯網址等)</label>
                     <input type="url" id="report-video-link" placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
                 </div>
-                <button onclick="submitReport()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">提交案件報告</button>
+                <button id="submit-report-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">提交案件報告</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: EDIT RECORD (Report or Clock) -->
     <div id="modal-edit" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
@@ -433,20 +434,17 @@
                     <i class="fa-solid fa-pen-to-square text-emerald-500"></i>
                     <span id="edit-modal-title">編輯項目</span>
                 </h3>
-                <button onclick="closeModal('modal-edit')" class="text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-edit"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-4">
                 <input type="hidden" id="edit-type">
-                <input type="hidden" id="edit-index">
-                <div id="edit-fields-container" class="space-y-4">
-                    <!-- Dynamic fields populated via JS -->
-                </div>
-                <button onclick="submitEdit()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-emerald-600/30 transition">儲存修改</button>
+                <input type="hidden" id="edit-id-key">
+                <div id="edit-fields-container" class="space-y-4"></div>
+                <button id="submit-edit-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-emerald-600/30 transition">儲存修改</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: HIGH RANK REMARK -->
     <div id="modal-remark" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
@@ -454,21 +452,20 @@
                     <i class="fa-solid fa-pen-nib text-amber-500"></i>
                     <span>高層長官審核備註</span>
                 </h3>
-                <button onclick="closeModal('modal-remark')" class="text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-remark"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-4">
                 <input type="hidden" id="remark-target-type">
-                <input type="hidden" id="remark-target-index">
+                <input type="hidden" id="remark-target-id-key">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">輸入長官批示與審核備註</label>
                     <textarea id="remark-text-input" rows="4" placeholder="例如：已閱，處理程序符合規定，予以嘉獎..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-amber-500"></textarea>
                 </div>
-                <button onclick="submitRemark()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-amber-600/30 transition">儲存長官備註</button>
+                <button id="submit-remark-btn" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-amber-600/30 transition">儲存長官備註</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: CREATE USER -->
     <div id="modal-create-user" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
@@ -476,7 +473,7 @@
                     <i class="fa-solid fa-user-plus text-purple-500"></i>
                     <span>新增公職人員帳號</span>
                 </h3>
-                <button onclick="closeModal('modal-create-user')" class="text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-create-user"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -507,71 +504,208 @@
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">密碼</label>
                     <input type="password" id="new-user-password" placeholder="請設定密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
                 </div>
-                <button onclick="submitNewUser()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-purple-600/30 transition">建立新帳號</button>
+                <button id="submit-new-user-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-purple-600/30 transition">建立新帳號</button>
             </div>
         </div>
     </div>
 
-    <!-- JavaScript Application Logic -->
     <script>
-        // State Management
-        let currentUser = null; // { account, name, unit, role }
-        let currentActiveDepartmentForReport = 'police'; // 'police' or 'fire'
+        let currentUser = null;
+        let currentActiveDepartmentForReport = 'police';
+        let db = null;
+        let fm = null;
 
-        // Local Storage Init / Default Data
         let appData = {
-            users: [
-                { account: 'admin', name: 'Dsuensx', unit: 'admin', role: 'admin', pass: 'LAIDA0903' },
-                { account: 'P-1001', name: '林局長', unit: 'police', role: 'high', pass: '1234' },
-                { account: 'P-2421', name: '王小明', unit: 'police', role: 'normal', pass: '1234' },
-                { account: 'F-1001', name: '陳大隊', unit: 'fire', role: 'high', pass: '1234' },
-                { account: 'F-3021', name: '張志豪', unit: 'fire', role: 'normal', pass: '1234' }
-            ],
-            policeReports: [
-                { caseId: 'REP-2026-001', id: 'P-2421', author: '王小明', title: '台一線重大追撞車禍處理', content: '接獲通報前往台一線處理雙車追撞，現場無人員重傷，已協助交通管制與拖吊車進場。', videoLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', time: '2026-03-30 14:20', remark: '已閱，處理得宜。' }
-            ],
-            fireReports: [
-                { caseId: 'REP-2026-002', id: 'F-3021', author: '張志豪', title: '板橋區民宅瓦斯氣味通報', content: '抵達現場進行探測，確認為廚房瓦斯閥門未關緊導致洩漏，已協助通風並關閉閥門。', videoLink: '', time: '2026-03-30 16:05', remark: '' }
-            ],
-            policeClocks: [
-                { caseId: 'CAS-2026-001', id: 'P-2421', name: '王小明', status: '上班', vehicle: '巡邏車 242-P1', time: '2026-03-30 08:00', remark: '準時出勤' }
-            ],
-            fireClocks: [
-                { caseId: 'CAS-2026-002', id: 'F-3021', name: '張志豪', status: '上班', vehicle: '救護車 242-F1', time: '2026-03-30 08:30', remark: '' }
-            ],
-            adminMemo: '1. 本週重點：加強轄區夜間巡邏與消防安檢。\n2. 各分局/大隊長請於每日下班前完成同仁打卡與案件審核。\n3. 如有系統異常請直接聯繫總管理員 Dsuensx。'
+            users: [],
+            policeReports: [],
+            fireReports: [],
+            policeClocks: [],
+            fireClocks: [],
+            adminMemo: ''
         };
 
-        // Load from LocalStorage if exists
-        if (localStorage.getItem('nt_rp_data_v2')) {
+        window.addEventListener('firebase-ready', async () => {
+            db = window.db;
+            fm = window.firebaseModules;
+            await loadAllDataFromCloud();
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Main tab navigation binding (robust support for data-tab selectors)
+            const handleTabClick = (e) => {
+                const btn = e.currentTarget;
+                const tabId = btn.getAttribute('data-tab');
+                if (tabId) {
+                    switchTab(tabId);
+                    const mobileMenu = document.getElementById('mobile-menu');
+                    if (mobileMenu) mobileMenu.classList.add('hidden');
+                }
+            };
+
+            document.querySelectorAll('.nav-btn, .mobile-nav-btn, .tab-shortcut-btn').forEach(btn => {
+                btn.removeEventListener('click', handleTabClick);
+                btn.addEventListener('click', handleTabClick);
+            });
+
+            const logoBtn = document.getElementById('logo-home-btn');
+            if (logoBtn) logoBtn.addEventListener('click', () => switchTab('home'));
+
+            document.querySelectorAll('.police-sub-btn').forEach(btn => {
+                btn.addEventListener('click', () => switchPoliceSubTab(btn.getAttribute('data-sub')));
+            });
+
+            document.querySelectorAll('.fire-sub-btn').forEach(btn => {
+                btn.addEventListener('click', () => switchFireSubTab(btn.getAttribute('data-sub')));
+            });
+
+            document.querySelectorAll('.admin-sub-btn').forEach(btn => {
+                btn.addEventListener('click', () => switchAdminSubTab(btn.getAttribute('data-sub')));
+            });
+
+            const loginOpenBtn = document.getElementById('login-modal-open-btn');
+            if (loginOpenBtn) loginOpenBtn.addEventListener('click', () => document.getElementById('modal-login').classList.remove('hidden'));
+
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) logoutBtn.addEventListener('click', logout);
+
+            const mobileMenuToggleBtn = document.getElementById('mobile-menu-toggle-btn');
+            if (mobileMenuToggleBtn) {
+                mobileMenuToggleBtn.addEventListener('click', () => {
+                    const menu = document.getElementById('mobile-menu');
+                    if (menu) menu.classList.toggle('hidden');
+                });
+            }
+
+            document.querySelectorAll('.close-modal-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const modalId = btn.getAttribute('data-modal');
+                    if (modalId) closeModal(modalId);
+                });
+            });
+
+            const policeClockBtn = document.getElementById('police-clock-modal-btn');
+            if (policeClockBtn) policeClockBtn.addEventListener('click', () => openClockModal('police'));
+
+            const policeReportBtn = document.getElementById('police-report-modal-btn');
+            if (policeReportBtn) policeReportBtn.addEventListener('click', () => openReportModal('police'));
+
+            const fireClockBtn = document.getElementById('fire-clock-modal-btn');
+            if (fireClockBtn) fireClockBtn.addEventListener('click', () => openClockModal('fire'));
+
+            const fireReportBtn = document.getElementById('fire-report-modal-btn');
+            if (fireReportBtn) fireReportBtn.addEventListener('click', () => openReportModal('fire'));
+
+            const openCreateUserBtn = document.getElementById('open-create-user-modal-btn');
+            if (openCreateUserBtn) openCreateUserBtn.addEventListener('click', openCreateUserModal);
+
+            const handleLoginBtn = document.getElementById('handle-login-btn');
+            if (handleLoginBtn) handleLoginBtn.addEventListener('click', handleLogin);
+
+            const quickSelect = document.getElementById('login-quick-select');
+            if (quickSelect) quickSelect.addEventListener('change', (e) => fillQuickLogin(e.target.value));
+
+            const submitClockBtn = document.getElementById('submit-clock-btn');
+            if (submitClockBtn) submitClockBtn.addEventListener('click', submitClock);
+
+            const submitReportBtn = document.getElementById('submit-report-btn');
+            if (submitReportBtn) submitReportBtn.addEventListener('click', submitReport);
+
+            const submitEditBtn = document.getElementById('submit-edit-btn');
+            if (submitEditBtn) submitEditBtn.addEventListener('click', submitEdit);
+
+            const submitRemarkBtn = document.getElementById('submit-remark-btn');
+            if (submitRemarkBtn) submitRemarkBtn.addEventListener('click', submitRemark);
+
+            const submitNewUserBtn = document.getElementById('submit-new-user-btn');
+            if (submitNewUserBtn) submitNewUserBtn.addEventListener('click', submitNewUser);
+
+            const saveMemoBtn = document.getElementById('save-memo-btn');
+            if (saveMemoBtn) saveMemoBtn.addEventListener('click', saveMemo);
+
+            const searchPoliceInput = document.getElementById('search-police-report');
+            if (searchPoliceInput) searchPoliceInput.addEventListener('input', renderPoliceReports);
+
+            const searchFireInput = document.getElementById('search-fire-report');
+            if (searchFireInput) searchFireInput.addEventListener('input', renderFireReports);
+        });
+
+        async function loadAllDataFromCloud() {
             try {
-                appData = JSON.parse(localStorage.getItem('nt_rp_data_v2'));
-            } catch (e) { console.error('Storage load error', e); }
+                const usersSnap = await fm.getDocs(fm.collection(db, 'users'));
+                if (!usersSnap.empty) {
+                    appData.users = usersSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+                } else {
+                    const defaultUsers = [
+                        { account: 'admin', name: 'Dsuensx', unit: 'admin', role: 'admin', pass: 'LAIDA0903' },
+                        { account: 'P-1001', name: '林局長', unit: 'police', role: 'high', pass: '1234' },
+                        { account: 'P-2421', name: '王小明', unit: 'police', role: 'normal', pass: '1234' },
+                        { account: 'F-1001', name: '陳大隊', unit: 'fire', role: 'high', pass: '1234' },
+                        { account: 'F-3021', name: '張志豪', unit: 'fire', role: 'normal', pass: '1234' }
+                    ];
+                    for (const u of defaultUsers) {
+                        await fm.setDoc(fm.doc(db, 'users', u.account), u);
+                    }
+                    appData.users = defaultUsers.map(u => ({ docId: u.account, ...u }));
+                }
+
+                const policeRepSnap = await fm.getDocs(fm.collection(db, 'policeReports'));
+                appData.policeReports = policeRepSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+
+                const fireRepSnap = await fm.getDocs(fm.collection(db, 'fireReports'));
+                appData.fireReports = fireRepSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+
+                const policeClockSnap = await fm.getDocs(fm.collection(db, 'policeClocks'));
+                appData.policeClocks = policeClockSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+
+                const fireClockSnap = await fm.getDocs(fm.collection(db, 'fireClocks'));
+                appData.fireClocks = fireClockSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+
+                const memoSnap = await fm.getDocs(fm.collection(db, 'systemSettings'));
+                const memoDoc = memoSnap.docs.find(d => d.id === 'adminMemo');
+                if (memoDoc) {
+                    appData.adminMemo = memoDoc.data().content || '';
+                } else {
+                    appData.adminMemo = '1. 本週重點：加強轄區夜間巡邏與消防安檢。\n2. 各分局/大隊長請於每日下班前完成同仁打卡與案件審核。\n3. 如有系統異常請直接聯繫總管理員 Dsuensx。';
+                    await fm.setDoc(fm.doc(db, 'systemSettings', 'adminMemo'), { content: appData.adminMemo });
+                }
+
+                renderPoliceReports();
+                renderPoliceClocks();
+                renderFireReports();
+                renderFireClocks();
+                renderAdminUsers();
+                renderAdminOverview();
+            } catch (e) {
+                console.error("雲端資料同步讀取失敗", e);
+            }
         }
 
-        function saveAppData() {
-            localStorage.setItem('nt_rp_data_v2', JSON.stringify(appData));
-        }
-
-        // Navigation Tabs
         function switchTab(tabId) {
             ['home', 'police', 'fire', 'admin'].forEach(t => {
-                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const tabEl = document.getElementById(`tab-${t}`);
+                if (tabEl) tabEl.classList.add('hidden');
+                
                 const navBtn = document.getElementById(`nav-${t}`);
                 if (navBtn) {
-                    navBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800";
+                    navBtn.className = "nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800";
                 }
             });
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            if (targetTab) targetTab.classList.remove('hidden');
+
             const activeNav = document.getElementById(`nav-${tabId}`);
             if (activeNav) {
-                activeNav.className = "px-4 py-2 rounded-lg text-sm font-medium transition text-blue-400 bg-blue-500/10";
+                activeNav.className = "nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-blue-400 bg-blue-500/10";
             }
+            
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            
             if (tabId === 'admin') {
                 renderAdminUsers();
                 renderAdminOverview();
-                document.getElementById('admin-memo-textarea').value = appData.adminMemo || '';
+                const memoInput = document.getElementById('admin-memo-textarea');
+                if (memoInput) memoInput.value = appData.adminMemo || '';
             } else if (tabId === 'police') {
                 renderPoliceReports();
                 renderPoliceClocks();
@@ -581,19 +715,18 @@
             }
         }
 
-        // Sub-tabs
         function switchPoliceSubTab(sub) {
             if (sub === 'reports') {
                 document.getElementById('police-sub-reports').classList.remove('hidden');
                 document.getElementById('police-sub-clocks').classList.add('hidden');
-                document.getElementById('btn-police-reports').className = "px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white";
-                document.getElementById('btn-police-clocks').className = "px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900";
+                document.getElementById('btn-police-reports').className = "police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white";
+                document.getElementById('btn-police-clocks').className = "police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900";
                 renderPoliceReports();
             } else {
                 document.getElementById('police-sub-reports').classList.add('hidden');
                 document.getElementById('police-sub-clocks').classList.remove('hidden');
-                document.getElementById('btn-police-reports').className = "px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900";
-                document.getElementById('btn-police-clocks').className = "px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white";
+                document.getElementById('btn-police-reports').className = "police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900";
+                document.getElementById('btn-police-clocks').className = "police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white";
                 renderPoliceClocks();
             }
         }
@@ -602,14 +735,14 @@
             if (sub === 'reports') {
                 document.getElementById('fire-sub-reports').classList.remove('hidden');
                 document.getElementById('fire-sub-clocks').classList.add('hidden');
-                document.getElementById('btn-fire-reports').className = "px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white";
-                document.getElementById('btn-fire-clocks').className = "px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900";
+                document.getElementById('btn-fire-reports').className = "fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white";
+                document.getElementById('btn-fire-clocks').className = "fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900";
                 renderFireReports();
             } else {
                 document.getElementById('fire-sub-reports').classList.add('hidden');
                 document.getElementById('fire-sub-clocks').classList.remove('hidden');
-                document.getElementById('btn-fire-reports').className = "px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900";
-                document.getElementById('btn-fire-clocks').className = "px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white";
+                document.getElementById('btn-fire-reports').className = "fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900";
+                document.getElementById('btn-fire-clocks').className = "fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white";
                 renderFireClocks();
             }
         }
@@ -617,22 +750,18 @@
         function switchAdminSubTab(sub) {
             ['users', 'memo', 'overview'].forEach(s => {
                 document.getElementById(`admin-sub-${s}`).classList.add('hidden');
-                document.getElementById(`btn-admin-${s}`).className = "px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap";
+                document.getElementById(`btn-admin-${s}`).className = "admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap";
             });
             document.getElementById(`admin-sub-${sub}`).classList.remove('hidden');
-            document.getElementById(`btn-admin-${sub}`).className = "px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap";
+            document.getElementById(`btn-admin-${sub}`).className = "admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap";
             if (sub === 'users') renderAdminUsers();
             if (sub === 'overview') renderAdminOverview();
         }
 
-        function toggleMobileMenu() {
-            const menu = document.getElementById('mobile-menu');
-            menu.classList.toggle('hidden');
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('hidden');
         }
-
-        // Modals
-        function openLoginModal() { document.getElementById('modal-login').classList.remove('hidden'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
         function fillQuickLogin(val) {
             const userMap = {
@@ -670,22 +799,26 @@
 
         function updateUserUI() {
             const badge = document.getElementById('user-badge');
-            const loginBtn = document.getElementById('login-btn');
+            const loginBtn = document.getElementById('login-modal-open-btn');
             if (currentUser) {
-                loginBtn.classList.add('hidden');
-                badge.classList.remove('hidden');
-                badge.classList.add('flex');
-                document.getElementById('user-badge-name').innerText = `${currentUser.name} (${currentUser.account})`;
+                if (loginBtn) loginBtn.classList.add('hidden');
+                if (badge) {
+                    badge.classList.remove('hidden');
+                    badge.classList.add('flex');
+                }
+                const badgeName = document.getElementById('user-badge-name');
+                if (badgeName) badgeName.innerText = `${currentUser.name} (${currentUser.account})`;
                 const roleDot = document.getElementById('user-badge-role');
-                roleDot.className = `w-2 h-2 rounded-full ${currentUser.role === 'admin' ? 'bg-purple-500' : currentUser.role === 'high' ? 'bg-amber-500' : 'bg-emerald-500'}`;
+                if (roleDot) roleDot.className = `w-2 h-2 rounded-full ${currentUser.role === 'admin' ? 'bg-purple-500' : currentUser.role === 'high' ? 'bg-amber-500' : 'bg-emerald-500'}`;
             } else {
-                badge.classList.remove('flex');
-                badge.classList.add('hidden');
-                loginBtn.classList.remove('hidden');
+                if (badge) {
+                    badge.classList.remove('flex');
+                    badge.classList.add('hidden');
+                }
+                if (loginBtn) loginBtn.classList.remove('hidden');
             }
         }
 
-        // Clock In/Out Modal & Submission
         function openClockModal(dept) {
             document.getElementById('modal-clock').classList.remove('hidden');
             if (currentUser) {
@@ -695,7 +828,7 @@
             document.getElementById('clock-case-id').value = 'CAS-' + Math.floor(100000 + Math.random() * 900000);
         }
 
-        function submitClock() {
+        async function submitClock() {
             const caseId = document.getElementById('clock-case-id').value.trim();
             const id = document.getElementById('clock-id').value.trim();
             const name = document.getElementById('clock-name').value.trim();
@@ -711,23 +844,28 @@
             const isPolice = id.toUpperCase().startsWith('P') || (currentUser && currentUser.unit === 'police');
             const record = { caseId, id, name, status, vehicle, time: timeStr, remark: '' };
             
+            const colName = isPolice ? 'policeClocks' : 'fireClocks';
+            const docRef = await fm.addDoc(fm.collection(db, colName), record);
+            const savedItem = { docId: docRef.id, ...record };
+
             if (isPolice) {
-                appData.policeClocks.unshift(record);
+                appData.policeClocks.unshift(savedItem);
                 renderPoliceClocks();
             } else {
-                appData.fireClocks.unshift(record);
+                appData.fireClocks.unshift(savedItem);
                 renderFireClocks();
             }
-            saveAppData();
             closeModal('modal-clock');
-            alert('打卡記錄送出成功！');
+            alert('打卡記錄送出成功並已同步至雲端！');
         }
 
-        // Report Modal & Submission
         function openReportModal(dept) {
             currentActiveDepartmentForReport = dept;
             document.getElementById('modal-report').classList.remove('hidden');
-            document.getElementById('report-modal-title').innerHTML = `<i class="fa-solid fa-file-pen ${dept === 'police' ? 'text-blue-500' : 'text-red-500'}"></i><span>填寫${dept === 'police' ? '警務' : '消防'}案件報告</span>`;
+            const titleEl = document.getElementById('report-modal-title');
+            if (titleEl) {
+                titleEl.innerHTML = `<i class="fa-solid fa-file-pen ${dept === 'police' ? 'text-blue-500' : 'text-red-500'}"></i><span>填寫${dept === 'police' ? '警務' : '消防'}案件報告</span>`;
+            }
             if (currentUser) {
                 document.getElementById('report-id').value = currentUser.account;
                 document.getElementById('report-author').value = currentUser.name;
@@ -735,7 +873,7 @@
             document.getElementById('report-case-id').value = 'REP-' + Math.floor(100000 + Math.random() * 900000);
         }
 
-        function submitReport() {
+        async function submitReport() {
             const caseId = document.getElementById('report-case-id').value.trim();
             const id = document.getElementById('report-id').value.trim();
             const author = document.getElementById('report-author').value.trim();
@@ -751,24 +889,27 @@
             const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
             
             const report = { caseId, id, author, title, content, videoLink, time: timeStr, remark: '' };
+            const colName = currentActiveDepartmentForReport === 'police' ? 'policeReports' : 'fireReports';
+            
+            const docRef = await fm.addDoc(fm.collection(db, colName), report);
+            const savedItem = { docId: docRef.id, ...report };
+
             if (currentActiveDepartmentForReport === 'police') {
-                appData.policeReports.unshift(report);
+                appData.policeReports.unshift(savedItem);
                 renderPoliceReports();
             } else {
-                appData.fireReports.unshift(report);
+                appData.fireReports.unshift(savedItem);
                 renderFireReports();
             }
-            saveAppData();
             closeModal('modal-report');
             document.getElementById('report-case-id').value = '';
             document.getElementById('report-title').value = '';
             document.getElementById('report-content').value = '';
             document.getElementById('report-video-link').value = '';
-            alert('案件報告已成功提交至資料庫！');
+            alert('案件報告已成功提交並同步至雲端資料庫！');
         }
 
-        // EDIT FUNCTIONALITY (Only own submissions)
-        function openEditModal(type, index) {
+        window.openEditModal = function(type, index) {
             let item;
             if (type === 'policeReport') item = appData.policeReports[index];
             else if (type === 'fireReport') item = appData.fireReports[index];
@@ -782,7 +923,7 @@
 
             document.getElementById('modal-edit').classList.remove('hidden');
             document.getElementById('edit-type').value = type;
-            document.getElementById('edit-index').value = index;
+            document.getElementById('edit-id-key').value = item.docId;
             const container = document.getElementById('edit-fields-container');
             container.innerHTML = '';
 
@@ -826,45 +967,57 @@
                     </div>
                 `;
             }
-        }
+        };
 
-        function submitEdit() {
+        async function submitEdit() {
             const type = document.getElementById('edit-type').value;
-            const index = parseInt(document.getElementById('edit-index').value);
+            const docId = document.getElementById('edit-id-key').value;
+            let colName = '';
+            let targetList = null;
 
-            if (type === 'policeReport') {
-                appData.policeReports[index].caseId = document.getElementById('edit-case-id').value.trim();
-                appData.policeReports[index].title = document.getElementById('edit-title').value.trim();
-                appData.policeReports[index].content = document.getElementById('edit-content').value.trim();
-                appData.policeReports[index].videoLink = document.getElementById('edit-video-link').value.trim();
-                renderPoliceReports();
-            } else if (type === 'fireReport') {
-                appData.fireReports[index].caseId = document.getElementById('edit-case-id').value.trim();
-                appData.fireReports[index].title = document.getElementById('edit-title').value.trim();
-                appData.fireReports[index].content = document.getElementById('edit-content').value.trim();
-                appData.fireReports[index].videoLink = document.getElementById('edit-video-link').value.trim();
-                renderFireReports();
-            } else if (type === 'policeClock') {
-                appData.policeClocks[index].caseId = document.getElementById('edit-clock-case-id').value.trim();
-                appData.policeClocks[index].status = document.getElementById('edit-clock-status').value;
-                appData.policeClocks[index].vehicle = document.getElementById('edit-clock-vehicle').value.trim();
-                renderPoliceClocks();
-            } else if (type === 'fireClock') {
-                appData.fireClocks[index].caseId = document.getElementById('edit-clock-case-id').value.trim();
-                appData.fireClocks[index].status = document.getElementById('edit-clock-status').value;
-                appData.fireClocks[index].vehicle = document.getElementById('edit-clock-vehicle').value.trim();
-                renderFireClocks();
+            if (type === 'policeReport') { colName = 'policeReports'; targetList = appData.policeReports; }
+            else if (type === 'fireReport') { colName = 'fireReports'; targetList = appData.fireReports; }
+            else if (type === 'policeClock') { colName = 'policeClocks'; targetList = appData.policeClocks; }
+            else if (type === 'fireClock') { colName = 'fireClocks'; targetList = appData.fireClocks; }
+
+            const item = targetList.find(i => i.docId === docId);
+            if (!item) return;
+
+            if (type.includes('Report')) {
+                item.caseId = document.getElementById('edit-case-id').value.trim();
+                item.title = document.getElementById('edit-title').value.trim();
+                item.content = document.getElementById('edit-content').value.trim();
+                item.videoLink = document.getElementById('edit-video-link').value.trim();
+                await fm.updateDoc(fm.doc(db, colName, docId), {
+                    caseId: item.caseId,
+                    title: item.title,
+                    content: item.content,
+                    videoLink: item.videoLink
+                });
+                if (type === 'policeReport') renderPoliceReports();
+                else renderFireReports();
+            } else {
+                item.caseId = document.getElementById('edit-clock-case-id').value.trim();
+                item.status = document.getElementById('edit-clock-status').value;
+                item.vehicle = document.getElementById('edit-clock-vehicle').value.trim();
+                await fm.updateDoc(fm.doc(db, colName, docId), {
+                    caseId: item.caseId,
+                    status: item.status,
+                    vehicle: item.vehicle
+                });
+                if (type === 'policeClock') renderPoliceClocks();
+                else renderFireClocks();
             }
 
-            saveAppData();
             closeModal('modal-edit');
-            alert('修改已成功儲存！');
+            alert('修改已成功同步至雲端！');
         }
 
-        // Render Lists
         function renderPoliceReports() {
             const listEl = document.getElementById('police-reports-list');
-            const search = (document.getElementById('search-police-report').value || '').toLowerCase();
+            if (!listEl) return;
+            const searchInput = document.getElementById('search-police-report');
+            const search = searchInput ? searchInput.value.toLowerCase() : '';
             listEl.innerHTML = '';
             const filtered = appData.policeReports.filter(r => r.author.toLowerCase().includes(search) || r.title.toLowerCase().includes(search) || r.content.toLowerCase().includes(search) || (r.caseId && r.caseId.toLowerCase().includes(search)));
             
@@ -873,7 +1026,7 @@
                 return;
             }
 
-            filtered.forEach((r, idx) => {
+            filtered.forEach((r) => {
                 const originalIdx = appData.policeReports.indexOf(r);
                 const isOwner = currentUser && (currentUser.account === r.id || currentUser.role === 'admin');
                 listEl.innerHTML += `
@@ -893,8 +1046,8 @@
                                 <span>相關影片：${r.videoLink ? `<a href="${r.videoLink}" target="_blank" class="text-blue-400 underline hover:text-blue-300 ml-1">${r.videoLink}</a>` : '<span class="text-slate-600">未提供連結</span>'}</span>
                             </div>
                             <div class="flex items-center space-x-2">
-                                ${isOwner ? `<button onclick="openEditModal('policeReport', ${originalIdx})" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-to-square"></i><span>編輯報告</span></button>` : ''}
-                                ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('policeReport', ${originalIdx})" class="bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-nib"></i><span>長官備註</span></button>` : ''}
+                                ${isOwner ? `<button onclick="openEditModal('policeReport',${originalIdx})" class="bg-emerald-600/25 hover:bg-emerald-600/35 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-to-square"></i><span>編輯報告</span></button>` : ''}
+                                ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('policeReport',${originalIdx})" class="bg-amber-600/25 hover:bg-amber-600/35 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-nib"></i><span>長官備註</span></button>` : ''}
                             </div>
                         </div>
                         ${r.remark ? `<div class="bg-amber-950/20 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-200 mt-2"><strong class="font-bold"><i class="fa-solid fa-shield-halved mr-1"></i>長官批示：</strong>${r.remark}</div>` : ''}
@@ -905,6 +1058,7 @@
 
         function renderPoliceClocks() {
             const tbody = document.getElementById('police-clocks-tbody');
+            if (!tbody) return;
             tbody.innerHTML = '';
             if (appData.policeClocks.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">尚無警務打卡紀錄。</td></tr>`;
@@ -921,8 +1075,8 @@
                         <td class="p-4 text-slate-400 text-xs">${c.time}</td>
                         <td class="p-4 text-slate-300 text-xs">${c.remark || '<span class="text-slate-600">無備註</span>'}</td>
                         <td class="p-4 text-right space-x-1">
-                            ${isOwner ? `<button onclick="openEditModal('policeClock', ${idx})" class="text-emerald-400 hover:text-emerald-300 text-xs bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">編輯</button>` : ''}
-                            ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('policeClock', ${idx})" class="text-amber-400 hover:text-amber-300 text-xs bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">備註</button>` : ''}
+                            ${isOwner ? `<button onclick="openEditModal('policeClock',${idx})" class="text-emerald-400 hover:text-emerald-300 text-xs bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">編輯</button>` : ''}
+                            ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('policeClock',${idx})" class="text-amber-400 hover:text-amber-300 text-xs bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">備註</button>` : ''}
                         </td>
                     </tr>
                 `;
@@ -931,7 +1085,9 @@
 
         function renderFireReports() {
             const listEl = document.getElementById('fire-reports-list');
-            const search = (document.getElementById('search-fire-report').value || '').toLowerCase();
+            if (!listEl) return;
+            const searchInput = document.getElementById('search-fire-report');
+            const search = searchInput ? searchInput.value.toLowerCase() : '';
             listEl.innerHTML = '';
             const filtered = appData.fireReports.filter(r => r.author.toLowerCase().includes(search) || r.title.toLowerCase().includes(search) || r.content.toLowerCase().includes(search) || (r.caseId && r.caseId.toLowerCase().includes(search)));
             
@@ -940,7 +1096,7 @@
                 return;
             }
 
-            filtered.forEach((r, idx) => {
+            filtered.forEach((r) => {
                 const originalIdx = appData.fireReports.indexOf(r);
                 const isOwner = currentUser && (currentUser.account === r.id || currentUser.role === 'admin');
                 listEl.innerHTML += `
@@ -960,8 +1116,8 @@
                                 <span>相關影片：${r.videoLink ? `<a href="${r.videoLink}" target="_blank" class="text-red-400 underline hover:text-red-300 ml-1">${r.videoLink}</a>` : '<span class="text-slate-600">未提供連結</span>'}</span>
                             </div>
                             <div class="flex items-center space-x-2">
-                                ${isOwner ? `<button onclick="openEditModal('fireReport', ${originalIdx})" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-to-square"></i><span>編輯報告</span></button>` : ''}
-                                ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('fireReport', ${originalIdx})" class="bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-nib"></i><span>長官備註</span></button>` : ''}
+                                ${isOwner ? `<button onclick="openEditModal('fireReport',${originalIdx})" class="bg-emerald-600/25 hover:bg-emerald-600/35 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-to-square"></i><span>編輯報告</span></button>` : ''}
+                                ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('fireReport',${originalIdx})" class="bg-amber-600/25 hover:bg-amber-600/35 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-nib"></i><span>長官備註</span></button>` : ''}
                             </div>
                         </div>
                         ${r.remark ? `<div class="bg-amber-950/20 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-200 mt-2"><strong class="font-bold"><i class="fa-solid fa-shield-halved mr-1"></i>長官批示：</strong>${r.remark}</div>` : ''}
@@ -972,6 +1128,7 @@
 
         function renderFireClocks() {
             const tbody = document.getElementById('fire-clocks-tbody');
+            if (!tbody) return;
             tbody.innerHTML = '';
             if (appData.fireClocks.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">尚無消防打卡紀錄。</td></tr>`;
@@ -988,33 +1145,46 @@
                         <td class="p-4 text-slate-400 text-xs">${c.time}</td>
                         <td class="p-4 text-slate-300 text-xs">${c.remark || '<span class="text-slate-600">無備註</span>'}</td>
                         <td class="p-4 text-right space-x-1">
-                            ${isOwner ? `<button onclick="openEditModal('fireClock', ${idx})" class="text-emerald-400 hover:text-emerald-300 text-xs bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">編輯</button>` : ''}
-                            ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('fireClock', ${idx})" class="text-amber-400 hover:text-amber-300 text-xs bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">備註</button>` : ''}
+                            ${isOwner ? `<button onclick="openEditModal('fireClock',${idx})" class="text-emerald-400 hover:text-emerald-300 text-xs bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">編輯</button>` : ''}
+                            ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('fireClock',${idx})" class="text-amber-400 hover:text-amber-300 text-xs bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">備註</button>` : ''}
                         </td>
                     </tr>
                 `;
             });
         }
 
-        // High Rank Remark Handling
-        function openRemarkModal(targetType, index) {
+        window.openRemarkModal = function(targetType, index) {
+            let item;
+            if (targetType === 'policeReport') item = appData.policeReports[index];
+            else if (targetType === 'policeClock') item = appData.policeClocks[index];
+            else if (targetType === 'fireReport') item = appData.fireReports[index];
+            else if (targetType === 'fireClock') item = appData.fireClocks[index];
+
             document.getElementById('modal-remark').classList.remove('hidden');
             document.getElementById('remark-target-type').value = targetType;
-            document.getElementById('remark-target-index').value = index;
-            document.getElementById('remark-text-input').value = '';
-        }
+            document.getElementById('remark-target-id-key').value = item.docId;
+            document.getElementById('remark-text-input').value = item.remark || '';
+        };
 
-        function submitRemark() {
+        async function submitRemark() {
             const type = document.getElementById('remark-target-type').value;
-            const idx = parseInt(document.getElementById('remark-target-index').value);
+            const docId = document.getElementById('remark-target-id-key').value;
             const remarkText = document.getElementById('remark-text-input').value.trim();
 
-            if (type === 'policeReport') appData.policeReports[idx].remark = remarkText;
-            else if (type === 'policeClock') appData.policeClocks[idx].remark = remarkText;
-            else if (type === 'fireReport') appData.fireReports[idx].remark = remarkText;
-            else if (type === 'fireClock') appData.fireClocks[idx].remark = remarkText;
+            let colName = '';
+            let targetList = null;
 
-            saveAppData();
+            if (type === 'policeReport') { colName = 'policeReports'; targetList = appData.policeReports; }
+            else if (type === 'policeClock') { colName = 'policeClocks'; targetList = appData.policeClocks; }
+            else if (type === 'fireReport') { colName = 'fireReports'; targetList = appData.fireReports; }
+            else if (type === 'fireClock') { colName = 'fireClocks'; targetList = appData.fireClocks; }
+
+            const item = targetList.find(i => i.docId === docId);
+            if (item) {
+                item.remark = remarkText;
+                await fm.updateDoc(fm.doc(db, colName, docId), { remark: remarkText });
+            }
+
             closeModal('modal-remark');
             if (type.startsWith('police')) {
                 renderPoliceReports();
@@ -1023,10 +1193,9 @@
                 renderFireReports();
                 renderFireClocks();
             }
-            alert('長官備註已成功更新！');
+            alert('長官備註已成功同步至雲端！');
         }
 
-        // Admin Management
         function openCreateUserModal() {
             if (!currentUser || currentUser.role !== 'admin') {
                 alert('權限不足：只有最高管理員可新增帳號！');
@@ -1035,7 +1204,7 @@
             document.getElementById('modal-create-user').classList.remove('hidden');
         }
 
-        function submitNewUser() {
+        async function submitNewUser() {
             const account = document.getElementById('new-user-account').value.trim();
             const name = document.getElementById('new-user-name').value.trim();
             const unit = document.getElementById('new-user-unit').value;
@@ -1051,32 +1220,37 @@
                 return;
             }
 
-            appData.users.push({ account, name, unit, role, pass });
-            saveAppData();
+            const newUser = { account, name, unit, role, pass };
+            await fm.setDoc(fm.doc(db, 'users', account), newUser);
+            appData.users.push({ docId: account, ...newUser });
+
             closeModal('modal-create-user');
             renderAdminUsers();
             renderAdminOverview();
-            alert('新公職帳號已成功建立！');
+            alert('新公職帳號已成功建立並同步至雲端！');
         }
 
-        function deleteUser(acc) {
+        window.deleteUser = async function(acc) {
             if (acc === 'admin') {
                 alert('無法刪除系統初始最高管理員！');
                 return;
             }
             if (confirm(`確定要刪除帳號 [${acc}] 嗎？`)) {
+                const userItem = appData.users.find(u => u.account === acc);
+                if (userItem) {
+                    await fm.deleteDoc(fm.doc(db, 'users', userItem.docId));
+                }
                 appData.users = appData.users.filter(u => u.account !== acc);
-                saveAppData();
                 renderAdminUsers();
                 renderAdminOverview();
-                alert('帳號已刪除');
+                alert('帳號已從雲端刪除');
             }
-        }
+        };
 
         function renderAdminUsers() {
             const tbody = document.getElementById('admin-users-tbody');
+            if (!tbody) return;
             tbody.innerHTML = '';
-            appData.users.usersCache = appData.users;
             appData.users.forEach(u => {
                 const unitBadge = u.unit === 'police' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : u.unit === 'fire' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-purple-500/10 text-purple-400 border-purple-500/20';
                 const roleBadge = u.role === 'admin' ? 'bg-purple-600 text-white' : u.role === 'high' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-300';
@@ -1094,17 +1268,21 @@
             });
         }
 
-        function saveMemo() {
+        async function saveMemo() {
             const memoText = document.getElementById('admin-memo-textarea').value;
             appData.adminMemo = memoText;
-            saveAppData();
-            alert('管理員共同備忘錄已成功儲存！');
+            await fm.setDoc(fm.doc(db, 'systemSettings', 'adminMemo'), { content: memoText });
+            alert('管理員共同備忘錄已成功同步儲存至雲端！');
         }
 
         function renderAdminOverview() {
-            document.getElementById('stat-total-users').innerText = appData.users.length;
-            document.getElementById('stat-police-reports').innerText = appData.policeReports.length;
-            document.getElementById('stat-fire-reports').innerText = appData.fireReports.length;
+            const totalUsersEl = document.getElementById('stat-total-users');
+            const policeRepEl = document.getElementById('stat-police-reports');
+            const fireRepEl = document.getElementById('stat-fire-reports');
+            
+            if (totalUsersEl) totalUsersEl.innerText = appData.users.length;
+            if (policeRepEl) policeRepEl.innerText = appData.policeReports.length;
+            if (fireRepEl) fireRepEl.innerText = appData.fireReports.length;
         }
     </script>
 </body>
