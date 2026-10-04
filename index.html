@@ -96,7 +96,7 @@
         <section id="tab-home" class="space-y-8">
             <div class="relative rounded-3xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-900">
                 <div class="absolute inset-0 z-0">
-                    <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1600" alt="Cover" class="w-full h-full object-cover opacity-40 transition-all duration-700">
+                    <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1600" alt="Cover" class="w-full h-full object-cover opacity-40 transition-all duration-700" onerror="this.src='https://placehold.co/1600x900/0f172a/38bdf8?text=New+Taipei+RP+3.0'">
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"></div>
                 </div>
                 <div class="relative z-10 px-8 py-20 sm:py-28 max-w-3xl space-y-6">
@@ -120,14 +120,14 @@
                         <i class="fa-solid fa-shield-halved"></i>
                     </div>
                     <h3 class="text-lg font-bold text-white">警務勤務與時數統計</h3>
-                    <p class="text-slate-400 text-sm">提供員警線上即時打卡、自訂日期時分補打卡、報告編輯權限管控與時數結算（僅限警察與最高管理員瀏覽）。</p>
+                    <p class="text-slate-400 text-sm">提供員警線上即時打卡、自訂日期時分補打卡、報告編輯權限管控與時數結算（支援日期或嫌疑犯ID末五碼快速搜尋）。</p>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
                     <div class="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 text-xl font-bold">
                         <i class="fa-solid fa-truck-medical"></i>
                     </div>
                     <h3 class="text-lg font-bold text-white">消防救護中心</h3>
-                    <p class="text-slate-400 text-sm">消防隊員專屬出勤回報與災害搶救記錄，嚴格區隔單位，非消防人員無法跨界存取。</p>
+                    <p class="text-slate-400 text-sm">消防隊員專屬出勤回報與災害搶救記錄，支援日期或嫌疑犯/報案ID末五碼搜尋，嚴格區隔單位。</p>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
                     <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl font-bold">
@@ -177,10 +177,10 @@
                 </div>
 
                 <div id="police-sub-reports" class="space-y-4">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-lg font-bold text-slate-200">全體員警案件報告總覽 (可點擊卡片放大，非本人限高層/管理員編輯)</h3>
-                        <div class="w-72">
-                            <input type="text" id="search-police-report" placeholder="搜尋警員RP名稱、身分證末五碼..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <h3 class="text-lg font-bold text-slate-200">全體員警案件報告總覽</h3>
+                        <div class="w-full sm:w-80">
+                            <input type="text" id="search-police-report" placeholder="搜尋日期 (YYYY-MM-DD) 或 嫌疑犯ID末五碼..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
                         </div>
                     </div>
                     <div id="police-reports-list" class="grid grid-cols-1 gap-4"></div>
@@ -285,10 +285,10 @@
                 </div>
 
                 <div id="fire-sub-reports" class="space-y-4">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-lg font-bold text-slate-200">全體消防隊員案件報告總覽 (非本人限高層/管理員編輯)</h3>
-                        <div class="w-72">
-                            <input type="text" id="search-fire-report" placeholder="搜尋隊員RP名稱或內容..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-red-500">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <h3 class="text-lg font-bold text-slate-200">全體消防隊員案件報告總覽</h3>
+                        <div class="w-full sm:w-80">
+                            <input type="text" id="search-fire-report" placeholder="搜尋日期 (YYYY-MM-DD) 或 嫌疑犯ID末五碼..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-red-500">
                         </div>
                     </div>
                     <div id="fire-reports-list" class="grid grid-cols-1 gap-4"></div>
@@ -963,6 +963,7 @@
             const saveMemoBtn = document.getElementById('save-memo-btn');
             if (saveMemoBtn) saveMemoBtn.addEventListener('click', saveMemo);
 
+            // Updated search event listeners supporting search by Date or Suspect ID last 5 digits
             const searchPoliceInput = document.getElementById('search-police-report');
             if (searchPoliceInput) searchPoliceInput.addEventListener('input', renderPoliceReports);
 
@@ -1136,7 +1137,7 @@
                 if (btn) btn.className = "fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap";
             });
             document.getElementById(`fire-sub-${sub}`).classList.remove('hidden');
-            document.getElementById(`btn-fire-${sub}`).className = "fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white whitespace-nowrap";
+            document.getElementById(`btn-fire-sub-${sub}`).className = "fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white whitespace-nowrap";
             
             if (sub === 'reports') renderFireReports();
             if (sub === 'clocks') renderFireClocks();
@@ -1290,20 +1291,20 @@
             const recentLogs = appData.adminLogs.filter(l => l.timestamp >= oneWeekAgo);
 
             if (recentLogs.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-500">最近一周內尚無任何移除或編輯紀錄。</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-500">最近一周內無任何移除或編輯紀錄。</td></tr>`;
                 return;
             }
 
             recentLogs.forEach(l => {
-                const isDelete = l.action.includes('移除') || l.action.includes('刪除');
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-800/40 transition">
-                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${isDelete ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${l.action}</span></td>
-                        <td class="p-4 font-medium text-white">${l.operator}</td>
-                        <td class="p-4 text-slate-300 font-mono text-xs">${l.target}</td>
-                        <td class="p-4 text-slate-400 text-xs">${l.timeStr}</td>
-                    </tr>
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-800/40 hover:bg-slate-800/30 transition";
+                tr.innerHTML = `
+                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">${l.action}</span></td>
+                    <td class="p-4 text-slate-200">${l.operator}</td>
+                    <td class="p-4 font-mono text-xs text-slate-300">${l.target}</td>
+                    <td class="p-4 text-slate-400 text-xs">${l.timeStr}</td>
                 `;
+                tbody.appendChild(tr);
             });
         }
 
@@ -1311,597 +1312,30 @@
             const usedText = document.getElementById('storage-used-text');
             const percentText = document.getElementById('storage-percent-text');
             const progressBar = document.getElementById('storage-progress-bar');
-            const docsCountEl = document.getElementById('storage-docs-count');
+            const docsCount = document.getElementById('storage-docs-count');
             const freeText = document.getElementById('storage-free-text');
-            if (!usedText) return;
 
-            const dataString = JSON.stringify(appData);
-            const bytes = new Blob([dataString]).size;
-            const totalDocs = appData.users.length + appData.policeReports.length + appData.fireReports.length + appData.policeClocks.length + appData.fireClocks.length + appData.adminLogs.length;
+            const totalDocs = appData.users.length + appData.policeReports.length + appData.fireReports.length + appData.policeClocks.length + appData.fireClocks.length + appData.adminLogs.length + 1;
+            const estimatedBytes = totalDocs * 450; // ~450 bytes per doc avg
+            const usedKB = (estimatedBytes / 1024).toFixed(2);
+            const limitKB = 1024 * 1024; // 1 GB in KB
+            const percent = ((estimatedBytes / (1024 * 1024 * 1024)) * 100).toFixed(4);
+            const freeMB = (1024 - (estimatedBytes / (1024 * 1024))).toFixed(2);
 
-            const limitBytes = 1 * 1024 * 1024 * 1024;
-            const percent = Math.min(100, (bytes / limitBytes) * 100).toFixed(4);
-            const freeBytes = limitBytes - bytes;
-
-            const formatBytes = (b) => {
-                if (b < 1024) return b + ' B';
-                if (b < 1024 * 1024) return (b / 1024).toFixed(2) + ' KB';
-                if (b < 1024 * 1024 * 1024) return (b / (1024 * 1024)).toFixed(2) + ' MB';
-                return (b / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
-            };
-
-            usedText.innerText = `當前已使用：${formatBytes(bytes)}`;
-            percentText.innerText = `${percent}%`;
-            progressBar.style.width = `${Math.max(0.5, percent)}%`;
-            docsCountEl.innerText = totalDocs;
-            freeText.innerText = formatBytes(freeBytes);
+            if (usedText) usedText.innerText = `當前已使用：${usedKB} KB`;
+            if (percentText) percentText.innerText = `${percent}%`;
+            if (progressBar) progressBar.style.width = `${Math.min(Math.max(percent, 0.1), 100)}%`;
+            if (docsCount) docsCount.innerText = totalDocs;
+            if (freeText) freeText.innerText = `${freeMB} MB`;
         }
 
-        function openClockModal(dept, isRetro) {
-            document.getElementById('modal-clock').classList.remove('hidden');
-            document.getElementById('clock-dept-type').value = dept;
-            document.getElementById('clock-is-retro').value = isRetro ? 'true' : 'false';
-            
-            const modalTitleEl = document.getElementById('clock-modal-title');
-            const dateWrapper = document.getElementById('clock-date-field-wrapper');
-            
-            if (isRetro) {
-                if (modalTitleEl) {
-                    modalTitleEl.innerHTML = `<i class="fa-solid fa-clock-rotate-left text-blue-500"></i><span>${dept === 'police' ? '警務' : '消防'}「補打卡」作業 (自訂日期/時分)</span>`;
-                }
-                if (dateWrapper) dateWrapper.classList.remove('hidden');
-                
-                const now = new Date();
-                const pad = (n) => String(n).padStart(2, '0');
-                document.getElementById('clock-retro-date').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-                document.getElementById('clock-retro-time').value = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-            } else {
-                if (modalTitleEl) {
-                    modalTitleEl.innerHTML = `<i class="fa-solid fa-clock ${dept === 'police' ? 'text-blue-500' : 'text-red-500'}"></i><span>${dept === 'police' ? '警務' : '消防'}出勤打卡作業</span>`;
-                }
-                if (dateWrapper) dateWrapper.classList.add('hidden');
-            }
-
-            if (currentUser) {
-                document.getElementById('clock-id').value = currentUser.account;
-                document.getElementById('clock-name').value = currentUser.name;
-            }
-        }
-
-        async function submitClock() {
-            const dept = document.getElementById('clock-dept-type').value;
-            const isRetro = document.getElementById('clock-is-retro').value === 'true';
-            const id = document.getElementById('clock-id').value.trim();
-            const name = document.getElementById('clock-name').value.trim();
-            const status = document.getElementById('clock-status').value;
-            const vehicle = document.getElementById('clock-vehicle').value.trim() || '無登記車輛';
-            
-            if (!id || !name) {
-                alert('請完整填寫編號與RP名稱！');
-                return;
-            }
-
-            let timeStr = '';
-            if (isRetro) {
-                const retroDate = document.getElementById('clock-retro-date').value.trim();
-                const retroTime = document.getElementById('clock-retro-time').value.trim();
-                if (!retroDate || !retroTime) {
-                    alert('請完整輸入補打卡的「日期」與「時分」！');
-                    return;
-                }
-                timeStr = `${retroDate} ${retroTime}`;
-            } else {
-                const now = new Date();
-                const pad = (n) => String(n).padStart(2, '0');
-                timeStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-            }
-            
-            const record = { 
-                id, 
-                name, 
-                status, 
-                vehicle, 
-                time: timeStr, 
-                isRetro: isRetro, 
-                remark: '' 
-            };
-            const colName = (dept === 'police') ? 'policeClocks' : 'fireClocks';
-            const docRef = await fm.addDoc(fm.collection(db, colName), record);
-            const savedItem = { docId: docRef.id, ...record };
-
-            if (dept === 'police') {
-                appData.policeClocks.unshift(savedItem);
-                renderPoliceClocks();
-            } else {
-                appData.fireClocks.unshift(savedItem);
-                renderFireClocks();
-            }
-            closeModal('modal-clock');
-            alert(`[${dept === 'police' ? '警察局' : '消防局'}] ${isRetro ? '【補打卡】' : ''}打卡記錄送出成功並已同步至雲端！`);
-        }
-
-        function openReportModal(dept) {
-            currentActiveDepartmentForReport = dept;
-            document.getElementById('modal-report').classList.remove('hidden');
-            const titleEl = document.getElementById('report-modal-title');
-            const suspectFieldsWrapper = document.getElementById('police-suspect-fields');
-
-            if (dept === 'fire') {
-                if (titleEl) {
-                    titleEl.innerHTML = `<i class="fa-solid fa-file-pen text-red-500"></i><span>填寫消防災害報告 (免填嫌疑人資訊)</span>`;
-                }
-                if (suspectFieldsWrapper) suspectFieldsWrapper.classList.add('hidden');
-            } else {
-                if (titleEl) {
-                    titleEl.innerHTML = `<i class="fa-solid fa-file-pen text-blue-500"></i><span>填寫警務治安案件報告</span>`;
-                }
-                if (suspectFieldsWrapper) suspectFieldsWrapper.classList.remove('hidden');
-            }
-
-            const now = new Date();
-            const caseId = `REP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${Math.floor(1000 + Math.random() * 9000)}`;
-            document.getElementById('report-case-id').value = caseId;
-
-            if (currentUser) {
-                document.getElementById('report-id').value = currentUser.account;
-                document.getElementById('report-author').value = currentUser.name;
-            }
-        }
-
-        async function submitReport() {
-            const dept = currentActiveDepartmentForReport;
-            const caseId = document.getElementById('report-case-id').value;
-            const id = document.getElementById('report-id').value.trim();
-            const author = document.getElementById('report-author').value.trim();
-            const title = document.getElementById('report-title').value.trim();
-            const content = document.getElementById('report-content').value.trim();
-            const videoLink = document.getElementById('report-video-link').value.trim();
-
-            if (!id || !author || !title || !content) {
-                alert('請完整填寫案件編號、填寫人、標題與詳細經過！');
-                return;
-            }
-
-            let reportData = {
-                caseId,
-                id,
-                author,
-                title,
-                content,
-                videoLink,
-                remark: '',
-                createdAt: new Date().toLocaleString()
-            };
-
-            if (dept === 'police') {
-                reportData.suspectId = document.getElementById('report-suspect-id').value.trim() || '未填寫';
-                reportData.suspectName = document.getElementById('report-suspect-name').value.trim() || '未填寫';
-                const docRef = await fm.addDoc(fm.collection(db, 'policeReports'), reportData);
-                appData.policeReports.unshift({ docId: docRef.id, ...reportData });
-                renderPoliceReports();
-            } else {
-                const docRef = await fm.addDoc(fm.collection(db, 'fireReports'), reportData);
-                appData.fireReports.unshift({ docId: docRef.id, ...reportData });
-                renderFireReports();
-            }
-
-            closeModal('modal-report');
-            alert(`[${dept === 'police' ? '警察局' : '消防局'}] 案件報告已成功提交並上傳至雲端！`);
-        }
-
-        function renderPoliceReports() {
-            const listContainer = document.getElementById('police-reports-list');
-            const searchVal = (document.getElementById('search-police-report')?.value || '').toLowerCase();
-            if (!listContainer) return;
-
-            listContainer.innerHTML = '';
-            const filtered = appData.policeReports.filter(r => 
-                r.author.toLowerCase().includes(searchVal) || 
-                r.title.toLowerCase().includes(searchVal) || 
-                r.suspectName.toLowerCase().includes(searchVal) ||
-                r.suspectId.toLowerCase().includes(searchVal)
-            );
-
-            if (filtered.length === 0) {
-                listContainer.innerHTML = `<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">尚無符合條件的警務案件報告。</div>`;
-                return;
-            }
-
-            filtered.forEach(r => {
-                const isOwner = currentUser && (r.id === currentUser.account || r.author === currentUser.name);
-                const canEditOrDelete = currentUser && (currentUser.role === 'admin' || currentUser.role === 'high' || isOwner);
-
-                listContainer.innerHTML += `
-                    <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between gap-4 hover:border-blue-500/50 transition">
-                        <div class="space-y-2 flex-1 cursor-pointer" onclick="openPoliceReportDetail('${r.docId}')">
-                            <div class="flex items-center space-x-3">
-                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">${r.caseId}</span>
-                                <span class="text-xs text-slate-400">${r.createdAt}</span>
-                            </div>
-                            <h4 class="text-lg font-bold text-white">${r.title}</h4>
-                            <p class="text-slate-300 text-sm line-clamp-2">${r.content}</p>
-                            <div class="flex flex-wrap gap-4 text-xs text-slate-400 pt-1">
-                                <div>填寫警員：<span class="text-slate-200 font-semibold">${r.author} (${r.id})</span></div>
-                                <div>嫌疑犯：<span class="text-slate-200">${r.suspectName} (ID: ${r.suspectId})</span></div>
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-2 self-start md:self-center">
-                            ${currentUser && (currentUser.role === 'admin' || currentUser.role === 'high') ? `
-                                <button onclick="openRemarkModal('policeReport', '${r.docId}')" class="bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white px-3 py-2 rounded-xl text-xs font-medium transition border border-amber-500/30 flex items-center space-x-1">
-                                    <i class="fa-solid fa-pen-nib"></i><span>長官批示</span>
-                                </button>
-                            ` : ''}
-                            ${canEditOrDelete ? `
-                                <button onclick="editPoliceReport('${r.docId}')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl text-xs font-medium transition"><i class="fa-solid fa-pen"></i></button>
-                                <button onclick="deletePoliceReport('${r.docId}')" class="bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white px-3 py-2 rounded-xl text-xs font-medium transition border border-red-500/20"><i class="fa-solid fa-trash"></i></button>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function renderPoliceClocks() {
-            const tbody = document.getElementById('police-clocks-tbody');
-            const dateFilter = document.getElementById('police-clocks-date-filter')?.value || '';
-            if (!tbody) return;
-
-            tbody.innerHTML = '';
-            let filtered = appData.policeClocks;
-            if (dateFilter) {
-                filtered = filtered.filter(c => c.time.startsWith(dateFilter));
-            }
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">尚無警務出勤打卡紀錄。</td></tr>`;
-                return;
-            }
-
-            filtered.forEach(c => {
-                const isOn = c.status === '上班';
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-800/40 transition">
-                        <td class="p-4 font-medium text-white">${c.name} <span class="text-xs text-slate-400 font-mono">(${c.id})</span></td>
-                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${isOn ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-300'}">${c.status}</span></td>
-                        <td class="p-4 text-slate-300 font-mono text-xs">${c.vehicle || '無'}</td>
-                        <td class="p-4 text-slate-300 text-xs">${c.time} ${c.isRetro ? '<span class="text-amber-400 font-semibold">[補打卡]</span>' : ''}</td>
-                        <td class="p-4 text-amber-400 text-xs">${c.remark || '無'}</td>
-                        <td class="p-4 text-right space-x-2">
-                            ${currentUser && (currentUser.role === 'admin' || currentUser.role === 'high') ? `
-                                <button onclick="openRemarkModal('policeClock', '${c.docId}')" class="bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition border border-amber-500/30">長官備註</button>
-                            ` : ''}
-                            ${currentUser && (currentUser.role === 'admin' || currentUser.role === 'high' || currentUser.account === c.id) ? `
-                                <button onclick="deletePoliceClock('${c.docId}')" class="text-red-400 hover:text-red-300 p-1.5"><i class="fa-solid fa-trash"></i></button>
-                            ` : ''}
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        function renderFireReports() {
-            const listContainer = document.getElementById('fire-reports-list');
-            const searchVal = (document.getElementById('search-fire-report')?.value || '').toLowerCase();
-            if (!listContainer) return;
-
-            listContainer.innerHTML = '';
-            const filtered = appData.fireReports.filter(r => 
-                r.author.toLowerCase().includes(searchVal) || 
-                r.title.toLowerCase().includes(searchVal) ||
-                r.content.toLowerCase().includes(searchVal)
-            );
-
-            if (filtered.length === 0) {
-                listContainer.innerHTML = `<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">尚無符合條件的消防案件報告。</div>`;
-                return;
-            }
-
-            filtered.forEach(r => {
-                const isOwner = currentUser && (r.id === currentUser.account || r.author === currentUser.name);
-                const canEditOrDelete = currentUser && (currentUser.role === 'admin' || currentUser.role === 'high' || isOwner);
-
-                listContainer.innerHTML += `
-                    <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between gap-4 hover:border-red-500/50 transition">
-                        <div class="space-y-2 flex-1 cursor-pointer" onclick="openFireReportDetail('${r.docId}')">
-                            <div class="flex items-center space-x-3">
-                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20">${r.caseId}</span>
-                                <span class="text-xs text-slate-400">${r.createdAt}</span>
-                            </div>
-                            <h4 class="text-lg font-bold text-white">${r.title}</h4>
-                            <p class="text-slate-300 text-sm line-clamp-2">${r.content}</p>
-                            <div class="flex flex-wrap gap-4 text-xs text-slate-400 pt-1">
-                                <div>填寫隊員：<span class="text-slate-200 font-semibold">${r.author} (${r.id})</span></div>
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-2 self-start md:self-center">
-                            ${currentUser && (currentUser.role === 'admin' || currentUser.role === 'high') ? `
-                                <button onclick="openRemarkModal('fireReport', '${r.docId}')" class="bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white px-3 py-2 rounded-xl text-xs font-medium transition border border-amber-500/30 flex items-center space-x-1">
-                                    <i class="fa-solid fa-pen-nib"></i><span>長官批示</span>
-                                </button>
-                            ` : ''}
-                            ${canEditOrDelete ? `
-                                <button onclick="editFireReport('${r.docId}')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl text-xs font-medium transition"><i class="fa-solid fa-pen"></i></button>
-                                <button onclick="deleteFireReport('${r.docId}')" class="bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white px-3 py-2 rounded-xl text-xs font-medium transition border border-red-500/20"><i class="fa-solid fa-trash"></i></button>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function renderFireClocks() {
-            const tbody = document.getElementById('fire-clocks-tbody');
-            const dateFilter = document.getElementById('fire-clocks-date-filter')?.value || '';
-            if (!tbody) return;
-
-            tbody.innerHTML = '';
-            let filtered = appData.fireClocks;
-            if (dateFilter) {
-                filtered = filtered.filter(c => c.time.startsWith(dateFilter));
-            }
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">尚無消防出勤打卡紀錄。</td></tr>`;
-                return;
-            }
-
-            filtered.forEach(c => {
-                const isOn = c.status === '上班';
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-800/40 transition">
-                        <td class="p-4 font-medium text-white">${c.name} <span class="text-xs text-slate-400 font-mono">(${c.id})</span></td>
-                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${isOn ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-slate-800 text-slate-300'}">${c.status}</span></td>
-                        <td class="p-4 text-slate-300 font-mono text-xs">${c.vehicle || '無'}</td>
-                        <td class="p-4 text-slate-300 text-xs">${c.time} ${c.isRetro ? '<span class="text-amber-400 font-semibold">[補打卡]</span>' : ''}</td>
-                        <td class="p-4 text-amber-400 text-xs">${c.remark || '無'}</td>
-                        <td class="p-4 text-right space-x-2">
-                            ${currentUser && (currentUser.role === 'admin' || currentUser.role === 'high') ? `
-                                <button onclick="openRemarkModal('fireClock', '${c.docId}')" class="bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition border border-amber-500/30">長官備註</button>
-                            ` : ''}
-                            ${currentUser && (currentUser.role === 'admin' || currentUser.role === 'high' || currentUser.account === c.id) ? `
-                                <button onclick="deleteFireClock('${c.docId}')" class="text-red-400 hover:text-red-300 p-1.5"><i class="fa-solid fa-trash"></i></button>
-                            ` : ''}
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        function calculateMemberHours(dept) {
-            const memberId = document.getElementById(`${dept}-calc-member`).value;
-            const startDate = document.getElementById(`${dept}-calc-start`).value;
-            const endDate = document.getElementById(`${dept}-calc-end`).value;
-
-            if (!memberId || !startDate || !endDate) {
-                alert('請完整選擇人員並輸入「起始年月日」與「結束年月日」！');
-                return;
-            }
-
-            const clocks = (dept === 'police') ? appData.policeClocks : appData.fireClocks;
-            const userClocks = clocks.filter(c => c.id === memberId).sort((a, b) => new Date(a.time) - new Date(b.time));
-
-            let totalMinutes = 0;
-            let lastOnTime = null;
-            let sessionCount = 0;
-
-            userClocks.forEach(c => {
-                const cDate = c.time.split(' ')[0];
-                if (cDate >= startDate && cDate <= endDate) {
-                    if (c.status === '上班') {
-                        lastOnTime = new Date(c.time);
-                    } else if (c.status === '下班' && lastOnTime) {
-                        const offTime = new Date(c.time);
-                        const diffMin = (offTime - lastOnTime) / (1000 * 60);
-                        if (diffMin > 0) {
-                            totalMinutes += diffMin;
-                            sessionCount++;
-                        }
-                        lastOnTime = null;
-                    }
-                }
-            });
-
-            const totalHours = (totalMinutes / 60).toFixed(1);
-            const userObj = appData.users.find(u => u.account === memberId);
-            const memberName = userObj ? `${userObj.name} (${userObj.account})` : memberId;
-
-            const resultContainer = document.getElementById(`${dept}-calc-result`);
-            resultContainer.classList.remove('hidden');
-            document.getElementById(`${dept}-calc-member-name`).innerText = memberName;
-            document.getElementById(`${dept}-calc-total-hours`).innerText = `${totalHours} 小時`;
-            document.getElementById(`${dept}-calc-details`).innerText = `區間：${startDate} ~ ${endDate} (共完成 ${sessionCount} 筆完整上下班執勤配對)`;
-        }
-
-        function openPoliceReportDetail(docId) {
-            const r = appData.policeReports.find(item => item.docId === docId);
-            if (!r) return;
-            document.getElementById('detail-case-badge').innerText = r.caseId;
-            document.getElementById('detail-title').innerText = r.title;
-            document.getElementById('detail-author').innerText = `${r.author} (${r.id})`;
-            document.getElementById('detail-suspect-name').innerText = r.suspectName || '無';
-            document.getElementById('detail-suspect-id').innerText = r.suspectId || '無';
-            document.getElementById('detail-time').innerText = r.createdAt;
-            document.getElementById('detail-content').innerText = r.content;
-
-            const videoWrapper = document.getElementById('detail-video-wrapper');
-            if (r.videoLink) {
-                videoWrapper.classList.remove('hidden');
-                document.getElementById('detail-video-link').href = r.videoLink;
-            } else {
-                videoWrapper.classList.add('hidden');
-            }
-
-            const remarkEl = document.getElementById('detail-remark');
-            remarkEl.innerText = r.remark || '尚未有長官批示。';
-            document.getElementById('modal-report-detail').classList.remove('hidden');
-        }
-
-        function openFireReportDetail(docId) {
-            const r = appData.fireReports.find(item => item.docId === docId);
-            if (!r) return;
-            document.getElementById('detail-case-badge').innerText = r.caseId;
-            document.getElementById('detail-title').innerText = r.title;
-            document.getElementById('detail-author').innerText = `${r.author} (${r.id})`;
-            document.getElementById('detail-suspect-name-wrap').classList.add('hidden');
-            document.getElementById('detail-suspect-id-wrap').classList.add('hidden');
-            document.getElementById('detail-time').innerText = r.createdAt;
-            document.getElementById('detail-content').innerText = r.content;
-
-            const videoWrapper = document.getElementById('detail-video-wrapper');
-            if (r.videoLink) {
-                videoWrapper.classList.remove('hidden');
-                document.getElementById('detail-video-link').href = r.videoLink;
-            } else {
-                videoWrapper.classList.add('hidden');
-            }
-
-            const remarkEl = document.getElementById('detail-remark');
-            remarkEl.innerText = r.remark || '尚未有長官批示。';
-            document.getElementById('modal-report-detail').classList.remove('hidden');
-        }
-
-        function openRemarkModal(targetType, docId) {
-            document.getElementById('modal-remark').classList.remove('hidden');
-            document.getElementById('remark-target-type').value = targetType;
-            document.getElementById('remark-target-id-key').value = docId;
-            document.getElementById('remark-text-input').value = '';
-        }
-
-        async function submitRemark() {
-            const targetType = document.getElementById('remark-target-type').value;
-            const docId = document.getElementById('remark-target-id-key').value;
-            const remarkText = document.getElementById('remark-text-input').value.trim();
-
-            let colName = '';
-            let targetList = null;
-            if (targetType === 'policeReport') { colName = 'policeReports'; targetList = appData.policeReports; }
-            else if (targetType === 'fireReport') { colName = 'fireReports'; targetList = appData.fireReports; }
-            else if (targetType === 'policeClock') { colName = 'policeClocks'; targetList = appData.policeClocks; }
-            else if (targetType === 'fireClock') { colName = 'fireClocks'; targetList = appData.fireClocks; }
-
-            const item = targetList.find(i => i.docId === docId);
-            if (item) {
-                item.remark = remarkText;
-                await fm.updateDoc(fm.doc(db, colName, docId), { remark: remarkText });
-                await recordAdminLog('長官批示備註', targetType, item.caseId || item.id || docId);
-                
-                if (targetType === 'policeReport') renderPoliceReports();
-                else if (targetType === 'fireReport') renderFireReports();
-                else if (targetType === 'policeClock') renderPoliceClocks();
-                else if (targetType === 'fireClock') renderFireClocks();
-
-                closeModal('modal-remark');
-                alert('長官批示備註已成功更新！');
-            }
-        }
-
-        async function deletePoliceClock(docId) {
-            if (!confirm('確定要移除此筆警務打卡紀錄嗎？')) return;
-            await fm.deleteDoc(fm.doc(db, 'policeClocks', docId));
-            appData.policeClocks = appData.policeClocks.filter(c => c.docId !== docId);
-            await recordAdminLog('移除警務打卡', 'policeClock', docId);
-            renderPoliceClocks();
-        }
-
-        async function deleteFireClock(docId) {
-            if (!confirm('確定要移除此筆消防打卡紀錄嗎？')) return;
-            await fm.deleteDoc(fm.doc(db, 'fireClocks', docId));
-            appData.fireClocks = appData.fireClocks.filter(c => c.docId !== docId);
-            await recordAdminLog('移除消防打卡', 'fireClock', docId);
-            renderFireClocks();
-        }
-
-        async function deletePoliceReport(docId) {
-            if (!confirm('確定要移除此筆警務報告嗎？')) return;
-            const r = appData.policeReports.find(i => i.docId === docId);
-            await fm.deleteDoc(fm.doc(db, 'policeReports', docId));
-            appData.policeReports = appData.policeReports.filter(i => i.docId !== docId);
-            await recordAdminLog('移除警務報告', 'policeReport', r ? r.caseId : docId);
-            renderPoliceReports();
-        }
-
-        async function deleteFireReport(docId) {
-            if (!confirm('確定要移除此筆消防報告嗎？')) return;
-            const r = appData.fireReports.find(i => i.docId === docId);
-            await fm.deleteDoc(fm.doc(db, 'fireReports', docId));
-            appData.fireReports = appData.fireReports.filter(i => i.docId !== docId);
-            await recordAdminLog('移除消防報告', 'fireReport', r ? r.caseId : docId);
-            renderFireReports();
-        }
-
-        function editPoliceReport(docId) {
-            const r = appData.policeReports.find(i => i.docId === docId);
-            if (!r) return;
-            document.getElementById('modal-edit').classList.remove('hidden');
-            document.getElementById('edit-modal-title').innerText = '編輯警務案件報告';
-            document.getElementById('edit-type').value = 'policeReport';
-            document.getElementById('edit-id-key').value = docId;
-
-            document.getElementById('edit-fields-container').innerHTML = `
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題</label>
-                    <input type="text" id="edit-val-title" value="${r.title}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細經過</label>
-                    <textarea id="edit-val-content" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500">${r.content}</textarea>
-                </div>
-            `;
-        }
-
-        function editFireReport(docId) {
-            const r = appData.fireReports.find(i => i.docId === docId);
-            if (!r) return;
-            document.getElementById('modal-edit').classList.remove('hidden');
-            document.getElementById('edit-modal-title').innerText = '編輯消防災害報告';
-            document.getElementById('edit-type').value = 'fireReport';
-            document.getElementById('edit-id-key').value = docId;
-
-            document.getElementById('edit-fields-container').innerHTML = `
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題</label>
-                    <input type="text" id="edit-val-title" value="${r.title}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細經過</label>
-                    <textarea id="edit-val-content" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500">${r.content}</textarea>
-                </div>
-            `;
-        }
-
-        async function submitEdit() {
-            const type = document.getElementById('edit-type').value;
-            const docId = document.getElementById('edit-id-key').value;
-            const title = document.getElementById('edit-val-title').value.trim();
-            const content = document.getElementById('edit-val-content').value.trim();
-
-            if (!title || !content) {
-                alert('標題與內容不得為空！');
-                return;
-            }
-
-            if (type === 'policeReport') {
-                const r = appData.policeReports.find(i => i.docId === docId);
-                if (r) {
-                    r.title = title;
-                    r.content = content;
-                    await fm.updateDoc(fm.doc(db, 'policeReports', docId), { title, content });
-                    await recordAdminLog('編輯警務報告', 'policeReport', r.caseId);
-                    renderPoliceReports();
-                }
-            } else if (type === 'fireReport') {
-                const r = appData.fireReports.find(i => i.docId === docId);
-                if (r) {
-                    r.title = title;
-                    r.content = content;
-                    await fm.updateDoc(fm.doc(db, 'fireReports', docId), { title, content });
-                    await recordAdminLog('編輯消防報告', 'fireReport', r.caseId);
-                    renderFireReports();
-                }
-            }
-
-            closeModal('modal-edit');
-            alert('修改已成功儲存！');
+        function renderAdminOverview() {
+            const uCount = document.getElementById('stat-total-users');
+            const pCount = document.getElementById('stat-police-reports');
+            const fCount = document.getElementById('stat-fire-reports');
+            if (uCount) uCount.innerText = appData.users.length;
+            if (pCount) pCount.innerText = appData.policeReports.length;
+            if (fCount) fCount.innerText = appData.fireReports.length;
         }
 
         function renderAdminUsers() {
@@ -1911,156 +1345,765 @@
 
             appData.users.forEach(u => {
                 const units = u.units || [u.unit];
-                const unitBadge = units.map(un => un === 'police' ? '<span class="px-2 py-0.5 rounded text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 mr-1">警察局</span>' : un === 'fire' ? '<span class="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400 border border-red-500/20 mr-1">消防局</span>' : '<span class="px-2 py-0.5 rounded text-xs bg-purple-500/10 text-purple-400 border border-purple-500/20 mr-1">總管理處</span>').join('');
-                
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-800/40 transition">
-                        <td class="p-4 font-mono font-bold text-white">${u.account}</td>
-                        <td class="p-4 text-slate-200 font-medium">${u.name}</td>
-                        <td class="p-4">${unitBadge}</td>
-                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : u.role === 'high' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${u.role.toUpperCase()}</span></td>
-                        <td class="p-4 text-right space-x-2">
-                            <button onclick="openEditUserModal('${u.account}')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-medium transition"><i class="fa-solid fa-user-pen"></i> 編輯</button>
-                            ${currentUser && currentUser.account !== u.account ? `
-                                <button onclick="deleteUserAccount('${u.account}')" class="text-red-400 hover:text-red-300 p-1.5"><i class="fa-solid fa-trash"></i></button>
-                            ` : ''}
-                        </td>
-                    </tr>
+                const unitsBadge = units.map(un => {
+                    if (un === 'police') return '<span class="px-2 py-0.5 rounded text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 mr-1">警察局</span>';
+                    if (un === 'fire') return '<span class="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400 border border-red-500/20 mr-1">消防局</span>';
+                    return '<span class="px-2 py-0.5 rounded text-xs bg-purple-500/10 text-purple-400 border border-purple-500/20 mr-1">管理處</span>';
+                }).join('');
+
+                const roleBadge = u.role === 'admin' ? '<span class="text-purple-400 font-bold">最高管理員</span>' : u.role === 'high' ? '<span class="text-amber-400 font-bold">高層長官</span>' : '<span class="text-slate-300">基層人員</span>';
+
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-800/40 hover:bg-slate-800/30 transition";
+                tr.innerHTML = `
+                    <td class="p-4 font-mono font-semibold text-white">${u.account}</td>
+                    <td class="p-4 text-slate-200">${u.name}</td>
+                    <td class="p-4">${unitsBadge}</td>
+                    <td class="p-4">${roleBadge}</td>
+                    <td class="p-4 text-right space-x-2">
+                        <button onclick="openEditUserModal('${u.account}')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl text-xs transition"><i class="fa-solid fa-pen mr-1"></i>編輯</button>
+                        ${currentUser && currentUser.account === u.account ? '' : `<button onclick="deleteUser('${u.account}')" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1.5 rounded-xl text-xs transition"><i class="fa-solid fa-trash mr-1"></i>刪除</button>`}
+                    </td>
                 `;
+                tbody.appendChild(tr);
             });
         }
 
         function openCreateUserModal() {
-            document.getElementById('modal-create-user').classList.remove('hidden');
             document.getElementById('new-user-account').value = '';
             document.getElementById('new-user-name').value = '';
             document.getElementById('new-user-password').value = '';
             document.querySelectorAll('input[name="new-user-units"]').forEach(cb => cb.checked = false);
+            document.getElementById('modal-create-user').classList.remove('hidden');
         }
 
         async function submitNewUser() {
             const account = document.getElementById('new-user-account').value.trim();
             const name = document.getElementById('new-user-name').value.trim();
-            const role = document.getElementById('new-user-role').value;
             const pass = document.getElementById('new-user-password').value.trim();
-            
-            const selectedUnits = [];
-            document.querySelectorAll('input[name="new-user-units"]:checked').forEach(cb => {
-                selectedUnits.push(cb.value);
-            });
+            const role = document.getElementById('new-user-role').value;
+            const checkedUnits = Array.from(document.querySelectorAll('input[name="new-user-units"]:checked')).map(cb => cb.value);
 
-            if (!account || !name || !pass || selectedUnits.length === 0) {
-                alert('請完整填寫帳號、RP名稱、密碼，並至少勾選一個所屬單位！');
+            if (!account || !name || !pass) {
+                alert('請填寫完整帳號、RP名稱與密碼！');
+                return;
+            }
+            if (checkedUnits.length === 0) {
+                alert('請至少勾選一個所屬單位！');
+                return;
+            }
+            if (checkedUnits.length > 2) {
+                alert('最多只能勾選兩個所屬單位！');
                 return;
             }
 
-            if (selectedUnits.length > 2) {
-                alert('每個帳號最多只能勾選兩個所屬單位！');
+            if (appData.users.some(u => u.account === account)) {
+                alert('該帳號編號已存在，請使用其他編號！');
                 return;
             }
 
-            const existing = appData.users.find(u => u.account.toLowerCase() === account.toLowerCase());
-            if (existing) {
-                alert('此帳號/編號已存在！');
-                return;
-            }
-
-            const newUser = { account, name, units: selectedUnits, role, pass };
+            const newUser = { account, name, pass, role, units: checkedUnits };
             await fm.setDoc(fm.doc(db, 'users', account), newUser);
-            appData.users.push(newUser);
-            await recordAdminLog('新增公職帳號', 'user', account);
-
+            appData.users.push({ docId: account, ...newUser });
             closeModal('modal-create-user');
             renderAdminUsers();
+            renderAdminOverview();
             populateMemberSelects();
-            alert('新公職帳號已成功建立！');
+            alert(`成功建立新帳號：${name} (${account})`);
         }
 
         function openEditUserModal(account) {
-            const u = appData.users.find(item => item.account === account);
+            const u = appData.users.find(x => x.account === account);
             if (!u) return;
-            document.getElementById('modal-edit-user').classList.remove('hidden');
+
             document.getElementById('edit-user-original-account').value = u.account;
             document.getElementById('edit-user-account-input').value = u.account;
             document.getElementById('edit-user-name-input').value = u.name;
-            document.getElementById('edit-user-role-input').value = u.role;
+            document.getElementById('edit-user-role-input').value = u.role || 'normal';
             document.getElementById('edit-user-password-input').value = '';
 
             const units = u.units || [u.unit];
             document.querySelectorAll('input[name="edit-user-units"]').forEach(cb => {
                 cb.checked = units.includes(cb.value);
             });
+
+            document.getElementById('modal-edit-user').classList.remove('hidden');
         }
 
         async function submitEditUser() {
-            const origAccount = document.getElementById('edit-user-original-account').value;
-            const newAccount = document.getElementById('edit-user-account-input').value.trim();
+            const origAcc = document.getElementById('edit-user-original-account').value;
+            const newAcc = document.getElementById('edit-user-account-input').value.trim();
             const newName = document.getElementById('edit-user-name-input').value.trim();
             const newRole = document.getElementById('edit-user-role-input').value;
             const newPass = document.getElementById('edit-user-password-input').value.trim();
+            const checkedUnits = Array.from(document.querySelectorAll('input[name="edit-user-units"]:checked')).map(cb => cb.value);
 
-            const selectedUnits = [];
-            document.querySelectorAll('input[name="edit-user-units"]:checked').forEach(cb => {
-                selectedUnits.push(cb.value);
-            });
-
-            if (!newAccount || !newName || selectedUnits.length === 0) {
-                alert('帳號、RP名稱與至少一個單位不得為空！');
+            if (!newAcc || !newName) {
+                alert('帳號與RP名稱不得為空！');
+                return;
+            }
+            if (checkedUnits.length === 0 || checkedUnits.length > 2) {
+                alert('請勾選 1 至 2 個所屬單位！');
                 return;
             }
 
-            if (selectedUnits.length > 2) {
-                alert('每個帳號最多只能勾選兩個所屬單位！');
-                return;
+            const uIdx = appData.users.findIndex(x => x.account === origAcc);
+            if (uIdx === -1) return;
+
+            const existing = appData.users[uIdx];
+            const updatedUser = {
+                account: newAcc,
+                name: newName,
+                role: newRole,
+                units: checkedUnits,
+                pass: newPass ? newPass : existing.pass
+            };
+
+            if (newAcc !== origAcc) {
+                await fm.deleteDoc(fm.doc(db, 'users', origAcc));
             }
+            await fm.setDoc(fm.doc(db, 'users', newAcc), updatedUser);
 
-            const u = appData.users.find(item => item.account === origAccount);
-            if (u) {
-                u.account = newAccount;
-                u.name = newName;
-                u.units = selectedUnits;
-                u.role = newRole;
-                if (newPass) u.pass = newPass;
-
-                if (origAccount !== newAccount) {
-                    await fm.deleteDoc(fm.doc(db, 'users', origAccount));
-                }
-                await fm.setDoc(fm.doc(db, 'users', newAccount), u);
-                await recordAdminLog('編輯公職帳號', 'user', newAccount);
-
-                if (currentUser && currentUser.account === origAccount) {
-                    currentUser = u;
-                    updateUserUI();
-                }
-
-                closeModal('modal-edit-user');
-                renderAdminUsers();
-                populateMemberSelects();
-                alert('帳號資料已成功更新！');
-            }
-        }
-
-        async function deleteUserAccount(account) {
-            if (!confirm(`確定要刪除公職帳號 [${account}] 嗎？`)) return;
-            await fm.deleteDoc(fm.doc(db, 'users', account));
-            appData.users = appData.users.filter(u => u.account !== account);
-            await recordAdminLog('刪除公職帳號', 'user', account);
+            appData.users[uIdx] = { docId: newAcc, ...updatedUser };
+            closeModal('modal-edit-user');
             renderAdminUsers();
             populateMemberSelects();
-            alert('帳號已成功刪除！');
+            alert('帳號資訊已成功更新！');
+        }
+
+        async function deleteUser(account) {
+            if (!confirm(`確定要刪除帳號 [${account}] 嗎？`)) return;
+            await fm.deleteDoc(fm.doc(db, 'users', account));
+            appData.users = appData.users.filter(u => u.account !== account);
+            renderAdminUsers();
+            renderAdminOverview();
+            populateMemberSelects();
+            alert('帳號已刪除');
         }
 
         async function saveMemo() {
             const content = document.getElementById('admin-memo-textarea').value;
             appData.adminMemo = content;
             await fm.setDoc(fm.doc(db, 'systemSettings', 'adminMemo'), { content });
-            alert('管理員共同備忘錄已成功儲存至雲端！');
+            alert('管理員共同備忘錄已成功儲存！');
         }
 
-        function renderAdminOverview() {
-            document.getElementById('stat-total-users').innerText = appData.users.length;
-            document.getElementById('stat-police-reports').innerText = appData.policeReports.length;
-            document.getElementById('stat-fire-reports').innerText = appData.fireReports.length;
+        // Clock Modal & Submissions
+        function openClockModal(dept, isRetro) {
+            document.getElementById('clock-dept-type').value = dept;
+            document.getElementById('clock-is-retro').value = isRetro ? 'true' : 'false';
+            
+            const titleEl = document.getElementById('clock-modal-title');
+            const retroWrapper = document.getElementById('clock-date-field-wrapper');
+
+            if (isRetro) {
+                titleEl.innerHTML = `<i class="fa-solid fa-clock-rotate-left text-amber-500"></i><span>${dept === 'police' ? '員警' : '消防員'} 補打卡登記 (自訂日期/時分)</span>`;
+                retroWrapper.classList.remove('hidden');
+                
+                const now = new Date();
+                const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+                const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                document.getElementById('clock-retro-date').value = dateStr;
+                document.getElementById('clock-retro-time').value = timeStr;
+            } else {
+                titleEl.innerHTML = `<i class="fa-solid fa-clock text-blue-500"></i><span>${dept === 'police' ? '員警' : '消防員'} 上下班打卡</span>`;
+                retroWrapper.classList.add('hidden');
+            }
+
+            if (currentUser) {
+                document.getElementById('clock-id').value = currentUser.account;
+                document.getElementById('clock-name').value = currentUser.name;
+            }
+
+            document.getElementById('modal-clock').classList.remove('hidden');
+        }
+
+        async function submitClock() {
+            const dept = document.getElementById('clock-dept-type').value;
+            const isRetro = document.getElementById('clock-is-retro').value === 'true';
+            const id = document.getElementById('clock-id').value.trim();
+            const name = document.getElementById('clock-name').value.trim();
+            const status = document.getElementById('clock-status').value;
+            const vehicle = document.getElementById('clock-vehicle').value.trim() || '未填寫車號';
+
+            if (!id || !name) {
+                alert('請填寫編號與RP名稱！');
+                return;
+            }
+
+            let clockTimeStr = '';
+            let dateKey = '';
+            let timestamp = Date.now();
+
+            if (isRetro) {
+                const rDate = document.getElementById('clock-retro-date').value;
+                const rTime = document.getElementById('clock-retro-time').value;
+                if (!rDate || !rTime) {
+                    alert('補打卡必須完整填寫日期與時間！');
+                    return;
+                }
+                clockTimeStr = `${rDate} ${rTime} (補打卡)`;
+                dateKey = rDate;
+                const customDate = new Date(`${rDate}T${rTime}`);
+                if (!isNaN(customDate.getTime())) timestamp = customDate.getTime();
+            } else {
+                const now = new Date();
+                dateKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+                const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                clockTimeStr = `${dateKey} ${timeStr}`;
+            }
+
+            const record = {
+                id,
+                name,
+                status,
+                vehicle,
+                timeStr: clockTimeStr,
+                dateKey,
+                timestamp,
+                remark: '無'
+            };
+
+            const collectionName = dept === 'police' ? 'policeClocks' : 'fireClocks';
+            const docRef = await fm.addDoc(fm.collection(db, collectionName), record);
+
+            if (dept === 'police') {
+                appData.policeClocks.unshift({ docId: docRef.id, ...record });
+                renderPoliceClocks();
+            } else {
+                appData.fireClocks.unshift({ docId: docRef.id, ...record });
+                renderFireClocks();
+            }
+
+            closeModal('modal-clock');
+            alert('打卡記錄已成功送出！');
+        }
+
+        function renderPoliceClocks() {
+            const tbody = document.getElementById('police-clocks-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const filterDate = document.getElementById('police-clocks-date-filter').value;
+            let list = appData.policeClocks;
+            if (filterDate) {
+                list = list.filter(c => c.dateKey === filterDate);
+            }
+
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">目前尚無任何員警出勤打卡紀錄。</td></tr>`;
+                return;
+            }
+
+            list.forEach(c => {
+                const isHighOrAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'high');
+                const badgeColor = c.status === '上班' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700';
+
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-800/40 hover:bg-slate-800/30 transition";
+                tr.innerHTML = `
+                    <td class="p-4"><span class="font-mono text-white font-bold">${c.id}</span> <span class="text-slate-300">(${c.name})</span></td>
+                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold border ${badgeColor}">${c.status}</span></td>
+                    <td class="p-4 text-slate-300 font-mono text-xs">${c.vehicle}</td>
+                    <td class="p-4 text-slate-300 text-xs">${c.timeStr}</td>
+                    <td class="p-4 text-amber-400 text-xs">${c.remark}</td>
+                    <td class="p-4 text-right space-x-2">
+                        ${isHighOrAdmin ? `<button onclick="openRemarkModal('policeClocks', '${c.docId}')" class="bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white px-3 py-1.5 rounded-xl text-xs transition"><i class="fa-solid fa-pen-nib mr-1"></i>批註</button>` : ''}
+                        ${isHighOrAdmin ? `<button onclick="deleteClockRecord('police', '${c.docId}')" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1.5 rounded-xl text-xs transition"><i class="fa-solid fa-trash mr-1"></i>刪除</button>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderFireClocks() {
+            const tbody = document.getElementById('fire-clocks-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const filterDate = document.getElementById('fire-clocks-date-filter').value;
+            let list = appData.fireClocks;
+            if (filterDate) {
+                list = list.filter(c => c.dateKey === filterDate);
+            }
+
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">目前尚無任何消防隊員出勤打卡紀錄。</td></tr>`;
+                return;
+            }
+
+            list.forEach(c => {
+                const isHighOrAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'high');
+                const badgeColor = c.status === '上班' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-slate-800 text-slate-400 border-slate-700';
+
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-800/40 hover:bg-slate-800/30 transition";
+                tr.innerHTML = `
+                    <td class="p-4"><span class="font-mono text-white font-bold">${c.id}</span> <span class="text-slate-300">(${c.name})</span></td>
+                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold border ${badgeColor}">${c.status}</span></td>
+                    <td class="p-4 text-slate-300 font-mono text-xs">${c.vehicle}</td>
+                    <td class="p-4 text-slate-300 text-xs">${c.timeStr}</td>
+                    <td class="p-4 text-amber-400 text-xs">${c.remark}</td>
+                    <td class="p-4 text-right space-x-2">
+                        ${isHighOrAdmin ? `<button onclick="openRemarkModal('fireClocks', '${c.docId}')" class="bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white px-3 py-1.5 rounded-xl text-xs transition"><i class="fa-solid fa-pen-nib mr-1"></i>批註</button>` : ''}
+                        ${isHighOrAdmin ? `<button onclick="deleteClockRecord('fire', '${c.docId}')" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1.5 rounded-xl text-xs transition"><i class="fa-solid fa-trash mr-1"></i>刪除</button>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function deleteClockRecord(dept, docId) {
+            if (!confirm('確定要移除此打卡紀錄嗎？')) return;
+            const collectionName = dept === 'police' ? 'policeClocks' : 'fireClocks';
+            await fm.deleteDoc(fm.doc(db, collectionName, docId));
+            if (dept === 'police') {
+                appData.policeClocks = appData.policeClocks.filter(c => c.docId !== docId);
+                renderPoliceClocks();
+            } else {
+                appData.fireClocks = appData.fireClocks.filter(c => c.docId !== docId);
+                renderFireClocks();
+            }
+            await recordAdminLog('刪除打卡紀錄', `${dept}打卡`, docId);
+            alert('打卡紀錄已成功移除');
+        }
+
+        // Hours calculation based on exact date range (YYYY-MM-DD inclusive)
+        function calculateMemberHours(dept) {
+            const memberId = document.getElementById(`${dept}-calc-member`).value;
+            const startDateStr = document.getElementById(`${dept}-calc-start`).value;
+            const endDateStr = document.getElementById(`${dept}-calc-end`).value;
+
+            if (!memberId || !startDateStr || !endDateStr) {
+                alert('請完整選擇人員、起始年月日與結束年月日！');
+                return;
+            }
+
+            const startDate = new Date(startDateStr);
+            const endDate = new Date(endDateStr);
+            if (startDate > endDate) {
+                alert('起始日期不得大於結束日期！');
+                return;
+            }
+
+            const clocks = dept === 'police' ? appData.policeClocks : appData.fireClocks;
+            const memberClocks = clocks.filter(c => c.id === memberId).sort((a, b) => a.timestamp - b.timestamp);
+
+            let totalMinutes = 0;
+            let activeOnDutyTime = null;
+            let sessionCount = 0;
+
+            memberClocks.forEach(c => {
+                if (!c.dateKey) return;
+                const cDate = new Date(c.dateKey);
+                if (cDate >= startDate && cDate <= endDate) {
+                    if (c.status === '上班') {
+                        activeOnDutyTime = c.timestamp;
+                    } else if (c.status === '下班' && activeOnDutyTime !== null) {
+                        const diffMins = (c.timestamp - activeOnDutyTime) / (1000 * 60);
+                        if (diffMins > 0 && diffMins < 24 * 60 * 60) { // filter out absurd intervals > 24h
+                            totalMinutes += diffMins;
+                            sessionCount++;
+                        }
+                        activeOnDutyTime = null;
+                    }
+                }
+            });
+
+            const totalHours = (totalMinutes / 60).toFixed(1);
+            const memberObj = appData.users.find(u => u.account === memberId);
+            const memberName = memberObj ? memberObj.name : memberId;
+
+            const resultBox = document.getElementById(`${dept}-calc-result`);
+            resultBox.classList.remove('hidden');
+            document.getElementById(`${dept}-calc-member-name`).innerText = `${memberName} (${memberId})`;
+            document.getElementById(`${dept}-calc-total-hours`).innerText = `${totalHours} 小時`;
+            document.getElementById(`${dept}-calc-details`).innerText = `區間：${startDateStr} ~ ${endDateStr} (共完成 ${sessionCount} 次完整上下班執勤配對)`;
+        }
+
+        // Reports Handling
+        function openReportModal(dept) {
+            currentActiveDepartmentForReport = dept;
+            const titleEl = document.getElementById('report-modal-title');
+            const suspectFields = document.getElementById('police-suspect-fields');
+
+            const now = new Date();
+            const caseIdPrefix = dept === 'police' ? 'POL' : 'FIR';
+            const caseId = `${caseIdPrefix}-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+            document.getElementById('report-case-id').value = caseId;
+            document.getElementById('report-title').value = '';
+            document.getElementById('report-content').value = '';
+            document.getElementById('report-video-link').value = '';
+
+            if (currentUser) {
+                document.getElementById('report-id').value = currentUser.account;
+                document.getElementById('report-author').value = currentUser.name;
+            }
+
+            if (dept === 'police') {
+                titleEl.innerHTML = `<i class="fa-solid fa-file-pen text-blue-500"></i><span>填寫警察局案件報告</span>`;
+                suspectFields.classList.remove('hidden');
+                document.getElementById('report-suspect-id').value = '';
+                document.getElementById('report-suspect-name').value = '';
+            } else {
+                titleEl.innerHTML = `<i class="fa-solid fa-file-pen text-red-500"></i><span>填寫消防局案件報告</span>`;
+                suspectFields.classList.add('hidden'); // Fire reports can hide suspect ID or use it as ID card
+            }
+
+            document.getElementById('modal-report').classList.remove('hidden');
+        }
+
+        async function submitReport() {
+            const dept = currentActiveDepartmentForReport;
+            const caseId = document.getElementById('report-case-id').value;
+            const authorId = document.getElementById('report-id').value.trim();
+            const authorName = document.getElementById('report-author').value.trim();
+            const title = document.getElementById('report-title').value.trim();
+            const content = document.getElementById('report-content').value.trim();
+            const videoLink = document.getElementById('report-video-link').value.trim();
+
+            let suspectId = '';
+            let suspectName = '';
+
+            if (dept === 'police') {
+                suspectId = document.getElementById('report-suspect-id').value.trim();
+                suspectName = document.getElementById('report-suspect-name').value.trim();
+                if (suspectId && suspectId.length !== 5) {
+                    alert('嫌疑犯身分證末五碼必須剛好為 5 位數！');
+                    return;
+                }
+            }
+
+            if (!authorId || !authorName || !title || !content) {
+                alert('請完整填寫填寫人、標題與詳細案件經過！');
+                return;
+            }
+
+            const now = new Date();
+            const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            const dateKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+
+            const reportObj = {
+                caseId,
+                authorId,
+                authorName,
+                suspectId: suspectId || '無',
+                suspectName: suspectName || '無',
+                title,
+                content,
+                videoLink,
+                timeStr,
+                dateKey,
+                timestamp: now.getTime(),
+                remark: '尚未有長官批示。'
+            };
+
+            const collectionName = dept === 'police' ? 'policeReports' : 'fireReports';
+            const docRef = await fm.addDoc(fm.collection(db, collectionName), reportObj);
+
+            if (dept === 'police') {
+                appData.policeReports.unshift({ docId: docRef.id, ...reportObj });
+                renderPoliceReports();
+            } else {
+                appData.fireReports.unshift({ docId: docRef.id, ...reportObj });
+                renderFireReports();
+            }
+
+            closeModal('modal-report');
+            alert('案件報告已成功提交！');
+        }
+
+        // Updated Render and Search functions supporting Date or Suspect ID Last 5 digits
+        function renderPoliceReports() {
+            const listContainer = document.getElementById('police-reports-list');
+            const searchInput = document.getElementById('search-police-report');
+            if (!listContainer) return;
+
+            const queryText = searchInput ? searchInput.value.trim().toLowerCase() : '';
+            let list = appData.policeReports;
+
+            if (queryText) {
+                list = list.filter(r => {
+                    const matchDate = r.dateKey && r.dateKey.toLowerCase().includes(queryText);
+                    const matchSuspectId = r.suspectId && r.suspectId.toLowerCase().includes(queryText);
+                    return matchDate || matchSuspectId;
+                });
+            }
+
+            listContainer.innerHTML = '';
+            if (list.length === 0) {
+                listContainer.innerHTML = `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">查無符合條件的警察案件報告。</div>`;
+                return;
+            }
+
+            list.forEach(r => {
+                const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'high' || currentUser.account === r.authorId);
+                const isHighOrAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'high');
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl hover:border-blue-500/40 transition space-y-4";
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
+                        <div class="flex items-center space-x-3">
+                            <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">${r.caseId}</span>
+                            <h4 class="text-lg font-bold text-white cursor-pointer hover:text-blue-400 transition" onclick="openReportDetail('police', '${r.docId}')">${r.title}</h4>
+                        </div>
+                        <span class="text-xs text-slate-400">${r.timeStr}</span>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-950 p-3 rounded-xl">
+                        <div><span class="text-slate-500 block">填寫人</span><span class="text-slate-200 font-semibold">${r.authorName} (${r.authorId})</span></div>
+                        <div><span class="text-slate-500 block">嫌疑犯</span><span class="text-slate-200 font-semibold">${r.suspectName}</span></div>
+                        <div><span class="text-slate-500 block">身分證末五碼</span><span class="text-amber-400 font-mono font-bold">${r.suspectId}</span></div>
+                        <div><span class="text-slate-500 block">長官審核</span><span class="text-emerald-400 truncate block">${r.remark.substring(0, 15)}...</span></div>
+                    </div>
+                    <div class="flex justify-between items-center pt-2">
+                        <button onclick="openReportDetail('police', '${r.docId}')" class="text-blue-400 hover:underline text-xs font-medium flex items-center space-x-1">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i><span>點擊檢視完整案件報告</span>
+                        </button>
+                        <div class="space-x-2">
+                            ${isHighOrAdmin ? `<button onclick="openRemarkModal('policeReports', '${r.docId}')" class="bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white px-3 py-1.5 rounded-xl text-xs transition"><i class="fa-solid fa-pen-nib mr-1"></i>長官批示</button>` : ''}
+                            ${canEdit ? `<button onclick="openEditReportModal('police', '${r.docId}')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl text-xs transition"><i class="fa-solid fa-pen mr-1"></i>編輯</button>` : ''}
+                            ${canEdit ? `<button onclick="deleteReport('police', '${r.docId}')" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1.5 rounded-xl text-xs transition"><i class="fa-solid fa-trash mr-1"></i>刪除</button>` : ''}
+                        </div>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        function renderFireReports() {
+            const listContainer = document.getElementById('fire-reports-list');
+            const searchInput = document.getElementById('search-fire-report');
+            if (!listContainer) return;
+
+            const queryText = searchInput ? searchInput.value.trim().toLowerCase() : '';
+            let list = appData.fireReports;
+
+            if (queryText) {
+                list = list.filter(r => {
+                    const matchDate = r.dateKey && r.dateKey.toLowerCase().includes(queryText);
+                    const matchSuspectId = r.suspectId && r.suspectId.toLowerCase().includes(queryText);
+                    return matchDate || matchSuspectId;
+                });
+            }
+
+            listContainer.innerHTML = '';
+            if (list.length === 0) {
+                listContainer.innerHTML = `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">查無符合條件的消防案件報告。</div>`;
+                return;
+            }
+
+            list.forEach(r => {
+                const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'high' || currentUser.account === r.authorId);
+                const isHighOrAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'high');
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl hover:border-red-500/40 transition space-y-4";
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
+                        <div class="flex items-center space-x-3">
+                            <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-red-500/10 text-red-400 border border-red-500/20">${r.caseId}</span>
+                            <h4 class="text-lg font-bold text-white cursor-pointer hover:text-red-400 transition" onclick="openReportDetail('fire', '${r.docId}')">${r.title}</h4>
+                        </div>
+                        <span class="text-xs text-slate-400">${r.timeStr}</span>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-slate-950 p-3 rounded-xl">
+                        <div><span class="text-slate-500 block">填寫人</span><span class="text-slate-200 font-semibold">${r.authorName} (${r.authorId})</span></div>
+                        <div><span class="text-slate-500 block">案發日期</span><span class="text-slate-200 font-mono">${r.dateKey}</span></div>
+                        <div><span class="text-slate-500 block">長官審核</span><span class="text-emerald-400 truncate block">${r.remark.substring(0, 15)}...</span></div>
+                    </div>
+                    <div class="flex justify-between items-center pt-2">
+                        <button onclick="openReportDetail('fire', '${r.docId}')" class="text-red-400 hover:underline text-xs font-medium flex items-center space-x-1">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i><span>點擊檢視完整消防報告</span>
+                        </button>
+                        <div class="space-x-2">
+                            ${isHighOrAdmin ? `<button onclick="openRemarkModal('fireReports', '${r.docId}')" class="bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white px-3 py-1.5 rounded-xl text-xs transition"><i class="fa-solid fa-pen-nib mr-1"></i>長官批示</button>` : ''}
+                            ${canEdit ? `<button onclick="openEditReportModal('fire', '${r.docId}')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl text-xs transition"><i class="fa-solid fa-pen mr-1"></i>編輯</button>` : ''}
+                            ${canEdit ? `<button onclick="deleteReport('fire', '${r.docId}')" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1.5 rounded-xl text-xs transition"><i class="fa-solid fa-trash mr-1"></i>刪除</button>` : ''}
+                        </div>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        function openReportDetail(dept, docId) {
+            const list = dept === 'police' ? appData.policeReports : appData.fireReports;
+            const r = list.find(x => x.docId === docId);
+            if (!r) return;
+
+            document.getElementById('detail-case-badge').innerText = r.caseId;
+            document.getElementById('detail-title').innerText = r.title;
+            document.getElementById('detail-author').innerText = `${r.authorName} (${r.authorId})`;
+            document.getElementById('detail-time').innerText = r.timeStr;
+            document.getElementById('detail-content').innerText = r.content;
+            document.getElementById('detail-remark').innerText = r.remark;
+
+            const suspectNameWrap = document.getElementById('detail-suspect-name-wrap');
+            const suspectIdWrap = document.getElementById('detail-suspect-id-wrap');
+
+            if (dept === 'police') {
+                suspectNameWrap.classList.remove('hidden');
+                suspectIdWrap.classList.remove('hidden');
+                document.getElementById('detail-suspect-name').innerText = r.suspectName;
+                document.getElementById('detail-suspect-id').innerText = r.suspectId;
+            } else {
+                suspectNameWrap.classList.add('hidden');
+                suspectIdWrap.classList.add('hidden');
+            }
+
+            const videoWrap = document.getElementById('detail-video-wrapper');
+            if (r.videoLink) {
+                videoWrap.classList.remove('hidden');
+                document.getElementById('detail-video-link').href = r.videoLink;
+            } else {
+                videoWrap.classList.add('hidden');
+            }
+
+            document.getElementById('modal-report-detail').classList.remove('hidden');
+        }
+
+        async function deleteReport(dept, docId) {
+            if (!confirm('確定要刪除此案件報告嗎？')) return;
+            const collectionName = dept === 'police' ? 'policeReports' : 'fireReports';
+            await fm.deleteDoc(fm.doc(db, collectionName, docId));
+
+            if (dept === 'police') {
+                appData.policeReports = appData.policeReports.filter(r => r.docId !== docId);
+                renderPoliceReports();
+            } else {
+                appData.fireReports = appData.fireReports.filter(r => r.docId !== docId);
+                renderFireReports();
+            }
+
+            await recordAdminLog('刪除案件報告', `${dept}報告`, docId);
+            renderAdminOverview();
+            alert('案件報告已成功刪除');
+        }
+
+        // Remark Modal
+        function openRemarkModal(targetType, docId) {
+            document.getElementById('remark-target-type').value = targetType;
+            document.getElementById('remark-target-id-key').value = docId;
+            document.getElementById('remark-text-input').value = '';
+            document.getElementById('modal-remark').classList.remove('hidden');
+        }
+
+        async function submitRemark() {
+            const targetType = document.getElementById('remark-target-type').value;
+            const docId = document.getElementById('remark-target-id-key').value;
+            const remarkText = document.getElementById('remark-text-input').value.trim();
+
+            if (!remarkText) {
+                alert('請輸入長官批示內容！');
+                return;
+            }
+
+            await fm.updateDoc(fm.doc(db, targetType, docId), { remark: remarkText });
+
+            if (targetType === 'policeReports') {
+                const item = appData.policeReports.find(x => x.docId === docId);
+                if (item) item.remark = remarkText;
+                renderPoliceReports();
+            } else if (targetType === 'fireReports') {
+                const item = appData.fireReports.find(x => x.docId === docId);
+                if (item) item.remark = remarkText;
+                renderFireReports();
+            } else if (targetType === 'policeClocks') {
+                const item = appData.policeClocks.find(x => x.docId === docId);
+                if (item) item.remark = remarkText;
+                renderPoliceClocks();
+            } else if (targetType === 'fireClocks') {
+                const item = appData.fireClocks.find(x => x.docId === docId);
+                if (item) item.remark = remarkText;
+                renderFireClocks();
+            }
+
+            closeModal('modal-remark');
+            alert('長官批示備註已成功儲存！');
+        }
+
+        // Edit Report Modal
+        function openEditReportModal(dept, docId) {
+            const list = dept === 'police' ? appData.policeReports : appData.fireReports;
+            const r = list.find(x => x.docId === docId);
+            if (!r) return;
+
+            document.getElementById('edit-type').value = dept === 'police' ? 'policeReport' : 'fireReport';
+            document.getElementById('edit-id-key').value = docId;
+            document.getElementById('edit-modal-title').innerText = `編輯案件報告 (${r.caseId})`;
+
+            const container = document.getElementById('edit-fields-container');
+            container.innerHTML = `
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題</label>
+                    <input type="text" id="edit-report-title" value="${r.title}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                ${dept === 'police' ? `
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯身分證末五碼</label>
+                        <input type="text" id="edit-report-suspect-id" maxlength="5" value="${r.suspectId}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯名稱</label>
+                        <input type="text" id="edit-report-suspect-name" value="${r.suspectName}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>` : ''}
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細案件經過</label>
+                    <textarea id="edit-report-content" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500">${r.content}</textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">影片連結</label>
+                    <input type="url" id="edit-report-video" value="${r.videoLink || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+            `;
+
+            document.getElementById('modal-edit').classList.remove('hidden');
+        }
+
+        async function submitEdit() {
+            const type = document.getElementById('edit-type').value;
+            const docId = document.getElementById('edit-id-key').value;
+
+            if (type === 'policeReport' || type === 'fireReport') {
+                const title = document.getElementById('edit-report-title').value.trim();
+                const content = document.getElementById('edit-report-content').value.trim();
+                const videoLink = document.getElementById('edit-report-video').value.trim();
+                
+                let updates = { title, content, videoLink };
+                let dept = type === 'policeReport' ? 'police' : 'fire';
+                let collectionName = dept === 'police' ? 'policeReports' : 'fireReports';
+
+                if (dept === 'police') {
+                    const suspectId = document.getElementById('edit-report-suspect-id').value.trim();
+                    const suspectName = document.getElementById('edit-report-suspect-name').value.trim();
+                    if (suspectId && suspectId.length !== 5) {
+                        alert('嫌疑犯身分證末五碼必須剛好為 5 位數！');
+                        return;
+                    }
+                    updates.suspectId = suspectId;
+                    updates.suspectName = suspectName;
+                }
+
+                await fm.updateDoc(fm.doc(db, collectionName, docId), updates);
+
+                if (dept === 'police') {
+                    const item = appData.policeReports.value ? null : appData.policeReports.find(x => x.docId === docId);
+                    if (item) Object.assign(item, updates);
+                    renderPoliceReports();
+                } else {
+                    const item = appData.fireReports.find(x => x.docId === docId);
+                    if (item) Object.assign(item, updates);
+                    renderFireReports();
+                }
+
+                await recordAdminLog('編輯案件報告', `${dept}報告`, docId);
+                closeModal('modal-edit');
+                alert('案件報告已成功更新！');
+            }
         }
     </script>
 </body>
