@@ -101,7 +101,7 @@
                 <div class="relative z-10 px-8 py-20 sm:py-28 max-w-3xl space-y-6">
                     <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">New Taipei Roleplay 3.0</span>
                     <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">新北市公職人員<br><span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">勤務與案件管制系統</span></h1>
-                    <p class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。本系統提供公職同仁線上打卡、執勤車輛登記、案件報告填寫及高層檢視審核，支援雙重單位身分（最多選兩個）與獨立時數統計。</p>
+                    <p class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。本系統提供公職同仁線上打卡、執勤車輛登記、案件報告填寫及高層檢視審核，支援雙重單位身分與獨立時數統計。</p>
                     <div class="flex flex-wrap gap-4 pt-2">
                         <button data-tab="police" class="tab-shortcut-btn bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
                             <i class="fa-solid fa-shield"></i><span>進入警務系統</span>
@@ -133,7 +133,7 @@
                         <i class="fa-solid fa-user-shield"></i>
                     </div>
                     <h3 class="text-lg font-bold text-white">多重身份與權限協作</h3>
-                    <p class="text-slate-400 text-sm">帳號可同時擁有最多兩個單位身份（如警消兼任），並支援高層長官批示備註。</p>
+                    <p class="text-slate-400 text-sm">管理員與高層長官可跨單位批示、審核案件與打卡，並支援完整資料維護。</p>
                 </div>
             </div>
         </section>
@@ -699,7 +699,6 @@
                 if (!usersSnap.empty) {
                     appData.users = usersSnap.docs.map(d => {
                         const data = d.data();
-                        // Normalize units to array format for multi-unit support
                         let units = data.units || (data.unit ? [data.unit] : ['admin']);
                         return { docId: d.id, ...data, units };
                     });
@@ -924,7 +923,7 @@
             
             const record = { id, name, status, vehicle, time: timeStr, remark: '' };
             
-            // Explicit collection routing based on which button/tab triggered the clock modal
+            // Explicit collection routing based on active clock modal dept
             const colName = (dept === 'police') ? 'policeClocks' : 'fireClocks';
             const docRef = await fm.addDoc(fm.collection(db, colName), record);
             const savedItem = { docId: docRef.id, ...record };
@@ -1088,6 +1087,36 @@
             alert('修改已成功同步至雲端！');
         }
 
+        // Added delete functionality for reports and clocks
+        window.deleteRecordItem = async function(type, index) {
+            let item;
+            let colName = '';
+            let targetList = null;
+
+            if (type === 'policeReport') { item = appData.policeReports[index]; colName = 'policeReports'; targetList = appData.policeReports; }
+            else if (type === 'fireReport') { item = appData.fireReports[index]; colName = 'fireReports'; targetList = appData.fireReports; }
+            else if (type === 'policeClock') { item = appData.policeClocks[index]; colName = 'policeClocks'; targetList = appData.policeClocks; }
+            else if (type === 'fireClock') { item = appData.fireClocks[index]; colName = 'fireClocks'; targetList = appData.fireClocks; }
+
+            const canManage = currentUser && (currentUser.account === item.id || currentUser.role === 'admin' || currentUser.role === 'high');
+            if (!canManage) {
+                alert('權限不足：您沒有刪除此項目的權限！');
+                return;
+            }
+
+            if (confirm(`確定要刪除此筆記錄（編號/標題：${item.caseId || item.id}）嗎？`)) {
+                await fm.deleteDoc(fm.doc(db, colName, item.docId));
+                targetList.splice(index, 1);
+
+                if (type === 'policeReport') renderPoliceReports();
+                else if (type === 'fireReport') renderFireReports();
+                else if (type === 'policeClock') renderPoliceClocks();
+                else if (type === 'fireClock') renderFireClocks();
+
+                alert('記錄已成功從雲端刪除！');
+            }
+        };
+
         function renderPoliceReports() {
             const listEl = document.getElementById('police-reports-list');
             if (!listEl) return;
@@ -1103,7 +1132,7 @@
 
             filtered.forEach((r) => {
                 const originalIdx = appData.policeReports.indexOf(r);
-                const isOwner = currentUser && (currentUser.account === r.id || currentUser.role === 'admin');
+                const isOwner = currentUser && (currentUser.account === r.id || currentUser.role === 'admin' || currentUser.role === 'high');
                 listEl.innerHTML += `
                     <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3 shadow-xl">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
@@ -1121,8 +1150,9 @@
                                 <span>相關影片：${r.videoLink ? `<a href="${r.videoLink}" target="_blank" class="text-blue-400 underline hover:text-blue-300 ml-1">${r.videoLink}</a>` : '<span class="text-slate-600">未提供連結</span>'}</span>
                             </div>
                             <div class="flex items-center space-x-2">
-                                ${isOwner ? `<button onclick="openEditModal('policeReport',${originalIdx})" class="bg-emerald-600/25 hover:bg-emerald-600/35 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-to-square"></i><span>編輯報告</span></button>` : ''}
-                                ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('policeReport',${originalIdx})" class="bg-amber-600/25 hover:bg-amber-600/35 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-nib"></i><span>長官備註</span></button>` : ''}
+                                ${isOwner ? `<button onclick="openEditModal('policeReport',${originalIdx})" class="bg-emerald-600/25 hover:bg-emerald-600/35 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-to-square"></i><span>編輯</span></button>` : ''}
+                                ${isOwner ? `<button onclick="deleteRecordItem('policeReport',${originalIdx})" class="bg-red-600/25 hover:bg-red-600/35 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-trash"></i><span>刪除</span></button>` : ''}
+                                ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('policeReport',${originalIdx})" class="bg-amber-600/25 hover:bg-amber-600/35 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-nib"></i><span>備註</span></button>` : ''}
                             </div>
                         </div>
                         ${r.remark ? `<div class="bg-amber-950/20 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-200 mt-2"><strong class="font-bold"><i class="fa-solid fa-shield-halved mr-1"></i>長官批示：</strong>${r.remark}</div>` : ''}
@@ -1140,7 +1170,7 @@
                 return;
             }
             appData.policeClocks.forEach((c, idx) => {
-                const isOwner = currentUser && (currentUser.account === c.id || currentUser.role === 'admin');
+                const isOwner = currentUser && (currentUser.account === c.id || currentUser.role === 'admin' || currentUser.role === 'high');
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/40 transition">
                         <td class="p-4 font-medium text-white">${c.id} / ${c.name}</td>
@@ -1150,6 +1180,7 @@
                         <td class="p-4 text-slate-300 text-xs">${c.remark || '<span class="text-slate-600">無備註</span>'}</td>
                         <td class="p-4 text-right space-x-1">
                             ${isOwner ? `<button onclick="openEditModal('policeClock',${idx})" class="text-emerald-400 hover:text-emerald-300 text-xs bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">編輯</button>` : ''}
+                            ${isOwner ? `<button onclick="deleteRecordItem('policeClock',${idx})" class="text-red-400 hover:text-red-300 text-xs bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-lg">刪除</button>` : ''}
                             ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('policeClock',${idx})" class="text-amber-400 hover:text-amber-300 text-xs bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">備註</button>` : ''}
                         </td>
                     </tr>
@@ -1172,7 +1203,7 @@
 
             filtered.forEach((r) => {
                 const originalIdx = appData.fireReports.indexOf(r);
-                const isOwner = currentUser && (currentUser.account === r.id || currentUser.role === 'admin');
+                const isOwner = currentUser && (currentUser.account === r.id || currentUser.role === 'admin' || currentUser.role === 'high');
                 listEl.innerHTML += `
                     <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3 shadow-xl">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
@@ -1190,8 +1221,9 @@
                                 <span>相關影片：${r.videoLink ? `<a href="${r.videoLink}" target="_blank" class="text-red-400 underline hover:text-red-300 ml-1">${r.videoLink}</a>` : '<span class="text-slate-600">未提供連結</span>'}</span>
                             </div>
                             <div class="flex items-center space-x-2">
-                                ${isOwner ? `<button onclick="openEditModal('fireReport',${originalIdx})" class="bg-emerald-600/25 hover:bg-emerald-600/35 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-to-square"></i><span>編輯報告</span></button>` : ''}
-                                ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('fireReport',${originalIdx})" class="bg-amber-600/25 hover:bg-amber-600/35 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-nib"></i><span>長官備註</span></button>` : ''}
+                                ${isOwner ? `<button onclick="openEditModal('fireReport',${originalIdx})" class="bg-emerald-600/25 hover:bg-emerald-600/35 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-to-square"></i><span>編輯</span></button>` : ''}
+                                ${isOwner ? `<button onclick="deleteRecordItem('fireReport',${originalIdx})" class="bg-red-600/25 hover:bg-red-600/35 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-trash"></i><span>刪除</span></button>` : ''}
+                                ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('fireReport',${originalIdx})" class="bg-amber-600/25 hover:bg-amber-600/35 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-nib"></i><span>備註</span></button>` : ''}
                             </div>
                         </div>
                         ${r.remark ? `<div class="bg-amber-950/20 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-200 mt-2"><strong class="font-bold"><i class="fa-solid fa-shield-halved mr-1"></i>長官批示：</strong>${r.remark}</div>` : ''}
@@ -1209,7 +1241,7 @@
                 return;
             }
             appData.fireClocks.forEach((c, idx) => {
-                const isOwner = currentUser && (currentUser.account === c.id || currentUser.role === 'admin');
+                const isOwner = currentUser && (currentUser.account === c.id || currentUser.role === 'admin' || currentUser.role === 'high');
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/40 transition">
                         <td class="p-4 font-medium text-white">${c.id} / ${c.name}</td>
@@ -1219,6 +1251,7 @@
                         <td class="p-4 text-slate-300 text-xs">${c.remark || '<span class="text-slate-600">無備註</span>'}</td>
                         <td class="p-4 text-right space-x-1">
                             ${isOwner ? `<button onclick="openEditModal('fireClock',${idx})" class="text-emerald-400 hover:text-emerald-300 text-xs bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">編輯</button>` : ''}
+                            ${isOwner ? `<button onclick="deleteRecordItem('fireClock',${idx})" class="text-red-400 hover:text-red-300 text-xs bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-lg">刪除</button>` : ''}
                             ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('fireClock',${idx})" class="text-amber-400 hover:text-amber-300 text-xs bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">備註</button>` : ''}
                         </td>
                     </tr>
