@@ -22,7 +22,7 @@
     </script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Inter Font -->
+    <!-- Inter & Noto Sans TC Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; }
@@ -53,7 +53,7 @@
                 <div id="user-badge" class="hidden items-center space-x-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 text-xs">
                     <span id="user-badge-role" class="w-2 h-2 rounded-full bg-emerald-500"></span>
                     <span id="user-badge-name" class="font-semibold text-slate-200"></span>
-                    <button onclick="logout()" class="text-slate-400 hover:text-red-400 ml-2"><i class="fa-solid fa-right-from-bracket"></i></button>
+                    <button onclick="logout()" class="text-slate-400 hover:text-red-400 ml-2" title="登出"><i class="fa-solid fa-right-from-bracket"></i></button>
                 </div>
                 <button id="login-btn" onclick="openLoginModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-lg shadow-blue-600/30 transition flex items-center space-x-2">
                     <i class="fa-solid fa-right-to-bracket"></i>
@@ -77,16 +77,15 @@
 
         <!-- TAB: HOME -->
         <section id="tab-home" class="space-y-8">
-            <!-- Hero Carousel / Cover Photo Banner -->
             <div class="relative rounded-3xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-900">
                 <div class="absolute inset-0 z-0">
-                    <img id="cover-photo-img" src="https://placehold.co/1600x600/0f172a/38bdf8?text=New+Taipei+RP+3.0+Public+Services" alt="Cover" class="w-full h-full object-cover opacity-40 transition-all duration-700">
+                    <img id="cover-photo-img" src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1600" alt="Cover" class="w-full h-full object-cover opacity-40 transition-all duration-700">
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"></div>
                 </div>
                 <div class="relative z-10 px-8 py-20 sm:py-28 max-w-3xl space-y-6">
                     <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">New Taipei Roleplay 3.0</span>
                     <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">新北市公職人員<br><span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">勤務與案件管制系統</span></h1>
-                    <p class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。本系統提供公職同仁線上打卡、執勤車輛登記、案件報告填寫及高層檢視審核，全面對應編號進行治安與救護管理。</p>
+                    <p class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。本系統提供公職同仁線上打卡、執勤車輛登記、案件報告填寫及高層檢視審核，全面對應 RP 編號與 RP 名稱進行治安與救護管理。</p>
                     <div class="flex flex-wrap gap-4 pt-2">
                         <button onclick="switchTab('police')" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
                             <i class="fa-solid fa-shield"></i><span>進入警務系統</span>
@@ -98,7 +97,6 @@
                 </div>
             </div>
 
-            <!-- Quick Stats & Info Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
                     <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-xl font-bold">
@@ -142,7 +140,6 @@
                 </div>
             </div>
 
-            <!-- Sub-tabs for Police -->
             <div class="flex space-x-2 border-b border-slate-800 pb-2">
                 <button onclick="switchPoliceSubTab('reports')" id="btn-police-reports" class="px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white"><i class="fa-solid fa-folder-open mr-2"></i>歷史案件報告庫</button>
                 <button onclick="switchPoliceSubTab('clocks')" id="btn-police-clocks" class="px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900"><i class="fa-solid fa-clipboard-user mr-2"></i>即時出勤打卡紀錄</button>
@@ -153,12 +150,10 @@
                 <div class="flex justify-between items-center">
                     <h3 class="text-lg font-bold text-slate-200">全體員警案件報告總覽</h3>
                     <div class="w-72">
-                        <input type="text" id="search-police-report" oninput="renderPoliceReports()" placeholder="搜尋警員姓名或報告內容..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                        <input type="text" id="search-police-report" oninput="renderPoliceReports()" placeholder="搜尋警員RP名稱或報告內容..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
                     </div>
                 </div>
-                <div id="police-reports-list" class="grid grid-cols-1 gap-4">
-                    <!-- Dynamic Reports -->
-                </div>
+                <div id="police-reports-list" class="grid grid-cols-1 gap-4"></div>
             </div>
 
             <!-- Police Clocks View -->
@@ -168,17 +163,16 @@
                     <table class="w-full text-left border-collapse text-sm">
                         <thead>
                             <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
-                                <th class="p-4">員警編號 / 姓名</th>
+                                <th class="p-4">案件編號</th>
+                                <th class="p-4">員警編號 / RP名稱</th>
                                 <th class="p-4">打卡狀態</th>
                                 <th class="p-4">執勤車輛編號</th>
                                 <th class="p-4">打卡時間</th>
-                                <th class="p-4">高層備註</th>
+                                <th class="p-4">長官備註</th>
                                 <th class="p-4 text-right">操作</th>
                             </tr>
                         </thead>
-                        <tbody id="police-clocks-tbody" class="divide-y divide-slate-800/60">
-                            <!-- Dynamic Clocks -->
-                        </tbody>
+                        <tbody id="police-clocks-tbody" class="divide-y divide-slate-800/60"></tbody>
                     </table>
                 </div>
             </div>
@@ -202,7 +196,6 @@
                 </div>
             </div>
 
-            <!-- Sub-tabs for Fire -->
             <div class="flex space-x-2 border-b border-slate-800 pb-2">
                 <button onclick="switchFireSubTab('reports')" id="btn-fire-reports" class="px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white"><i class="fa-solid fa-folder-open mr-2"></i>歷史消防案件報告</button>
                 <button onclick="switchFireSubTab('clocks')" id="btn-fire-clocks" class="px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900"><i class="fa-solid fa-clipboard-user mr-2"></i>消防出勤打卡紀錄</button>
@@ -213,12 +206,10 @@
                 <div class="flex justify-between items-center">
                     <h3 class="text-lg font-bold text-slate-200">全體消防隊員案件報告總覽</h3>
                     <div class="w-72">
-                        <input type="text" id="search-fire-report" oninput="renderFireReports()" placeholder="搜尋隊員姓名或內容..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-red-500">
+                        <input type="text" id="search-fire-report" oninput="renderFireReports()" placeholder="搜尋隊員RP名稱或內容..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-red-500">
                     </div>
                 </div>
-                <div id="fire-reports-list" class="grid grid-cols-1 gap-4">
-                    <!-- Dynamic Fire Reports -->
-                </div>
+                <div id="fire-reports-list" class="grid grid-cols-1 gap-4"></div>
             </div>
 
             <!-- Fire Clocks View -->
@@ -228,17 +219,16 @@
                     <table class="w-full text-left border-collapse text-sm">
                         <thead>
                             <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
-                                <th class="p-4">隊員編號 / 姓名</th>
+                                <th class="p-4">案件編號</th>
+                                <th class="p-4">隊員編號 / RP名稱</th>
                                 <th class="p-4">打卡狀態</th>
                                 <th class="p-4">執勤車輛編號</th>
                                 <th class="p-4">打卡時間</th>
-                                <th class="p-4">高層備註</th>
+                                <th class="p-4">長官備註</th>
                                 <th class="p-4 text-right">操作</th>
                             </tr>
                         </thead>
-                        <tbody id="fire-clocks-tbody" class="divide-y divide-slate-800/60">
-                            <!-- Dynamic Fire Clocks -->
-                        </tbody>
+                        <tbody id="fire-clocks-tbody" class="divide-y divide-slate-800/60"></tbody>
                     </table>
                 </div>
             </div>
@@ -259,7 +249,6 @@
                 </div>
             </div>
 
-            <!-- Admin Sub-tabs -->
             <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
                 <button onclick="switchAdminSubTab('users')" id="btn-admin-users" class="px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap"><i class="fa-solid fa-users mr-2"></i>帳號與人員管理</button>
                 <button onclick="switchAdminSubTab('memo')" id="btn-admin-memo" class="px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-note-sticky mr-2"></i>管理員共同備忘錄</button>
@@ -274,15 +263,13 @@
                         <thead>
                             <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
                                 <th class="p-4">帳號 / 編號</th>
-                                <th class="p-4">姓名</th>
+                                <th class="p-4">RP名稱</th>
                                 <th class="p-4">所屬單位</th>
                                 <th class="p-4">權限身份</th>
                                 <th class="p-4 text-right">刪除帳號</th>
                             </tr>
                         </thead>
-                        <tbody id="admin-users-tbody" class="divide-y divide-slate-800/60">
-                            <!-- Dynamic Users -->
-                        </tbody>
+                        <tbody id="admin-users-tbody" class="divide-y divide-slate-800/60"></tbody>
                     </table>
                 </div>
             </div>
@@ -369,12 +356,16 @@
             </div>
             <div class="space-y-4">
                 <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件編號 (例如：CAS-2026-001)</label>
+                    <input type="text" id="clock-case-id" placeholder="請輸入案件編號..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">警員 / 隊員編號</label>
                     <input type="text" id="clock-id" placeholder="例如：P-2421 或 F-2421" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">姓名</label>
-                    <input type="text" id="clock-name" placeholder="請輸入您的真實姓名..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">RP名稱</label>
+                    <input type="text" id="clock-name" placeholder="請輸入您的RP名稱..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">打卡狀態選擇</label>
@@ -403,14 +394,18 @@
                 <button onclick="closeModal('modal-report')" class="text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件編號 (例如：REP-2026-001)</label>
+                    <input type="text" id="report-case-id" placeholder="請自行輸入案件編號..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">填寫人編號</label>
                         <input type="text" id="report-id" placeholder="編號..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">填寫人姓名</label>
-                        <input type="text" id="report-author" placeholder="姓名..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">RP名稱</label>
+                        <input type="text" id="report-author" placeholder="RP名稱..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
                     </div>
                 </div>
                 <div>
@@ -422,17 +417,31 @@
                     <textarea id="report-content" rows="4" placeholder="請詳細敘述案件經過、處理警員/隊員、相關人員狀況..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-blue-500"></textarea>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">附加檔案 (支援照片、影片、文件，檔案資料上限 500MB)</label>
-                    <div class="flex items-center space-x-3">
-                        <label class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 cursor-pointer hover:border-blue-500 transition flex items-center justify-between">
-                            <span id="file-chosen-label" class="truncate">選擇檔案...</span>
-                            <i class="fa-solid fa-cloud-arrow-up text-blue-400"></i>
-                            <input type="file" id="report-file-input" onchange="handleFileSelection(this)" class="hidden">
-                        </label>
-                        <button type="button" onclick="clearSelectedFile()" class="bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white px-3 py-3 rounded-xl text-xs"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">相關影片連結 (YouTube, Streamable, 剪輯網址等)</label>
+                    <input type="url" id="report-video-link" placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
                 </div>
                 <button onclick="submitReport()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">提交案件報告</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: EDIT RECORD (Report or Clock) -->
+    <div id="modal-edit" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
+            <div class="flex justify-between items-center">
+                <h3 class="text-xl font-bold text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-pen-to-square text-emerald-500"></i>
+                    <span id="edit-modal-title">編輯項目</span>
+                </h3>
+                <button onclick="closeModal('modal-edit')" class="text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-4">
+                <input type="hidden" id="edit-type">
+                <input type="hidden" id="edit-index">
+                <div id="edit-fields-container" class="space-y-4">
+                    <!-- Dynamic fields populated via JS -->
+                </div>
+                <button onclick="submitEdit()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-emerald-600/30 transition">儲存修改</button>
             </div>
         </div>
     </div>
@@ -442,184 +451,150 @@
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
                 <h3 class="text-xl font-bold text-white flex items-center space-x-2">
-                    <i class="fa-solid fa-comment-dots text-yellow-500"></i>
-                    <span>高層長官批示 / 增加備註</span>
+                    <i class="fa-solid fa-pen-nib text-amber-500"></i>
+                    <span>高層長官審核備註</span>
                 </h3>
                 <button onclick="closeModal('modal-remark')" class="text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-4">
                 <input type="hidden" id="remark-target-type">
-                <input type="hidden" id="remark-target-id">
+                <input type="hidden" id="remark-target-index">
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">目前項目摘要</label>
-                    <p id="remark-target-preview" class="text-sm text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800"></p>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">輸入長官批示與審核備註</label>
+                    <textarea id="remark-text-input" rows="4" placeholder="例如：已閱，處理程序符合規定，予以嘉獎..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-amber-500"></textarea>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">長官批示與備註內容</label>
-                    <textarea id="remark-content" rows="4" placeholder="請輸入高層長官批示、獎懲或備註意見..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-yellow-500"></textarea>
-                </div>
-                <button onclick="submitRemark()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-yellow-600/30 transition">儲存長官備註</button>
+                <button onclick="submitRemark()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-amber-600/30 transition">儲存長官備註</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: CREATE USER (Admin) -->
+    <!-- MODAL: CREATE USER -->
     <div id="modal-create-user" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
                 <h3 class="text-xl font-bold text-white flex items-center space-x-2">
                     <i class="fa-solid fa-user-plus text-purple-500"></i>
-                    <span>新增公職單位帳號</span>
+                    <span>新增公職人員帳號</span>
                 </h3>
                 <button onclick="closeModal('modal-create-user')" class="text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">帳號 / 編號</label>
-                    <input type="text" id="new-user-account" placeholder="例如：P-2425 或 F-2423" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
+                    <input type="text" id="new-user-account" placeholder="例如：P-8888 或 F-8888" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">真實姓名</label>
-                    <input type="text" id="new-user-name" placeholder="例如：王小明" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">RP名稱</label>
+                    <input type="text" id="new-user-name" placeholder="請輸入RP名稱..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">單位與身份分類</label>
-                    <select id="new-user-role" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-purple-500">
-                        <option value="police">警務系統 - 一般員警</option>
-                        <option value="police_high">警務系統 - 高層長官 (分局長)</option>
-                        <option value="fire">消防系統 - 一般隊員</option>
-                        <option value="fire_high">消防系統 - 高層大隊長</option>
-                        <option value="admin">管理員系統 - 系統管理員</option>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位</label>
+                    <select id="new-user-unit" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-purple-500">
+                        <option value="police">警察局 (Police)</option>
+                        <option value="fire">消防局 (Fire & EMS)</option>
+                        <option value="admin">系統總管理處 (Admin)</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">初始密碼</label>
-                    <input type="password" id="new-user-pass" placeholder="設定密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">權限身份級別</label>
+                    <select id="new-user-role" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-purple-500">
+                        <option value="normal">一般基層人員</option>
+                        <option value="high">高層長官 (分局長/大隊長)</option>
+                        <option value="admin">最高管理員</option>
+                    </select>
                 </div>
-                <button onclick="createNewUser()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-purple-600/30 transition">建立帳號</button>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">密碼</label>
+                    <input type="password" id="new-user-password" placeholder="請設定密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
+                </div>
+                <button onclick="submitNewUser()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-purple-600/30 transition">建立新帳號</button>
             </div>
         </div>
     </div>
 
-    <!-- Custom Notification Toast -->
-    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-32 opacity-0 transition-all duration-300 bg-slate-900 border border-slate-700 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center space-x-3">
-        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
-        <span id="toast-msg" class="text-sm font-medium">操作成功</span>
-    </div>
-
     <!-- JavaScript Application Logic -->
     <script>
-        // Initial Local State with Dsuensx Admin Registered
-        let currentUser = null; // { name, role, account }
-        let currentReportSystem = 'police'; // 'police' or 'fire'
-        let selectedAttachment = null; // { name, size }
+        // State Management
+        let currentUser = null; // { account, name, unit, role }
+        let currentActiveDepartmentForReport = 'police'; // 'police' or 'fire'
 
-        let stateData = {
+        // Local Storage Init / Default Data
+        let appData = {
             users: [
-                { account: 'Dsuensx', name: '總管理員', role: 'admin', pass: 'LAIDA0903' },
-                { account: 'admin', name: '預設管理員', role: 'admin', pass: '1234' },
-                { account: 'P-2421', name: '分局長 (高層)', role: 'police_high', pass: '1234' },
-                { account: 'P-2422', name: '警員小王', role: 'police', pass: '1234' },
-                { account: 'F-2421', name: '大隊長 (高層)', role: 'fire_high', pass: '1234' },
-                { account: 'F-2422', name: '隊員阿豪', role: 'fire', pass: '1234' }
+                { account: 'admin', name: 'Dsuensx', unit: 'admin', role: 'admin', pass: 'LAIDA0903' },
+                { account: 'P-1001', name: '林局長', unit: 'police', role: 'high', pass: '1234' },
+                { account: 'P-2421', name: '王小明', unit: 'police', role: 'normal', pass: '1234' },
+                { account: 'F-1001', name: '陳大隊', unit: 'fire', role: 'high', pass: '1234' },
+                { account: 'F-3021', name: '張志豪', unit: 'fire', role: 'normal', pass: '1234' }
             ],
             policeReports: [
-                { id: 'PR-242-01', authorId: 'P-2422', authorName: '警員小王', title: '轄區內交通取締回報', content: '於轄區內執行路檢，攔查可疑車輛並開立違規罰單2張，現場平和。', time: '2026-10-04 14:30', remark: '分局長: 執勤認真，予以嘉獎。', attachment: { name: 'evidence_dashcam_242.mp4', size: '42.5 MB' } }
+                { caseId: 'REP-2026-001', id: 'P-2421', author: '王小明', title: '台一線重大追撞車禍處理', content: '接獲通報前往台一線處理雙車追撞，現場無人員重傷，已協助交通管制與拖吊車進場。', videoLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', time: '2026-03-30 14:20', remark: '已閱，處理得宜。' }
             ],
             fireReports: [
-                { id: 'FR-242-01', authorId: 'F-2422', authorName: '隊員阿豪', title: '住宅救護案件', content: '接獲通報民宅救護，患者突發身體不適，出動救護車迅速送往鄰近醫院急救。', time: '2026-10-04 11:15', remark: '大隊長: 處置迅速，值得嘉許。', attachment: { name: 'ems_scene_report.pdf', size: '12.1 MB' } }
+                { caseId: 'REP-2026-002', id: 'F-3021', author: '張志豪', title: '板橋區民宅瓦斯氣味通報', content: '抵達現場進行探測，確認為廚房瓦斯閥門未關緊導致洩漏，已協助通風並關閉閥門。', videoLink: '', time: '2026-03-30 16:05', remark: '' }
             ],
             policeClocks: [
-                { id: 'P-2422', name: '警員小王', status: '上班', vehicle: '巡邏車 242-P1', time: '2026-10-04 08:00', remark: '分局長: 出勤裝備正常。' }
+                { caseId: 'CAS-2026-001', id: 'P-2421', name: '王小明', status: '上班', vehicle: '巡邏車 242-P1', time: '2026-03-30 08:00', remark: '準時出勤' }
             ],
             fireClocks: [
-                { id: 'F-2422', name: '隊員阿豪', status: '上班', vehicle: '救護車 242-F1', time: '2026-10-04 07:30', remark: '大隊長: 值班待命。' }
+                { caseId: 'CAS-2026-002', id: 'F-3021', name: '張志豪', status: '上班', vehicle: '救護車 242-F1', time: '2026-03-30 08:30', remark: '' }
             ],
-            adminMemo: '1. 本週重點區域：加強各商圈與主要路段治安巡邏及消防安全宣導。\n2. 系統維護：新北市 RP 3.0 系統各項打卡及案件報告功能正常運作。\n3. 高層長官請記得隨時檢視同仁報告並給予備註。'
+            adminMemo: '1. 本週重點：加強轄區夜間巡邏與消防安檢。\n2. 各分局/大隊長請於每日下班前完成同仁打卡與案件審核。\n3. 如有系統異常請直接聯繫總管理員 Dsuensx。'
         };
 
-        // Load saved data if present
-        function loadState() {
-            const saved = localStorage.getItem('nt_roleplay_3_data');
-            if (saved) {
-                try { stateData = JSON.parse(saved); } catch(e) {}
-            }
-            // Ensure Dsuensx is always present
-            if (!stateData.users.some(u => u.account === 'Dsuensx')) {
-                stateData.users.unshift({ account: 'Dsuensx', name: '總管理員', role: 'admin', pass: 'LAIDA0903' });
-            }
-        }
-        function saveState() {
-            localStorage.setItem('nt_roleplay_3_data', JSON.stringify(stateData));
+        // Load from LocalStorage if exists
+        if (localStorage.getItem('nt_rp_data_v2')) {
+            try {
+                appData = JSON.parse(localStorage.getItem('nt_rp_data_v2'));
+            } catch (e) { console.error('Storage load error', e); }
         }
 
-        // Window Onload Initialization
-        window.onload = function() {
-            loadState();
-            renderAll();
-        };
-
-        function renderAll() {
-            renderPoliceReports();
-            renderPoliceClocks();
-            renderFireReports();
-            renderFireClocks();
-            renderAdminUsers();
-            document.getElementById('admin-memo-textarea').value = stateData.adminMemo;
-            renderAdminOverview();
+        function saveAppData() {
+            localStorage.setItem('nt_rp_data_v2', JSON.stringify(appData));
         }
 
-        // Tab Switching
+        // Navigation Tabs
         function switchTab(tabId) {
-            // Check authentication and unit permissions before switching tabs
-            if (tabId !== 'home' && !currentUser) {
-                openLoginModal();
-                showToast('請先進行登入作業才能存取公職系統！', 'error');
-                return;
-            }
-
-            // Check department restriction for non-admin users
-            if (currentUser && currentUser.role !== 'admin') {
-                if (tabId === 'police' && !currentUser.role.includes('police')) {
-                    showToast('權限不足：您無法跨單位瀏覽消防系統！', 'error');
-                    return;
-                }
-                if (tabId === 'fire' && !currentUser.role.includes('fire')) {
-                    showToast('權限不足：您無法跨單位瀏覽警務系統！', 'error');
-                    return;
-                }
-                if (tabId === 'admin') {
-                    showToast('權限不足：僅管理員可進入管理員中心！', 'error');
-                    return;
-                }
-            }
-
             ['home', 'police', 'fire', 'admin'].forEach(t => {
-                document.getElementById('tab-' + t).classList.add('hidden');
-                const navBtn = document.getElementById('nav-' + t);
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const navBtn = document.getElementById(`nav-${t}`);
                 if (navBtn) {
                     navBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800";
                 }
             });
-            document.getElementById('tab-' + tabId).classList.remove('hidden');
-            const activeBtn = document.getElementById('nav-' + tabId);
-            if (activeBtn) {
-                activeBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition text-blue-400 bg-blue-500/10";
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) {
+                activeNav.className = "px-4 py-2 rounded-lg text-sm font-medium transition text-blue-400 bg-blue-500/10";
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (tabId === 'admin') {
+                renderAdminUsers();
+                renderAdminOverview();
+                document.getElementById('admin-memo-textarea').value = appData.adminMemo || '';
+            } else if (tabId === 'police') {
+                renderPoliceReports();
+                renderPoliceClocks();
+            } else if (tabId === 'fire') {
+                renderFireReports();
+                renderFireClocks();
+            }
         }
 
+        // Sub-tabs
         function switchPoliceSubTab(sub) {
             if (sub === 'reports') {
                 document.getElementById('police-sub-reports').classList.remove('hidden');
                 document.getElementById('police-sub-clocks').classList.add('hidden');
                 document.getElementById('btn-police-reports').className = "px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white";
                 document.getElementById('btn-police-clocks').className = "px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900";
+                renderPoliceReports();
             } else {
                 document.getElementById('police-sub-reports').classList.add('hidden');
                 document.getElementById('police-sub-clocks').classList.remove('hidden');
-                document.getElementById('btn-police-clocks').className = "px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white";
                 document.getElementById('btn-police-reports').className = "px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900";
+                document.getElementById('btn-police-clocks').className = "px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white";
+                renderPoliceClocks();
             }
         }
 
@@ -629,29 +604,25 @@
                 document.getElementById('fire-sub-clocks').classList.add('hidden');
                 document.getElementById('btn-fire-reports').className = "px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white";
                 document.getElementById('btn-fire-clocks').className = "px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900";
+                renderFireReports();
             } else {
                 document.getElementById('fire-sub-reports').classList.add('hidden');
                 document.getElementById('fire-sub-clocks').classList.remove('hidden');
-                document.getElementById('btn-fire-clocks').className = "px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white";
                 document.getElementById('btn-fire-reports').className = "px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900";
+                document.getElementById('btn-fire-clocks').className = "px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white";
+                renderFireClocks();
             }
         }
 
         function switchAdminSubTab(sub) {
             ['users', 'memo', 'overview'].forEach(s => {
-                document.getElementById('admin-sub-' + s).classList.add('hidden');
+                document.getElementById(`admin-sub-${s}`).classList.add('hidden');
+                document.getElementById(`btn-admin-${s}`).className = "px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap";
             });
-            document.getElementById('admin-sub-' + sub).classList.remove('hidden');
-            ['users', 'memo', 'overview'].forEach(s => {
-                const btn = document.getElementById('btn-admin-' + s);
-                if (btn) {
-                    if (s === sub) {
-                        btn.className = "px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap";
-                    } else {
-                        btn.className = "px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap";
-                    }
-                }
-            });
+            document.getElementById(`admin-sub-${sub}`).classList.remove('hidden');
+            document.getElementById(`btn-admin-${sub}`).className = "px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap";
+            if (sub === 'users') renderAdminUsers();
+            if (sub === 'overview') renderAdminOverview();
         }
 
         function toggleMobileMenu() {
@@ -659,479 +630,481 @@
             menu.classList.toggle('hidden');
         }
 
-        // Modal Controls
+        // Modals
         function openLoginModal() { document.getElementById('modal-login').classList.remove('hidden'); }
-        function closeModal(modalId) { document.getElementById(modalId).classList.add('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-        function openClockModal(sys) {
-            currentReportSystem = sys;
-            document.getElementById('modal-clock').classList.remove('hidden');
-            if(currentUser) {
-                document.getElementById('clock-id').value = currentUser.account;
-                document.getElementById('clock-name').value = currentUser.name;
-            }
-        }
-
-        function openReportModal(sys) {
-            currentReportSystem = sys;
-            selectedAttachment = null;
-            document.getElementById('report-file-input').value = '';
-            document.getElementById('file-chosen-label').innerText = '選擇檔案...';
-            document.getElementById('modal-report').classList.remove('hidden');
-            document.getElementById('report-modal-title').innerHTML = `<i class="fa-solid fa-file-pen ${sys==='police'?'text-blue-500':'text-red-500'}"></i><span>填寫${sys==='police'?'警務':'消防'}案件報告</span>`;
-            if(currentUser) {
-                document.getElementById('report-id').value = currentUser.account;
-                document.getElementById('report-author').value = currentUser.name;
-            }
-        }
-
-        function openCreateUserModal() {
-            if(!currentUser || currentUser.role !== 'admin') {
-                showToast('權限不足：僅限管理員可新增帳號！', 'error');
-                return;
-            }
-            document.getElementById('modal-create-user').classList.remove('hidden');
-        }
-
-        function handleFileSelection(input) {
-            if(input.files && input.files[0]) {
-                const file = input.files[0];
-                const maxSize = 500 * 1024 * 1024; // 500MB
-                if(file.size > maxSize) {
-                    showToast('檔案大小超過 500MB 上限，請重新選擇！', 'error');
-                    input.value = '';
-                    selectedAttachment = null;
-                    document.getElementById('file-chosen-label').innerText = '選擇檔案...';
-                    return;
-                }
-                const sizeMb = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
-                selectedAttachment = { name: file.name, size: sizeMb };
-                document.getElementById('file-chosen-label').innerText = `${file.name} (${sizeMb})`;
-            }
-        }
-
-        function clearSelectedFile() {
-            selectedAttachment = null;
-            document.getElementById('report-file-input').value = '';
-            document.getElementById('file-chosen-label').innerText = '選擇檔案...';
-        }
-
-        // Quick Login Helper
         function fillQuickLogin(val) {
-            if(!val) return;
-            const found = stateData.users.find(u => {
-                if(val === 'admin') return u.account === 'Dsuensx';
-                if(val === 'police_high') return u.role === 'police_high';
-                if(val === 'police_normal') return u.role === 'police';
-                if(val === 'fire_high') return u.role === 'fire_high';
-                if(val === 'fire_normal') return u.role === 'fire';
-            });
-            if(found) {
-                document.getElementById('login-username').value = found.account;
-                document.getElementById('login-password').value = found.pass;
+            const userMap = {
+                'admin': { acc: 'admin', pass: 'LAIDA0903' },
+                'police_high': { acc: 'P-1001', pass: '1234' },
+                'police_normal': { acc: 'P-2421', pass: '1234' },
+                'fire_high': { acc: 'F-1001', pass: '1234' },
+                'fire_normal': { acc: 'F-3021', pass: '1234' }
+            };
+            if (userMap[val]) {
+                document.getElementById('login-username').value = userMap[val].acc;
+                document.getElementById('login-password').value = userMap[val].pass;
             }
         }
 
         function handleLogin() {
             const acc = document.getElementById('login-username').value.trim();
             const pass = document.getElementById('login-password').value.trim();
-            const user = stateData.users.find(u => u.account === acc && u.pass === pass);
-            if(!user) {
-                showToast('登入失敗：帳號或密碼錯誤！', 'error');
+            const found = appData.users.find(u => u.account === acc && u.pass === pass);
+            if (!found) {
+                alert('登入失敗：帳號或密碼錯誤！');
                 return;
             }
-            currentUser = user;
+            currentUser = found;
             closeModal('modal-login');
             updateUserUI();
-            showToast(`歡迎登入公職系統，${user.name} (${getRoleName(user.role)})`);
-
-            if (user.role.includes('police')) {
-                switchTab('police');
-            } else if (user.role.includes('fire')) {
-                switchTab('fire');
-            } else if (user.role === 'admin') {
-                switchTab('admin');
-            } else {
-                switchTab('home');
-            }
+            alert(`歡迎回來，${found.name} (${found.unit.toUpperCase()} - ${found.role.toUpperCase()})`);
         }
 
         function logout() {
             currentUser = null;
             updateUserUI();
-            switchTab('home');
-            showToast('已安全登出公職系統');
+            alert('已成功登出系統');
         }
 
         function updateUserUI() {
             const badge = document.getElementById('user-badge');
             const loginBtn = document.getElementById('login-btn');
-            if(currentUser) {
+            if (currentUser) {
+                loginBtn.classList.add('hidden');
                 badge.classList.remove('hidden');
                 badge.classList.add('flex');
-                loginBtn.classList.add('hidden');
-                document.getElementById('user-badge-name').innerText = `${currentUser.name} (${getRoleName(currentUser.role)})`;
-                const dot = document.getElementById('user-badge-role');
-                dot.className = "w-2 h-2 rounded-full " + (currentUser.role === 'admin' ? 'bg-purple-500' : currentUser.role.includes('high') ? 'bg-yellow-500' : 'bg-emerald-500');
+                document.getElementById('user-badge-name').innerText = `${currentUser.name} (${currentUser.account})`;
+                const roleDot = document.getElementById('user-badge-role');
+                roleDot.className = `w-2 h-2 rounded-full ${currentUser.role === 'admin' ? 'bg-purple-500' : currentUser.role === 'high' ? 'bg-amber-500' : 'bg-emerald-500'}`;
             } else {
-                badge.classList.add('hidden');
                 badge.classList.remove('flex');
+                badge.classList.add('hidden');
                 loginBtn.classList.remove('hidden');
             }
         }
 
-        function getRoleName(role) {
-            switch(role) {
-                case 'admin': return '總管理員';
-                case 'police_high': return '警務高層';
-                case 'police': return '一般員警';
-                case 'fire_high': return '消防高層';
-                case 'fire': return '一般消防員';
-                default: return '一般人員';
+        // Clock In/Out Modal & Submission
+        function openClockModal(dept) {
+            document.getElementById('modal-clock').classList.remove('hidden');
+            if (currentUser) {
+                document.getElementById('clock-id').value = currentUser.account;
+                document.getElementById('clock-name').value = currentUser.name;
             }
+            document.getElementById('clock-case-id').value = 'CAS-' + Math.floor(100000 + Math.random() * 900000);
         }
 
-        // Clock In/Out Submission
         function submitClock() {
+            const caseId = document.getElementById('clock-case-id').value.trim();
             const id = document.getElementById('clock-id').value.trim();
             const name = document.getElementById('clock-name').value.trim();
             const status = document.getElementById('clock-status').value;
-            const vehicle = document.getElementById('clock-vehicle').value.trim();
-
-            if(!id || !name || !vehicle) {
-                showToast('請填寫完整編號、姓名與執勤車輛！', 'error');
+            const vehicle = document.getElementById('clock-vehicle').value.trim() || '無登記車輛';
+            if (!caseId || !id || !name) {
+                alert('請完整填寫案件編號、編號與RP名稱！');
                 return;
             }
-
             const now = new Date();
             const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-
-            const clockItem = { id, name, status, vehicle, time: timeStr, remark: '' };
-
-            if(currentReportSystem === 'police') {
-                stateData.policeClocks.unshift(clockItem);
+            
+            const isPolice = id.toUpperCase().startsWith('P') || (currentUser && currentUser.unit === 'police');
+            const record = { caseId, id, name, status, vehicle, time: timeStr, remark: '' };
+            
+            if (isPolice) {
+                appData.policeClocks.unshift(record);
+                renderPoliceClocks();
             } else {
-                stateData.fireClocks.unshift(clockItem);
+                appData.fireClocks.unshift(record);
+                renderFireClocks();
             }
-
-            saveState();
-            renderAll();
+            saveAppData();
             closeModal('modal-clock');
-            showToast(`已成功登記${currentReportSystem==='police'?'警務':'消防'}[${status}]打卡紀錄！`);
+            alert('打卡記錄送出成功！');
         }
 
-        // Report Submission
+        // Report Modal & Submission
+        function openReportModal(dept) {
+            currentActiveDepartmentForReport = dept;
+            document.getElementById('modal-report').classList.remove('hidden');
+            document.getElementById('report-modal-title').innerHTML = `<i class="fa-solid fa-file-pen ${dept === 'police' ? 'text-blue-500' : 'text-red-500'}"></i><span>填寫${dept === 'police' ? '警務' : '消防'}案件報告</span>`;
+            if (currentUser) {
+                document.getElementById('report-id').value = currentUser.account;
+                document.getElementById('report-author').value = currentUser.name;
+            }
+            document.getElementById('report-case-id').value = 'REP-' + Math.floor(100000 + Math.random() * 900000);
+        }
+
         function submitReport() {
+            const caseId = document.getElementById('report-case-id').value.trim();
             const id = document.getElementById('report-id').value.trim();
             const author = document.getElementById('report-author').value.trim();
             const title = document.getElementById('report-title').value.trim();
             const content = document.getElementById('report-content').value.trim();
-
-            if(!id || !author || !title || !content) {
-                showToast('請填寫完整案件報告欄位！', 'error');
+            const videoLink = document.getElementById('report-video-link').value.trim();
+            
+            if (!caseId || !id || !author || !title || !content) {
+                alert('請完整填寫案件編號、填寫人編號、RP名稱、標題與詳細內容！');
                 return;
             }
-
             const now = new Date();
             const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-
-            const prefix = currentReportSystem === 'police' ? 'PR-242-' : 'FR-242-';
-            const reportId = prefix + Math.floor(100 + Math.random() * 900);
-
-            const reportItem = { 
-                id: reportId, 
-                authorId: id, 
-                authorName: author, 
-                title, 
-                content, 
-                time: timeStr, 
-                remark: '', 
-                attachment: selectedAttachment ? { ...selectedAttachment } : null 
-            };
-
-            if(currentReportSystem === 'police') {
-                stateData.policeReports.unshift(reportItem);
+            
+            const report = { caseId, id, author, title, content, videoLink, time: timeStr, remark: '' };
+            if (currentActiveDepartmentForReport === 'police') {
+                appData.policeReports.unshift(report);
+                renderPoliceReports();
             } else {
-                stateData.fireReports.unshift(reportItem);
+                appData.fireReports.unshift(report);
+                renderFireReports();
             }
-
-            saveState();
-            renderAll();
+            saveAppData();
             closeModal('modal-report');
-            showToast('案件報告與附加檔案已成功建立並存入歷史檔案庫！');
+            document.getElementById('report-case-id').value = '';
+            document.getElementById('report-title').value = '';
+            document.getElementById('report-content').value = '';
+            document.getElementById('report-video-link').value = '';
+            alert('案件報告已成功提交至資料庫！');
         }
 
-        // High Rank Remark Feature
-        function openRemarkModal(targetType, targetId) {
-            if(!currentUser || (!currentUser.role.includes('high') && currentUser.role !== 'admin')) {
-                showToast('權限不足：只有高層長官與管理員可以在報告或打卡增加備註！', 'error');
+        // EDIT FUNCTIONALITY (Only own submissions)
+        function openEditModal(type, index) {
+            let item;
+            if (type === 'policeReport') item = appData.policeReports[index];
+            else if (type === 'fireReport') item = appData.fireReports[index];
+            else if (type === 'policeClock') item = appData.policeClocks[index];
+            else if (type === 'fireClock') item = appData.fireClocks[index];
+
+            if (!currentUser || (currentUser.account !== item.id && currentUser.role !== 'admin')) {
+                alert('權限不足：您只能編輯自己發送的案件或打卡項目！');
                 return;
             }
 
-            document.getElementById('remark-target-type').value = targetType;
-            document.getElementById('remark-target-id').value = targetId;
+            document.getElementById('modal-edit').classList.remove('hidden');
+            document.getElementById('edit-type').value = type;
+            document.getElementById('edit-index').value = index;
+            const container = document.getElementById('edit-fields-container');
+            container.innerHTML = '';
 
-            let previewText = '';
-            if(targetType === 'police_report') {
-                const r = stateData.policeReports.find(x => x.id === targetId);
-                if(r) previewText = `[警務報告] ${r.title} (${r.authorName})`;
-            } else if(targetType === 'fire_report') {
-                const r = stateData.fireReports.find(x => x.id === targetId);
-                if(r) previewText = `[消防報告] ${r.title} (${r.authorName})`;
-            } else if(targetType === 'police_clock' || targetType === 'fire_clock') {
-                previewText = `[出勤紀錄] 時間點: ${targetId}`;
+            if (type.includes('Report')) {
+                document.getElementById('edit-modal-title').innerText = '編輯案件報告';
+                container.innerHTML = `
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件編號</label>
+                        <input type="text" id="edit-case-id" value="${item.caseId || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題</label>
+                        <input type="text" id="edit-title" value="${item.title}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細內容</label>
+                        <textarea id="edit-content" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500">${item.content}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">相關影片連結</label>
+                        <input type="url" id="edit-video-link" value="${item.videoLink || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                `;
+            } else {
+                document.getElementById('edit-modal-title').innerText = '編輯打卡紀錄';
+                container.innerHTML = `
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件編號</label>
+                        <input type="text" id="edit-clock-case-id" value="${item.caseId || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">打卡狀態</label>
+                        <select id="edit-clock-status" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+                            <option value="上班" ${item.status === '上班' ? 'selected' : ''}>上班打卡</option>
+                            <option value="下班" ${item.status === '下班' ? 'selected' : ''}>下班打卡</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">執勤車輛編號</label>
+                        <input type="text" id="edit-clock-vehicle" value="${item.vehicle}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                `;
             }
-            document.getElementById('remark-target-preview').innerText = previewText || `項目編號: ${targetId}`;
-            document.getElementById('remark-content').value = '';
-            document.getElementById('modal-remark').classList.remove('hidden');
         }
 
-        function submitRemark() {
-            const type = document.getElementById('remark-target-type').value;
-            const targetId = document.getElementById('remark-target-id').value;
-            const remarkText = document.getElementById('remark-content').value.trim();
+        function submitEdit() {
+            const type = document.getElementById('edit-type').value;
+            const index = parseInt(document.getElementById('edit-index').value);
 
-            if(!remarkText) {
-                showToast('請輸入備註內容！', 'error');
-                return;
+            if (type === 'policeReport') {
+                appData.policeReports[index].caseId = document.getElementById('edit-case-id').value.trim();
+                appData.policeReports[index].title = document.getElementById('edit-title').value.trim();
+                appData.policeReports[index].content = document.getElementById('edit-content').value.trim();
+                appData.policeReports[index].videoLink = document.getElementById('edit-video-link').value.trim();
+                renderPoliceReports();
+            } else if (type === 'fireReport') {
+                appData.fireReports[index].caseId = document.getElementById('edit-case-id').value.trim();
+                appData.fireReports[index].title = document.getElementById('edit-title').value.trim();
+                appData.fireReports[index].content = document.getElementById('edit-content').value.trim();
+                appData.fireReports[index].videoLink = document.getElementById('edit-video-link').value.trim();
+                renderFireReports();
+            } else if (type === 'policeClock') {
+                appData.policeClocks[index].caseId = document.getElementById('edit-clock-case-id').value.trim();
+                appData.policeClocks[index].status = document.getElementById('edit-clock-status').value;
+                appData.policeClocks[index].vehicle = document.getElementById('edit-clock-vehicle').value.trim();
+                renderPoliceClocks();
+            } else if (type === 'fireClock') {
+                appData.fireClocks[index].caseId = document.getElementById('edit-clock-case-id').value.trim();
+                appData.fireClocks[index].status = document.getElementById('edit-clock-status').value;
+                appData.fireClocks[index].vehicle = document.getElementById('edit-clock-vehicle').value.trim();
+                renderFireClocks();
             }
 
-            const formattedRemark = `${currentUser.name}: ${remarkText}`;
-
-            if(type === 'police_report') {
-                const r = stateData.policeReports.find(x => x.id === targetId);
-                if(r) r.remark = formattedRemark;
-            } else if(type === 'fire_report') {
-                const r = stateData.fireReports.find(x => x.id === targetId);
-                if(r) r.remark = formattedRemark;
-            } else if(type === 'police_clock') {
-                const c = stateData.policeClocks.find(x => x.time === targetId);
-                if(c) c.remark = formattedRemark;
-            } else if(type === 'fire_clock') {
-                const c = stateData.fireClocks.find(x => x.time === targetId);
-                if(c) c.remark = formattedRemark;
-            }
-
-            saveState();
-            renderAll();
-            closeModal('modal-remark');
-            showToast('高層長官批示與備註已成功更新！');
+            saveAppData();
+            closeModal('modal-edit');
+            alert('修改已成功儲存！');
         }
 
-        // Admin Actions
-        function createNewUser() {
-            const account = document.getElementById('new-user-account').value.trim();
-            const name = document.getElementById('new-user-name').value.trim();
-            const role = document.getElementById('new-user-role').value;
-            const pass = document.getElementById('new-user-pass').value.trim();
-
-            if(!account || !name || !pass) {
-                showToast('請填寫完整的帳號、姓名與密碼！', 'error');
-                return;
-            }
-
-            if(stateData.users.some(u => u.account === account)) {
-                showToast('此帳號/編號已經存在，請更換！', 'error');
-                return;
-            }
-
-            stateData.users.push({ account, name, role, pass });
-            saveState();
-            renderAll();
-            closeModal('modal-create-user');
-            showToast(`成功新增公職帳號：${name} (${account})`);
-        }
-
-        function deleteUser(account) {
-            if(account === 'Dsuensx') {
-                showToast('無法刪除總管理員帳號！', 'error');
-                return;
-            }
-            stateData.users = stateData.users.filter(u => u.account !== account);
-            saveState();
-            renderAll();
-            showToast('已成功刪除該公職帳號');
-        }
-
-        function saveMemo() {
-            const memo = document.getElementById('admin-memo-textarea').value;
-            stateData.adminMemo = memo;
-            saveState();
-            showToast('管理員共同備忘錄已成功儲存！');
-        }
-
-        // Render Functions
+        // Render Lists
         function renderPoliceReports() {
-            const container = document.getElementById('police-reports-list');
-            const query = (document.getElementById('search-police-report')?.value || '').toLowerCase();
-            const filtered = stateData.policeReports.filter(r => r.title.toLowerCase().includes(query) || r.authorName.toLowerCase().includes(query) || r.content.toLowerCase().includes(query));
-
-            if(filtered.length === 0) {
-                container.innerHTML = `<div class="bg-slate-900 p-8 rounded-2xl border border-slate-800 text-center text-slate-500">查無相關警務案件報告。</div>`;
+            const listEl = document.getElementById('police-reports-list');
+            const search = (document.getElementById('search-police-report').value || '').toLowerCase();
+            listEl.innerHTML = '';
+            const filtered = appData.policeReports.filter(r => r.author.toLowerCase().includes(search) || r.title.toLowerCase().includes(search) || r.content.toLowerCase().includes(search) || (r.caseId && r.caseId.toLowerCase().includes(search)));
+            
+            if (filtered.length === 0) {
+                listEl.innerHTML = `<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">查無相關警務案件報告。</div>`;
                 return;
             }
 
-            container.innerHTML = filtered.map(r => `
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-lg">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
-                        <div class="flex items-center space-x-3">
-                            <span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-lg text-xs font-bold">${r.id}</span>
-                            <h4 class="font-bold text-white text-base">${r.title}</h4>
+            filtered.forEach((r, idx) => {
+                const originalIdx = appData.policeReports.indexOf(r);
+                const isOwner = currentUser && (currentUser.account === r.id || currentUser.role === 'admin');
+                listEl.innerHTML += `
+                    <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3 shadow-xl">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+                            <div class="flex items-center space-x-3 flex-wrap gap-y-1">
+                                <span class="bg-indigo-500/20 text-indigo-400 font-mono text-xs px-2.5 py-1 rounded-lg border border-indigo-500/30">${r.caseId || '無編號'}</span>
+                                <span class="bg-blue-500/20 text-blue-400 font-mono text-xs px-2.5 py-1 rounded-lg border border-blue-500/30">${r.id}</span>
+                                <h4 class="text-base font-bold text-white">${r.title}</h4>
+                            </div>
+                            <span class="text-xs text-slate-400"><i class="fa-regular fa-clock mr-1"></i>${r.time} ｜ RP名稱：${r.author}</span>
                         </div>
-                        <div class="text-xs text-slate-400 flex items-center space-x-3">
-                            <span><i class="fa-solid fa-user mr-1 text-slate-500"></i>${r.authorName} (${r.authorId})</span>
-                            <span><i class="fa-solid fa-clock mr-1 text-slate-500"></i>${r.time}</span>
+                        <p class="text-sm text-slate-300 leading-relaxed">${r.content}</p>
+                        <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
+                            <div class="text-xs text-slate-400 flex items-center space-x-2">
+                                <i class="fa-solid fa-video text-blue-400"></i>
+                                <span>相關影片：${r.videoLink ? `<a href="${r.videoLink}" target="_blank" class="text-blue-400 underline hover:text-blue-300 ml-1">${r.videoLink}</a>` : '<span class="text-slate-600">未提供連結</span>'}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                ${isOwner ? `<button onclick="openEditModal('policeReport', ${originalIdx})" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-to-square"></i><span>編輯報告</span></button>` : ''}
+                                ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('policeReport', ${originalIdx})" class="bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-nib"></i><span>長官備註</span></button>` : ''}
+                            </div>
                         </div>
+                        ${r.remark ? `<div class="bg-amber-950/20 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-200 mt-2"><strong class="font-bold"><i class="fa-solid fa-shield-halved mr-1"></i>長官批示：</strong>${r.remark}</div>` : ''}
                     </div>
-                    <p class="text-slate-300 text-sm leading-relaxed">${r.content}</p>
-                    ${r.attachment ? `
-                        <div class="flex items-center space-x-2 bg-slate-950/70 border border-slate-800 px-3 py-2 rounded-xl text-xs text-blue-400 w-fit">
-                            <i class="fa-solid fa-paperclip"></i>
-                            <span class="font-medium">${r.attachment.name}</span>
-                            <span class="text-slate-500">(${r.attachment.size})</span>
-                        </div>
-                    ` : ''}
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 bg-slate-950/40 p-3 rounded-xl border border-slate-800/80">
-                        <div class="text-xs">
-                            <span class="text-yellow-500 font-bold mr-1"><i class="fa-solid fa-comment-dots mr-1"></i>高層備註：</span>
-                            <span class="text-slate-300">${r.remark || '尚無長官批示'}</span>
-                        </div>
-                        <button onclick="openRemarkModal('police_report', '${r.id}')" class="bg-slate-800 hover:bg-slate-700 text-yellow-400 border border-yellow-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
-                            <i class="fa-solid fa-pen-nib"></i><span>增加/修改備註</span>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            });
         }
 
         function renderPoliceClocks() {
             const tbody = document.getElementById('police-clocks-tbody');
-            if(stateData.policeClocks.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">目前尚無警務打卡紀錄。</td></tr>`;
+            tbody.innerHTML = '';
+            if (appData.policeClocks.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">尚無警務打卡紀錄。</td></tr>`;
                 return;
             }
-            tbody.innerHTML = stateData.policeClocks.map(c => `
-                <tr class="hover:bg-slate-800/50 transition">
-                    <td class="p-4 font-medium text-white">${c.name} <span class="text-xs text-slate-400">(${c.id})</span></td>
-                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${c.status==='上班'?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20':'bg-slate-800 text-slate-400'}">${c.status}</span></td>
-                    <td class="p-4 text-slate-300 font-mono text-xs"><i class="fa-solid fa-car mr-1 text-blue-400"></i>${c.vehicle}</td>
-                    <td class="p-4 text-slate-400 text-xs">${c.time}</td>
-                    <td class="p-4 text-xs text-yellow-400 font-medium">${c.remark || '<span class="text-slate-600">無</span>'}</td>
-                    <td class="p-4 text-right">
-                        <button onclick="openRemarkModal('police_clock', '${c.time}')" class="bg-slate-800 hover:bg-slate-700 text-yellow-400 px-3 py-1 rounded-lg text-xs font-semibold border border-yellow-500/30">
-                            <i class="fa-solid fa-comment-dots mr-1"></i>備註
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
+            appData.policeClocks.forEach((c, idx) => {
+                const isOwner = currentUser && (currentUser.account === c.id || currentUser.role === 'admin');
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="p-4 font-mono text-xs text-indigo-400">${c.caseId || '無編號'}</td>
+                        <td class="p-4 font-medium text-white">${c.id} / ${c.name}</td>
+                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${c.status === '上班' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-400'}">${c.status}</span></td>
+                        <td class="p-4 text-slate-300">${c.vehicle}</td>
+                        <td class="p-4 text-slate-400 text-xs">${c.time}</td>
+                        <td class="p-4 text-slate-300 text-xs">${c.remark || '<span class="text-slate-600">無備註</span>'}</td>
+                        <td class="p-4 text-right space-x-1">
+                            ${isOwner ? `<button onclick="openEditModal('policeClock', ${idx})" class="text-emerald-400 hover:text-emerald-300 text-xs bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">編輯</button>` : ''}
+                            ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('policeClock', ${idx})" class="text-amber-400 hover:text-amber-300 text-xs bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">備註</button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
         }
 
         function renderFireReports() {
-            const container = document.getElementById('fire-reports-list');
-            const query = (document.getElementById('search-fire-report')?.value || '').toLowerCase();
-            const filtered = stateData.fireReports.filter(r => r.title.toLowerCase().includes(query) || r.authorName.toLowerCase().includes(query) || r.content.toLowerCase().includes(query));
-
-            if(filtered.length === 0) {
-                container.innerHTML = `<div class="bg-slate-900 p-8 rounded-2xl border border-slate-800 text-center text-slate-500">查無相關消防案件報告。</div>`;
+            const listEl = document.getElementById('fire-reports-list');
+            const search = (document.getElementById('search-fire-report').value || '').toLowerCase();
+            listEl.innerHTML = '';
+            const filtered = appData.fireReports.filter(r => r.author.toLowerCase().includes(search) || r.title.toLowerCase().includes(search) || r.content.toLowerCase().includes(search) || (r.caseId && r.caseId.toLowerCase().includes(search)));
+            
+            if (filtered.length === 0) {
+                listEl.innerHTML = `<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">查無相關消防救援案件報告。</div>`;
                 return;
             }
 
-            container.innerHTML = filtered.map(r => `
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-lg">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
-                        <div class="flex items-center space-x-3">
-                            <span class="bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-1 rounded-lg text-xs font-bold">${r.id}</span>
-                            <h4 class="font-bold text-white text-base">${r.title}</h4>
+            filtered.forEach((r, idx) => {
+                const originalIdx = appData.fireReports.indexOf(r);
+                const isOwner = currentUser && (currentUser.account === r.id || currentUser.role === 'admin');
+                listEl.innerHTML += `
+                    <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3 shadow-xl">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+                            <div class="flex items-center space-x-3 flex-wrap gap-y-1">
+                                <span class="bg-indigo-500/20 text-indigo-400 font-mono text-xs px-2.5 py-1 rounded-lg border border-indigo-500/30">${r.caseId || '無編號'}</span>
+                                <span class="bg-red-500/20 text-red-400 font-mono text-xs px-2.5 py-1 rounded-lg border border-red-500/30">${r.id}</span>
+                                <h4 class="text-base font-bold text-white">${r.title}</h4>
+                            </div>
+                            <span class="text-xs text-slate-400"><i class="fa-regular fa-clock mr-1"></i>${r.time} ｜ RP名稱：${r.author}</span>
                         </div>
-                        <div class="text-xs text-slate-400 flex items-center space-x-3">
-                            <span><i class="fa-solid fa-user mr-1 text-slate-500"></i>${r.authorName} (${r.authorId})</span>
-                            <span><i class="fa-solid fa-clock mr-1 text-slate-500"></i>${r.time}</span>
+                        <p class="text-sm text-slate-300 leading-relaxed">${r.content}</p>
+                        <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
+                            <div class="text-xs text-slate-400 flex items-center space-x-2">
+                                <i class="fa-solid fa-video text-red-400"></i>
+                                <span>相關影片：${r.videoLink ? `<a href="${r.videoLink}" target="_blank" class="text-red-400 underline hover:text-red-300 ml-1">${r.videoLink}</a>` : '<span class="text-slate-600">未提供連結</span>'}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                ${isOwner ? `<button onclick="openEditModal('fireReport', ${originalIdx})" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-to-square"></i><span>編輯報告</span></button>` : ''}
+                                ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('fireReport', ${originalIdx})" class="bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen-nib"></i><span>長官備註</span></button>` : ''}
+                            </div>
                         </div>
+                        ${r.remark ? `<div class="bg-amber-950/20 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-200 mt-2"><strong class="font-bold"><i class="fa-solid fa-shield-halved mr-1"></i>長官批示：</strong>${r.remark}</div>` : ''}
                     </div>
-                    <p class="text-slate-300 text-sm leading-relaxed">${r.content}</p>
-                    ${r.attachment ? `
-                        <div class="flex items-center space-x-2 bg-slate-950/70 border border-slate-800 px-3 py-2 rounded-xl text-xs text-red-400 w-fit">
-                            <i class="fa-solid fa-paperclip"></i>
-                            <span class="font-medium">${r.attachment.name}</span>
-                            <span class="text-slate-500">(${r.attachment.size})</span>
-                        </div>
-                    ` : ''}
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 bg-slate-950/40 p-3 rounded-xl border border-slate-800/80">
-                        <div class="text-xs">
-                            <span class="text-yellow-500 font-bold mr-1"><i class="fa-solid fa-comment-dots mr-1"></i>高層備註：</span>
-                            <span class="text-slate-300">${r.remark || '尚無長官批示'}</span>
-                        </div>
-                        <button onclick="openRemarkModal('fire_report', '${r.id}')" class="bg-slate-800 hover:bg-slate-700 text-yellow-400 border border-yellow-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
-                            <i class="fa-solid fa-pen-nib"></i><span>增加/修改備註</span>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            });
         }
 
         function renderFireClocks() {
             const tbody = document.getElementById('fire-clocks-tbody');
-            if(stateData.fireClocks.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">目前尚無消防打卡紀錄。</td></tr>`;
+            tbody.innerHTML = '';
+            if (appData.fireClocks.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">尚無消防打卡紀錄。</td></tr>`;
                 return;
             }
-            tbody.innerHTML = stateData.fireClocks.map(c => `
-                <tr class="hover:bg-slate-800/50 transition">
-                    <td class="p-4 font-medium text-white">${c.name} <span class="text-xs text-slate-400">(${c.id})</span></td>
-                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${c.status==='上班'?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20':'bg-slate-800 text-slate-400'}">${c.status}</span></td>
-                    <td class="p-4 text-slate-300 font-mono text-xs"><i class="fa-solid fa-truck-medical mr-1 text-red-400"></i>${c.vehicle}</td>
-                    <td class="p-4 text-slate-400 text-xs">${c.time}</td>
-                    <td class="p-4 text-xs text-yellow-400 font-medium">${c.remark || '<span class="text-slate-600">無</span>'}</td>
-                    <td class="p-4 text-right">
-                        <button onclick="openRemarkModal('fire_clock', '${c.time}')" class="bg-slate-800 hover:bg-slate-700 text-yellow-400 px-3 py-1 rounded-lg text-xs font-semibold border border-yellow-500/30">
-                            <i class="fa-solid fa-comment-dots mr-1"></i>備註
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
+            appData.fireClocks.forEach((c, idx) => {
+                const isOwner = currentUser && (currentUser.account === c.id || currentUser.role === 'admin');
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="p-4 font-mono text-xs text-indigo-400">${c.caseId || '無編號'}</td>
+                        <td class="p-4 font-medium text-white">${c.id} / ${c.name}</td>
+                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${c.status === '上班' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-400'}">${c.status}</span></td>
+                        <td class="p-4 text-slate-300">${c.vehicle}</td>
+                        <td class="p-4 text-slate-400 text-xs">${c.time}</td>
+                        <td class="p-4 text-slate-300 text-xs">${c.remark || '<span class="text-slate-600">無備註</span>'}</td>
+                        <td class="p-4 text-right space-x-1">
+                            ${isOwner ? `<button onclick="openEditModal('fireClock', ${idx})" class="text-emerald-400 hover:text-emerald-300 text-xs bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">編輯</button>` : ''}
+                            ${currentUser && (currentUser.role === 'high' || currentUser.role === 'admin') ? `<button onclick="openRemarkModal('fireClock', ${idx})" class="text-amber-400 hover:text-amber-300 text-xs bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">備註</button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // High Rank Remark Handling
+        function openRemarkModal(targetType, index) {
+            document.getElementById('modal-remark').classList.remove('hidden');
+            document.getElementById('remark-target-type').value = targetType;
+            document.getElementById('remark-target-index').value = index;
+            document.getElementById('remark-text-input').value = '';
+        }
+
+        function submitRemark() {
+            const type = document.getElementById('remark-target-type').value;
+            const idx = parseInt(document.getElementById('remark-target-index').value);
+            const remarkText = document.getElementById('remark-text-input').value.trim();
+
+            if (type === 'policeReport') appData.policeReports[idx].remark = remarkText;
+            else if (type === 'policeClock') appData.policeClocks[idx].remark = remarkText;
+            else if (type === 'fireReport') appData.fireReports[idx].remark = remarkText;
+            else if (type === 'fireClock') appData.fireClocks[idx].remark = remarkText;
+
+            saveAppData();
+            closeModal('modal-remark');
+            if (type.startsWith('police')) {
+                renderPoliceReports();
+                renderPoliceClocks();
+            } else {
+                renderFireReports();
+                renderFireClocks();
+            }
+            alert('長官備註已成功更新！');
+        }
+
+        // Admin Management
+        function openCreateUserModal() {
+            if (!currentUser || currentUser.role !== 'admin') {
+                alert('權限不足：只有最高管理員可新增帳號！');
+                return;
+            }
+            document.getElementById('modal-create-user').classList.remove('hidden');
+        }
+
+        function submitNewUser() {
+            const account = document.getElementById('new-user-account').value.trim();
+            const name = document.getElementById('new-user-name').value.trim();
+            const unit = document.getElementById('new-user-unit').value;
+            const role = document.getElementById('new-user-role').value;
+            const pass = document.getElementById('new-user-password').value.trim();
+
+            if (!account || !name || !pass) {
+                alert('請完整填寫帳號、RP名稱與密碼！');
+                return;
+            }
+            if (appData.users.some(u => u.account === account)) {
+                alert('錯誤：此帳號/編號已經存在！');
+                return;
+            }
+
+            appData.users.push({ account, name, unit, role, pass });
+            saveAppData();
+            closeModal('modal-create-user');
+            renderAdminUsers();
+            renderAdminOverview();
+            alert('新公職帳號已成功建立！');
+        }
+
+        function deleteUser(acc) {
+            if (acc === 'admin') {
+                alert('無法刪除系統初始最高管理員！');
+                return;
+            }
+            if (confirm(`確定要刪除帳號 [${acc}] 嗎？`)) {
+                appData.users = appData.users.filter(u => u.account !== acc);
+                saveAppData();
+                renderAdminUsers();
+                renderAdminOverview();
+                alert('帳號已刪除');
+            }
         }
 
         function renderAdminUsers() {
             const tbody = document.getElementById('admin-users-tbody');
-            tbody.innerHTML = stateData.users.map(u => `
-                <tr class="hover:bg-slate-800/50 transition">
-                    <td class="p-4 font-mono text-white text-xs">${u.account}</td>
-                    <td class="p-4 font-medium text-slate-200">${u.name}</td>
-                    <td class="p-4 text-slate-400 text-xs">${u.role.includes('police')?'警務系統':u.role.includes('fire')?'消防系統':'管理員系統'}</td>
-                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${u.role==='admin'?'bg-purple-500/10 text-purple-400 border border-purple-500/20':u.role.includes('high')?'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20':'bg-blue-500/10 text-blue-400 border border-blue-500/20'}">${getRoleName(u.role)}</span></td>
-                    <td class="p-4 text-right">
-                        ${u.account !== 'Dsuensx' ? `
-                            <button onclick="deleteUser('${u.account}')" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-1 rounded-lg text-xs font-semibold transition">
-                                <i class="fa-solid fa-trash mr-1"></i>刪除
-                            </button>
-                        ` : `<span class="text-xs text-slate-500">系統保護帳號</span>`}
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = '';
+            appData.users.usersCache = appData.users;
+            appData.users.forEach(u => {
+                const unitBadge = u.unit === 'police' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : u.unit === 'fire' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+                const roleBadge = u.role === 'admin' ? 'bg-purple-600 text-white' : u.role === 'high' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-300';
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="p-4 font-mono font-medium text-white">${u.account}</td>
+                        <td class="p-4 text-slate-200">${u.name}</td>
+                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold border ${unitBadge}">${u.unit.toUpperCase()}</span></td>
+                        <td class="p-4"><span class="px-2.5 py-1 rounded-lg text-xs font-semibold ${roleBadge}">${u.role.toUpperCase()}</span></td>
+                        <td class="p-4 text-right">
+                            ${u.account !== 'admin' ? `<button onclick="deleteUser('${u.account}')" class="text-red-400 hover:text-red-300 text-xs bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-lg">刪除</button>` : '<span class="text-xs text-slate-600">系統保護</span>'}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function saveMemo() {
+            const memoText = document.getElementById('admin-memo-textarea').value;
+            appData.adminMemo = memoText;
+            saveAppData();
+            alert('管理員共同備忘錄已成功儲存！');
         }
 
         function renderAdminOverview() {
-            document.getElementById('stat-total-users').innerText = stateData.users.length;
-            document.getElementById('stat-police-reports').innerText = stateData.policeReports.length;
-            document.getElementById('stat-fire-reports').innerText = stateData.fireReports.length;
-        }
-
-        function showToast(msg, type='success') {
-            const toast = document.getElementById('toast');
-            const toastMsg = document.getElementById('toast-msg');
-            const toastIcon = document.getElementById('toast-icon');
-
-            toastMsg.innerText = msg;
-            if(type === 'error') {
-                toastIcon.className = "fa-solid fa-triangle-exclamation text-red-400 text-lg";
-            } else {
-                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-lg";
-            }
-
-            toast.classList.remove('translate-y-32', 'opacity-0');
-            setTimeout(() => {
-                toast.classList.add('translate-y-32', 'opacity-0');
-            }, 3000);
+            document.getElementById('stat-total-users').innerText = appData.users.length;
+            document.getElementById('stat-police-reports').innerText = appData.policeReports.length;
+            document.getElementById('stat-fire-reports').innerText = appData.fireReports.length;
         }
     </script>
 </body>
