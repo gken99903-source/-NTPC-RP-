@@ -531,9 +531,10 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Main tab navigation binding (robust support for data-tab selectors)
+            // Main tab navigation binding with robust event delegation & direct binding
             const handleTabClick = (e) => {
-                const btn = e.currentTarget;
+                const btn = e.currentTarget.closest('[data-tab]');
+                if (!btn) return;
                 const tabId = btn.getAttribute('data-tab');
                 if (tabId) {
                     switchTab(tabId);
@@ -1254,36 +1255,148 @@
             appData.users.forEach(u => {
                 const unitBadge = u.unit === 'police' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : u.unit === 'fire' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-purple-500/10 text-purple-400 border-purple-500/20';
                 const roleBadge = u.role === 'admin' ? 'bg-purple-600 text-white' : u.role === 'high' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-300';
+                
+                // Check if current user can edit this account
+                // Dsuensx can only be edited by Dsuensx himself. Other admins can edit normal users or high ranking users.
+                const canEdit = currentUser && (currentUser.role === 'admin') && (u.account !== 'DSUENSX' || (currentUser && currentUser.account.toUpperCase() === 'DSUENSX'));
+                const canDelete = u.account.toUpperCase() !== 'DSUENSX' && currentUser && currentUser.role === 'admin';
+
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/40 transition">
                         <td class="p-4 font-mono font-medium text-white">${u.account}</td>
                         <td class="p-4 text-slate-200">${u.name}</td>
                         <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold border ${unitBadge}">${u.unit.toUpperCase()}</span></td>
                         <td class="p-4"><span class="px-2.5 py-1 rounded-lg text-xs font-semibold ${roleBadge}">${u.role.toUpperCase()}</span></td>
-                        <td class="p-4 text-right">
-                            ${u.account !== 'admin' ? `<button onclick="deleteUser('${u.account}')" class="text-red-400 hover:text-red-300 text-xs bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-lg">刪除</button>` : '<span class="text-xs text-slate-600">系統保護</span>'}
+                        <td class="p-4 text-right space-x-1">
+                            ${canEdit ? `<button onclick="openAdminEditUserModal('${u.account}')" class="text-emerald-400 hover:text-emerald-300 text-xs bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">修改</button>` : '<span class="text-xs text-slate-600">無權限</span>'}
+                            ${canDelete ? `<button onclick="deleteUser('${u.account}')" class="text-red-400 hover:text-red-300 text-xs bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-lg">刪除</button>` : ''}
                         </td>
                     </tr>
                 `;
             });
         }
 
-        async function saveMemo() {
-            const memoText = document.getElementById('admin-memo-textarea').value;
-            appData.adminMemo = memoText;
-            await fm.setDoc(fm.doc(db, 'systemSettings', 'adminMemo'), { content: memoText });
-            alert('管理員共同備忘錄已成功同步儲存至雲端！');
+        // Admin Edit User Modal functions
+        window.openAdminEditUserModal = function(account) {
+            if (!currentUser || currentUser.role !== 'admin') {
+                alert('權限不足：只有最高管理員可修改帳號資訊！');
+                return;
+            }
+            if (account.toUpperCase() === 'DSUENSX' && currentUser.account.toUpperCase() !== 'DSUENSX') {
+                alert('安全性限制：總管理員 (DSUENSX) 的帳號與密碼僅限其本人能夠修改！');
+                return;
+            }
+
+            const targetUser = appData.users.find(u => u.account === account);
+            if (!targetUser) return;
+
+            // Open or create modal dynamically if needed, or use a specific admin user edit modal
+            let modal = document.getElementById('modal-admin-edit-user');
+            if (!modal) {
+                const modalHTML = `
+                <div id="modal-admin-edit-user" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xl font-bold text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-user-pen text-emerald-500"></i>
+                                <span>管理員修改帳號設定</span>
+                            </h3>
+                            <button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-admin-edit-user"><i class="fa-solid fa-xmark text-lg"></i></button>
+                        </div>
+                        <div class="space-y-4">
+                            <input type="hidden" id="admin-edit-user-account">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">帳號 / 編號 (唯讀)</label>
+                                <input type="text" id="admin-edit-user-account-display" disabled class="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 cursor-not-allowed">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">RP名稱</label>
+                                <input type="text" id="admin-edit-user-name" placeholder="請輸入RP名稱..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位</label>
+                                <select id="admin-edit-user-unit" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+                                    <option value="police">警察局 (Police)</option>
+                                    <option value="fire">消防局 (Fire & EMS)</option>
+                                    <option value="admin">系統總管理處 (Admin)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">權限身份級別</label>
+                                <select id="admin-edit-user-role" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+                                    <option value="normal">一般基層人員</option>
+                                    <option value="high">高層長官 (分局長/大隊長)</option>
+                                    <option value="admin">最高管理員</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">新密碼 (若不修改請留空)</label>
+                                <input type="password" id="admin-edit-user-password" placeholder="不修改密碼請保持空白..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <button id="submit-admin-edit-user-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-emerald-600/30 transition">確認儲存修改</button>
+                        </div>
+                    </div>
+                </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+                document.querySelector('#modal-admin-edit-user .close-modal-btn').addEventListener('click', () => closeModal('modal-admin-edit-user'));
+                document.getElementById('submit-admin-edit-user-btn').addEventListener('click', submitAdminEditUser);
+                modal = document.getElementById('modal-admin-edit-user');
+            }
+
+            modal.classList.remove('hidden');
+            document.getElementById('admin-edit-user-account').value = targetUser.account;
+            document.getElementById('admin-edit-user-account-display').value = targetUser.account;
+            document.getElementById('admin-edit-user-name').value = targetUser.name;
+            document.getElementById('admin-edit-user-unit').value = targetUser.unit;
+            document.getElementById('admin-edit-user-role').value = targetUser.role;
+            document.getElementById('admin-edit-user-password').value = '';
+        };
+
+        async function submitAdminEditUser() {
+            const account = document.getElementById('admin-edit-user-account').value;
+            const name = document.getElementById('admin-edit-user-name').value.trim();
+            const unit = document.getElementById('admin-edit-user-unit').value;
+            const role = document.getElementById('admin-edit-user-role').value;
+            const newPass = document.getElementById('admin-edit-user-password').value.trim();
+
+            if (!name) {
+                alert('RP名稱不能為空！');
+                return;
+            }
+
+            if (account.toUpperCase() === 'DSUENSX' && currentUser.account.toUpperCase() !== 'DSUENSX') {
+                alert('安全性限制：您無權修改總管理員 (DSUENSX) 的資料！');
+                return;
+            }
+
+            const targetUser = appData.users.find(u => u.account === account);
+            if (!targetUser) return;
+
+            targetUser.name = name;
+            targetUser.unit = unit;
+            targetUser.role = role;
+            if (newPass) {
+                targetUser.pass = newPass;
+            }
+
+            const updatePayload = {
+                name: targetUser.name,
+                unit: targetUser.unit,
+                role: targetUser.role
+            };
+            if (newPass) {
+                updatePayload.pass = targetUser.pass;
+            }
+
+            await fm.updateDoc(fm.doc(db, 'users', targetUser.docId), updatePayload);
+            closeModal('modal-admin-edit-user');
+            renderAdminUsers();
+            alert(`帳號 [${account}] 的相關資訊與密碼已成功更新並同步至雲端！`);
         }
 
-        function renderAdminOverview() {
-            const totalUsersEl = document.getElementById('stat-total-users');
-            const policeRepEl = document.getElementById('stat-police-reports');
-            const fireRepEl = document.getElementById('stat-fire-reports');
-            
-            if (totalUsersEl) totalUsersEl.innerText = appData.users.length;
-            if (policeRepEl) policeRepEl.innerText = appData.policeReports.length;
-            if (fireRepEl) fireRepEl.innerText = appData.fireReports.length;
-        }
-    </script>
-</body>
-</html>
+        window.deleteUser = async function(acc) {
+            if (acc.toUpperCase() === 'DSUENSX') {
+                alert('無法刪除總管理員 (DSUENSX) 帳號！');
+                return;
+            }
