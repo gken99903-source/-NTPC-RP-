@@ -242,7 +242,7 @@
                         <h3 class="text-lg font-bold text-slate-200">全體員警案件報告總覽</h3>
                         <div class="w-full sm:w-80">
                             <!-- 變更 1：查詢功能改為查詢嫌疑犯的證件ID -->
-                            <input type="text" id="search-police-report" placeholder="輸入嫌疑犯證件ID搜尋..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 font-mono">
+                            <input type="text" id="search-police-report" placeholder="輸入嫌疑犯證件ID／填寫人警編搜尋..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 font-mono">
                         </div>
                     </div>
                     <div id="police-reports-list" class="grid grid-cols-1 gap-4"></div>
@@ -1774,9 +1774,10 @@
             container.innerHTML = '';
             const filtered = appData.policeReports.filter(r => {
                 if (!queryVal) return true;
-                // 變更 1：改為比對嫌疑犯證件ID (suspectId)
-                const sId = (r.suspectId || '').toLowerCase();
-                return sId.includes(queryVal);
+                // 支援依嫌疑犯證件ID或填寫人警編搜尋
+                const sId = String(r.suspectId || '').toLowerCase();
+                const authorId = String(r.authorId || '').toLowerCase();
+                return sId.includes(queryVal) || authorId.includes(queryVal);
             });
 
             if (filtered.length === 0) {
