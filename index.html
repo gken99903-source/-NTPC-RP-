@@ -138,248 +138,329 @@
             </div>
         </section>
 
+        <!-- Police Section -->
         <section id="tab-police" class="hidden space-y-8">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
-                <div>
-                    <span class="text-xs uppercase font-bold tracking-wider text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">Police Department</span>
-                    <h2 class="text-2xl font-bold text-white mt-2"><i class="fa-solid fa-shield mr-2 text-blue-500"></i>新北市政府警察局 勤務中心</h2>
-                    <p class="text-slate-400 text-sm mt-1">辦理員警出勤打卡、車輛登錄、執勤時數統計與治安案件報告。</p>
+            <div id="police-lock-overlay" class="hidden bg-slate-900/90 backdrop-blur border border-slate-800 p-12 rounded-2xl text-center space-y-4 shadow-2xl">
+                <div class="w-16 h-16 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-2xl mx-auto flex items-center justify-center text-2xl font-bold">
+                    <i class="fa-solid fa-lock"></i>
                 </div>
-                <div class="flex items-center space-x-3">
-                    <button id="police-clock-modal-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-blue-600/30 transition flex items-center space-x-2">
-                        <i class="fa-solid fa-clock"></i><span>員警上下班打卡</span>
-                    </button>
-                    <button id="police-report-modal-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
-                        <i class="fa-solid fa-file-pen"></i><span>填寫案件報告</span>
-                    </button>
-                </div>
+                <h3 class="text-2xl font-bold text-white">警務系統需要登入</h3>
+                <p class="text-slate-400 text-sm max-w-md mx-auto">為了維持伺服器 RP 紀律與資料安全性，瀏覽警務案件、打卡與時數統計前請先登入公職帳號。</p>
+                <button onclick="document.getElementById('modal-login').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-blue-600/30 transition">立即登入系統</button>
             </div>
 
-            <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
-                <button id="btn-police-reports" data-sub="reports" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史案件報告庫</button>
-                <button id="btn-police-clocks" data-sub="clocks" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clipboard-user mr-2"></i>即時出勤打卡紀錄</button>
-                <button id="btn-police-hours" data-sub="hours" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數統計</button>
-            </div>
-
-            <div id="police-sub-reports" class="space-y-4">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-bold text-slate-200">全體員警案件報告總覽</h3>
-                    <div class="w-72">
-                        <input type="text" id="search-police-report" placeholder="搜尋警員RP名稱或報告內容..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+            <div id="police-content-container" class="space-y-8">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+                    <div>
+                        <span class="text-xs uppercase font-bold tracking-wider text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">Police Department</span>
+                        <h2 class="text-2xl font-bold text-white mt-2"><i class="fa-solid fa-shield mr-2 text-blue-500"></i>新北市政府警察局 勤務中心</h2>
+                        <p class="text-slate-400 text-sm mt-1">辦理員警出勤打卡、車輛登錄、執勤時數統計與治安案件報告。</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button id="police-clock-modal-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-blue-600/30 transition flex items-center space-x-2">
+                            <i class="fa-solid fa-clock"></i><span>員警上下班打卡</span>
+                        </button>
+                        <button id="police-report-modal-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                            <i class="fa-solid fa-file-pen"></i><span>填寫案件報告</span>
+                        </button>
                     </div>
                 </div>
-                <div id="police-reports-list" class="grid grid-cols-1 gap-4"></div>
-            </div>
 
-            <div id="police-sub-clocks" class="hidden space-y-4">
-                <h3 class="text-lg font-bold text-slate-200">員警出勤打卡歷史與狀態</h3>
-                <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
-                    <table class="w-full text-left border-collapse text-sm">
-                        <thead>
-                            <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
-                                <th class="p-4">員警編號 / RP名稱</th>
-                                <th class="p-4">打卡狀態</th>
-                                <th class="p-4">執勤車輛編號</th>
-                                <th class="p-4">打卡時間</th>
-                                <th class="p-4">長官備註</th>
-                                <th class="p-4 text-right">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="police-clocks-tbody" class="divide-y divide-slate-800/60"></tbody>
-                    </table>
+                <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
+                    <button id="btn-police-reports" data-sub="reports" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史案件報告庫</button>
+                    <button id="btn-police-clocks" data-sub="clocks" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clipboard-user mr-2"></i>即時出勤打卡紀錄</button>
+                    <button id="btn-police-hours" data-sub="hours" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數統計</button>
                 </div>
-            </div>
 
-            <div id="police-sub-hours" class="hidden space-y-6">
-                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-6">
-                    <h3 class="text-lg font-bold text-white flex items-center space-x-2">
-                        <i class="fa-solid fa-calculator text-blue-500"></i>
-                        <span>員警執勤總時數結算與查詢</span>
-                    </h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">選擇或輸入員警</label>
-                            <select id="police-calc-member" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-blue-500"></select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">起始日期 (含)</label>
-                            <input type="date" id="police-calc-start" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">結束日期 (含)</label>
-                            <input type="date" id="police-calc-end" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                <div id="police-sub-reports" class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-slate-200">全體員警案件報告總覽</h3>
+                        <div class="w-72">
+                            <input type="text" id="search-police-report" placeholder="搜尋警員RP名稱或報告內容..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
                         </div>
                     </div>
-                    <button id="police-calc-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">計算指定期間執勤總時數</button>
-                    
-                    <div id="police-calc-result" class="hidden bg-slate-950 border border-slate-800 rounded-2xl p-6 space-y-3">
-                        <h4 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">結算結果</h4>
-                        <div class="flex items-center justify-between">
-                            <span id="police-calc-member-name" class="text-xl font-bold text-white">--</span>
-                            <span id="police-calc-total-hours" class="text-3xl font-extrabold text-blue-400">0.0 小時</span>
+                    <div id="police-reports-list" class="grid grid-cols-1 gap-4"></div>
+                </div>
+
+                <div id="police-sub-clocks" class="hidden space-y-4">
+                    <h3 class="text-lg font-bold text-slate-200">員警出勤打卡歷史與狀態</h3>
+                    <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
+                                    <th class="p-4">員警編號 / RP名稱</th>
+                                    <th class="p-4">打卡狀態</th>
+                                    <th class="p-4">執勤車輛編號</th>
+                                    <th class="p-4">打卡時間</th>
+                                    <th class="p-4">長官備註</th>
+                                    <th class="p-4 text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="police-clocks-tbody" class="divide-y divide-slate-800/60"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="police-sub-hours" class="hidden space-y-6">
+                    <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-6">
+                        <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-calculator text-blue-500"></i>
+                            <span>員警執勤總時數結算與查詢</span>
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">選擇或輸入員警</label>
+                                <select id="police-calc-member" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-blue-500"></select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">起始日期 (含)</label>
+                                <input type="date" id="police-calc-start" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">結束日期 (含)</label>
+                                <input type="date" id="police-calc-end" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                            </div>
                         </div>
-                        <p id="police-calc-details" class="text-xs text-slate-500"></p>
+                        <button id="police-calc-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">計算指定期間執勤總時數</button>
+                        
+                        <div id="police-calc-result" class="hidden bg-slate-950 border border-slate-800 rounded-2xl p-6 space-y-3">
+                            <h4 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">結算結果</h4>
+                            <div class="flex items-center justify-between">
+                                <span id="police-calc-member-name" class="text-xl font-bold text-white">--</span>
+                                <span id="police-calc-total-hours" class="text-3xl font-extrabold text-blue-400">0.0 小時</span>
+                            </div>
+                            <p id="police-calc-details" class="text-xs text-slate-500"></p>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
+        <!-- Fire Section -->
         <section id="tab-fire" class="hidden space-y-8">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
-                <div>
-                    <span class="text-xs uppercase font-bold tracking-wider text-red-400 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">Fire & EMS</span>
-                    <h2 class="text-2xl font-bold text-white mt-2"><i class="fa-solid fa-fire-extinguisher mr-2 text-red-500"></i>新北市政府消防局 指揮中心</h2>
-                    <p class="text-slate-400 text-sm mt-1">辦理消防隊員出勤打卡、救災車輛登錄、執勤時數統計與災害救護報告。</p>
+            <div id="fire-lock-overlay" class="hidden bg-slate-900/90 backdrop-blur border border-slate-800 p-12 rounded-2xl text-center space-y-4 shadow-2xl">
+                <div class="w-16 h-16 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl mx-auto flex items-center justify-center text-2xl font-bold">
+                    <i class="fa-solid fa-lock"></i>
                 </div>
-                <div class="flex items-center space-x-3">
-                    <button id="fire-clock-modal-btn" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-red-600/30 transition flex items-center space-x-2">
-                        <i class="fa-solid fa-clock"></i><span>消防員上下班打卡</span>
-                    </button>
-                    <button id="fire-report-modal-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
-                        <i class="fa-solid fa-file-pen"></i><span>填寫消防案件報告</span>
-                    </button>
-                </div>
+                <h3 class="text-2xl font-bold text-white">消防系統需要登入</h3>
+                <p class="text-slate-400 text-sm max-w-md mx-auto">為了維持伺服器 RP 紀律與資料安全性，瀏覽消防救護案件、打卡與時數統計前請先登入公職帳號。</p>
+                <button onclick="document.getElementById('modal-login').classList.remove('hidden')" class="bg-red-600 hover:bg-red-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-red-600/30 transition">立即登入系統</button>
             </div>
 
-            <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
-                <button id="btn-fire-reports" data-sub="reports" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史消防案件報告</button>
-                <button id="btn-fire-clocks" data-sub="clocks" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clipboard-user mr-2"></i>消防出勤打卡紀錄</button>
-                <button id="btn-fire-hours" data-sub="hours" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數統計</button>
-            </div>
-
-            <div id="fire-sub-reports" class="space-y-4">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-bold text-slate-200">全體消防隊員案件報告總覽</h3>
-                    <div class="w-72">
-                        <input type="text" id="search-fire-report" placeholder="搜尋隊員RP名稱或內容..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-red-500">
+            <div id="fire-content-container" class="space-y-8">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+                    <div>
+                        <span class="text-xs uppercase font-bold tracking-wider text-red-400 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">Fire & EMS</span>
+                        <h2 class="text-2xl font-bold text-white mt-2"><i class="fa-solid fa-fire-extinguisher mr-2 text-red-500"></i>新北市政府消防局 指揮中心</h2>
+                        <p class="text-slate-400 text-sm mt-1">辦理消防隊員出勤打卡、救災車輛登錄、執勤時數統計與災害救護報告。</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button id="fire-clock-modal-btn" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-red-600/30 transition flex items-center space-x-2">
+                            <i class="fa-solid fa-clock"></i><span>消防員上下班打卡</span>
+                        </button>
+                        <button id="fire-report-modal-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                            <i class="fa-solid fa-file-pen"></i><span>填寫消防案件報告</span>
+                        </button>
                     </div>
                 </div>
-                <div id="fire-reports-list" class="grid grid-cols-1 gap-4"></div>
-            </div>
 
-            <div id="fire-sub-clocks" class="hidden space-y-4">
-                <h3 class="text-lg font-bold text-slate-200">消防隊員出勤打卡歷史與狀態</h3>
-                <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
-                    <table class="w-full text-left border-collapse text-sm">
-                        <thead>
-                            <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
-                                <th class="p-4">隊員編號 / RP名稱</th>
-                                <th class="p-4">打卡狀態</th>
-                                <th class="p-4">執勤車輛編號</th>
-                                <th class="p-4">打卡時間</th>
-                                <th class="p-4">長官備註</th>
-                                <th class="p-4 text-right">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="fire-clocks-tbody" class="divide-y divide-slate-800/60"></tbody>
-                    </table>
+                <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
+                    <button id="btn-fire-reports" data-sub="reports" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史消防案件報告</button>
+                    <button id="btn-fire-clocks" data-sub="clocks" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clipboard-user mr-2"></i>消防出勤打卡紀錄</button>
+                    <button id="btn-fire-hours" data-sub="hours" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數統計</button>
                 </div>
-            </div>
 
-            <div id="fire-sub-hours" class="hidden space-y-6">
-                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-6">
-                    <h3 class="text-lg font-bold text-white flex items-center space-x-2">
-                        <i class="fa-solid fa-calculator text-red-500"></i>
-                        <span>消防隊員執勤總時數結算與查詢</span>
-                    </h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">選擇或輸入隊員</label>
-                            <select id="fire-calc-member" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-red-500"></select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">起始日期 (含)</label>
-                            <input type="date" id="fire-calc-start" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-red-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">結束日期 (含)</label>
-                            <input type="date" id="fire-calc-end" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-red-500">
+                <div id="fire-sub-reports" class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-slate-200">全體消防隊員案件報告總覽</h3>
+                        <div class="w-72">
+                            <input type="text" id="search-fire-report" placeholder="搜尋隊員RP名稱或內容..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-red-500">
                         </div>
                     </div>
-                    <button id="fire-calc-btn" class="w-full bg-red-600 hover:bg-red-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-red-600/30 transition">計算指定期間執勤總時數</button>
-                    
-                    <div id="fire-calc-result" class="hidden bg-slate-950 border border-slate-800 rounded-2xl p-6 space-y-3">
-                        <h4 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">結算結果</h4>
-                        <div class="flex items-center justify-between">
-                            <span id="fire-calc-member-name" class="text-xl font-bold text-white">--</span>
-                            <span id="fire-calc-total-hours" class="text-3xl font-extrabold text-red-400">0.0 小時</span>
+                    <div id="fire-reports-list" class="grid grid-cols-1 gap-4"></div>
+                </div>
+
+                <div id="fire-sub-clocks" class="hidden space-y-4">
+                    <h3 class="text-lg font-bold text-slate-200">消防隊員出勤打卡歷史與狀態</h3>
+                    <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
+                                    <th class="p-4">隊員編號 / RP名稱</th>
+                                    <th class="p-4">打卡狀態</th>
+                                    <th class="p-4">執勤車輛編號</th>
+                                    <th class="p-4">打卡時間</th>
+                                    <th class="p-4">長官備註</th>
+                                    <th class="p-4 text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fire-clocks-tbody" class="divide-y divide-slate-800/60"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="fire-sub-hours" class="hidden space-y-6">
+                    <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-6">
+                        <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-calculator text-red-500"></i>
+                            <span>消防隊員執勤總時數結算與查詢</span>
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">選擇或輸入隊員</label>
+                                <select id="fire-calc-member" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-red-500"></select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">起始日期 (含)</label>
+                                <input type="date" id="fire-calc-start" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-red-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">結束日期 (含)</label>
+                                <input type="date" id="fire-calc-end" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-red-500">
+                            </div>
                         </div>
-                        <p id="fire-calc-details" class="text-xs text-slate-500"></p>
+                        <button id="fire-calc-btn" class="w-full bg-red-600 hover:bg-red-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-red-600/30 transition">計算指定期間執勤總時數</button>
+                        
+                        <div id="fire-calc-result" class="hidden bg-slate-950 border border-slate-800 rounded-2xl p-6 space-y-3">
+                            <h4 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">結算結果</h4>
+                            <div class="flex items-center justify-between">
+                                <span id="fire-calc-member-name" class="text-xl font-bold text-white">--</span>
+                                <span id="fire-calc-total-hours" class="text-3xl font-extrabold text-red-400">0.0 小時</span>
+                            </div>
+                            <p id="fire-calc-details" class="text-xs text-slate-500"></p>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
+        <!-- Admin Section -->
         <section id="tab-admin" class="hidden space-y-8">
-            <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <span class="text-xs uppercase font-bold tracking-wider text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">Admin Management</span>
-                    <h2 class="text-2xl font-bold text-white mt-2"><i class="fa-solid fa-user-gear mr-2 text-purple-500"></i>管理員與高層控制後台</h2>
-                    <p class="text-slate-400 text-sm mt-1">管理員可新增帳號、設定公職單位身分、檢視全單位打卡與案件，並維護共同備忘錄。</p>
+            <div id="admin-lock-overlay" class="hidden bg-slate-900/90 backdrop-blur border border-slate-800 p-12 rounded-2xl text-center space-y-4 shadow-2xl">
+                <div class="w-16 h-16 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-2xl mx-auto flex items-center justify-center text-2xl font-bold">
+                    <i class="fa-solid fa-lock"></i>
                 </div>
-                <div class="flex items-center space-x-3">
-                    <button id="open-create-user-modal-btn" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-purple-600/30 transition flex items-center space-x-2">
-                        <i class="fa-solid fa-user-plus"></i><span>新增公職帳號</span>
-                    </button>
-                </div>
+                <h3 class="text-2xl font-bold text-white">管理員中心需要登入</h3>
+                <p class="text-slate-400 text-sm max-w-md mx-auto">此區域僅限擁有公職管理與高層權限之人員進入。</p>
+                <button onclick="document.getElementById('modal-login').classList.remove('hidden')" class="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-purple-600/30 transition">立即登入系統</button>
             </div>
 
-            <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
-                <button id="btn-admin-users" data-sub="users" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap"><i class="fa-solid fa-users mr-2"></i>帳號與人員管理</button>
-                <button id="btn-admin-memo" data-sub="memo" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-note-sticky mr-2"></i>管理員共同備忘錄</button>
-                <button id="btn-admin-overview" data-sub="overview" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-chart-line mr-2"></i>全單位總彙整</button>
-            </div>
-
-            <div id="admin-sub-users" class="space-y-4">
-                <h3 class="text-lg font-bold text-slate-200">系統所有公職人員與高層帳號</h3>
-                <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
-                    <table class="w-full text-left border-collapse text-sm">
-                        <thead>
-                            <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
-                                <th class="p-4">帳號 / 編號</th>
-                                <th class="p-4">RP名稱</th>
-                                <th class="p-4">所屬單位 (最多兩個)</th>
-                                <th class="p-4">權限身份</th>
-                                <th class="p-4 text-right">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-users-tbody" class="divide-y divide-slate-800/60"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="admin-sub-memo" class="hidden space-y-4">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-bold text-slate-200">管理員共同備忘錄 (全體管理員可共同編輯)</h3>
-                    <button id="save-memo-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center space-x-2">
-                        <i class="fa-solid fa-floppy-disk"></i><span>儲存備忘錄</span>
-                    </button>
-                </div>
-                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
-                    <textarea id="admin-memo-textarea" rows="8" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-200 text-sm focus:outline-none focus:border-purple-500" placeholder="在此輸入分局/分隊管理員共同交辦事項、輪班表或重要備忘..."></textarea>
-                    <p class="text-xs text-slate-500"><i class="fa-solid fa-circle-info mr-1"></i>備忘錄資料會自動同步至雲端資料庫中，供所有管理員查閱。</p>
-                </div>
-            </div>
-
-            <div id="admin-sub-overview" class="hidden space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
-                        <span class="text-slate-400 text-sm font-medium">總註冊帳號數</span>
-                        <h4 id="stat-total-users" class="text-3xl font-bold text-white mt-2">0</h4>
+            <div id="admin-content-container" class="space-y-8">
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <span class="text-xs uppercase font-bold tracking-wider text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">Admin Management</span>
+                        <h2 class="text-2xl font-bold text-white mt-2"><i class="fa-solid fa-user-gear mr-2 text-purple-500"></i>管理員與高層控制後台</h2>
+                        <p class="text-slate-400 text-sm mt-1">管理員可新增帳號、編輯帳號資訊、檢視全單位打卡與案件，並維護資料庫空間與操作稽核紀錄。</p>
                     </div>
-                    <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
-                        <span class="text-slate-400 text-sm font-medium">警務總案件數</span>
-                        <h4 id="stat-police-reports" class="text-3xl font-bold text-blue-400 mt-2">0</h4>
+                    <div class="flex items-center space-x-3">
+                        <button id="open-create-user-modal-btn" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-purple-600/30 transition flex items-center space-x-2">
+                            <i class="fa-solid fa-user-plus"></i><span>新增公職帳號</span>
+                        </button>
                     </div>
-                    <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
-                        <span class="text-slate-400 text-sm font-medium">消防總案件數</span>
-                        <h4 id="stat-fire-reports" class="text-3xl font-bold text-red-400 mt-2">0</h4>
+                </div>
+
+                <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
+                    <button id="btn-admin-users" data-sub="users" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap"><i class="fa-solid fa-users mr-2"></i>帳號與人員管理</button>
+                    <button id="btn-admin-logs" data-sub="logs" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clock-rotate-left mr-2"></i>一周內移除/編輯紀錄</button>
+                    <button id="btn-admin-storage" data-sub="storage" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-database mr-2"></i>雲端資料庫空間</button>
+                    <button id="btn-admin-memo" data-sub="memo" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-note-sticky mr-2"></i>管理員共同備忘錄</button>
+                    <button id="btn-admin-overview" data-sub="overview" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-chart-line mr-2"></i>全單位總彙整</button>
+                </div>
+
+                <div id="admin-sub-users" class="space-y-4">
+                    <h3 class="text-lg font-bold text-slate-200">系統所有公職人員與高層帳號</h3>
+                    <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
+                                    <th class="p-4">帳號 / 編號</th>
+                                    <th class="p-4">RP名稱</th>
+                                    <th class="p-4">所屬單位</th>
+                                    <th class="p-4">權限身份</th>
+                                    <th class="p-4 text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-users-tbody" class="divide-y divide-slate-800/60"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="admin-sub-logs" class="hidden space-y-4">
+                    <h3 class="text-lg font-bold text-slate-200">最近一周內使用「移除」與「編輯」功能的稽核紀錄</h3>
+                    <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
+                                    <th class="p-4">操作動作</th>
+                                    <th class="p-4">操作人員</th>
+                                    <th class="p-4">目標項目類型 / ID</th>
+                                    <th class="p-4">時間</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-logs-tbody" class="divide-y divide-slate-800/60"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="admin-sub-storage" class="hidden space-y-6">
+                    <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-xl space-y-6 max-w-2xl mx-auto">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-database text-purple-500"></i>
+                                <span>雲端資料庫容量使用狀況</span>
+                            </h3>
+                            <span class="px-3 py-1 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-full text-xs font-semibold">上限 1 GB</span>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span id="storage-used-text" class="text-slate-300 font-medium">當前已使用：-- KB</span>
+                                <span id="storage-percent-text" class="text-purple-400 font-bold">0.0%</span>
+                            </div>
+                            <div class="w-full bg-slate-950 rounded-full h-4 overflow-hidden border border-slate-800 p-0.5">
+                                <div id="storage-progress-bar" class="bg-gradient-to-r from-purple-600 to-blue-500 h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800 text-xs text-slate-400">
+                            <div>文件總數：<span id="storage-docs-count" class="text-white font-mono font-bold">0</span> 筆</div>
+                            <div>剩餘可用空間：<span id="storage-free-text" class="text-emerald-400 font-mono font-bold">--</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="admin-sub-memo" class="hidden space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-slate-200">管理員共同備忘錄 (全體管理員可共同編輯)</h3>
+                        <button id="save-memo-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                            <i class="fa-solid fa-floppy-disk"></i><span>儲存備忘錄</span>
+                        </button>
+                    </div>
+                    <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                        <textarea id="admin-memo-textarea" rows="8" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-200 text-sm focus:outline-none focus:border-purple-500" placeholder="在此輸入分局/分隊管理員共同交辦事項、輪班表或重要備忘..."></textarea>
+                        <p class="text-xs text-slate-500"><i class="fa-solid fa-circle-info mr-1"></i>備忘錄資料會自動同步至雲端資料庫中，供所有管理員查閱。</p>
+                    </div>
+                </div>
+
+                <div id="admin-sub-overview" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                            <span class="text-slate-400 text-sm font-medium">總註冊帳號數</span>
+                            <h4 id="stat-total-users" class="text-3xl font-bold text-white mt-2">0</h4>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                            <span class="text-slate-400 text-sm font-medium">警務總案件數</span>
+                            <h4 id="stat-police-reports" class="text-3xl font-bold text-blue-400 mt-2">0</h4>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                            <span class="text-slate-400 text-sm font-medium">消防總案件數</span>
+                            <h4 id="stat-fire-reports" class="text-3xl font-bold text-red-400 mt-2">0</h4>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
     </main>
 
+    <!-- Modals -->
     <div id="modal-login" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
@@ -468,10 +549,10 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細案件經過與處理結果</label>
-                    <textarea id="report-content" rows="4" placeholder="請詳細敘述案件經過、處理警員/隊員、相關人員狀況..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-blue-500"></textarea>
+                    <textarea id="report-content" rows="4" placeholder="請詳細敘述案件經過..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-blue-500"></textarea>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">相關影片連結 (YouTube, Streamable, 剪輯網址等)</label>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">相關影片連結 (YouTube等)</label>
                     <input type="url" id="report-video-link" placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
                 </div>
                 <button id="submit-report-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">提交案件報告</button>
@@ -479,6 +560,7 @@
         </div>
     </div>
 
+    <!-- Edit Record Modal -->
     <div id="modal-edit" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
@@ -497,6 +579,61 @@
         </div>
     </div>
 
+    <!-- Edit User Account Modal (Problem 1) -->
+    <div id="modal-edit-user" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
+            <div class="flex justify-between items-center">
+                <h3 class="text-xl font-bold text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-user-pen text-purple-500"></i>
+                    <span>編輯公職帳號資訊</span>
+                </h3>
+                <button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-edit-user"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-4">
+                <input type="hidden" id="edit-user-original-account">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">帳號 / 編號 (可修改)</label>
+                    <input type="text" id="edit-user-account-input" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">RP名稱</label>
+                    <input type="text" id="edit-user-name-input" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位 (最多可勾選兩個)</label>
+                    <div class="grid grid-cols-3 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <label class="flex items-center space-x-2 text-sm text-slate-200 cursor-pointer">
+                            <input type="checkbox" name="edit-user-units" value="police" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600">
+                            <span>警察局</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm text-slate-200 cursor-pointer">
+                            <input type="checkbox" name="edit-user-units" value="fire" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-red-600">
+                            <span>消防局</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm text-slate-200 cursor-pointer">
+                            <input type="checkbox" name="edit-user-units" value="admin" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-purple-600">
+                            <span>總管理處</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">權限身份級別</label>
+                    <select id="edit-user-role-input" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-purple-500">
+                        <option value="normal">一般基層人員</option>
+                        <option value="high">高層長官 (分局長/大隊長)</option>
+                        <option value="admin">最高管理員</option>
+                    </select>
+                </div>
+                <div id="edit-user-password-wrapper">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">新密碼 (若不更改請留空)</label>
+                    <input type="password" id="edit-user-password-input" placeholder="留空則保持原密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
+                </div>
+                <button id="submit-edit-user-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-purple-600/30 transition">確認儲存帳號修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Remark Modal -->
     <div id="modal-remark" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
@@ -511,13 +648,14 @@
                 <input type="hidden" id="remark-target-id-key">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">輸入長官批示與審核備註</label>
-                    <textarea id="remark-text-input" rows="4" placeholder="例如：已閱，處理程序符合規定，予以嘉獎..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-amber-500"></textarea>
+                    <textarea id="remark-text-input" rows="4" placeholder="例如：已閱，處理程序符合規定..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-amber-500"></textarea>
                 </div>
                 <button id="submit-remark-btn" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-amber-600/30 transition">儲存長官備註</button>
             </div>
         </div>
     </div>
 
+    <!-- Create User Modal -->
     <div id="modal-create-user" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
@@ -540,15 +678,15 @@
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位 (最多可勾選兩個)</label>
                     <div class="grid grid-cols-3 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
                         <label class="flex items-center space-x-2 text-sm text-slate-200 cursor-pointer">
-                            <input type="checkbox" name="new-user-units" value="police" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500">
+                            <input type="checkbox" name="new-user-units" value="police" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600">
                             <span>警察局</span>
                         </label>
                         <label class="flex items-center space-x-2 text-sm text-slate-200 cursor-pointer">
-                            <input type="checkbox" name="new-user-units" value="fire" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-red-600 focus:ring-red-500">
+                            <input type="checkbox" name="new-user-units" value="fire" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-red-600">
                             <span>消防局</span>
                         </label>
                         <label class="flex items-center space-x-2 text-sm text-slate-200 cursor-pointer">
-                            <input type="checkbox" name="new-user-units" value="admin" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-purple-600 focus:ring-purple-500">
+                            <input type="checkbox" name="new-user-units" value="admin" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-purple-600">
                             <span>總管理處</span>
                         </label>
                     </div>
@@ -582,6 +720,7 @@
             fireReports: [],
             policeClocks: [],
             fireClocks: [],
+            adminLogs: [], // Problem 3: audit logs for edit/remove within 1 week
             adminMemo: ''
         };
 
@@ -671,6 +810,9 @@
             const submitEditBtn = document.getElementById('submit-edit-btn');
             if (submitEditBtn) submitEditBtn.addEventListener('click', submitEdit);
 
+            const submitEditUserBtn = document.getElementById('submit-edit-user-btn');
+            if (submitEditUserBtn) submitEditUserBtn.addEventListener('click', submitEditUser);
+
             const submitRemarkBtn = document.getElementById('submit-remark-btn');
             if (submitRemarkBtn) submitRemarkBtn.addEventListener('click', submitRemark);
 
@@ -704,7 +846,7 @@
                     });
                 } else {
                     const defaultUsers = [
-                        { account: 'Dsuensx', name: '賴打', units: ['admin'], role: 'admin', pass: 'LAIDA0903' },
+                        { account: 'DSUENSX', name: '賴打', units: ['admin'], role: 'admin', pass: 'LAIDA0903' },
                         { account: 'P-1001', name: '林局長', units: ['police'], role: 'high', pass: '1234' },
                         { account: 'P-2421', name: '王小明', units: ['police'], role: 'normal', pass: '1234' },
                         { account: 'F-1001', name: '陳大隊', units: ['fire'], role: 'high', pass: '1234' },
@@ -728,20 +870,26 @@
                 const fireClockSnap = await fm.getDocs(fm.collection(db, 'fireClocks'));
                 appData.fireClocks = fireClockSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
 
+                const logsSnap = await fm.getDocs(fm.collection(db, 'adminLogs'));
+                appData.adminLogs = logsSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+
                 const memoSnap = await fm.getDocs(fm.collection(db, 'systemSettings'));
                 const memoDoc = memoSnap.docs.find(d => d.id === 'adminMemo');
                 if (memoDoc) {
                     appData.adminMemo = memoDoc.data().content || '';
                 } else {
-                    appData.adminMemo = '1. 本週重點：加強轄區夜間巡邏與消防安檢。\n2. 各分局/大隊長請於每日下班前完成同仁打卡與案件審核。\n3. 如有系統異常請直接聯繫總管理員 Dsuensx。';
+                    appData.adminMemo = '1. 本週重點：加強轄區夜間巡邏與消防安檢。\n2. 各分局/大隊長請於每日下班前完成同仁打卡與案件審核。\n3. 如有系統異常請直接聯繫總管理員 DSUENSX。';
                     await fm.setDoc(fm.doc(db, 'systemSettings', 'adminMemo'), { content: appData.adminMemo });
                 }
 
+                updateAccessLocks();
                 renderPoliceReports();
                 renderPoliceClocks();
                 renderFireReports();
                 renderFireClocks();
                 renderAdminUsers();
+                renderAdminLogs();
+                renderAdminStorage();
                 renderAdminOverview();
                 populateMemberSelects();
             } catch (e) {
@@ -792,6 +940,8 @@
             
             if (tabId === 'admin') {
                 renderAdminUsers();
+                renderAdminLogs();
+                renderAdminStorage();
                 renderAdminOverview();
                 const memoInput = document.getElementById('admin-memo-textarea');
                 if (memoInput) memoInput.value = appData.adminMemo || '';
@@ -837,13 +987,17 @@
         }
 
         function switchAdminSubTab(sub) {
-            ['users', 'memo', 'overview'].forEach(s => {
-                document.getElementById(`admin-sub-${s}`).classList.add('hidden');
-                document.getElementById(`btn-admin-${s}`).className = "admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap";
+            ['users', 'logs', 'storage', 'memo', 'overview'].forEach(s => {
+                const el = document.getElementById(`admin-sub-${s}`);
+                const btn = document.getElementById(`btn-admin-${s}`);
+                if (el) el.classList.add('hidden');
+                if (btn) btn.className = "admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap";
             });
             document.getElementById(`admin-sub-${sub}`).classList.remove('hidden');
             document.getElementById(`btn-admin-${sub}`).className = "admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap";
             if (sub === 'users') renderAdminUsers();
+            if (sub === 'logs') renderAdminLogs();
+            if (sub === 'storage') renderAdminStorage();
             if (sub === 'overview') renderAdminOverview();
         }
 
@@ -855,7 +1009,7 @@
         function handleLogin() {
             const acc = document.getElementById('login-username').value.trim();
             const pass = document.getElementById('login-password').value.trim();
-            const found = appData.users.find(u => u.account === acc && u.pass === pass);
+            const found = appData.users.find(u => u.account.toLowerCase() === acc.toLowerCase() && u.pass === pass);
             if (!found) {
                 alert('登入失敗：帳號或密碼錯誤！');
                 return;
@@ -863,6 +1017,7 @@
             currentUser = found;
             closeModal('modal-login');
             updateUserUI();
+            updateAccessLocks();
             const unitsStr = (found.units || [found.unit]).join(', ').toUpperCase();
             alert(`歡迎回來，${found.name} (${unitsStr} - ${found.role.toUpperCase()})`);
         }
@@ -870,7 +1025,9 @@
         function logout() {
             currentUser = null;
             updateUserUI();
+            updateAccessLocks();
             alert('已成功登出系統');
+            switchTab('home');
         }
 
         function updateUserUI() {
@@ -893,6 +1050,114 @@
                 }
                 if (loginBtn) loginBtn.classList.remove('hidden');
             }
+        }
+
+        // Problem 2: Check authentication for channels
+        function updateAccessLocks() {
+            const policeLock = document.getElementById('police-lock-overlay');
+            const policeContent = document.getElementById('police-content-container');
+            const fireLock = document.getElementById('fire-lock-overlay');
+            const fireContent = document.getElementById('fire-content-container');
+            const adminLock = document.getElementById('admin-lock-overlay');
+            const adminContent = document.getElementById('admin-content-container');
+
+            if (!currentUser) {
+                if (policeLock) policeLock.classList.remove('hidden');
+                if (policeContent) policeContent.classList.add('hidden');
+                if (fireLock) fireLock.classList.remove('hidden');
+                if (fireContent) fireContent.classList.add('hidden');
+                if (adminLock) adminLock.classList.remove('hidden');
+                if (adminContent) adminContent.classList.add('hidden');
+            } else {
+                if (policeLock) policeLock.classList.add('hidden');
+                if (policeContent) policeContent.classList.remove('hidden');
+                if (fireLock) fireLock.classList.add('hidden');
+                if (fireContent) fireContent.classList.remove('hidden');
+
+                if (currentUser.role === 'admin' || currentUser.role === 'high') {
+                    if (adminLock) adminLock.classList.add('hidden');
+                    if (adminContent) adminContent.classList.remove('hidden');
+                } else {
+                    if (adminLock) adminLock.classList.remove('hidden');
+                    if (adminContent) adminContent.classList.add('hidden');
+                }
+            }
+        }
+
+        // Problem 3: Record action logs for remove & edit
+        async function recordAdminLog(actionType, targetType, targetId) {
+            if (!currentUser) return;
+            const now = new Date();
+            const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            const logEntry = {
+                action: actionType, // '編輯' 或 '移除'
+                operator: `${currentUser.name} (${currentUser.account})`,
+                target: `${targetType}: ${targetId}`,
+                timestamp: now.getTime(),
+                timeStr: timeStr
+            };
+            const docRef = await fm.addDoc(fm.collection(db, 'adminLogs'), logEntry);
+            appData.adminLogs.unshift({ docId: docRef.id, ...logEntry });
+            renderAdminLogs();
+        }
+
+        function renderAdminLogs() {
+            const tbody = document.getElementById('admin-logs-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            
+            // Filter logs within 1 week (7 days)
+            const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+            const recentLogs = appData.adminLogs.filter(l => l.timestamp >= oneWeekAgo);
+
+            if (recentLogs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-500">最近一周內尚無任何移除或編輯紀錄。</td></tr>`;
+                return;
+            }
+
+            recentLogs.forEach(l => {
+                const isDelete = l.action.includes('移除') || l.action.includes('刪除');
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${isDelete ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${l.action}</span></td>
+                        <td class="p-4 font-medium text-white">${l.operator}</td>
+                        <td class="p-4 text-slate-300 font-mono text-xs">${l.target}</td>
+                        <td class="p-4 text-slate-400 text-xs">${l.timeStr}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Problem 4: Cloud database usage and storage calculation (capped at 1 GB)
+        function renderAdminStorage() {
+            const usedText = document.getElementById('storage-used-text');
+            const percentText = document.getElementById('storage-percent-text');
+            const progressBar = document.getElementById('storage-progress-bar');
+            const docsCountEl = document.getElementById('storage-docs-count');
+            const freeText = document.getElementById('storage-free-text');
+            if (!usedText) return;
+
+            // Calculate approximate JSON string size of all cached appData
+            const dataString = JSON.stringify(appData);
+            const bytes = new Blob([dataString]).size;
+            const totalDocs = appData.users.length + appData.policeReports.length + appData.fireReports.length + appData.policeClocks.length + appData.fireClocks.length + appData.adminLogs.length;
+
+            const limitBytes = 1 * 1024 * 1024 * 1024; // 1 GB
+            const percent = Math.min(100, (bytes / limitBytes) * 100).toFixed(4);
+            const freeBytes = limitBytes - bytes;
+
+            const formatBytes = (b) => {
+                if (b < 1024) return b + ' B';
+                if (b < 1024 * 1024) return (b / 1024).toFixed(2) + ' KB';
+                if (b < 1024 * 1024 * 1024) return (b / (1024 * 1024)).toFixed(2) + ' MB';
+                return (b / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+            };
+
+            usedText.innerText = `當前已使用：${formatBytes(bytes)}`;
+            percentText.innerText = `${percent}%`;
+            progressBar.style.width = `${Math.max(0.5, percent)}%`;
+            docsCountEl.innerText = totalDocs;
+            freeText.innerText = formatBytes(freeBytes);
         }
 
         function openClockModal(dept) {
@@ -922,8 +1187,6 @@
             const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
             
             const record = { id, name, status, vehicle, time: timeStr, remark: '' };
-            
-            // Explicit collection routing based on active clock modal dept
             const colName = (dept === 'police') ? 'policeClocks' : 'fireClocks';
             const docRef = await fm.addDoc(fm.collection(db, colName), record);
             const savedItem = { docId: docRef.id, ...record };
@@ -996,7 +1259,7 @@
             else if (type === 'policeClock') item = appData.policeClocks[index];
             else if (type === 'fireClock') item = appData.fireClocks[index];
 
-            if (!currentUser || (currentUser.account !== item.id && currentUser.role !== 'admin')) {
+            if (!currentUser || (currentUser.account !== item.id && currentUser.role !== 'admin' && currentUser.role !== 'high')) {
                 alert('權限不足：您只能編輯自己發送的案件或打卡項目！');
                 return;
             }
@@ -1083,11 +1346,13 @@
                 else renderFireClocks();
             }
 
+            // Record edit log
+            await recordAdminLog('編輯紀錄', type, item.caseId || item.id);
+
             closeModal('modal-edit');
             alert('修改已成功同步至雲端！');
         }
 
-        // Added delete functionality for reports and clocks
         window.deleteRecordItem = async function(type, index) {
             let item;
             let colName = '';
@@ -1113,7 +1378,126 @@
                 else if (type === 'policeClock') renderPoliceClocks();
                 else if (type === 'fireClock') renderFireClocks();
 
+                // Record delete log
+                await recordAdminLog('移除紀錄', type, item.caseId || item.id);
+
                 alert('記錄已成功從雲端刪除！');
+            }
+        };
+
+        // Problem 1: Admin Panel Account Editing (DSUENSX password restricted)
+        window.openEditUserModal = function(account) {
+            if (!currentUser || currentUser.role !== 'admin') {
+                alert('權限不足：只有最高管理員可編輯帳號資訊！');
+                return;
+            }
+            const userObj = appData.users.find(u => u.account === account);
+            if (!userObj) return;
+
+            document.getElementById('modal-edit-user').classList.remove('hidden');
+            document.getElementById('edit-user-original-account').value = userObj.account;
+            document.getElementById('edit-user-account-input').value = userObj.account;
+            document.getElementById('edit-user-name-input').value = userObj.name;
+            document.getElementById('edit-user-role-input').value = userObj.role;
+            document.getElementById('edit-user-password-input').value = '';
+
+            // Check DSUENSX restriction warning
+            const passWrapper = document.getElementById('edit-user-password-wrapper');
+            if (userObj.account.toUpperCase() === 'DSUENSX') {
+                passWrapper.style.display = currentUser.account.toUpperCase() === 'DSUENSX' ? 'block' : 'none';
+                if (currentUser.account.toUpperCase() !== 'DSUENSX') {
+                    alert('注意：總管理員 DSUENSX 的密碼僅可由他自己登入更改！');
+                }
+            } else {
+                passWrapper.style.display = 'block';
+            }
+
+            const units = userObj.units || [userObj.unit];
+            document.querySelectorAll('input[name="edit-user-units"]').forEach(cb => {
+                cb.checked = units.includes(cb.value);
+            });
+        };
+
+        async function submitEditUser() {
+            if (!currentUser || currentUser.role !== 'admin') return;
+            const origAcc = document.getElementById('edit-user-original-account').value;
+            const newAcc = document.getElementById('edit-user-account-input').value.trim();
+            const newName = document.getElementById('edit-user-name-input').value.trim();
+            const newRole = document.getElementById('edit-user-role-input').value;
+            const newPassInput = document.getElementById('edit-user-password-input').value.trim();
+
+            const checkedUnits = Array.from(document.querySelectorAll('input[name="edit-user-units"]:checked')).map(cb => cb.value);
+
+            if (!newAcc || !newName) {
+                alert('帳號與RP名稱不得為空！');
+                return;
+            }
+            if (checkedUnits.length === 0 || checkedUnits.length > 2) {
+                alert('所屬單位必須選擇 1 到 2 個！');
+                return;
+            }
+
+            const userObj = appData.users.find(u => u.account === origAcc);
+            if (!userObj) return;
+
+            // DSUENSX password protection rule
+            if (origAcc.toUpperCase() === 'DSUENSX' && newPassInput && currentUser.account.toUpperCase() !== 'DSUENSX') {
+                alert('錯誤：總管理員 DSUENSX 的密碼僅可由 DSUENSX 本人更改！');
+                return;
+            }
+
+            // If account ID changed, delete old doc and create new doc
+            if (origAcc !== newAcc) {
+                if (appData.users.some(u => u.account === newAcc)) {
+                    alert('錯誤：此新帳號已經存在！');
+                    return;
+                }
+                await fm.deleteDoc(fm.doc(db, 'users', userObj.docId));
+                userObj.account = newAcc;
+                userObj.docId = newAcc;
+            }
+
+            userObj.name = newName;
+            userObj.units = checkedUnits;
+            userObj.role = newRole;
+            if (newPassInput) {
+                if (origAcc.toUpperCase() !== 'DSUENSX' || currentUser.account.toUpperCase() === 'DSUENSX') {
+                    userObj.pass = newPassInput;
+                }
+            }
+
+            await fm.setDoc(fm.doc(db, 'users', userObj.docId), {
+                account: userObj.account,
+                name: userObj.name,
+                units: userObj.units,
+                role: userObj.role,
+                pass: userObj.pass
+            });
+
+            await recordAdminLog('編輯帳號', 'User', userObj.account);
+
+            closeModal('modal-edit-user');
+            renderAdminUsers();
+            populateMemberSelects();
+            alert('公職帳號資訊已成功更新並同步至雲端！');
+        }
+
+        window.deleteUser = async function(acc) {
+            if (acc.toUpperCase() === 'DSUENSX') {
+                alert('無法刪除系統初始最高管理員！');
+                return;
+            }
+            if (confirm(`確定要刪除帳號 [${acc}] 嗎？`)) {
+                const userItem = appData.users.find(u => u.account === acc);
+                if (userItem) {
+                    await fm.deleteDoc(fm.doc(db, 'users', userItem.docId));
+                }
+                appData.users = appData.users.filter(u => u.account !== acc);
+                renderAdminUsers();
+                renderAdminOverview();
+                populateMemberSelects();
+                await recordAdminLog('移除帳號', 'User', acc);
+                alert('帳號已從雲端刪除');
             }
         };
 
@@ -1377,15 +1761,11 @@
                 alert('請完整填寫帳號、RP名稱與密碼！');
                 return;
             }
-            if (checkedUnits.length === 0) {
-                alert('請至少勾選一個所屬單位！');
+            if (checkedUnits.length === 0 || checkedUnits.length > 2) {
+                alert('所屬單位必須勾選 1 到 2 個！');
                 return;
             }
-            if (checkedUnits.length > 2) {
-                alert('帳號的身分最多只能選兩個！');
-                return;
-            }
-            if (appData.users.some(u => u.account === account)) {
+            if (appData.users.some(u => u.account.toLowerCase() === account.toLowerCase())) {
                 alert('錯誤：此帳號/編號已經存在！');
                 return;
             }
@@ -1401,24 +1781,6 @@
             alert('新公職帳號已成功建立並同步至雲端！');
         }
 
-        window.deleteUser = async function(acc) {
-            if (acc === 'Dsuensx') {
-                alert('無法刪除系統初始最高管理員！');
-                return;
-            }
-            if (confirm(`確定要刪除帳號 [${acc}] 嗎？`)) {
-                const userItem = appData.users.find(u => u.account === acc);
-                if (userItem) {
-                    await fm.deleteDoc(fm.doc(db, 'users', userItem.docId));
-                }
-                appData.users = appData.users.filter(u => u.account !== acc);
-                renderAdminUsers();
-                renderAdminOverview();
-                populateMemberSelects();
-                alert('帳號已從雲端刪除');
-            }
-        };
-
         function renderAdminUsers() {
             const tbody = document.getElementById('admin-users-tbody');
             if (!tbody) return;
@@ -1431,7 +1793,8 @@
                 }).join('');
 
                 const roleBadge = u.role === 'admin' ? 'bg-purple-600 text-white' : u.role === 'high' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-300';
-                const canDelete = u.account !== 'Dsuensx' && currentUser && currentUser.role === 'admin';
+                const canEdit = currentUser && currentUser.role === 'admin';
+                const canDelete = u.account.toUpperCase() !== 'DSUENSX' && currentUser && currentUser.role === 'admin';
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/40 transition">
@@ -1440,7 +1803,8 @@
                         <td class="p-4">${unitBadgesHTML}</td>
                         <td class="p-4"><span class="px-2.5 py-1 rounded-lg text-xs font-semibold ${roleBadge}">${u.role.toUpperCase()}</span></td>
                         <td class="p-4 text-right space-x-1">
-                            ${canDelete ? `<button onclick="deleteUser('${u.account}')" class="text-red-400 hover:text-red-300 text-xs bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-lg">刪除</button>` : '<span class="text-xs text-slate-600">保護中</span>'}
+                            ${canEdit ? `<button onclick="openEditUserModal('${u.account}')" class="text-purple-400 hover:text-purple-300 text-xs bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 rounded-lg">編輯</button>` : ''}
+                            ${canDelete ? `<button onclick="deleteUser('${u.account}')" class="text-red-400 hover:text-red-300 text-xs bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-lg">刪除</button>` : '<span class="text-xs text-slate-600 ml-1">保護中</span>'}
                         </td>
                     </tr>
                 `;
