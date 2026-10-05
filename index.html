@@ -79,6 +79,58 @@
             transition: color 0.2s ease;
         }
         .app-toast-close:hover { color: #e2e8f0; }
+
+        /* 行動裝置優化：選單與操作按鍵保持整齊、好點擊 */
+        @media (max-width: 767px) {
+            #mobile-menu {
+                padding: 0.75rem;
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 0.55rem;
+            }
+            #mobile-menu.hidden { display: none; }
+            #mobile-menu .mobile-nav-btn {
+                width: 100%;
+                min-height: 46px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.4rem;
+                padding: 0.7rem 0.55rem;
+                border: 1px solid rgba(51,65,85,.85);
+                border-radius: 0.8rem;
+                background: rgba(15,23,42,.72);
+                text-align: center;
+                line-height: 1.15;
+            }
+            #mobile-menu .mobile-nav-btn:active { transform: scale(.98); }
+            .mobile-utility-group { width: 100%; }
+            .mobile-action-group { justify-content: center !important; width: 100%; }
+            .mobile-action-group > button { flex: 1 1 100%; min-height: 44px; justify-content: center; }
+            .mobile-report-actions,
+            .mobile-punishment-actions {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 0.5rem !important;
+                width: 100%;
+            }
+            .mobile-report-actions > button,
+            .mobile-punishment-actions > button {
+                min-height: 44px;
+                min-width: 92px;
+                flex: 1 1 30%;
+                justify-content: center;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
+            }
+            .mobile-report-actions, .mobile-punishment-actions {
+                align-items: stretch;
+            }
+            .mobile-report-actions + *, .mobile-punishment-actions + * {
+                min-width: 0;
+            }
+            .police-sub-btn, .fire-sub-btn, .admin-sub-btn { min-height: 44px; touch-action: manipulation; }
+                }
     </style>
 
     <script type="module">
@@ -140,11 +192,11 @@
                 </button>
             </div>
         </div>
-        <div id="mobile-menu" class="hidden md:hidden bg-slate-900 border-b border-slate-800 px-4 pt-2 pb-4 space-y-1">
-            <button data-tab="home" class="mobile-nav-btn block w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800">首頁大廳</button>
-            <button data-tab="police" class="mobile-nav-btn block w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800">警務系統</button>
-            <button data-tab="fire" class="mobile-nav-btn block w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800">消防系統</button>
-            <button data-tab="admin" class="mobile-nav-btn block w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800">管理員中心</button>
+        <div id="mobile-menu" class="hidden md:hidden bg-slate-900 border-b border-slate-800">
+            <button data-tab="home" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-house"></i><span>首頁大廳</span></button>
+            <button data-tab="police" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-shield"></i><span>警務系統</span></button>
+            <button data-tab="fire" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-fire-extinguisher"></i><span>消防系統</span></button>
+            <button data-tab="admin" id="mobile-nav-admin" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-user-gear"></i><span>管理員中心</span></button>
         </div>
     </header>
 
@@ -160,7 +212,7 @@
                     <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">New Taipei Roleplay 3.0</span>
                     <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">新北市公職人員<br><span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">勤務與案件管制系統</span></h1>
                     <p class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。本系統支援獨立單位權限隔離、補打卡自訂日期時分、報告權限控管與完整的年月日區間執勤時數統計。</p>
-                    <div class="flex flex-wrap gap-4 pt-2">
+                    <div class="flex flex-wrap justify-center gap-4 pt-2">
                         <button data-tab="police" class="tab-shortcut-btn bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
                             <i class="fa-solid fa-shield"></i><span>進入警務系統</span>
                         </button>
@@ -176,22 +228,22 @@
                     <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-xl font-bold">
                         <i class="fa-solid fa-shield-halved"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-white">警務勤務與懲處專區</h3>
-                    <p class="text-slate-400 text-sm">提供員警線上打卡、補打卡、執勤時數統計、治安案件報告與警用懲處專區（支援依被懲處人警號快速搜尋）。</p>
+                    <h3 class="text-lg font-bold text-white">警務勤務與獎懲專區</h3>
+                    <p class="text-slate-400 text-sm">提供員警線上打卡、補打卡、執勤時數統計、治安案件報告與警用獎懲專區（支援依被獎懲人警號快速搜尋）。</p>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
                     <div class="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 text-xl font-bold">
                         <i class="fa-solid fa-truck-medical"></i>
                     </div>
                     <h3 class="text-lg font-bold text-white">消防救護中心</h3>
-                    <p class="text-slate-400 text-sm">消防隊員專屬出勤回報與災害搶救記錄，支援日期或嫌疑犯/報案ID搜尋，嚴格區隔單位。</p>
+                    <p class="text-slate-400 text-sm">消防隊員專屬出勤回報與災害搶救記錄，支援日期查詢並嚴格區隔警務資料。</p>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
                     <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl font-bold">
                         <i class="fa-solid fa-user-shield"></i>
                     </div>
                     <h3 class="text-lg font-bold text-white">高層與管理員編輯權限</h3>
-                    <p class="text-slate-400 text-sm">一般人員僅能編輯自己的報告，高層長官與管理員可檢視並編輯各自單位的報告、懲處紀錄與紀錄。</p>
+                    <p class="text-slate-400 text-sm">一般人員僅能編輯自己的報告，高層長官與管理員可檢視並編輯各自單位的報告、獎懲紀錄與紀錄。</p>
                 </div>
             </div>
         </section>
@@ -212,9 +264,9 @@
                     <div>
                         <span class="text-xs uppercase font-bold tracking-wider text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">Police Department</span>
                         <h2 class="text-2xl font-bold text-white mt-2"><i class="fa-solid fa-shield mr-2 text-blue-500"></i>新北市政府警察局 勤務中心</h2>
-                        <p class="text-slate-400 text-sm mt-1">辦理員警出勤打卡、自訂日期時分補打卡、警用懲處發布、執勤時數統計與完整治安案件報告。</p>
+                        <p class="text-slate-400 text-sm mt-1">辦理員警出勤打卡、自訂日期時分補打卡、警用獎懲發布、執勤時數統計與完整治安案件報告。</p>
                     </div>
-                    <div class="flex items-center space-x-3 flex-wrap gap-2">
+                    <div class="flex items-center justify-center space-x-3 flex-wrap gap-2 mobile-action-group w-full md:w-auto">
                         <button id="police-clock-modal-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-blue-600/30 transition flex items-center space-x-2">
                             <i class="fa-solid fa-clock"></i><span>員警上下班打卡</span>
                         </button>
@@ -222,7 +274,7 @@
                             <i class="fa-solid fa-clock-rotate-left"></i><span>補打卡登記 (自訂日期/時分)</span>
                         </button>
                         <button id="police-punish-modal-btn" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-amber-600/30 transition flex items-center space-x-2">
-                            <i class="fa-solid fa-triangle-exclamation"></i><span>發布警用懲處</span>
+                            <i class="fa-solid fa-triangle-exclamation"></i><span>發布警用獎懲</span>
                         </button>
                         <button id="police-report-modal-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
                             <i class="fa-solid fa-file-pen"></i><span>填寫案件報告</span>
@@ -232,9 +284,11 @@
 
                 <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
                     <button id="btn-police-reports" data-sub="reports" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史案件報告庫</button>
-                    <button id="btn-police-punishments" data-sub="punishments" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-gavel mr-2"></i>警用懲處專區</button>
+                    <button id="btn-police-punishments" data-sub="punishments" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-gavel mr-2"></i>警用獎懲專區</button>
                     <button id="btn-police-clocks" data-sub="clocks" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clipboard-user mr-2"></i>即時出勤打卡紀錄</button>
                     <button id="btn-police-hours" data-sub="hours" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數統計</button>
+                    <button id="btn-police-citizen" data-sub="citizen" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-id-card mr-2"></i>市民身份系統</button>
+                    <button id="btn-police-vehicles" data-sub="vehicles" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-car-side mr-2"></i>車輛資訊系統</button>
                 </div>
 
                 <div id="police-sub-reports" class="space-y-4">
@@ -250,9 +304,9 @@
 
                 <div id="police-sub-punishments" class="hidden space-y-4">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <h3 class="text-lg font-bold text-slate-200"><i class="fa-solid fa-gavel text-amber-500 mr-2"></i>警用懲處公告專區</h3>
+                        <h3 class="text-lg font-bold text-slate-200"><i class="fa-solid fa-gavel text-amber-500 mr-2"></i>警用獎懲公告專區</h3>
                         <div class="w-full sm:w-80">
-                            <input type="text" id="search-police-punishment" placeholder="輸入被懲處人警號搜尋 (例如 P-2421)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                            <input type="text" id="search-police-punishment" placeholder="輸入被獎懲人警號搜尋 (例如 P-2421)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
                         </div>
                     </div>
                     <div id="police-punishments-list" class="grid grid-cols-1 gap-4"></div>
@@ -316,6 +370,22 @@
                         </div>
                     </div>
                 </div>
+
+                <div id="police-sub-citizen" class="hidden">
+                    <div class="bg-slate-900/90 backdrop-blur border border-slate-800 rounded-2xl p-12 text-center space-y-4 shadow-xl">
+                        <div class="w-16 h-16 mx-auto rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center text-2xl"><i class="fa-solid fa-lock"></i></div>
+                        <h3 class="text-2xl font-bold text-white">市民身份系統</h3>
+                        <p class="text-slate-400">該功能開發階段 敬請期待</p>
+                    </div>
+                </div>
+
+                <div id="police-sub-vehicles" class="hidden">
+                    <div class="bg-slate-900/90 backdrop-blur border border-slate-800 rounded-2xl p-12 text-center space-y-4 shadow-xl">
+                        <div class="w-16 h-16 mx-auto rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center text-2xl"><i class="fa-solid fa-lock"></i></div>
+                        <h3 class="text-2xl font-bold text-white">車輛資訊系統</h3>
+                        <p class="text-slate-400">該功能開發階段 敬請期待</p>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -337,7 +407,7 @@
                         <h2 class="text-2xl font-bold text-white mt-2"><i class="fa-solid fa-fire-extinguisher mr-2 text-red-500"></i>新北市政府消防局 指揮中心</h2>
                         <p class="text-slate-400 text-sm mt-1">辦理消防隊員出勤打卡、自訂日期時分補打卡、救災車輛登錄、執勤時數統計與簡化災害報告。</p>
                     </div>
-                    <div class="flex items-center space-x-3 flex-wrap gap-2">
+                    <div class="flex items-center justify-center space-x-3 flex-wrap gap-2 mobile-action-group w-full md:w-auto">
                         <button id="fire-clock-modal-btn" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-red-600/30 transition flex items-center space-x-2">
                             <i class="fa-solid fa-clock"></i><span>消防員上下班打卡</span>
                         </button>
@@ -360,8 +430,8 @@
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <h3 class="text-lg font-bold text-slate-200">全體消防隊員案件報告總覽</h3>
                         <div class="w-full sm:w-80">
-                            <!-- 消防案件查詢也統一改成查詢嫌疑犯/報案人證件ID -->
-                            <input type="text" id="search-fire-report" placeholder="輸入證件ID搜尋..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-red-500 font-mono">
+                            <!-- 消防案件查詢：依案件編號、標題或填寫人警編搜尋 -->
+                            <input type="text" id="search-fire-report" placeholder="輸入案件編號／案件標題／填寫人編號搜尋..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-red-500 font-mono">
                         </div>
                     </div>
                     <div id="fire-reports-list" class="grid grid-cols-1 gap-4"></div>
@@ -434,8 +504,8 @@
                 <div class="w-16 h-16 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-2xl mx-auto flex items-center justify-center text-2xl font-bold">
                     <i class="fa-solid fa-lock"></i>
                 </div>
-                <h3 class="text-2xl font-bold text-white">管理員中心需要登入</h3>
-                <p class="text-slate-400 text-sm max-w-md mx-auto">此區域僅限擁有管理員權限之人員進入。</p>
+                <h3 class="text-2xl font-bold text-white">管理員中心權限受限</h3>
+                <p class="text-slate-400 text-sm max-w-md mx-auto">此區域僅限最高管理員進入，高層長官無法使用管理處面板。</p>
                 <button onclick="document.getElementById('modal-login').classList.remove('hidden')" class="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-purple-600/30 transition">立即登入系統</button>
             </div>
 
@@ -629,46 +699,48 @@
         </div>
     </div>
 
-    <!-- Punishment Modal -->
+    <!-- Police Reward & Punishment Modal -->
     <div id="modal-punishment" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center">
                 <h3 class="text-xl font-bold text-white flex items-center space-x-2">
-                    <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
-                    <span>發布警用懲處公告</span>
+                    <i class="fa-solid fa-award text-amber-500"></i>
+                    <span>發布警用獎懲公告</span>
                 </h3>
                 <button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-punishment"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">被懲處員警</label>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">被獎懲員警</label>
                         <select id="punish-member-select" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"></select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">被懲處員警編號 (警號)</label>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">被獎懲員警編號（警號）</label>
                         <input type="text" id="punish-member-id" placeholder="例如：P-2421" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 font-mono">
                     </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">懲處項目</label>
-                    <select id="punish-item" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
-                        <option value="申誡一次">申誡一次</option>
-                        <option value="申誡二次">申誡二次</option>
-                        <option value="記過一次">記過一次</option>
-                        <option value="記過二次">記過二次</option>
-                        <option value="大過一次">大過一次</option>
-                        <option value="停職處分">停職處分</option>
-                    </select>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">獎懲類型</label>
+                        <select id="punish-type" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+                            <option value="" selected disabled>-- 請先選擇獎勵或懲處 --</option>
+                            <option value="reward">獎勵</option>
+                            <option value="punishment">懲處</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">獎懲項目</label>
+                        <select id="punish-item" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"></select>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">發布部門</label>
-                    <!-- 變更 2：將預設的督察室改為新北市政府新莊分局 -->
                     <input type="text" id="punish-department" value="新北市政府新莊分局" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500">
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">填寫人 (長官) 姓名</label>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">填寫人（長官）姓名</label>
                         <input type="text" id="punish-author-name" placeholder="長官姓名..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500">
                     </div>
                     <div>
@@ -677,10 +749,10 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">懲處原因說明</label>
-                    <textarea id="punish-reason" rows="4" placeholder="請詳細填寫懲處原因與具體違紀事實..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-amber-500"></textarea>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">獎懲事由說明</label>
+                    <textarea id="punish-reason" rows="4" placeholder="請詳細填寫獎懲原因與具體事實..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-amber-500"></textarea>
                 </div>
-                <button id="submit-punishment-btn" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-amber-600/30 transition">發布懲處公告</button>
+                <button id="submit-punishment-btn" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-amber-600/30 transition">發布獎懲公告</button>
             </div>
         </div>
     </div>
@@ -691,19 +763,19 @@
             <div class="flex justify-between items-center border-b border-slate-800 pb-4">
                 <div>
                     <span id="punish-detail-badge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">PUN-000000</span>
-                    <h3 id="punish-detail-title" class="text-xl font-bold text-white mt-2">警用懲處公告詳細內容</h3>
+                    <h3 id="punish-detail-title" class="text-xl font-bold text-white mt-2">警用獎懲公告詳細內容</h3>
                 </div>
                 <button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-punishment-detail"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <div class="space-y-4 text-sm">
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800">
                     <div>
-                        <span class="text-xs text-slate-400 block">被懲處員警</span>
+                        <span class="text-xs text-slate-400 block">被獎懲員警</span>
                         <span id="punish-detail-member" class="font-semibold text-slate-200">--</span>
                     </div>
                     <div>
-                        <span class="text-xs text-slate-400 block">懲處項目</span>
-                        <span id="punish-detail-item" class="font-bold text-red-400">--</span>
+                        <span class="text-xs text-slate-400 block">獎懲項目</span>
+                        <span id="punish-detail-item" class="font-bold text-amber-400">--</span>
                     </div>
                     <div>
                         <span class="text-xs text-slate-400 block">發布時間</span>
@@ -721,7 +793,7 @@
                     </div>
                 </div>
                 <div>
-                    <h4 class="text-xs uppercase font-bold tracking-wider text-slate-400 mb-2">完整懲處事由</h4>
+                    <h4 class="text-xs uppercase font-bold tracking-wider text-slate-400 mb-2">完整獎懲事由</h4>
                     <div id="punish-detail-reason" class="bg-slate-950 p-5 rounded-2xl border border-slate-800 text-slate-200 whitespace-pre-wrap leading-relaxed"></div>
                 </div>
             </div>
@@ -754,7 +826,7 @@
                     </div>
                 </div>
                 
-                <div id="police-suspect-fields" class="grid grid-cols-2 gap-4">
+                <div id="police-suspect-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯身分證件 ID</label>
                         <input type="text" id="report-suspect-id" placeholder="例如：A123456789" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 font-mono">
@@ -890,6 +962,7 @@
                     <select id="edit-user-role-input" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-purple-500">
                         <option value="normal">一般基層人員</option>
                         <option value="high">高層長官 (分局長/大隊長)</option>
+                        <option value="senior">高階成員（可新增長官批示）</option>
                         <option value="admin">最高管理員</option>
                     </select>
                 </div>
@@ -916,7 +989,11 @@
                 <input type="hidden" id="remark-target-type">
                 <input type="hidden" id="remark-target-id-key">
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">輸入長官批示與審核備註</label>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">既有長官批示</label>
+                    <div id="remark-history" class="max-h-44 overflow-y-auto space-y-2 bg-slate-950 border border-slate-800 rounded-xl p-3"></div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">新增長官批示</label>
                     <textarea id="remark-text-input" rows="4" placeholder="例如：已閱，處理程序符合規定..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-amber-500"></textarea>
                 </div>
                 <button id="submit-remark-btn" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-amber-600/30 transition">儲存長官備註</button>
@@ -965,6 +1042,7 @@
                     <select id="new-user-role" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-purple-500">
                         <option value="normal">一般基層人員</option>
                         <option value="high">高層長官 (分局長/大隊長)</option>
+                        <option value="senior">高階成員（可新增長官批示）</option>
                         <option value="admin">最高管理員</option>
                     </select>
                 </div>
@@ -1037,8 +1115,8 @@
                 }
 
                 if (tabId === 'admin') {
-                    if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'high')) {
-                        showToast('管理員與高層控制後台僅限高層與管理員進入。', 'warning', '權限不足');
+                    if (!currentUser || currentUser.role !== 'admin') {
+                        showToast('管理員中心僅限最高管理員進入。', 'warning', '權限不足');
                         return;
                     }
                 }
@@ -1101,6 +1179,8 @@
 
             const policePunishBtn = document.getElementById('police-punish-modal-btn');
             if (policePunishBtn) policePunishBtn.addEventListener('click', openPunishModal);
+            const punishmentTypeSelect = document.getElementById('punish-type');
+            if (punishmentTypeSelect) punishmentTypeSelect.addEventListener('change', () => populatePunishmentItemOptions('punish-item', punishmentTypeSelect.value));
 
             const policeReportBtn = document.getElementById('police-report-modal-btn');
             if (policeReportBtn) policeReportBtn.addEventListener('click', () => openReportModal('police'));
@@ -1176,6 +1256,75 @@
             if (fireCalcBtn) fireCalcBtn.addEventListener('click', () => calculateMemberHours('fire'));
         });
 
+        function isSuperAdminAccount(account) {
+            return String(account || '').trim().toLowerCase() === 'dsuensx';
+        }
+
+        async function ensureSuperAdminAccount() {
+            const existing = appData.users.find(u => isSuperAdminAccount(u.account) || isSuperAdminAccount(u.docId));
+
+            if (existing) {
+                const docId = existing.docId || existing.account;
+                const wasProtected = existing.protected === true;
+                const canonical = {
+                    account: 'Dsuensx',
+                    name: existing.name || '賴打',
+                    units: ['admin'],
+                    role: 'admin',
+                    pass: wasProtected ? (existing.pass || 'LAIDA') : 'LAIDA',
+                    protected: true
+                };
+                const needsWrite = existing.account !== canonical.account ||
+                    existing.name !== canonical.name ||
+                    existing.role !== canonical.role ||
+                    JSON.stringify(existing.units || []) !== JSON.stringify(canonical.units) ||
+                    existing.pass !== canonical.pass ||
+                    existing.protected !== true;
+
+                Object.assign(existing, canonical, { docId });
+                if (needsWrite && db && fm) {
+                    await fm.setDoc(fm.doc(db, 'users', docId), canonical);
+                }
+            } else if (db && fm) {
+                const canonical = { account: 'Dsuensx', name: '賴打', units: ['admin'], role: 'admin', pass: 'LAIDA', protected: true };
+                await fm.setDoc(fm.doc(db, canonical.account), canonical);
+                appData.users.unshift({ docId: canonical.account, ...canonical });
+            }
+        }
+
+        function isSuspendedUser(account) {
+            return !!account && (appData.policePunishments || []).some(p =>
+                String(p.memberId || '').trim().toLowerCase() === String(account).trim().toLowerCase() &&
+                String(p.type || 'punishment').toLowerCase() === 'punishment' &&
+                ['停職調查', '停職處分'].includes(String(p.item || ''))
+            );
+        }
+
+        function ensureReportRemarks(report) {
+            if (!report) return [];
+            if (Array.isArray(report.remarks)) return report.remarks;
+            const legacy = String(report.remark || '').trim();
+            if (!legacy || legacy === '尚未批示' || legacy === '無') return [];
+            return [{ authorName: '既有批示', authorAccount: '', role: '', text: legacy, timestamp: report.timestamp || Date.now(), time: report.time || '' }];
+        }
+
+        function formatDateTime(timestamp, fallback = '') {
+            let value = 0;
+            if (timestamp && typeof timestamp.toMillis === 'function') value = timestamp.toMillis();
+            else if (timestamp instanceof Date) value = timestamp.getTime();
+            else if (typeof timestamp === 'string' && timestamp.trim()) {
+                const parsed = Date.parse(timestamp);
+                if (Number.isFinite(parsed)) value = parsed;
+                else if (/^\d+$/.test(timestamp.trim())) value = Number(timestamp.trim());
+            } else {
+                value = Number(timestamp);
+            }
+            if (Number.isFinite(value) && value > 0) {
+                return new Date(value).toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            }
+            return fallback || '--';
+        }
+
         async function loadAllDataFromCloud() {
             try {
                 const usersSnap = await fm.getDocs(fm.collection(db, 'users'));
@@ -1187,7 +1336,7 @@
                     });
                 } else {
                     const defaultUsers = [
-                        { account: 'DSUENSX', name: '賴打', units: ['admin'], role: 'admin', pass: 'LAIDA0903' },
+                        { account: 'Dsuensx', name: '賴打', units: ['admin'], role: 'admin', pass: 'LAIDA' },
                         { account: 'P-1001', name: '林局長', units: ['police'], role: 'high', pass: '1234' },
                         { account: 'P-2421', name: '王小明', units: ['police'], role: 'normal', pass: '1234' },
                         { account: 'F-1001', name: '陳大隊', units: ['fire'], role: 'high', pass: '1234' },
@@ -1199,14 +1348,16 @@
                     appData.users = defaultUsers.map(u => ({ docId: u.account, ...u }));
                 }
 
+                await ensureSuperAdminAccount();
+
                 const policeRepSnap = await fm.getDocs(fm.collection(db, 'policeReports'));
-                appData.policeReports = policeRepSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+                appData.policeReports = policeRepSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
 
                 const punishSnap = await fm.getDocs(fm.collection(db, 'policePunishments'));
                 appData.policePunishments = punishSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
 
                 const fireRepSnap = await fm.getDocs(fm.collection(db, 'fireReports'));
-                appData.fireReports = fireRepSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+                appData.fireReports = fireRepSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
 
                 const policeClockSnap = await fm.getDocs(fm.collection(db, 'policeClocks'));
                 appData.policeClocks = policeClockSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
@@ -1249,7 +1400,7 @@
 
             if (policeSelect) policeSelect.innerHTML = '<option value="">-- 請選擇警員 --</option>';
             if (fireSelect) fireSelect.innerHTML = '<option value="">-- 請選擇消防隊員 --</option>';
-            if (punishMemberSelect) punishMemberSelect.innerHTML = '<option value="">-- 請選擇被懲處員警 --</option>';
+            if (punishMemberSelect) punishMemberSelect.innerHTML = '<option value="">-- 請選擇被獎懲員警 --</option>';
 
             appData.users.forEach(u => {
                 const opt = document.createElement('option');
@@ -1278,6 +1429,10 @@
         }
 
         function switchTab(tabId) {
+            if (tabId === 'admin' && (!currentUser || currentUser.role !== 'admin')) {
+                showToast('管理員中心僅限最高管理員進入。', 'warning', '權限不足');
+                tabId = 'home';
+            }
             ['home', 'police', 'fire', 'admin'].forEach(t => {
                 const tabEl = document.getElementById(`tab-${t}`);
                 if (tabEl) tabEl.classList.add('hidden');
@@ -1309,7 +1464,7 @@
         }
 
         function switchPoliceSubTab(sub) {
-            ['reports', 'punishments', 'clocks', 'hours'].forEach(s => {
+            ['reports', 'punishments', 'clocks', 'hours', 'citizen', 'vehicles'].forEach(s => {
                 const el = document.getElementById(`police-sub-${s}`);
                 if (el) el.classList.add('hidden');
                 const btn = document.getElementById(`btn-police-${s}`);
@@ -1420,7 +1575,7 @@
                 return;
             }
 
-            const found = appData.users.find(u => u.account === accInput && u.pass === passInput);
+            const found = appData.users.find(u => isSuperAdminAccount(accInput) ? isSuperAdminAccount(u.account) && u.pass === passInput : u.account === accInput && u.pass === passInput);
             if (!found) {
                 showToast('帳號或密碼錯誤，請重新確認後再試。', 'error', '登入失敗');
                 return;
@@ -1455,6 +1610,7 @@
                 const dot = document.getElementById('user-badge-role');
                 if (currentUser.role === 'admin') dot.className = "w-2 h-2 rounded-full bg-purple-500";
                 else if (currentUser.role === 'high') dot.className = "w-2 h-2 rounded-full bg-amber-500";
+                else if (currentUser.role === 'senior') dot.className = "w-2 h-2 rounded-full bg-cyan-500";
                 else dot.className = "w-2 h-2 rounded-full bg-emerald-500";
             } else {
                 loginBtn.classList.remove('hidden');
@@ -1476,6 +1632,8 @@
             let isPolice = false;
             let isFire = false;
             let isAdminOrHigh = false;
+            const adminNav = document.getElementById('nav-admin');
+            const adminMobileNav = document.getElementById('mobile-nav-admin');
 
             if (currentUser) {
                 if (currentUser.role === 'admin') {
@@ -1486,7 +1644,7 @@
                     const units = currentUser.units || [currentUser.unit];
                     if (units.includes('police')) isPolice = true;
                     if (units.includes('fire')) isFire = true;
-                    if (currentUser.role === 'high' || currentUser.role === 'admin') isAdminOrHigh = true;
+                    if (currentUser.role === 'high' || currentUser.role === 'senior' || currentUser.role === 'admin') isAdminOrHigh = true;
                 }
             }
 
@@ -1501,19 +1659,29 @@
             }
 
             if (adminLock && adminContent) {
-                if (isAdminOrHigh) { adminLock.classList.add('hidden'); adminContent.classList.remove('hidden'); }
+                if (currentUser && currentUser.role === 'admin') { adminLock.classList.add('hidden'); adminContent.classList.remove('hidden'); }
                 else { adminLock.classList.remove('hidden'); adminContent.classList.add('hidden'); }
             }
 
+            const canAccessAdmin = !!currentUser && currentUser.role === 'admin';
+            if (adminNav) adminNav.classList.toggle('hidden', !canAccessAdmin);
+            if (adminMobileNav) adminMobileNav.classList.toggle('hidden', !canAccessAdmin);
+
             const canUsePunishment = canUsePolicePunishment();
+            // 一般員警可以預覽獎懲專區，但只有警察高層／管理處可以發布。
             if (punishmentPublishBtn) punishmentPublishBtn.classList.toggle('hidden', !canUsePunishment);
-            if (punishmentTabBtn) punishmentTabBtn.classList.toggle('hidden', !canUsePunishment);
+            if (punishmentTabBtn) punishmentTabBtn.classList.remove('hidden');
         }
 
         function openClockModal(dept, isRetro) {
             if (!currentUser) {
                 showToast('請先登入系統後再進行打卡。', 'warning', '需要登入');
                 document.getElementById('modal-login').classList.remove('hidden');
+                return;
+            }
+
+            if (isSuspendedUser(currentUser.account)) {
+                showToast('你目前於停職調查階段，無法使用值班打卡功能，直到該獎懲被更改或移除。', 'warning', '停職調查限制');
                 return;
             }
 
@@ -1544,17 +1712,48 @@
             document.getElementById('modal-clock').classList.remove('hidden');
         }
 
+        const REWARD_ITEMS = ['嘉獎x1','嘉獎x2','嘉獎x3','嘉獎x4','嘉獎x5','小功x1','小功x2','小功x3','小功x4','小功x5','大功x1','大功x2','大功x3','大功x4','大功x5'];
+        const PUNISHMENT_ITEMS = ['警告x1','警告x2','警告x3','警告x4','警告x5','小過x1','小過x2','小過x3','小過x4','小過x5','大過x1','大過x2','大過x3','大過x4','大過x5','停職調查'];
+
+        function populatePunishmentItemOptions(selectId = 'punish-item', type = 'reward', selected = '') {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            if (!type) {
+                select.disabled = true;
+                select.innerHTML = '<option value="" selected>-- 請先選擇獎勵或懲處 --</option>';
+                return;
+            }
+            select.disabled = false;
+            const items = type === 'reward' ? REWARD_ITEMS : PUNISHMENT_ITEMS;
+            const legacyMap = {
+                '申誡一次': '警告x1',
+                '申誡二次': '警告x2',
+                '記過一次': '小過x1',
+                '記過二次': '小過x2',
+                '大過一次': '大過x1',
+                '停職處分': '停職調查'
+            };
+            const normalizedSelected = legacyMap[selected] || selected;
+            const optionItems = [...items];
+            if (normalizedSelected && !optionItems.includes(normalizedSelected)) optionItems.push(normalizedSelected);
+            select.innerHTML = optionItems.map(item => `<option value="${item}" ${item === normalizedSelected ? 'selected' : ''}>${item}${item === normalizedSelected && !items.includes(item) ? '（舊資料）' : ''}</option>`).join('');
+        }
+
         function openPunishModal() {
             if (!currentUser) {
-                showToast('請先登入系統，才能使用警用懲處功能。', 'warning', '需要登入');
+                showToast('請先登入系統，才能使用警用獎懲功能。', 'warning', '需要登入');
                 return;
             }
             if (!canUsePolicePunishment()) {
-                showToast('警用懲處僅限警察高層與管理處使用。', 'warning', '權限不足');
+                showToast('警用獎懲僅限警察高層與管理處使用。', 'warning', '權限不足');
                 return;
             }
             document.getElementById('punish-author-name').value = currentUser.name;
             document.getElementById('punish-author-position').value = currentUser.role === 'admin' ? '系統管理員 / 長官' : '分局長 / 督察組長';
+            const typeEl = document.getElementById('punish-type');
+            if (typeEl) typeEl.value = '';
+            populatePunishmentItemOptions('punish-item', '');
+            document.getElementById('punish-reason').value = '';
             document.getElementById('modal-punishment').classList.remove('hidden');
         }
 
@@ -1577,20 +1776,25 @@
 
         async function submitPunishment() {
             if (!canUsePolicePunishment()) {
-                showToast('權限不足：警用懲處僅限警察高層與管理處發布。', 'warning', '權限不足');
+                showToast('權限不足：警用獎懲僅限警察高層與管理處發布。', 'warning', '權限不足');
                 return;
             }
 
             const memberId = document.getElementById('punish-member-id').value.trim();
             const memberAcc = document.getElementById('punish-member-select').value;
+            const type = document.getElementById('punish-type').value;
             const item = document.getElementById('punish-item').value;
+            if (!['reward', 'punishment'].includes(type) || !item) {
+                showToast('請先選擇獎懲類型，再選擇獎懲項目。', 'warning', '獎懲類型未選擇');
+                return;
+            }
             const department = document.getElementById('punish-department').value.trim();
             const authorName = document.getElementById('punish-author-name').value.trim();
             const authorPos = document.getElementById('punish-author-position').value.trim();
             const reason = document.getElementById('punish-reason').value.trim();
 
             if (!memberId || !reason || !authorName) {
-                showToast('請填寫完整懲處資訊！', 'error', '資料不完整');
+                showToast('請填寫完整獎懲資訊！', 'error', '資料不完整');
                 return;
             }
 
@@ -1603,6 +1807,7 @@
                 id: punishId,
                 memberId,
                 memberName,
+                type,
                 item,
                 department,
                 authorName,
@@ -1610,7 +1815,7 @@
                 authorAccount: currentUser.account,
                 authorRole: currentUser.role,
                 reason,
-                time: now.toLocaleString('zh-TW', { hour12: false }),
+                time: formatDateTime(now.getTime()),
                 timestamp: now.getTime()
             };
 
@@ -1619,7 +1824,7 @@
                 appData.policePunishments.unshift({ docId: newPunish.id, ...newPunish });
                 closeModal('modal-punishment');
                 renderPolicePunishments();
-                showToast('警用懲處公告已成功發布。', 'success', '發布成功');
+                showToast('警用獎懲公告已成功發布。', 'success', '發布成功');
             } catch (e) {
                 showToast('雲端寫入失敗：' + e.message, 'error', '發布失敗');
             }
@@ -1632,9 +1837,19 @@
             }
             currentActiveDepartmentForReport = dept;
             document.getElementById('report-modal-title').innerHTML = `<i class="fa-solid fa-file-pen ${dept === 'police' ? 'text-blue-500' : 'text-red-500'}"></i><span>填寫${dept === 'police' ? '警察' : '消防'}案件報告</span>`;
+            if (isSuspendedUser(currentUser.account)) {
+                showToast('你目前於停職調查階段，無法使用案件報告功能，直到該獎懲被更改或移除。', 'warning', '停職調查限制');
+                return;
+            }
             document.getElementById('report-case-id').value = generateNextCaseId();
             document.getElementById('report-id').value = currentUser.account;
             document.getElementById('report-author').value = currentUser.name;
+            const suspectWrap = document.getElementById('police-suspect-fields');
+            if (suspectWrap) suspectWrap.classList.toggle('hidden', dept !== 'police');
+            if (dept !== 'police') {
+                document.getElementById('report-suspect-id').value = '';
+                document.getElementById('report-suspect-name').value = '';
+            }
             document.getElementById('modal-report').classList.remove('hidden');
         }
 
@@ -1645,6 +1860,11 @@
             const nameVal = document.getElementById('clock-name').value.trim();
             const statusVal = document.getElementById('clock-status').value;
             const vehicleVal = document.getElementById('clock-vehicle').value.trim();
+
+            if (isSuspendedUser(currentUser && currentUser.account)) {
+                showToast('你目前於停職調查階段，無法使用值班打卡功能，直到該獎懲被更改或移除。', 'warning', '停職調查限制');
+                return;
+            }
 
             if (!idVal || !nameVal) {
                 alert('請填寫編號與RP名稱！');
@@ -1688,9 +1908,9 @@
                 closeModal('modal-clock');
                 if (dept === 'police') renderPoliceClocks();
                 else renderFireClocks();
-                alert('打卡登記成功！');
+                showToast('打卡登記成功。', 'success', '打卡成功');
             } catch (e) {
-                alert('打卡寫入失敗：' + e.message);
+                showToast('打卡寫入失敗：' + e.message, 'error', '操作失敗');
             }
         }
 
@@ -1728,6 +1948,15 @@
             const content = document.getElementById('report-content').value.trim();
             const videoLink = document.getElementById('report-video-link').value.trim();
 
+            if (isSuspendedUser(currentUser && currentUser.account)) {
+                showToast('你目前於停職調查階段，無法提交案件報告，直到該獎懲被更改或移除。', 'warning', '停職調查限制');
+                return;
+            }
+            if (dept !== 'police') {
+                document.getElementById('report-suspect-id').value = '';
+                document.getElementById('report-suspect-name').value = '';
+            }
+
             if (!authorId || !title || !content) {
                 alert('請完整填寫案件必要欄位！');
                 return;
@@ -1741,14 +1970,15 @@
                 caseId: freshCaseId,
                 authorId,
                 authorName,
-                suspectId: suspectId || '無',
-                suspectName: suspectName || '無',
+                suspectId: dept === 'police' ? (suspectId || '無') : '',
+                suspectName: dept === 'police' ? (suspectName || '無') : '',
                 title,
                 content,
                 videoLink: videoLink || '',
                 time: now.toLocaleString('zh-TW', { hour12: false }),
                 timestamp: now.getTime(),
-                remark: '尚未批示'
+                remark: '尚未批示',
+                remarks: []
             };
 
             const collectionName = dept === 'police' ? 'policeReports' : 'fireReports';
@@ -1760,10 +1990,39 @@
                 closeModal('modal-report');
                 if (dept === 'police') renderPoliceReports();
                 else renderFireReports();
-                alert('案件報告提交成功！');
+                showToast('案件報告提交成功。', 'success', '提交成功');
             } catch (e) {
-                alert('提交失敗：' + e.message);
+                showToast('提交失敗：' + e.message, 'error', '提交失敗');
             }
+        }
+
+        function getReportRemarks(report) {
+            return ensureReportRemarks(report);
+        }
+
+        function getLatestRemarkText(report) {
+            const remarks = getReportRemarks(report);
+            if (!remarks.length) return '尚未批示';
+            const last = remarks[remarks.length - 1];
+            return `${last.authorName || '長官'}：${last.text || ''}`;
+        }
+
+        function renderRemarkHistory(report) {
+            const history = document.getElementById('remark-history');
+            if (!history) return;
+            const remarks = getReportRemarks(report);
+            if (!remarks.length) {
+                history.innerHTML = '<div class="text-xs text-slate-500 text-center py-3">目前尚無長官批示。</div>';
+                return;
+            }
+            history.innerHTML = remarks.map((remark, index) => `
+                <div class="rounded-lg border border-slate-800 bg-slate-900/70 p-3">
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                        <span class="text-xs font-semibold text-amber-400">${remark.authorName || '長官'} ${remark.authorAccount ? `(${remark.authorAccount})` : ''}</span>
+                        <span class="text-[11px] text-slate-500">${remark.time || formatDateTime(remark.timestamp)}</span>
+                    </div>
+                    <div class="text-xs text-slate-300 whitespace-pre-wrap">${remark.text || ''}</div>
+                </div>`).join('');
         }
 
         function renderPoliceReports() {
@@ -1800,17 +2059,17 @@
                         <div><span class="text-slate-500 block">填寫警員</span><span class="font-medium text-slate-200">${r.authorName} (${r.authorId})</span></div>
                         <div><span class="text-slate-500 block">嫌疑犯姓名</span><span class="font-medium text-slate-200">${r.suspectName}</span></div>
                         <div><span class="text-slate-500 block">嫌疑犯證件 ID</span><span class="font-mono font-bold text-amber-400">${r.suspectId}</span></div>
-                        <div><span class="text-slate-500 block">長官批示</span><span class="font-medium text-slate-300">${r.remark}</span></div>
+                        <div><span class="text-slate-500 block">長官批示</span><span class="font-medium text-slate-300">${getLatestRemarkText(r)}</span></div>
                     </div>
                     <p class="text-sm text-slate-300 line-clamp-2">${r.content}</p>
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-800/80">
-                        <button onclick="viewReportDetail('police', '${r.caseId}')" class="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center space-x-1">
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+                        <button onclick="viewReportDetail('police', '${r.caseId}')" class="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center justify-center space-x-1 px-3 py-2 rounded-lg hover:bg-blue-500/10 transition min-h-[44px]">
                             <i class="fa-solid fa-eye mr-1"></i><span>檢視詳細內容與影片</span>
                         </button>
-                        <div class="flex items-center space-x-2">
-                            ${canModifyReport(r) ? `<button onclick="openEditReportModal('police', '${r.caseId}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition"><i class="fa-solid fa-pen mr-1"></i>編輯</button>` : ''}
-                            ${canModifyReport(r) ? `<button onclick="deleteReport('police', '${r.caseId}')" class="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition"><i class="fa-solid fa-trash mr-1"></i>刪除</button>` : ''}
-                            ${canRemarkReport() ? `<button onclick="openRemarkModal('policeReports', '${r.caseId}')" class="px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs transition"><i class="fa-solid fa-pen-nib mr-1"></i>批示備註</button>` : ''}
+                        <div class="mobile-report-actions flex flex-wrap items-center gap-2">
+                            ${canModifyReport(r) ? `<button type="button" onclick="openEditReportModal('police', '${r.caseId}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition"><i class="fa-solid fa-pen mr-1"></i>編輯</button>` : ''}
+                            ${canModifyReport(r) ? `<button type="button" onclick="deleteReport('police', '${r.caseId}')" class="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition"><i class="fa-solid fa-trash mr-1"></i>刪除</button>` : ''}
+                            ${canRemarkReport() ? `<button type="button" onclick="openRemarkModal('policeReports', '${r.caseId}')" class="px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs transition"><i class="fa-solid fa-pen-nib mr-1"></i>批示備註</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -1828,41 +2087,45 @@
             const filtered = appData.policePunishments.filter(p => {
                 if (!queryVal) return true;
                 const memberId = String(p.memberId || '').toLowerCase();
-                const memberName = String(p.memberName || '').toLowerCase();
-                return memberId.includes(queryVal) || memberName.includes(queryVal);
+                return memberId.includes(queryVal);
             });
 
             if (filtered.length === 0) {
-                container.innerHTML = `<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">沒有找到符合條件的警用懲處紀錄。</div>`;
+                container.innerHTML = `<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">沒有找到符合警號的獎懲紀錄。</div>`;
                 return;
             }
 
             filtered.forEach(p => {
-                const card = document.createElement('div');
-                card.className = "bg-slate-900 border border-amber-500/30 rounded-2xl p-6 shadow-xl space-y-4 hover:border-amber-500/60 transition";
+                const punishKey = String(p.docId || p.id || '');
+                const isReward = String(p.type || 'punishment').toLowerCase() === 'reward';
                 const canEditDelete = canModifyPunishment(p);
-                const punishKey = p.docId || p.id;
+                const actionLabel = isReward ? '獎勵事由' : '懲處事由';
+                const typeLabel = isReward ? '獎勵' : '懲處';
+                const badgeClass = isReward ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+                const itemClass = isReward ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400';
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hover:border-slate-700 transition";
                 card.innerHTML = `
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
-                        <div class="flex items-center space-x-3">
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">${p.id || p.docId || 'PUN-未知'}</span>
-                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400">${p.item || '未填寫'}</span>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold ${badgeClass} font-mono">${p.id || p.docId || 'RPN-未知'}</span>
+                            <span class="px-3 py-1 rounded-full text-xs font-bold ${itemClass}">${typeLabel}｜${p.item || '未填寫'}</span>
                         </div>
                         <span class="text-xs text-slate-400">${p.time || '--'}</span>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60">
-                        <div><span class="text-slate-500 block">被懲處員警</span><span class="font-bold text-white">${p.memberName || '未知員警'} (${p.memberId || '--'})</span></div>
+                        <div><span class="text-slate-500 block">被獎懲員警</span><span class="font-bold text-white">${p.memberName || '未知員警'} (${p.memberId || '--'})</span></div>
                         <div><span class="text-slate-500 block">發布部門</span><span class="font-medium text-slate-200">${p.department || '--'}</span></div>
                         <div><span class="text-slate-500 block">填寫長官</span><span class="font-medium text-slate-200">${p.authorName || '--'} (${p.authorPos || '--'})</span></div>
                     </div>
-                    <p class="text-sm text-slate-300 leading-relaxed line-clamp-3"><strong class="text-amber-400">懲處事由：</strong>${p.reason || '未提供懲處事由。'}</p>
-                    <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
-                        <button onclick="viewPunishmentDetail('${punishKey}')" class="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center space-x-1 px-3 py-1.5 rounded-lg hover:bg-amber-500/10 transition cursor-pointer">
+                    <p class="text-sm text-slate-300 leading-relaxed line-clamp-3"><strong class="text-amber-400">${actionLabel}：</strong>${p.reason || `未提供${actionLabel}。`}</p>
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-slate-800">
+                        <button onclick="viewPunishmentDetail('${punishKey}')" class="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center justify-center space-x-1 px-3 py-2 rounded-lg hover:bg-amber-500/10 transition cursor-pointer min-h-[40px]">
                             <i class="fa-solid fa-expand mr-1"></i><span>點擊放大檢視</span>
                         </button>
-                        <div class="flex items-center space-x-2">
-                            ${canEditDelete ? `<button onclick="openEditPunishmentModal('${punishKey}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition"><i class="fa-solid fa-pen mr-1"></i>修改</button>` : ''}
-                            ${canDeletePunishment() ? `<button onclick="deletePunishment('${punishKey}')" class="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition"><i class="fa-solid fa-trash-can mr-1"></i>移除</button>` : ''}
+                        <div class="mobile-punishment-actions flex items-center space-x-2">
+                            ${canEditDelete ? `<button onclick="openEditPunishmentModal('${punishKey}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition min-h-[40px]"><i class="fa-solid fa-pen mr-1"></i>修改</button>` : ''}
+                            ${canDeletePunishment() ? `<button onclick="deletePunishment('${punishKey}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition min-h-[40px]"><i class="fa-solid fa-trash-can mr-1"></i>移除</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -1893,18 +2156,19 @@
         function viewPunishmentDetail(punishId) {
             const p = appData.policePunishments.find(x => String(x.id || '') === String(punishId) || String(x.docId || '') === String(punishId));
             if (!p) {
-                showToast('找不到這筆警用懲處資料，請重新整理後再試。', 'error', '資料不存在');
+                showToast('找不到這筆警用獎懲資料，請重新整理後再試。', 'error', '資料不存在');
                 return;
             }
 
+            const isReward = String(p.type || 'punishment').toLowerCase() === 'reward';
             document.getElementById('punish-detail-badge').textContent = p.id || punishId;
-            document.getElementById('punish-detail-title').textContent = `${p.memberName || '未知員警'} 的警用懲處公告`;
+            document.getElementById('punish-detail-title').textContent = `${p.memberName || '未知員警'} 的警用${isReward ? '獎勵' : '懲處'}公告`;
             document.getElementById('punish-detail-member').textContent = `${p.memberName || '未知員警'} (${p.memberId || '--'})`;
-            document.getElementById('punish-detail-item').textContent = p.item || '--';
+            document.getElementById('punish-detail-item').textContent = `${isReward ? '獎勵' : '懲處'}｜${p.item || '--'}`;
             document.getElementById('punish-detail-time').textContent = p.time || '--';
             document.getElementById('punish-detail-department').textContent = p.department || '--';
             document.getElementById('punish-detail-author').textContent = `${p.authorName || '--'} (${p.authorPos || '--'})`;
-            document.getElementById('punish-detail-reason').textContent = p.reason || '未提供懲處事由。';
+            document.getElementById('punish-detail-reason').textContent = p.reason || `未提供${isReward ? '獎勵' : '懲處'}事由。`;
             document.getElementById('modal-punishment-detail').classList.remove('hidden');
         }
 
@@ -1912,36 +2176,44 @@
             const p = appData.policePunishments.find(x => String(x.id || '') === String(punishId) || String(x.docId || '') === String(punishId));
             if (!p) return;
             if (!canModifyPunishment(p)) {
-                showToast('權限不足：只有警察高層、管理處或該筆懲處發布者可以修改。', 'warning', '權限不足');
+                showToast('權限不足：只有警察高層、管理處或該筆獎懲發布者可以修改。', 'warning', '權限不足');
                 return;
             }
 
             document.getElementById('edit-type').value = 'punishment';
             const punishKey = p.docId || p.id;
             document.getElementById('edit-id-key').value = punishKey;
-            document.getElementById('edit-modal-title').textContent = `修改警用懲處 (${p.id || punishKey})`;
+            document.getElementById('edit-modal-title').textContent = `修改警用獎懲 (${p.id || punishKey})`;
 
             const container = document.getElementById('edit-fields-container');
             const policeUsers = appData.users.filter(u => (u.units || [u.unit]).includes('police'));
             const memberOptions = policeUsers.map(u => `<option value="${u.account}" ${u.account === p.memberId ? 'selected' : ''}>${u.name} (${u.account})</option>`).join('');
+            const initialEditType = String(p.type || 'punishment').toLowerCase() === 'reward' ? 'reward' : 'punishment';
             container.innerHTML = `
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">被懲處員警</label>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">被獎懲員警</label>
                         <select id="edit-punish-member" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
-                            <option value="">-- 請選擇被懲處員警 --</option>${memberOptions}
+                            <option value="">-- 請選擇被獎懲員警 --</option>${memberOptions}
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">被懲處員警編號</label>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">被獎懲員警編號</label>
                         <input type="text" id="edit-punish-member-id" value="${p.memberId || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 font-mono">
                     </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">懲處項目</label>
-                    <select id="edit-punish-item" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
-                        ${['申誡一次','申誡二次','記過一次','記過二次','大過一次','停職處分'].map(item => `<option value="${item}" ${item === p.item ? 'selected' : ''}>${item}</option>`).join('')}
-                    </select>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">獎懲類型</label>
+                        <select id="edit-punish-type" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+                            <option value="reward" ${initialEditType === 'reward' ? 'selected' : ''}>獎勵</option>
+                            <option value="punishment" ${initialEditType === 'punishment' ? 'selected' : ''}>懲處</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">獎懲項目</label>
+                        <select id="edit-punish-item" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"></select>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">發布部門</label>
@@ -1958,10 +2230,14 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">懲處原因說明</label>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">獎懲事由說明</label>
                     <textarea id="edit-punish-reason" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-amber-500">${p.reason || ''}</textarea>
                 </div>
             `;
+
+            const editTypeEl = document.getElementById('edit-punish-type');
+            populatePunishmentItemOptions('edit-punish-item', initialEditType, p.item || '');
+            if (editTypeEl) editTypeEl.addEventListener('change', () => populatePunishmentItemOptions('edit-punish-item', editTypeEl.value));
 
             const memberSelect = document.getElementById('edit-punish-member');
             const memberIdInput = document.getElementById('edit-punish-member-id');
@@ -1977,18 +2253,19 @@
             const p = appData.policePunishments.find(x => String(x.id || '') === String(punishId) || String(x.docId || '') === String(punishId));
             if (!p) return;
             if (!canDeletePunishment()) {
-                showToast('權限不足：只有警察高層與管理處可以移除警用懲處。', 'warning', '權限不足');
+                showToast('權限不足：只有警察高層與管理處可以移除警用獎懲。', 'warning', '權限不足');
                 return;
             }
-            if (!confirm('確定要刪除這筆警用懲處公告嗎？')) return;
+            if (!confirm('確定要刪除這筆警用獎懲公告嗎？')) return;
 
             try {
                 await fm.deleteDoc(fm.doc(db, 'policePunishments', p.docId || p.id));
                 const deletedKey = String(p.docId || p.id || punishId);
                 appData.policePunishments = appData.policePunishments.filter(x => String(x.docId || x.id || '') !== deletedKey);
-                await logAdminAction('刪除警用懲處', p.id || punishId);
+                await logAdminAction('移除警用獎懲', p.id || punishId);
                 renderPolicePunishments();
-                showToast('警用懲處公告已成功刪除。', 'success', '操作成功');
+                updateAccessLocks();
+                showToast('警用獎懲公告已成功移除。', 'success', '操作成功');
             } catch (e) {
                 showToast('刪除失敗：' + e.message, 'error', '操作失敗');
             }
@@ -1996,14 +2273,18 @@
 
         function renderFireReports() {
             const container = document.getElementById('fire-reports-list');
-            const queryVal = document.getElementById('search-fire-report').value.trim().toLowerCase();
+            const input = document.getElementById('search-fire-report');
+            const queryVal = input ? input.value.trim().toLowerCase() : '';
             if (!container) return;
 
             container.innerHTML = '';
             const filtered = appData.fireReports.filter(r => {
                 if (!queryVal) return true;
-                const sId = (r.suspectId || '').toLowerCase();
-                return sId.includes(queryVal);
+                const caseId = String(r.caseId || '').toLowerCase();
+                const title = String(r.title || '').toLowerCase();
+                const authorId = String(r.authorId || '').toLowerCase();
+                const authorName = String(r.authorName || '').toLowerCase();
+                return caseId.includes(queryVal) || title.includes(queryVal) || authorId.includes(queryVal) || authorName.includes(queryVal);
             });
 
             if (filtered.length === 0) {
@@ -2016,27 +2297,25 @@
                 card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hover:border-slate-700 transition";
                 card.innerHTML = `
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
-                        <div class="flex items-center space-x-3">
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 font-mono">${r.caseId}</span>
-                            <h4 class="text-base font-bold text-white">${r.title}</h4>
+                        <div class="flex items-center space-x-3 min-w-0">
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 font-mono shrink-0">${r.caseId}</span>
+                            <h4 class="text-base font-bold text-white truncate">${r.title}</h4>
                         </div>
-                        <span class="text-xs text-slate-400">${r.time}</span>
+                        <span class="text-xs text-slate-400 shrink-0">${r.time}</span>
                     </div>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60">
                         <div><span class="text-slate-500 block">填寫隊員</span><span class="font-medium text-slate-200">${r.authorName} (${r.authorId})</span></div>
-                        <div><span class="text-slate-500 block">報案人/對象</span><span class="font-medium text-slate-200">${r.suspectName}</span></div>
-                        <div><span class="text-slate-500 block">證件 ID</span><span class="font-mono font-bold text-amber-400">${r.suspectId}</span></div>
-                        <div><span class="text-slate-500 block">長官批示</span><span class="font-medium text-slate-300">${r.remark}</span></div>
+                        <div><span class="text-slate-500 block">長官批示</span><span class="font-medium text-slate-300">${getLatestRemarkText(r)}</span></div>
                     </div>
                     <p class="text-sm text-slate-300 line-clamp-2">${r.content}</p>
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-800/80">
-                        <button onclick="viewReportDetail('fire', '${r.caseId}')" class="text-xs text-red-400 hover:text-red-300 font-semibold flex items-center space-x-1">
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+                        <button type="button" onclick="viewReportDetail('fire', '${r.caseId}')" class="text-xs text-red-400 hover:text-red-300 font-semibold flex items-center justify-center space-x-1 px-3 py-2 rounded-lg hover:bg-red-500/10 transition min-h-[44px]">
                             <i class="fa-solid fa-eye mr-1"></i><span>檢視詳細內容與影片</span>
                         </button>
-                        <div class="flex items-center space-x-2">
-                            ${canModifyReport(r) ? `<button onclick="openEditReportModal('fire', '${r.caseId}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition"><i class="fa-solid fa-pen mr-1"></i>編輯</button>` : ''}
-                            ${canModifyReport(r) ? `<button onclick="deleteReport('fire', '${r.caseId}')" class="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition"><i class="fa-solid fa-trash mr-1"></i>刪除</button>` : ''}
-                            ${canRemarkReport() ? `<button onclick="openRemarkModal('fireReports', '${r.caseId}')" class="px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs transition"><i class="fa-solid fa-pen-nib mr-1"></i>批示備註</button>` : ''}
+                        <div class="mobile-report-actions flex flex-wrap items-center gap-2">
+                            ${canModifyReport(r) ? `<button type="button" onclick="openEditReportModal('fire', '${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition min-h-[44px]"><i class="fa-solid fa-pen mr-1"></i>編輯</button>` : ''}
+                            ${canModifyReport(r) ? `<button type="button" onclick="deleteReport('fire', '${r.caseId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition min-h-[44px]"><i class="fa-solid fa-trash mr-1"></i>刪除</button>` : ''}
+                            ${canRemarkReport() ? `<button type="button" onclick="openRemarkModal('fireReports', '${r.caseId}')" class="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs transition min-h-[44px]"><i class="fa-solid fa-pen-nib mr-1"></i>批示備註</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -2054,7 +2333,7 @@
 
         function canRemarkReport() {
             if (!currentUser) return false;
-            return currentUser.role === 'admin' || currentUser.role === 'high';
+            return currentUser.role === 'admin' || currentUser.role === 'high' || currentUser.role === 'senior';
         }
 
         function viewReportDetail(dept, caseId) {
@@ -2065,11 +2344,15 @@
             document.getElementById('detail-case-badge').textContent = r.caseId;
             document.getElementById('detail-title').textContent = r.title;
             document.getElementById('detail-author').textContent = `${r.authorName} (${r.authorId})`;
-            document.getElementById('detail-suspect-name').textContent = r.suspectName;
-            document.getElementById('detail-suspect-id').textContent = r.suspectId;
+            document.getElementById('detail-suspect-name').textContent = r.suspectName || '--';
+            document.getElementById('detail-suspect-id').textContent = r.suspectId || '--';
+            document.getElementById('detail-suspect-name-wrap').classList.toggle('hidden', dept !== 'police');
+            document.getElementById('detail-suspect-id-wrap').classList.toggle('hidden', dept !== 'police');
             document.getElementById('detail-time').textContent = r.time;
             document.getElementById('detail-content').textContent = r.content;
-            document.getElementById('detail-remark').textContent = r.remark || '尚未有長官批示。';
+            const detailRemarkEl = document.getElementById('detail-remark');
+            const remarks = getReportRemarks(r);
+            detailRemarkEl.innerHTML = remarks.length ? remarks.map(x => `<div class="mb-2 last:mb-0"><span class="text-amber-400 font-semibold">${x.authorName || '長官'}</span><span class="text-slate-500"> ${x.time || formatDateTime(x.timestamp)}</span><div class="mt-1 text-slate-300 whitespace-pre-wrap">${x.text || ''}</div></div>`).join('') : '尚未有長官批示。';
 
             const vidWrap = document.getElementById('detail-video-wrapper');
             const vidLink = document.getElementById('detail-video-link');
@@ -2083,20 +2366,33 @@
             document.getElementById('modal-report-detail').classList.remove('hidden');
         }
 
-        function deleteReport(dept, caseId) {
+        async function deleteReport(dept, caseId) {
+            if (!currentUser) {
+                showToast('請先登入系統。', 'warning', '需要登入');
+                return;
+            }
+            const list = dept === 'police' ? appData.policeReports : appData.fireReports;
+            const r = list.find(x => x.caseId === caseId);
+            if (!r) return;
+
+            const allowed = currentUser.role === 'admin' || currentUser.role === 'high' || r.authorId === currentUser.account;
+            if (!allowed) {
+                showToast('權限不足：只有高層、管理處或案件發布者可以刪除。', 'warning', '權限不足');
+                return;
+            }
             if (!confirm('確定要刪除這筆案件報告嗎？')) return;
             const collectionName = dept === 'police' ? 'policeReports' : 'fireReports';
             try {
-                fm.deleteDoc(fm.doc(db, collectionName, caseId));
+                await fm.deleteDoc(fm.doc(db, collectionName, caseId));
                 if (dept === 'police') appData.policeReports = appData.policeReports.filter(x => x.caseId !== caseId);
                 else appData.fireReports = appData.fireReports.filter(x => x.caseId !== caseId);
 
-                logAdminAction('刪除案件報告', caseId);
+                await logAdminAction('刪除案件報告', caseId);
                 if (dept === 'police') renderPoliceReports();
                 else renderFireReports();
-                alert('案件已成功刪除。');
+                showToast('案件已成功刪除。', 'success', '刪除成功');
             } catch (e) {
-                alert('刪除失敗：' + e.message);
+                showToast('刪除失敗：' + e.message, 'error', '刪除失敗');
             }
         }
 
@@ -2104,6 +2400,10 @@
             const list = dept === 'police' ? appData.policeReports : appData.fireReports;
             const r = list.find(x => x.caseId === caseId);
             if (!r) return;
+            if (!canModifyReport(r)) {
+                showToast('權限不足：只有高層、管理處或案件發布者可以編輯。', 'warning', '權限不足');
+                return;
+            }
 
             document.getElementById('edit-type').value = `${dept}-report`;
             document.getElementById('edit-id-key').value = caseId;
@@ -2115,16 +2415,17 @@
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題</label>
                     <input type="text" id="edit-rep-title" value="${r.title}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                ${dept === 'police' ? `
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯姓名</label>
-                        <input type="text" id="edit-rep-sname" value="${r.suspectName}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+                        <input type="text" id="edit-rep-sname" value="${r.suspectName || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">身分證件 ID</label>
-                        <input type="text" id="edit-rep-sid" value="${r.suspectId}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono">
+                        <input type="text" id="edit-rep-sid" value="${r.suspectId || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono">
                     </div>
-                </div>
+                </div>` : ''}
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細經過</label>
                     <textarea id="edit-rep-content" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500">${r.content}</textarea>
@@ -2138,9 +2439,17 @@
         }
 
         function openRemarkModal(collectionKey, docId) {
+            if (!canRemarkReport()) {
+                showToast('只有高層、管理處或高階成員可以新增長官批示。', 'warning', '權限不足');
+                return;
+            }
+            const targetList = collectionKey === 'policeReports' ? appData.policeReports : appData.fireReports;
+            const target = targetList.find(x => x.caseId === docId);
+            if (!target) return;
             document.getElementById('remark-target-type').value = collectionKey;
             document.getElementById('remark-target-id-key').value = docId;
             document.getElementById('remark-text-input').value = '';
+            renderRemarkHistory(target);
             document.getElementById('modal-remark').classList.remove('hidden');
         }
 
@@ -2158,16 +2467,28 @@
             const target = targetList.find(x => x.caseId === docId);
             if (!target) return;
 
-            target.remark = `${currentUser.name} (${currentUser.role === 'admin' ? '管理員' : '長官'}): ${remarkText}`;
+            const remarks = getReportRemarks(target);
+            const now = new Date();
+            const newRemark = {
+                authorName: currentUser.name,
+                authorAccount: currentUser.account,
+                role: currentUser.role,
+                text: remarkText,
+                timestamp: now.getTime(),
+                time: formatDateTime(now.getTime())
+            };
+            remarks.push(newRemark);
+            target.remarks = remarks;
+            target.remark = `${newRemark.authorName}: ${newRemark.text}`;
 
             try {
-                await fm.updateDoc(fm.doc(db, collectionKey, docId), { remark: target.remark });
+                await fm.updateDoc(fm.doc(db, collectionKey, docId), { remarks: target.remarks, remark: target.remark });
                 closeModal('modal-remark');
                 if (collectionKey === 'policeReports') renderPoliceReports();
                 else renderFireReports();
-                alert('長官批示備註已成功儲存！');
+                showToast('長官批示已新增。', 'success', '批示成功');
             } catch (e) {
-                alert('儲存失敗：' + e.message);
+                showToast('儲存失敗：' + e.message, 'error', '操作失敗');
             }
         }
 
@@ -2179,12 +2500,13 @@
                 const p = appData.policePunishments.find(x => String(x.id || '') === String(idKey) || String(x.docId || '') === String(idKey));
                 if (!p) return;
                 if (!canModifyPunishment(p)) {
-                    showToast('權限不足：只有警察高層、管理處或該筆懲處發布者可以修改。', 'warning', '權限不足');
+                    showToast('權限不足：只有警察高層、管理處或該筆獎懲發布者可以修改。', 'warning', '權限不足');
                     return;
                 }
 
                 const memberId = document.getElementById('edit-punish-member-id').value.trim();
                 const memberAcc = document.getElementById('edit-punish-member').value;
+                const type = document.getElementById('edit-punish-type').value;
                 const item = document.getElementById('edit-punish-item').value;
                 const department = document.getElementById('edit-punish-department').value.trim();
                 const authorName = document.getElementById('edit-punish-author-name').value.trim();
@@ -2192,13 +2514,14 @@
                 const reason = document.getElementById('edit-punish-reason').value.trim();
 
                 if (!memberId || !authorName || !reason) {
-                    showToast('請完整填寫懲處資訊！', 'error', '資料不完整');
+                    showToast('請完整填寫獎懲資訊！', 'error', '資料不完整');
                     return;
                 }
 
                 const foundU = appData.users.find(u => u.account === (memberAcc || memberId));
                 p.memberId = memberId;
                 p.memberName = foundU ? foundU.name : (p.memberName || '未知員警');
+                p.type = type;
                 p.item = item;
                 p.department = department;
                 p.authorName = authorName;
@@ -2209,6 +2532,7 @@
                     await fm.updateDoc(fm.doc(db, 'policePunishments', p.docId || p.id), {
                         memberId: p.memberId,
                         memberName: p.memberName,
+                        type: p.type,
                         item: p.item,
                         department: p.department,
                         authorName: p.authorName,
@@ -2217,10 +2541,11 @@
                         updatedAt: Date.now(),
                         updatedBy: currentUser ? currentUser.account : ''
                     });
-                    await logAdminAction('編輯警用懲處', p.id);
+                    await logAdminAction('編輯警用獎懲', p.id);
                     closeModal('modal-edit');
                     renderPolicePunishments();
-                    showToast('警用懲處修改已成功儲存。', 'success', '修改成功');
+                    updateAccessLocks();
+                    showToast('警用獎懲修改已成功儲存。', 'success', '修改成功');
                 } catch (e) {
                     showToast('更新失敗：' + e.message, 'error', '修改失敗');
                 }
@@ -2232,10 +2557,19 @@
                 const list = dept === 'police' ? appData.policeReports : appData.fireReports;
                 const r = list.find(x => x.caseId === idKey);
                 if (!r) return;
+                if (!canModifyReport(r)) {
+                    showToast('權限不足：只有高層、管理處或案件發布者可以編輯。', 'warning', '權限不足');
+                    return;
+                }
 
                 r.title = document.getElementById('edit-rep-title').value.trim();
-                r.suspectName = document.getElementById('edit-rep-sname').value.trim();
-                r.suspectId = document.getElementById('edit-rep-sid').value.trim();
+                if (dept === 'police') {
+                    r.suspectName = document.getElementById('edit-rep-sname').value.trim();
+                    r.suspectId = document.getElementById('edit-rep-sid').value.trim();
+                } else {
+                    r.suspectName = '';
+                    r.suspectId = '';
+                }
                 r.content = document.getElementById('edit-rep-content').value.trim();
                 r.videoLink = document.getElementById('edit-rep-video').value.trim();
 
@@ -2395,7 +2729,7 @@
             appData.users.forEach(u => {
                 const units = u.units || [u.unit];
                 const unitNames = units.map(un => un === 'police' ? '警察局' : un === 'fire' ? '消防局' : '總管理處').join(', ');
-                const roleText = u.role === 'admin' ? '最高管理員' : u.role === 'high' ? '高層長官' : '一般基層';
+                const roleText = u.role === 'admin' ? '最高管理員' : u.role === 'high' ? '高層長官' : u.role === 'senior' ? '高階成員' : '一般基層';
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/40 transition";
@@ -2403,10 +2737,10 @@
                     <td class="p-4 font-mono font-bold text-white">${u.account}</td>
                     <td class="p-4 text-slate-200">${u.name}</td>
                     <td class="p-4 text-slate-300">${unitNames}</td>
-                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : u.role === 'high' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${roleText}</span></td>
+                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : u.role === 'high' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : u.role === 'senior' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${roleText}</span></td>
                     <td class="p-4 text-right space-x-2">
-                        <button onclick="openEditUserModal('${u.account}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition">編輯</button>
-                        ${u.account !== 'DSUENSX' ? `<button onclick="deleteUser('${u.account}')" class="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition">刪除</button>` : ''}
+                        ${(!isSuperAdminAccount(u.account) || (currentUser && isSuperAdminAccount(currentUser.account))) ? `<button type="button" onclick="openEditUserModal('${u.account}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition">編輯</button>` : ''}
+                        ${!isSuperAdminAccount(u.account) ? `<button type="button" onclick="deleteUser('${u.account}')" class="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition">刪除</button>` : ''}
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -2414,8 +2748,8 @@
         }
 
         function openCreateUserModal() {
-            if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'high')) {
-                showToast('只有高層與管理員可以使用此功能。', 'warning', '權限不足');
+            if (!currentUser || currentUser.role !== 'admin') {
+                showToast('只有最高管理員可以使用此功能。', 'warning', '權限不足');
                 return;
             }
             document.getElementById('new-user-account').value = '';
@@ -2425,10 +2759,14 @@
             document.getElementById('modal-create-user').classList.remove('hidden');
         }
 
-        async function submitNewUser() {
+            async function submitNewUser() {
             const account = document.getElementById('new-user-account').value.trim();
             const name = document.getElementById('new-user-name').value.trim();
             const pass = document.getElementById('new-user-password').value.trim();
+            if (!currentUser || currentUser.role !== 'admin') {
+                showToast('只有最高管理員可以建立帳號。', 'warning', '權限不足');
+                return;
+            }
             const role = document.getElementById('new-user-role').value;
 
             const selectedUnits = [];
@@ -2446,6 +2784,11 @@
                 return;
             }
 
+            if (isSuperAdminAccount(account)) {
+                showToast('Dsuensx 為系統最高權限保護帳號，不可建立或覆蓋。', 'warning', '操作受限');
+                return;
+            }
+
             if (appData.users.some(u => u.account === account)) {
                 alert('此帳號/編號已存在！');
                 return;
@@ -2458,14 +2801,22 @@
                 closeModal('modal-create-user');
                 renderAdminUsers();
                 populateMemberSelects();
-                alert('新公職帳號建立成功！');
+                showToast('新公職帳號建立成功。', 'success', '建立成功');
             } catch (e) {
                 alert('建立失敗：' + e.message);
             }
         }
 
         function openEditUserModal(account) {
+            if (!currentUser || currentUser.role !== 'admin') {
+                showToast('只有最高管理員可以編輯帳號資料。', 'warning', '權限不足');
+                return;
+            }
             const u = appData.users.find(x => x.account === account);
+            if (isSuperAdminAccount(account) && (!currentUser || !isSuperAdminAccount(currentUser.account))) {
+                showToast('Dsuensx 最高權限帳號受到保護，僅本人可以修改。', 'warning', '權限不足');
+                return;
+            }
             if (!u) return;
 
             document.getElementById('edit-user-original-account').value = u.account;
@@ -2484,9 +2835,20 @@
 
         async function submitEditUser() {
             const origAccount = document.getElementById('edit-user-original-account').value;
-            const newAccount = document.getElementById('edit-user-account-input').value.trim();
+            const isSuperTarget = isSuperAdminAccount(origAccount);
+            const isSuperOperator = !!currentUser && isSuperAdminAccount(currentUser.account);
+            if (isSuperTarget && !isSuperOperator) {
+                showToast('Dsuensx 最高權限帳號受到保護，僅本人可以修改。', 'warning', '權限不足');
+                return;
+            }
+            if (!currentUser || currentUser.role !== 'admin') {
+                showToast('只有最高管理員可以修改帳號資料。', 'warning', '權限不足');
+                return;
+            }
+
+            let newAccount = document.getElementById('edit-user-account-input').value.trim();
             const newName = document.getElementById('edit-user-name-input').value.trim();
-            const newRole = document.getElementById('edit-user-role-input').value;
+            let newRole = document.getElementById('edit-user-role-input').value;
             const newPass = document.getElementById('edit-user-password-input').value.trim();
 
             const selectedUnits = [];
@@ -2494,13 +2856,20 @@
                 selectedUnits.push(cb.value);
             });
 
+            if (isSuperTarget) {
+                newAccount = 'Dsuensx';
+                newRole = 'admin';
+                selectedUnits.length = 0;
+                selectedUnits.push('admin');
+            }
+
             if (!newAccount || !newName || selectedUnits.length === 0) {
-                alert('請完整填寫帳號、名稱並至少勾選一個單位！');
+                showToast('請完整填寫帳號、名稱並至少勾選一個單位。', 'error', '資料不完整');
                 return;
             }
 
-            if (selectedUnits.length > 2) {
-                alert('每個帳號最多只能勾選兩個單位！');
+            if (selectedUnits.length > 2 && !isSuperTarget) {
+                showToast('每個帳號最多只能勾選兩個單位。', 'warning', '資料不符合');
                 return;
             }
 
@@ -2512,36 +2881,51 @@
             u.role = newRole;
             u.units = selectedUnits;
             if (newPass) u.pass = newPass;
+            if (isSuperTarget) u.protected = true;
 
             try {
-                if (origAccount !== newAccount) {
-                    await fm.deleteDoc(fm.doc(db, 'users', origAccount));
+                const targetDocId = u.docId || origAccount;
+                if (!isSuperTarget && origAccount !== newAccount) {
+                    await fm.deleteDoc(fm.doc(db, 'users', targetDocId));
                 }
-                await fm.setDoc(fm.doc(db, 'users', newAccount), {
+                const payload = {
                     account: u.account,
                     name: u.name,
                     pass: u.pass,
                     role: u.role,
                     units: u.units
-                });
+                };
+                if (isSuperTarget) payload.protected = true;
+                await fm.setDoc(fm.doc(db, 'users', isSuperTarget ? targetDocId : newAccount), payload);
 
+                currentUser = isSuperOperator && isSuperTarget ? { ...u, docId: targetDocId } : currentUser;
                 closeModal('modal-edit-user');
                 renderAdminUsers();
                 populateMemberSelects();
-                alert('帳號資料更新成功！');
+                updateUserBadge();
+                updateAccessLocks();
+                showToast('帳號資料更新成功。', 'success', '操作成功');
             } catch (e) {
-                alert('更新失敗：' + e.message);
+                showToast('更新失敗：' + e.message, 'error', '操作失敗');
             }
         }
 
         async function deleteUser(account) {
+            if (!currentUser || currentUser.role !== 'admin') {
+                showToast('只有最高管理員可以刪除帳號。', 'warning', '權限不足');
+                return;
+            }
+            if (isSuperAdminAccount(account)) {
+                showToast('Dsuensx 最高權限帳號無法刪除。', 'warning', '操作受限');
+                return;
+            }
             if (!confirm(`確定要刪除帳號 ${account} 嗎？`)) return;
             try {
                 await fm.deleteDoc(fm.doc(db, 'users', account));
                 appData.users = appData.users.filter(x => x.account !== account);
                 renderAdminUsers();
                 populateMemberSelects();
-                alert('帳號已刪除。');
+                showToast('帳號已刪除。', 'success', '操作成功');
             } catch (e) {
                 alert('刪除失敗：' + e.message);
             }
@@ -2585,7 +2969,7 @@
                     <td class="p-4 font-semibold text-purple-400">${l.action}</td>
                     <td class="p-4 text-slate-200">${l.operator}</td>
                     <td class="p-4 text-slate-300 font-mono">${l.target}</td>
-                    <td class="p-4 text-slate-400 text-xs">${l.time}</td>
+                    <td class="p-4 text-slate-400 text-xs">${formatDateTime(l.timestamp, l.time)}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -2613,15 +2997,14 @@
             const payloadBytes = collections.reduce((sum, list) => {
                 return sum + (list || []).reduce((inner, item) => inner + estimateJsonBytes(item), 0);
             }, 0);
-            // 以 1 KB 作為 Firestore 每筆文件最低估算額，避免小資料量完全看不到。
             const approxBytes = collections.reduce((sum, list) => {
                 return sum + (list || []).reduce((inner, item) => inner + Math.max(1024, estimateJsonBytes(item)), 0);
             }, 0);
             const maxBytes = 1024 * 1024 * 1024; // 1GB
-            const usedKb = (approxBytes / 1024).toFixed(1);
+            const usedKb = approxBytes / 1024;
             const percentNumber = Math.min(100, Math.max(0, (approxBytes / maxBytes) * 100));
-            const percent = percentNumber < 0.0001 && totalDocs > 0 ? '<0.0001' : percentNumber.toFixed(4);
-            const freeMb = Math.max(0, (maxBytes - approxBytes) / (1024 * 1024)).toFixed(1);
+            let percentText = percentNumber >= 0.01 ? percentNumber.toFixed(2) : percentNumber >= 0.0001 ? percentNumber.toFixed(4) : (totalDocs > 0 ? percentNumber.toFixed(6) : '0.0000');
+            const freeMb = Math.max(0, (maxBytes - approxBytes) / (1024 * 1024));
 
             const usedTextEl = document.getElementById('storage-used-text');
             const percentTextEl = document.getElementById('storage-percent-text');
@@ -2629,12 +3012,12 @@
             const docsEl = document.getElementById('storage-docs-count');
             const freeEl = document.getElementById('storage-free-text');
 
-            if (usedTextEl) usedTextEl.textContent = `當前已使用：約 ${usedKb} KB`;
-            if (percentTextEl) percentTextEl.textContent = `${percent}%`;
+            if (usedTextEl) usedTextEl.textContent = `當前已使用：約 ${usedKb.toFixed(1)} KB`;
+            if (percentTextEl) percentTextEl.textContent = `${percentText}%`;
             if (percentTextEl) percentTextEl.title = `依目前載入資料估算：${payloadBytes.toLocaleString()} bytes 文件內容`;
             if (progressEl) progressEl.style.width = `${Math.max(percentNumber, totalDocs > 0 ? 0.5 : 0)}%`;
             if (docsEl) docsEl.textContent = totalDocs;
-            if (freeEl) freeEl.textContent = `${freeMb} MB`;
+            if (freeEl) freeEl.textContent = `${freeMb.toFixed(1)} MB`;
         }
 
         function renderAdminOverview() {
@@ -2648,11 +3031,21 @@
             appData.adminMemo = text;
             try {
                 await fm.setDoc(fm.doc(db, 'systemSettings', 'adminMemo'), { content: text });
-                alert('管理員共同備忘錄已成功儲存！');
+                showToast('管理員共同備忘錄已成功儲存。', 'success', '儲存成功');
             } catch (e) {
-                alert('儲存失敗：' + e.message);
+                showToast('儲存失敗：' + e.message, 'error', '操作失敗');
             }
         }
     </script>
+
+    <footer class="mt-auto border-t border-slate-800 bg-slate-950/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-xs text-slate-500 space-y-2">
+            <p>此網站由 <span class="text-slate-300 font-semibold">賴打 (yt_laida)</span> 及 <span class="text-slate-300 font-semibold">希大 (tw_failure)</span> 共同創作</p>
+            <p>如有異常請聯繫政府信箱通報</p>
+            <a href="https://discord.gg/zUV9Rb4UPH" target="_blank" rel="noopener noreferrer" title="相關技術群組 Discord" class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:text-white hover:bg-indigo-500/20 transition" aria-label="相關技術群組 Discord">
+                <i class="fa-brands fa-discord text-lg"></i>
+            </a>
+        </div>
+    </footer>
 </body>
 </html>
