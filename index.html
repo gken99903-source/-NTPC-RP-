@@ -2201,29 +2201,27 @@
             }
         }
 
-        function updateReviewTabBadges(){
-            const policeBadge=document.getElementById('police-review-tab-badge');
-            const fireBadge=document.getElementById('fire-review-tab-badge');
-            const policeCount=canReviewPoliceReports()?(appData.policePendingReports||[]).filter(r=>r.reviewStatus==='pending').length:0;
-            const fireCount=canReviewFireReports()?((appData.firePendingReports||[]).filter(r=>r.reviewStatus==='pending').length+(appData.emsPendingReports||[]).filter(r=>r.reviewStatus==='pending').length):0;
-            if(policeBadge){policeBadge.textContent=String(policeCount);policeBadge.classList.toggle('hidden',policeCount<=0);}
-            if(fireBadge){fireBadge.textContent=String(fireCount);fireBadge.classList.toggle('hidden',fireCount<=0);}
+        function getUniquePendingRows(rows, keyFn){
+            const map=new Map();
+            (rows||[]).forEach((row)=>{
+                const key=String(keyFn(row)||'').trim();
+                if(!key) return;
+                const prev=map.get(key);
+                const currentTime=Number(row.submittedAt||row.updatedAt||row.timestamp||0);
+                const prevTime=Number(prev?.submittedAt||prev?.updatedAt||prev?.timestamp||0);
+                if(!prev || currentTime>=prevTime) map.set(key,row);
+            });
+            return Array.from(map.values());
         }
 
         function updateReviewTabBadges(){
             const policeBadge=document.getElementById('police-review-tab-badge');
             const fireBadge=document.getElementById('fire-review-tab-badge');
-            const policeCount=canReviewPoliceReports()?(appData.policePendingReports||[]).filter(r=>r.reviewStatus==='pending').length:0;
-            const fireCount=canReviewFireReports()?((appData.firePendingReports||[]).filter(r=>r.reviewStatus==='pending').length+(appData.emsPendingReports||[]).filter(r=>r.reviewStatus==='pending').length):0;
-            if(policeBadge){policeBadge.textContent=String(policeCount);policeBadge.classList.toggle('hidden',policeCount<=0);}
-            if(fireBadge){fireBadge.textContent=String(fireCount);fireBadge.classList.toggle('hidden',fireCount<=0);}
-        }
-
-        function updateReviewTabBadges(){
-            const policeBadge=document.getElementById('police-review-tab-badge');
-            const fireBadge=document.getElementById('fire-review-tab-badge');
-            const policeCount=canReviewPoliceReports()?(appData.policePendingReports||[]).filter(r=>r.reviewStatus==='pending').length:0;
-            const fireCount=canReviewFireReports()?((appData.firePendingReports||[]).filter(r=>r.reviewStatus==='pending').length+(appData.emsPendingReports||[]).filter(r=>r.reviewStatus==='pending').length):0;
+            const policeRows=getUniquePendingRows((appData.policePendingReports||[]).filter(r=>r.reviewStatus==='pending'),r=>r.caseId||r.docId);
+            const fireRows=getUniquePendingRows((appData.firePendingReports||[]).filter(r=>r.reviewStatus==='pending'),r=>r.caseId||r.docId);
+            const emsRows=getUniquePendingRows((appData.emsPendingReports||[]).filter(r=>r.reviewStatus==='pending'),r=>r.id||r.docId);
+            const policeCount=canReviewPoliceReports()?policeRows.length:0;
+            const fireCount=canReviewFireReports()?fireRows.length+emsRows.length:0;
             if(policeBadge){policeBadge.textContent=String(policeCount);policeBadge.classList.toggle('hidden',policeCount<=0);}
             if(fireBadge){fireBadge.textContent=String(fireCount);fireBadge.classList.toggle('hidden',fireCount<=0);}
         }
@@ -3297,7 +3295,7 @@
                     reportObj.submittedAt = now.getTime();
                     await fm.setDoc(fm.doc(db, collectionName, caseId), reportObj);
                     const pendingTarget = dept === 'police' ? appData.policePendingReports : appData.firePendingReports;
-                    pendingTarget.unshift({docId: caseId, ...reportObj});
+                    pendingTarget.splice(0, pendingTarget.length, ...getUniquePendingRows([{docId: caseId, ...reportObj}, ...pendingTarget], r => r.caseId || r.docId));
                     const deptName = dept === 'police' ? '警局' : '消防局';
                     const notification = { type:'report', department:dept, caseId, recipientAccount:currentUser.account, status:'pending', title:'案件已送出，等待高層審核', message:`案件 ${caseId} 已送入${deptName}高層審核系統。`, timestamp:Date.now(), read:false };
                     const nref = fm.doc(fm.collection(db,'reportNotifications'));
@@ -3346,8 +3344,8 @@
         function renderFireReview(){
             const host=document.getElementById('fire-review-list'), count=document.getElementById('fire-review-count'); if(!host)return;
             if(!canReviewFireReports()){host.innerHTML='';if(count)count.textContent='待審 0 件';updateReviewTabBadges();return;}
-            const fireRows=(appData.firePendingReports||[]).filter(r=>r.reviewStatus==='pending').map(r=>({...r,__reviewType:'fire'}));
-            const emsRows=(appData.emsPendingReports||[]).filter(r=>r.reviewStatus==='pending').map(r=>({...r,caseId:r.id||r.docId,title:r.title||`EMS救護報告 ${r.id||r.docId}`,__reviewType:'ems'}));
+            const fireRows=getUniquePendingRows((appData.firePendingReports||[]).filter(r=>r.reviewStatus==='pending'),r=>r.caseId||r.docId).map(r=>({...r,__reviewType:'fire'}));
+            const emsRows=getUniquePendingRows((appData.emsPendingReports||[]).filter(r=>r.reviewStatus==='pending'),r=>r.id||r.docId).map(r=>({...r,caseId:r.id||r.docId,title:r.title||`EMS救護報告 ${r.id||r.docId}`,__reviewType:'ems'}));
             const rows=[...fireRows,...emsRows].sort((a,b)=>(b.submittedAt||b.timestamp||0)-(a.submittedAt||a.timestamp||0));
             if(count)count.textContent=`待審 ${rows.length} 件`; updateReviewTabBadges();
             if(!rows.length){host.innerHTML='<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">目前沒有待審核的消防或 EMS 案件。</div>';return;}
@@ -3365,7 +3363,7 @@
         function renderPoliceReview(){
             const host=document.getElementById('police-review-list'), count=document.getElementById('police-review-count'); if(!host)return;
             if(!canReviewPoliceReports()){host.innerHTML=''; if(count)count.textContent='待審 0 件'; return;}
-            const rows=(appData.policePendingReports||[]).filter(r=>r.reviewStatus==='pending').sort((a,b)=>(b.submittedAt||b.timestamp||0)-(a.submittedAt||a.timestamp||0));
+            const rows=getUniquePendingRows((appData.policePendingReports||[]).filter(r=>r.reviewStatus==='pending'),r=>r.caseId||r.docId).sort((a,b)=>(b.submittedAt||b.timestamp||0)-(a.submittedAt||a.timestamp||0));
             if(count)count.textContent=`待審 ${rows.length} 件`;
             if(!rows.length){host.innerHTML='<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">目前沒有待審核的警用案件。</div>';return;}
             host.innerHTML=rows.map(r=>`<div class="bg-slate-900 border border-blue-500/20 rounded-2xl p-6 shadow-xl space-y-4"><div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">${r.caseId||'--'}</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">待審核</span><h4 class="text-base font-bold text-white">${r.title||'未命名案件'}</h4></div><span class="text-xs text-slate-400">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">寄件人</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div><div><span class="text-slate-500 block">寄件帳號</span><span class="font-mono text-cyan-400">${r.registeredByAccount||'--'}</span></div></div><p class="text-sm text-slate-300 line-clamp-4">${r.content||''}</p><div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800"><button type="button" onclick="viewPendingPoliceReportDetail('${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-eye mr-1"></i>檢視完整案件</button><button type="button" onclick="approvePolicePendingReport('${r.caseId}')" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-check mr-1"></i>審核完畢並送出</button><button type="button" onclick="openRejectPolicePending('${r.caseId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-rotate-left mr-1"></i>退件</button></div></div>`).join('');
