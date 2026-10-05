@@ -302,7 +302,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBJi9v-oDJ54-Z61T5JKy44Mg22vZCPiw",
@@ -318,7 +318,7 @@
         const db = getFirestore(app);
 
         window.db = db;
-        window.firebaseModules = { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc };
+        window.firebaseModules = { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, query, where };
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
 </head>
@@ -1613,7 +1613,7 @@
                     try { await restoreBrowserSession(); } catch (e) { console.warn('登入工作階段恢復略過：', e); }
                 }
             })();
-            cloudDataReadyPromise.finally(() => startRealtimeRefresh());
+            cloudDataReadyPromise.finally(() => startRealtimeListeners());
         });
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -2053,41 +2053,68 @@
             }
         }
 
-        // 每 10 秒同步一次通知、案件報告與高層審核資料。採資料同步而非整頁重載，避免登入狀態、輸入中的表單與彈窗被中斷。
-        let realtimeRefreshTimer = null;
-        let realtimeRefreshBusy = false;
-        async function refreshRealtimeData() {
-            if (!db || !fm || realtimeRefreshBusy) return;
-            realtimeRefreshBusy = true;
-            try {
-                const read = async (name) => {
-                    try { return { ok:true, docs:(await fm.getDocs(fm.collection(db,name))).docs }; }
-                    catch(e){ console.warn('10秒同步集合讀取失敗：', name, e); return {ok:false,docs:[]}; }
-                };
-                const [police, policePending, fire, firePending, notifications] = await Promise.all([
-                    read('policeReports'), read('policePendingReports'), read('fireReports'), read('firePendingReports'), read('reportNotifications')
-                ]);
-                if (police.ok) appData.policeReports = police.docs.map(d=>({docId:d.id,...d.data()})).map(r=>({...r,remarks:ensureReportRemarks(r)}));
-                if (policePending.ok) appData.policePendingReports = policePending.docs.map(d=>({docId:d.id,...d.data()})).map(r=>({...r,remarks:ensureReportRemarks(r)}));
-                if (fire.ok) appData.fireReports = fire.docs.map(d=>({docId:d.id,...d.data()})).map(r=>({...r,remarks:ensureReportRemarks(r)}));
-                if (firePending.ok) appData.firePendingReports = firePending.docs.map(d=>({docId:d.id,...d.data()})).map(r=>({...r,remarks:ensureReportRemarks(r)}));
-                if (notifications.ok) appData.reportNotifications = notifications.docs.map(d=>({docId:d.id,...d.data()}));
+        // 即時資料同步：不再每 10 秒整批讀取 Firestore。
+        // 使用 onSnapshot，只有資料「新增／修改／刪除」時才同步，降低免費讀取額度消耗。
+        let realtimeUnsubscribers = [];
+        function stopRealtimeListeners() {
+            realtimeUnsubscribers.forEach(unsub => { try { if (typeof unsub === 'function') unsub(); } catch(e) {} });
+            realtimeUnsubscribers = [];
+        }
+        function startRealtimeListeners() {
+            stopRealtimeListeners();
+            if (!db || !fm || !currentUser) return;
 
+            const refreshVisibleData = () => {
                 renderPersonalNotifications();
-                renderPoliceReports();
-                renderFireReports();
+                if (currentUser) {
+                    if (currentUser.role === 'admin' || userHasUnit('police')) renderPoliceReports();
+                    if (currentUser.role === 'admin' || userHasUnit('fire')) renderFireReports();
+                }
                 if (canReviewPoliceReports()) renderPoliceReview();
                 if (canReviewFireReports()) renderFireReview();
-            } catch(e) {
-                console.warn('10秒自動同步失敗，保留目前畫面資料：', e);
-            } finally {
-                realtimeRefreshBusy = false;
+            };
+
+            const subscribe = (collectionName, mapper, onChange) => {
+                try {
+                    const unsub = fm.onSnapshot(fm.collection(db, collectionName), snap => {
+                        onChange(snap.docs.map(d => mapper(d)));
+                        refreshVisibleData();
+                    }, err => console.warn(`即時監聽 ${collectionName} 失敗：`, err));
+                    realtimeUnsubscribers.push(unsub);
+                } catch(e) { console.warn(`建立 ${collectionName} 即時監聽失敗：`, e); }
+            };
+
+            const subscribeNotifications = () => {
+                try {
+                    const ref = fm.query(fm.collection(db, 'reportNotifications'), fm.where('recipientAccount', '==', currentUser.account));
+                    const unsub = fm.onSnapshot(ref, snap => {
+                        appData.reportNotifications = snap.docs.map(d => ({docId:d.id, ...d.data()}));
+                        refreshVisibleData();
+                    }, err => console.warn('個人通知即時監聽失敗：', err));
+                    realtimeUnsubscribers.push(unsub);
+                } catch(e) { console.warn('建立個人通知即時監聽失敗：', e); }
+            };
+
+            // 正式案件：只監聽目前帳號有權瀏覽的單位。
+            if (currentUser.role === 'admin' || userHasUnit('police')) {
+                subscribe('policeReports', d => ({docId:d.id, ...d.data()}), rows => { appData.policeReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); });
             }
-        }
-        function startRealtimeRefresh() {
-            clearInterval(realtimeRefreshTimer);
-            realtimeRefreshTimer = setInterval(refreshRealtimeData, 10000);
-            refreshRealtimeData();
+            if (currentUser.role === 'admin' || userHasUnit('fire')) {
+                subscribe('fireReports', d => ({docId:d.id, ...d.data()}), rows => { appData.fireReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); });
+            }
+
+            // 待審案件：寄件者需要自己的案件；高層／高階／管理中心則需要看到對應單位的全部待審案件。
+            const canPoliceReviewNow = canReviewPoliceReports();
+            const canFireReviewNow = canReviewFireReports();
+            if (canPoliceReviewNow || userHasUnit('police')) {
+                subscribe('policePendingReports', d => ({docId:d.id, ...d.data()}), rows => { appData.policePendingReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); });
+            }
+            if (canFireReviewNow || userHasUnit('fire')) {
+                subscribe('firePendingReports', d => ({docId:d.id, ...d.data()}), rows => { appData.firePendingReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); });
+            }
+
+            // 個人通知只查目前登入者，避免每次都把整個通知集合下載。
+            subscribeNotifications();
         }
 
         function populateMemberSelects() {
@@ -2407,16 +2434,27 @@
             const minePending=[...(appData.policePendingReports||[]).map(r=>({...r,__dept:'police'})), ...(appData.firePendingReports||[]).map(r=>({...r,__dept:'fire'}))].filter(r=>String(r.registeredByAccount||'').toLowerCase()===key);
             const rejected=minePending.filter(r=>r.reviewStatus==='rejected').sort((a,b)=>(b.updatedAt||b.reviewedAt||b.submittedAt||0)-(a.updatedAt||a.reviewedAt||a.submittedAt||0));
             const pending=minePending.filter(r=>r.reviewStatus==='pending').sort((a,b)=>(b.updatedAt||b.submittedAt||0)-(a.updatedAt||a.submittedAt||0));
+            const reviewerPending=[];
+            if(canReviewPoliceReports()){
+                (appData.policePendingReports||[]).filter(r=>r.reviewStatus==='pending').forEach(r=>reviewerPending.push({...r,__dept:'police'}));
+            }
+            if(canReviewFireReports()){
+                (appData.firePendingReports||[]).filter(r=>r.reviewStatus==='pending').forEach(r=>reviewerPending.push({...r,__dept:'fire'}));
+            }
+            reviewerPending.sort((a,b)=>(b.submittedAt||b.updatedAt||b.timestamp||0)-(a.submittedAt||a.updatedAt||a.timestamp||0));
             const unread=notes.filter(n=>n.read!==true).length;
-            if(tabCount) tabCount.textContent=`${notes.length + pending.length + rejected.length} 則通知`;
-            if(profileBadge) profileBadge.textContent=`${notes.length} 則`;
-            [navBadge,mobileBadge].forEach(b=>{if(!b)return; b.textContent=String(unread+rejected.length); b.classList.toggle('hidden',(unread+rejected.length)<=0); b.classList.toggle('inline-flex',(unread+rejected.length)>0);});
-            const hasMessages=(notes.length+pending.length+rejected.length)>0;
+            const reviewerUnread=reviewerPending.length;
+            const totalMessages=notes.length + pending.length + rejected.length + reviewerUnread;
+            if(tabCount) tabCount.textContent=`${totalMessages} 則通知`;
+            if(profileBadge) profileBadge.textContent=`${notes.length + reviewerUnread} 則`;
+            [navBadge,mobileBadge].forEach(b=>{if(!b)return; const badgeCount=unread+rejected.length+reviewerUnread; b.textContent=String(badgeCount); b.classList.toggle('hidden',badgeCount<=0); b.classList.toggle('inline-flex',badgeCount>0);});
+            const hasMessages=totalMessages>0;
             bellIcons.forEach(i=>i.classList.toggle('notification-bell-active',hasMessages));
 
             const statusCards=pending.map(r=>`<div class="rounded-2xl border border-amber-500/30 bg-amber-950/10 p-5"><div class="flex items-start gap-3"><i class="fa-solid fa-hourglass-half text-amber-400 mt-1"></i><div class="flex-1 min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="font-bold text-white">${r.title||'未命名案件'}</span><span class="text-[11px] font-mono text-slate-500">${r.caseId||'--'}</span><span class="px-2 py-1 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-300">審核中</span></div><div class="text-xs text-slate-400 mt-2">送件時間：${formatDateTime(r.submittedAt||r.timestamp)}</div></div></div></div>`).join('');
+            const reviewerCards=reviewerPending.map(r=>{const isFire=r.__dept==='fire'; const deptName=isFire?'消防':'警察'; const icon=isFire?'fa-fire-flame-curved':'fa-shield-halved'; const color=isFire?'red':'blue'; return `<div class="rounded-2xl border border-${color}-500/35 bg-${color}-950/15 p-5 shadow-lg"><div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4"><div class="flex items-start gap-3 min-w-0"><div class="w-10 h-10 rounded-xl bg-${color}-500/15 border border-${color}-500/20 flex items-center justify-center text-${color}-400 shrink-0"><i class="fa-solid ${icon}"></i></div><div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="font-bold text-white">${r.title||'未命名案件'}</span><span class="text-[11px] font-mono text-slate-500">${r.caseId||'--'}</span><span class="px-2 py-1 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-300">${deptName}待審</span></div><div class="text-xs text-slate-400 mt-1">寄件人：${r.authorName||'--'}${r.registeredByAccount?`（${r.registeredByAccount}）`:''}</div><div class="text-xs text-slate-500 mt-1">送件時間：${formatDateTime(r.submittedAt||r.timestamp)}</div></div></div><button type="button" onclick="viewPending${isFire?'Fire':'Police'}ReportDetail('${r.caseId}')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold whitespace-nowrap">查看並審核</button></div></div>`;}).join('');
             const noteCards=notes.map(n=>{const rejectedNote=n.status==='rejected',approved=n.status==='approved'; const cls=rejectedNote?'border-red-500/40 bg-red-950/25':approved?'border-emerald-500/25 bg-emerald-950/15':'border-amber-500/25 bg-amber-950/10'; const icon=rejectedNote?'fa-circle-xmark text-red-400':approved?'fa-circle-check text-emerald-400':'fa-hourglass-half text-amber-400'; return `<div class="rounded-2xl border ${cls} p-5"><div class="flex items-start gap-3"><i class="fa-solid ${icon} mt-1"></i><div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-2"><span class="font-bold text-white">${n.title||'案件通知'}</span><span class="text-[11px] font-mono text-slate-500">${n.caseId||''}</span><span class="px-2 py-1 rounded-full text-[11px] font-semibold ${rejectedNote?'bg-red-500/15 text-red-300':approved?'bg-emerald-500/15 text-emerald-300':'bg-amber-500/15 text-amber-300'}">${rejectedNote?'退件':approved?'審核完成':'案件通知'}</span></div><p class="text-sm text-slate-300 mt-2 whitespace-pre-wrap">${n.message||''}</p><div class="flex items-center justify-between gap-3 mt-2"><span class="text-[11px] text-slate-500">${formatDateTime(n.timestamp)}</span><button type="button" onclick="removePersonalNotification('${n.docId}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-red-600/20 text-slate-400 hover:text-red-300 text-[11px]"><i class="fa-solid fa-trash mr-1"></i>移除通知</button></div></div></div></div>`;}).join('');
-            if(host) host.innerHTML=(statusCards+noteCards)||'<div class="text-sm text-slate-500 text-center py-10">目前沒有案件審核通知。</div>';
+            if(host) host.innerHTML=(reviewerCards+statusCards+noteCards)||'<div class="text-sm text-slate-500 text-center py-10">目前沒有案件審核通知。</div>';
 
             const historyCards=rejected.map(r=>`<div class="rounded-2xl border-2 border-red-500/40 bg-red-950/35 p-5 shadow-lg shadow-red-950/20"><div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3"><div class="flex items-start gap-3"><div class="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/20 flex items-center justify-center text-red-400 shrink-0"><i class="fa-solid fa-rotate-left"></i></div><div><div class="flex flex-wrap items-center gap-2"><h4 class="font-bold text-white">${r.title||'未命名案件'}</h4><span class="text-[11px] font-mono text-red-300">${r.caseId||'--'}</span><span class="px-2 py-1 rounded-full text-[11px] font-bold bg-red-500/20 text-red-300">已退件</span></div><div class="text-xs text-slate-400 mt-1">退件時間：${formatDateTime(r.reviewedAt||r.updatedAt)}</div></div></div><div class="flex flex-wrap gap-2"><button type="button" onclick="openEditReportModal('${r.__dept}-pending-report','${r.caseId}')" class="px-3 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-200 text-xs font-semibold min-h-[42px]">重新編輯送件</button><button type="button" onclick="removeRejectedReport('${r.__dept}','${r.caseId}')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-red-600/20 text-slate-300 hover:text-red-300 text-xs font-semibold min-h-[42px]"><i class="fa-solid fa-trash mr-1"></i>移除案件</button></div></div><div class="mt-4 rounded-xl bg-red-950/50 border border-red-500/20 p-4"><div class="text-[11px] text-red-300 font-semibold mb-1">退件原因</div><div class="text-sm text-red-100 whitespace-pre-wrap">${r.rejectionReason||'未提供退件原因'}</div></div><div class="mt-4 text-sm text-slate-300 line-clamp-3 whitespace-pre-wrap">${r.content||''}</div></div>`).join('');
             if(historyHost) historyHost.innerHTML=historyCards||'<div class="text-sm text-slate-500 text-center py-8">目前沒有被退回的歷史案件。</div>';
@@ -2773,8 +2811,8 @@
             window.__submitSuccessTimer = setTimeout(() => overlay.classList.remove('show'), 1450);
         }
 
-        async function handleLogin(){await cloudDataReadyPromise;const device=getDeviceInfo();if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}const found=appData.users.find(u=>isSuperAdminAccount(acc)?isSuperAdminAccount(u.account)&&u.pass===pass:u.account===acc&&u.pass===pass);if(!found){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));currentUser=found;saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);await pruneOldLoginSessions();if(currentUser.role==='admin')startAdminPresenceRefresh();clearInterval(window.__presenceTimer);window.__presenceTimer=setInterval(()=>updateCurrentUserPresence(true),30000);showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');switchTab('home');}
-        async function logout(){await updateCurrentUserPresence(false);clearInterval(window.__presenceTimer);window.__presenceTimer=null;clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();sessionStorage.removeItem('ntpcrp_session');updateUserBadge();updateAccessLocks();showToast('已成功登出系統。','success','已登出');switchTab('home');}
+        async function handleLogin(){await cloudDataReadyPromise;const device=getDeviceInfo();if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}const found=appData.users.find(u=>isSuperAdminAccount(acc)?isSuperAdminAccount(u.account)&&u.pass===pass:u.account===acc&&u.pass===pass);if(!found){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));currentUser=found;saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);await pruneOldLoginSessions();if(currentUser.role==='admin')startAdminPresenceRefresh();clearInterval(window.__presenceTimer);window.__presenceTimer=setInterval(()=>updateCurrentUserPresence(true),30000);showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();switchTab('home');}
+        async function logout(){await updateCurrentUserPresence(false);clearInterval(window.__presenceTimer);window.__presenceTimer=null;clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();sessionStorage.removeItem('ntpcrp_session');updateUserBadge();updateAccessLocks();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
             const badge = document.getElementById('user-badge');
