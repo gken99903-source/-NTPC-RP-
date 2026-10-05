@@ -1467,6 +1467,7 @@
             feedbackReports: [],
             announcements: [],
             blockedDevices: [],
+            loginFailures: [],
             adminClocks: [],
             adminMemo: ''
         };
@@ -1828,6 +1829,8 @@
                 appData.announcements = annSnap.docs.map(d=>({docId:d.id,...d.data()}));
                 const blockedSnap = await fm.getDocs(fm.collection(db, 'blockedDevices'));
                 appData.blockedDevices = blockedSnap.docs.map(d=>({docId:d.id,...d.data()}));
+                const loginFailureSnap = await fm.getDocs(fm.collection(db, 'loginFailures'));
+                appData.loginFailures = loginFailureSnap.docs.map(d=>({docId:d.id,...d.data()}));
                 const adminClockSnap = await fm.getDocs(fm.collection(db, 'adminClocks'));
                 appData.adminClocks = adminClockSnap.docs.map(d=>({docId:d.id,...d.data()}));
 
@@ -2430,7 +2433,7 @@
             window.__submitSuccessTimer = setTimeout(() => overlay.classList.remove('show'), 1350);
         }
 
-        async function handleLogin(){await cloudDataReadyPromise;if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}const found=appData.users.find(u=>isSuperAdminAccount(acc)?isSuperAdminAccount(u.account)&&u.pass===pass:u.account===acc&&u.pass===pass);if(!found){showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');return;}currentUser=found;saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);await pruneOldLoginSessions();if(currentUser.role==='admin')startAdminPresenceRefresh();clearInterval(window.__presenceTimer);window.__presenceTimer=setInterval(()=>updateCurrentUserPresence(true),30000);showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');switchTab('home');}
+        async function handleLogin(){await cloudDataReadyPromise;const device=getDeviceInfo();if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}const found=appData.users.find(u=>isSuperAdminAccount(acc)?isSuperAdminAccount(u.account)&&u.pass===pass:u.account===acc&&u.pass===pass);if(!found){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));currentUser=found;saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);await pruneOldLoginSessions();if(currentUser.role==='admin')startAdminPresenceRefresh();clearInterval(window.__presenceTimer);window.__presenceTimer=setInterval(()=>updateCurrentUserPresence(true),30000);showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');switchTab('home');}
         async function logout(){await updateCurrentUserPresence(false);clearInterval(window.__presenceTimer);window.__presenceTimer=null;clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();sessionStorage.removeItem('ntpcrp_session');updateUserBadge();updateAccessLocks();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
@@ -3398,15 +3401,54 @@
         function getDeviceInfo(){const n=window.navigator||{};const sc=window.screen||{};const ua=n.userAgent||'';const browser=/Edg\//.test(ua)?'Edge':/Chrome\//.test(ua)?'Chrome':/Firefox\//.test(ua)?'Firefox':/Safari\//.test(ua)&&!/Chrome\//.test(ua)?'Safari':'其他';return {userAgent:ua,platform:n.platform||'',browser,screen:`${sc.width||0}x${sc.height||0}`,touchPoints:n.maxTouchPoints||0};}
         function getDeviceLabel(d){return `${d?.platform||'未知平台'} / ${d?.browser||'其他瀏覽器'}`;}
         function getDeviceFingerprint(device=getDeviceInfo()){const ua=String(device?.userAgent||'');const browser=device?.browser||( /Edg\//.test(ua)?'Edge':/Chrome\//.test(ua)?'Chrome':/Firefox\//.test(ua)?'Firefox':/Safari\//.test(ua)&&!/Chrome\//.test(ua)?'Safari':'其他');return btoa(unescape(encodeURIComponent([ua,device?.platform||'',browser,device?.screen||'',device?.touchPoints||0].join('|')))).replace(/[^a-zA-Z0-9]/g,'').slice(0,80);}
+        // 裝置層級識別：刻意不包含帳號、IP 或瀏覽器名稱，讓同一裝置更換帳號／瀏覽器時仍可套用自動封鎖。
+        // 仍僅使用目前系統已取得的 platform、螢幕尺寸與觸控資訊；瀏覽器無法保證跨瀏覽器辨識同一實體裝置。
+        function getDeviceKey(device=getDeviceInfo()){return btoa(unescape(encodeURIComponent([device?.platform||'',device?.screen||'',device?.touchPoints||0].join('|')))).replace(/[^a-zA-Z0-9]/g,'').slice(0,80);}
         function isCurrentDeviceBlocked(){
-            const fp=getDeviceFingerprint();
-            return (appData.blockedDevices||[]).some(x=>x.active!==false && String(x.fingerprint||'')===String(fp));
+            const device=getDeviceInfo(),fp=getDeviceFingerprint(device),deviceKey=getDeviceKey(device);
+            return (appData.blockedDevices||[]).some(x=>x.active!==false && (String(x.fingerprint||'')===String(fp) || (x.deviceKey && String(x.deviceKey)===String(deviceKey))));
         }
         function findDeviceSessionByFingerprint(fingerprint){
             return (appData.loginSessions||[]).find(x=>{const xfp=x.fingerprint||getDeviceFingerprint(x.device||{});return String(xfp)===String(fingerprint);});
         }
-        async function recordLoginSession(user){if(!user||!fm||!db)return;const now=Date.now(),device=getDeviceInfo(),fingerprint=getDeviceFingerprint(device),id=`LOGIN-${String(user.account).replace(/[^a-zA-Z0-9_-]/g,'_')}-${now}`,session={id,account:user.account,name:user.name,loginAt:now,time:formatDateTime(now),device,fingerprint};try{await fm.setDoc(fm.doc(db,'loginSessions',id),session);await fm.updateDoc(fm.doc(db,'users',user.docId||user.account),{online:true,lastSeen:now,lastLoginAt:now,lastDevice:device});user.online=true;user.lastSeen=now;user.lastLoginAt=now;user.lastDevice=device;appData.loginSessions.unshift({docId:id,...session});}catch(e){console.warn('login audit',e);}}
-
+        async function clearLoginFailureRecord(deviceKey){
+            if(!deviceKey||!fm||!db)return;
+            try{await fm.deleteDoc(fm.doc(db,'loginFailures',deviceKey));}catch(e){}
+            appData.loginFailures=(appData.loginFailures||[]).filter(x=>String(x.docId||x.deviceKey)!==String(deviceKey));
+        }
+        async function registerLoginFailure(device){
+            if(!fm||!db)return false;
+            const now=Date.now(),windowStart=now-5*60*1000,deviceKey=getDeviceKey(device),fingerprint=getDeviceFingerprint(device);
+            try{
+                const local=(appData.loginFailures||[]).find(x=>String(x.docId||x.deviceKey)===String(deviceKey));
+                let attempts=Array.isArray(local?.attempts)?local.attempts.filter(t=>Number(t)>windowStart):[];
+                // 以雲端最新資料為準，避免重新整理頁面後遺失失敗次數。
+                const failureSnap=await fm.getDocs(fm.collection(db,'loginFailures'));
+                const failureDoc=failureSnap.docs.find(d=>String(d.id)===String(deviceKey));
+                if(failureDoc){
+                    const cloud=failureDoc.data()||{};
+                    attempts=Array.isArray(cloud.attempts)?cloud.attempts.filter(t=>Number(t)>windowStart):attempts;
+                }
+                attempts.push(now);
+                const payload={deviceKey,fingerprint,device,attempts,lastFailedAt:now};
+                await fm.setDoc(fm.doc(db,'loginFailures',deviceKey),payload,{merge:true});
+                const idx=(appData.loginFailures||[]).findIndex(x=>String(x.docId||x.deviceKey)===String(deviceKey));
+                if(idx>=0)appData.loginFailures[idx]={docId:deviceKey,...payload};else appData.loginFailures.push({docId:deviceKey,...payload});
+                if(attempts.length>=8){
+                    const existing=(appData.blockedDevices||[]).find(x=>x.active!==false&&String(x.deviceKey||'')===String(deviceKey));
+                    if(!existing){
+                        const obj={fingerprint,deviceKey,active:true,autoBlocked:true,reason:'5分鐘內連續輸入錯誤密碼達8次',blockedAt:now,blockedBy:'系統自動封鎖',device};
+                        await fm.setDoc(fm.doc(db,'blockedDevices',fingerprint),obj,{merge:true});
+                        const bi=(appData.blockedDevices||[]).findIndex(x=>String(x.docId||x.fingerprint)===String(fingerprint));
+                        if(bi>=0)appData.blockedDevices[bi]={docId:fingerprint,...obj};else appData.blockedDevices.push({docId:fingerprint,...obj});
+                        await logAdminAction('自動封鎖登入裝置','5分鐘內錯誤密碼8次／'+deviceKey);
+                    }
+                    return true;
+                }
+                return false;
+            }catch(e){console.warn('login failure audit',e);return false;}
+        }
+        async function recordLoginSession(user){if(!user||!fm||!db)return;const now=Date.now(),device=getDeviceInfo(),fingerprint=getDeviceFingerprint(device),deviceKey=getDeviceKey(device),id=`LOGIN-${String(user.account).replace(/[^a-zA-Z0-9_-]/g,'_')}-${now}`,session={id,account:user.account,name:user.name,loginAt:now,time:formatDateTime(now),device,fingerprint,deviceKey};try{await fm.setDoc(fm.doc(db,'loginSessions',id),session);await fm.updateDoc(fm.doc(db,'users',user.docId||user.account),{online:true,lastSeen:now,lastLoginAt:now,lastDevice:device});user.online=true;user.lastSeen=now;user.lastLoginAt=now;user.lastDevice=device;appData.loginSessions.unshift({docId:id,...session});}catch(e){console.warn('login audit',e);}}
         async function pruneOldLoginSessions() {
             if (!currentUser || currentUser.role !== 'admin' || !fm || !db) return;
             const cutoff = Date.now() - 3 * 24 * 60 * 60 * 1000;
@@ -3424,17 +3466,17 @@
         function startAdminPresenceRefresh(){clearInterval(window.__adminPresenceTimer);window.__adminPresenceTimer=setInterval(()=>{if(currentUser&&currentUser.role==='admin'&&!document.getElementById('tab-admin')?.classList.contains('hidden'))refreshAdminOnlineUsers();},15000);}
         function stopAdminPresenceRefresh(){clearInterval(window.__adminPresenceTimer);window.__adminPresenceTimer=null;}
         function renderAdminOnlineUsers(){const c=document.getElementById('admin-online-list');if(!c)return;c.innerHTML=(appData.users||[]).map(u=>{const on=isUserOnline(u);return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between"><div><b class="text-white">${u.name||'--'}</b><div class="text-xs text-slate-500 font-mono">${u.account}${u.staffNumber?`／${u.staffNumber}`:''}</div></div><span class="px-3 py-1 rounded-full text-xs ${on?'bg-emerald-500/10 text-emerald-400':'bg-slate-800 text-slate-400'}">● ${on?'在線':'離線'}</span></div>`;}).join('');}
-        function renderAdminDevices(){const t=document.getElementById('admin-devices-tbody');if(!t)return;const since=Date.now()-3*24*60*60*1000,rows=(appData.loginSessions||[]).filter(x=>Number(x.loginAt||0)>=since).sort((a,b)=>b.loginAt-a.loginAt);const blocked=(fp)=>(appData.blockedDevices||[]).some(x=>x.fingerprint===fp&&x.active!==false);t.innerHTML=rows.length?rows.map(x=>`<tr><td class="p-3 font-mono text-white">${x.account}</td><td class="p-3 text-slate-300">${formatDateTime(x.loginAt,x.time)}</td><td class="p-3 text-slate-300">${getDeviceLabel(x.device)}</td><td class="p-3 text-slate-400">${x.device?.screen||'--'}</td><td class="p-3 text-slate-400 font-mono">${x.fingerprint||getDeviceFingerprint(x.device)}</td><td class="p-3 text-right">${blocked(x.fingerprint||getDeviceFingerprint(x.device))?`<button onclick="unblockDevice('${x.fingerprint||getDeviceFingerprint(x.device)}')" class="px-2.5 py-1 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">解封裝置</button>`:`<button onclick="blockDevice('${x.fingerprint||getDeviceFingerprint(x.device)}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">封鎖裝置</button>`}</td></tr>`).join(''):'<tr><td colspan="6" class="p-6 text-center text-slate-500">最近 3 日尚無登入裝置紀錄。</td></tr>';const clear=document.getElementById('clear-all-login-sessions-btn');if(clear)clear.classList.toggle('hidden',!isSuperAdminAccount(currentUser?.account));const bc=document.getElementById('admin-blocked-devices-list');if(bc){const br=(appData.blockedDevices||[]).filter(x=>x.active!==false);bc.innerHTML=br.length?br.map(x=>`<div class="bg-slate-900 border border-red-500/10 rounded-2xl p-4 flex items-center justify-between gap-3"><div><div class="font-mono text-xs text-red-300">${x.fingerprint||'--'}</div><div class="text-xs text-slate-500 mt-1">封鎖人員：${x.blockedBy||'--'} ／ ${formatDateTime(x.blockedAt)}</div><div class="text-xs text-slate-400 mt-1">${getDeviceLabel(x.device)} ／ ${x.device?.screen||'--'}</div></div><button onclick="unblockDevice('${x.fingerprint}')" class="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">解封</button></div>`).join(''):'<div class="text-xs text-slate-500 bg-slate-900 border border-slate-800 rounded-xl p-4">目前沒有被封鎖的裝置。</div>';}}
+        function renderAdminDevices(){const t=document.getElementById('admin-devices-tbody');if(!t)return;const since=Date.now()-3*24*60*60*1000,rows=(appData.loginSessions||[]).filter(x=>Number(x.loginAt||0)>=since).sort((a,b)=>b.loginAt-a.loginAt);const blocked=(row)=>{const fp=row.fingerprint||getDeviceFingerprint(row.device||{}),dk=row.deviceKey||getDeviceKey(row.device||{});return (appData.blockedDevices||[]).some(x=>x.active!==false&&(String(x.fingerprint||'')===String(fp)||(x.deviceKey&&String(x.deviceKey)===String(dk))));};t.innerHTML=rows.length?rows.map(x=>`<tr><td class="p-3 font-mono text-white">${x.account}</td><td class="p-3 text-slate-300">${formatDateTime(x.loginAt,x.time)}</td><td class="p-3 text-slate-300">${getDeviceLabel(x.device)}</td><td class="p-3 text-slate-400">${x.device?.screen||'--'}</td><td class="p-3 text-slate-400 font-mono">${x.fingerprint||getDeviceFingerprint(x.device)}</td><td class="p-3 text-right">${blocked(x)?`<button onclick="unblockDevice('${x.fingerprint||getDeviceFingerprint(x.device)}')" class="px-2.5 py-1 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">解封裝置</button>`:`<button onclick="blockDevice('${x.fingerprint||getDeviceFingerprint(x.device)}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">封鎖裝置</button>`}</td></tr>`).join(''):'<tr><td colspan="6" class="p-6 text-center text-slate-500">最近 3 日尚無登入裝置紀錄。</td></tr>';const clear=document.getElementById('clear-all-login-sessions-btn');if(clear)clear.classList.toggle('hidden',!isSuperAdminAccount(currentUser?.account));const bc=document.getElementById('admin-blocked-devices-list');if(bc){const br=(appData.blockedDevices||[]).filter(x=>x.active!==false);bc.innerHTML=br.length?br.map(x=>`<div class="bg-slate-900 border border-red-500/10 rounded-2xl p-4 flex items-center justify-between gap-3"><div><div class="font-mono text-xs text-red-300">${x.fingerprint||'--'}</div><div class="text-xs text-slate-500 mt-1">封鎖人員：${x.blockedBy||'--'} ／ ${formatDateTime(x.blockedAt)}</div><div class="text-xs text-slate-400 mt-1">${getDeviceLabel(x.device)} ／ ${x.device?.screen||'--'}</div><div class="text-xs ${x.autoBlocked?'text-amber-300':'text-slate-500'} mt-1">${x.reason||'管理員手動封鎖'}</div></div><button onclick="unblockDevice('${x.fingerprint}')" class="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">解封</button></div>`).join(''):'<div class="text-xs text-slate-500 bg-slate-900 border border-slate-800 rounded-xl p-4">目前沒有被封鎖的裝置。</div>';}}
 
         async function deleteAllLoginSessions(){if(!isSuperAdminAccount(currentUser?.account)){showToast('只有 Dsuensx 可以刪除所有登入紀錄。','warning','權限不足');return;}if(!(await showConfirm('確定要一鍵刪除所有登入紀錄嗎？此操作會留下管理稽核紀錄。','刪除全部登入紀錄','確定刪除')))return;try{for(const x of [...(appData.loginSessions||[])]){await fm.deleteDoc(fm.doc(db,'loginSessions',x.docId||x.id));}appData.loginSessions=[];await logAdminAction('一鍵刪除所有登入紀錄','loginSessions/*');renderAdminDevices();showToast('所有登入紀錄已刪除。','success','操作完成');}catch(e){showToast('刪除登入紀錄失敗：'+e.message,'error','操作失敗');}}
 
         async function blockDevice(fingerprint){
             if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以封鎖裝置。','warning','權限不足');return;}
             if(!fingerprint)return;
-            const existing=(appData.blockedDevices||[]).find(x=>String(x.fingerprint)===String(fingerprint));
+            const session=findDeviceSessionByFingerprint(fingerprint),targetDevice=session?.device||getDeviceInfo(),deviceKey=getDeviceKey(targetDevice),existing=(appData.blockedDevices||[]).find(x=>String(x.fingerprint)===String(fingerprint)||String(x.deviceKey||'')===String(deviceKey));
             if(existing&&existing.active!==false){showToast('此裝置目前已在封鎖名單中。','warning','裝置已封鎖');return;}
             if(!(await showConfirm('確定要封鎖此裝置嗎？系統只會使用現有的裝置、瀏覽器與螢幕資訊，不會蒐集 IP。','封鎖登入裝置','確定封鎖')))return;
-            const now=Date.now(),session=findDeviceSessionByFingerprint(fingerprint),obj={fingerprint,active:true,blockedAt:now,blockedBy:currentUser.account,device:session?.device||existing?.device||null};
+            const now=Date.now(),obj={fingerprint,deviceKey,active:true,autoBlocked:false,blockedAt:now,blockedBy:currentUser.account,device:session?.device||existing?.device||targetDevice};
             try{
                 await fm.setDoc(fm.doc(db,'blockedDevices',fingerprint),obj);
                 const idx=(appData.blockedDevices||[]).findIndex(x=>String(x.fingerprint)===String(fingerprint));
@@ -3446,9 +3488,15 @@
             if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以解封裝置。','warning','權限不足');return;}
             if(!(await showConfirm('確定要解封此裝置嗎？解封後，該裝置即可再次嘗試登入。','解封登入裝置','確定解封')))return;
             try{
-                await fm.setDoc(fm.doc(db,'blockedDevices',fingerprint),{fingerprint,active:false,unblockedAt:Date.now(),unblockedBy:currentUser.account},{merge:true});
-                const row=appData.blockedDevices.find(x=>String(x.fingerprint)===String(fingerprint));if(row)row.active=false;
-                await logAdminAction('解封登入裝置',fingerprint);renderAdminDevices();showToast('裝置已解封。','success','操作完成');
+                const target=(appData.blockedDevices||[]).find(x=>String(x.fingerprint||'')===String(fingerprint));
+                const targetDeviceKey=target?.deviceKey||getDeviceKey(target?.device||{});
+                const matches=(appData.blockedDevices||[]).filter(x=>x.active!==false&&(String(x.fingerprint||'')===String(fingerprint)||(targetDeviceKey&&String(x.deviceKey||'')===String(targetDeviceKey))));
+                for(const row of matches){
+                    const docId=row.docId||row.fingerprint;
+                    if(docId)await fm.setDoc(fm.doc(db,'blockedDevices',docId),{active:false,unblockedAt:Date.now(),unblockedBy:currentUser.account},{merge:true});
+                    row.active=false;row.unblockedAt=Date.now();row.unblockedBy=currentUser.account;
+                }
+                await logAdminAction('解封登入裝置',targetDeviceKey||fingerprint);renderAdminDevices();showToast('裝置已解封。','success','操作完成');
             }catch(e){showToast('解封失敗：'+e.message,'error','操作失敗');}
         }
 
