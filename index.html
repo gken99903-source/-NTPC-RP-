@@ -215,6 +215,7 @@
                 <div class="relative z-10 px-8 py-20 sm:py-28 max-w-3xl space-y-6">
                     <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">New Taipei Roleplay 3.0</span>
                     <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">新北市公職人員<br><span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">勤務與案件管制系統</span></h1>
+                    <div><span class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.5</span></div>
                     <p class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。本系統支援獨立單位權限隔離、補打卡自訂日期時分、報告權限控管與完整的年月日區間執勤時數統計。</p>
                     <div class="flex flex-wrap justify-center gap-4 pt-2">
                         <button data-tab="police" class="tab-shortcut-btn bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
@@ -223,6 +224,7 @@
                         <button data-tab="fire" class="tab-shortcut-btn bg-red-600 hover:bg-red-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-red-600/20 transition flex items-center space-x-2">
                             <i class="fa-solid fa-fire-extinguisher"></i><span>進入消防系統</span>
                         </button>
+                        <button id="home-feedback-btn" class="bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-white font-medium px-6 py-3 rounded-xl transition flex items-center space-x-2"><i class="fa-solid fa-message-exclamation"></i><span>異常／意見回報</span></button>
                     </div>
                 </div>
             </div>
@@ -314,6 +316,10 @@
                         </div>
                     </div>
                     <div id="police-punishments-list" class="grid grid-cols-1 gap-4"></div>
+                    <div id="police-punishment-summary" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                        <div class="flex items-center justify-between gap-3 mb-4"><h4 class="text-sm font-bold text-slate-200"><i class="fa-solid fa-chart-simple text-amber-400 mr-2"></i>目前總累積</h4><span class="text-[11px] text-slate-500">依目前查詢結果統計</span></div>
+                        <div id="police-punishment-summary-content" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3"></div>
+                    </div>
                 </div>
 
                 <div id="police-sub-clocks" class="hidden space-y-4">
@@ -545,6 +551,9 @@
                     <button id="btn-admin-storage" data-sub="storage" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-database mr-2"></i>雲端資料庫空間</button>
                     <button id="btn-admin-memo" data-sub="memo" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-note-sticky mr-2"></i>管理員共同備忘錄</button>
                     <button id="btn-admin-overview" data-sub="overview" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-chart-line mr-2"></i>全單位總彙整</button>
+                    <button id="btn-admin-online" data-sub="online" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-signal mr-2"></i>在線狀態</button>
+                    <button id="btn-admin-devices" data-sub="devices" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-laptop mr-2"></i>登入裝置稽核</button>
+                    <button id="btn-admin-feedback" data-sub="feedback" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-message-exclamation mr-2"></i>異常／意見回報</button>
                 </div>
 
                 <div id="admin-sub-users" class="space-y-4">
@@ -553,7 +562,8 @@
                         <table class="w-full text-left border-collapse text-sm">
                             <thead>
                                 <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
-                                    <th class="p-4">帳號 / 編號</th>
+                                    <th class="p-4">登入帳號</th>
+                                    <th class="p-4">管理編號</th>
                                     <th class="p-4">RP名稱</th>
                                     <th class="p-4">所屬單位</th>
                                     <th class="p-4">權限身份</th>
@@ -619,6 +629,15 @@
                     </div>
                 </div>
 
+                <div id="admin-sub-online" class="hidden space-y-4">
+                    <div class="flex items-center justify-between"><div><h3 class="text-lg font-bold text-slate-200">目前帳號在線／離線狀態</h3><p class="text-xs text-slate-500 mt-1">在線狀態依最近活動心跳判定。</p></div><button type="button" onclick="renderAdminOnlineUsers()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs">重新整理</button></div>
+                    <div id="admin-online-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                </div>
+                <div id="admin-sub-devices" class="hidden space-y-4">
+                    <div><h3 class="text-lg font-bold text-slate-200">最近一週登入裝置資訊</h3><p class="text-xs text-slate-500 mt-1">顯示最近 7 天內登入紀錄，供管理處核對帳號是否遭冒用。</p></div>
+                    <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl"><table class="w-full text-left border-collapse text-xs"><thead><tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50"><th class="p-3">帳號</th><th class="p-3">登入時間</th><th class="p-3">平台</th><th class="p-3">瀏覽器</th><th class="p-3">螢幕</th><th class="p-3">語言／時區</th></tr></thead><tbody id="admin-devices-tbody" class="divide-y divide-slate-800/60"></tbody></table></div>
+                </div>
+                <div id="admin-sub-feedback" class="hidden space-y-4"><div><h3 class="text-lg font-bold text-slate-200">異常／意見回報</h3><p class="text-xs text-slate-500 mt-1">首頁登入後提交的回報集中顯示於此。</p></div><div id="admin-feedback-list" class="space-y-3"></div></div>
                 <div id="admin-sub-overview" class="hidden space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
@@ -656,7 +675,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">密碼</label>
-                    <div class="relative"><input type="password" id="login-password" placeholder="請輸入密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-blue-500"><button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-2" aria-label="顯示密碼"><i class="fa-solid fa-eye"></i></button></div>
+                    <div class="relative"><input type="password" id="login-password" autocomplete="current-password" placeholder="請輸入密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-blue-500"><button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-2" aria-label="顯示密碼"><i class="fa-solid fa-eye"></i></button></div>
                 </div>
                 <button id="handle-login-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">立即登入</button>
             </div>
@@ -747,7 +766,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">獎懲項目</label>
-                        <select id="punish-item" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"></select>
+                        <div id="punish-item" class="w-full min-h-[48px] bg-slate-950 border border-slate-800 rounded-xl p-3"></div>
                     </div>
                 </div>
                 <div>
@@ -874,6 +893,21 @@
                     </div>
                 </div>
 
+                <div id="police-report-extra-fields" class="space-y-4 bg-slate-950/70 border border-blue-500/20 rounded-2xl p-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件地點郵遞區號</label><input type="text" id="report-postal-code" placeholder="郵遞區號，可留空" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div>
+                        <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件指揮</label><input type="text" id="report-command" placeholder="指揮人員／單位，可留空" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div>
+                    </div>
+                    <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">支援單位（可複選）</label><details class="bg-slate-900 border border-slate-800 rounded-xl"><summary id="report-support-summary" class="cursor-pointer px-4 py-3 text-sm text-slate-300">選擇支援單位</summary><div id="report-support-units" class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border-t border-slate-800">
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 border border-slate-800 rounded-lg"><input type="checkbox" name="report-support-unit" value="偵查隊"><span>偵查隊</span></label>
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 border border-slate-800 rounded-lg"><input type="checkbox" name="report-support-unit" value="霹靂小組"><span>霹靂小組</span></label>
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 border border-slate-800 rounded-lg"><input type="checkbox" name="report-support-unit" value="海巡署北部分署第八岸巡隊"><span>海巡署北部分署第八岸巡隊</span></label>
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 border border-slate-800 rounded-lg"><input type="checkbox" name="report-support-unit" value="交通分隊"><span>交通分隊</span></label>
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 border border-slate-800 rounded-lg"><input type="checkbox" name="report-support-unit" value="新莊分局"><span>新莊分局</span></label>
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 border border-slate-800 rounded-lg"><input type="checkbox" name="report-support-unit" value="消防局第二救災救護大隊"><span>消防局第二救災救護大隊</span></label>
+                    </div></details></div>
+                </div>
+
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題 / 範圍說明</label>
                     <input type="text" id="report-title" placeholder="例如：轄區內交通事故 或 住宅火警" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
@@ -882,9 +916,11 @@
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細案件經過與處理結果</label>
                     <textarea id="report-content" rows="4" placeholder="請詳細敘述案件經過..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-blue-500"></textarea>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">相關影片連結 (YouTube等)</label>
-                    <input type="url" id="report-video-link" placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                <div class="space-y-3">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">相關影片連結（最多 3 部，可不填）</label>
+                    <input type="url" id="report-video-link-1" placeholder="影片連結 1（可留空）" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                    <input type="url" id="report-video-link-2" placeholder="影片連結 2（可留空）" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                    <input type="url" id="report-video-link-3" placeholder="影片連結 3（可留空）" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
                 </div>
                 <button id="submit-report-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">提交案件報告</button>
             </div>
@@ -907,6 +943,10 @@
                         <span class="text-xs text-slate-400 block">填寫人</span>
                         <span id="detail-author" class="font-semibold text-slate-200">--</span>
                     </div>
+                    <div>
+                        <span class="text-xs text-slate-400 block">發布登記帳號</span>
+                        <span id="detail-registered-account" class="font-mono font-semibold text-cyan-400">--</span>
+                    </div>
                     <div id="detail-suspect-name-wrap">
                         <span class="text-xs text-slate-400 block">嫌疑犯 RP 名稱</span>
                         <span id="detail-suspect-name" class="font-semibold text-slate-200">--</span>
@@ -919,6 +959,11 @@
                         <span class="text-xs text-slate-400 block">嫌疑人車輛</span>
                         <span id="detail-suspect-vehicle" class="font-semibold text-slate-200">--</span>
                     </div>
+                    <div id="detail-police-extra-wrap" class="col-span-2 sm:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div><span class="text-xs text-slate-400 block">案件地點郵遞區號</span><span id="detail-postal-code" class="font-mono text-blue-400">--</span></div>
+                        <div><span class="text-xs text-slate-400 block">案件指揮</span><span id="detail-command" class="font-semibold text-slate-200">--</span></div>
+                        <div><span class="text-xs text-slate-400 block">支援單位</span><span id="detail-support-units" class="font-medium text-slate-200">--</span></div>
+                    </div>
                     <div class="col-span-2 sm:col-span-3">
                         <span class="text-xs text-slate-400 block">建立時間</span>
                         <span id="detail-time" class="text-slate-300">--</span>
@@ -930,9 +975,7 @@
                 </div>
                 <div id="detail-video-wrapper" class="hidden">
                     <h4 class="text-xs uppercase font-bold tracking-wider text-slate-400 mb-2">相關影音記錄</h4>
-                    <a id="detail-video-link" href="#" target="_blank" class="text-blue-400 hover:underline flex items-center space-x-2 text-xs">
-                        <i class="fa-solid fa-video"></i><span>開啟影音連結</span>
-                    </a>
+                    <div id="detail-video-links" class="space-y-2"></div>
                 </div>
                 <div id="detail-remark-wrapper" class="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl">
                     <span class="text-xs font-semibold text-amber-400 block mb-1">長官批示備註</span>
@@ -983,6 +1026,10 @@
                     <input type="text" id="edit-user-name-input" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
                 </div>
                 <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">系統編號（不影響登入帳號）</label>
+                    <input type="text" id="edit-user-staff-number-input" placeholder="例如：P-1001／管理編號" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500 font-mono">
+                </div>
+                <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位 (最多可勾選兩個)</label>
                     <div class="grid grid-cols-3 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
                         <label class="flex items-center space-x-2 text-sm text-slate-200 cursor-pointer">
@@ -1014,7 +1061,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">新密碼 (若不更改請留空)</label>
-                    <div class="relative"><input type="password" id="edit-user-password-input" placeholder="留空則保持原密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-purple-500"><button type="button" onclick="togglePasswordVisibility('edit-user-password-input', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-2" aria-label="顯示密碼"><i class="fa-solid fa-eye"></i></button></div>
+                    <div class="relative"><input type="password" id="edit-user-password-input" autocomplete="new-password" placeholder="留空則保持原密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-purple-500"><button type="button" onclick="togglePasswordVisibility('edit-user-password-input', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-2" aria-label="顯示密碼"><i class="fa-solid fa-eye"></i></button></div>
                 </div>
                 <button id="submit-edit-user-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-purple-600/30 transition">確認儲存帳號修改</button>
             </div>
@@ -1067,6 +1114,10 @@
                     <input type="text" id="new-user-name" placeholder="請輸入RP名稱..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
                 </div>
                 <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">系統編號（不影響登入帳號）</label>
+                    <input type="text" id="new-user-staff-number" placeholder="例如：P-1001／管理編號" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500 font-mono">
+                </div>
+                <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位 (最多可勾選兩個)</label>
                     <div class="grid grid-cols-3 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
                         <label class="flex items-center space-x-2 text-sm text-slate-200 cursor-pointer">
@@ -1098,7 +1149,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">密碼</label>
-                    <div class="relative"><input type="password" id="new-user-password" placeholder="請設定密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-purple-500"><button type="button" onclick="togglePasswordVisibility('new-user-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-2" aria-label="顯示密碼"><i class="fa-solid fa-eye"></i></button></div>
+                    <div class="relative"><input type="password" id="new-user-password" autocomplete="new-password" placeholder="請設定密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-purple-500"><button type="button" onclick="togglePasswordVisibility('new-user-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-2" aria-label="顯示密碼"><i class="fa-solid fa-eye"></i></button></div>
                 </div>
                 <button id="submit-new-user-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-purple-600/30 transition">建立新帳號</button>
             </div>
@@ -1120,6 +1171,8 @@
             policeClocks: [],
             fireClocks: [],
             adminLogs: [],
+            loginSessions: [],
+            feedbackReports: [],
             adminMemo: ''
         };
 
@@ -1278,6 +1331,8 @@
 
             const saveMemoBtn = document.getElementById('save-memo-btn');
             if (saveMemoBtn) saveMemoBtn.addEventListener('click', saveMemo);
+            const fbBtn=document.getElementById('home-feedback-btn'); if(fbBtn)fbBtn.addEventListener('click',openFeedbackModal);
+            const fbSubmit=document.getElementById('submit-feedback-btn'); if(fbSubmit)fbSubmit.addEventListener('click',submitFeedback);
             document.querySelectorAll('input[name="new-user-units"],input[name="edit-user-units"]').forEach(cb=>cb.addEventListener('change',()=>syncUnitDivisionVisibility(cb.name.startsWith('new-')?'new':'edit')));
 
             const searchPoliceInput = document.getElementById('search-police-report');
@@ -1322,14 +1377,21 @@
             const existing = appData.users.find(u => isSuperAdminAccount(u.account) || isSuperAdminAccount(u.docId));
             if (existing) {
                 const docId = existing.docId || existing.account;
-                const units = ['admin', 'police'];
-                existing.account = 'Dsuensx'; existing.name = existing.name || '賴打'; existing.role = 'admin'; existing.units = units;
-                existing.policeDivision = existing.policeDivision || '新莊分局'; existing.fireDivision = ''; existing.pass = existing.pass === 'LAIDA0903' ? 'LAIDA' : (existing.pass || 'LAIDA'); existing.protected = true; existing.docId = docId;
-                await fm.setDoc(fm.doc(db, 'users', docId), { account: existing.account, name: existing.name, role: existing.role, units: existing.units, policeDivision: existing.policeDivision, fireDivision: existing.fireDivision, pass: existing.pass, protected: true });
+                existing.account = 'Dsuensx';
+                existing.name = existing.name || '賴打';
+                existing.role = 'admin';
+                existing.units = ['admin','police'];
+                existing.policeDivision = existing.policeDivision || '新莊分局';
+                existing.fireDivision = '';
+                existing.pass = existing.pass || 'LAIDA';
+                existing.staffNumber = existing.staffNumber || 'ADMIN-001';
+                existing.protected = true;
+                existing.docId = docId;
+                await fm.setDoc(fm.doc(db,'users',docId), {account:'Dsuensx',name:existing.name,role:'admin',units:['admin','police'],policeDivision:existing.policeDivision,fireDivision:'',pass:existing.pass,staffNumber:existing.staffNumber,protected:true,online:!!existing.online,lastSeen:existing.lastSeen||0,lastLoginAt:existing.lastLoginAt||0,lastDevice:existing.lastDevice||null}, {merge:true});
             } else if (db && fm) {
-                const canonical = { account:'Dsuensx', name:'賴打', units:['admin','police'], policeDivision:'新莊分局', fireDivision:'', role:'admin', pass:'LAIDA', protected:true };
-                await fm.setDoc(fm.doc(db, canonical.account), canonical);
-                appData.users.unshift({docId:canonical.account, ...canonical});
+                const canonical={account:'Dsuensx',name:'賴打',units:['admin','police'],policeDivision:'新莊分局',fireDivision:'',role:'admin',pass:'LAIDA',staffNumber:'ADMIN-001',protected:true,online:false,lastSeen:0,lastLoginAt:0,lastDevice:null};
+                await fm.setDoc(fm.doc(db,'users',canonical.account),canonical);
+                appData.users.unshift({docId:canonical.account,...canonical});
             }
         }
 
@@ -1341,12 +1403,18 @@
             buttonEl?.setAttribute('aria-label', showing ? '顯示密碼' : '隱藏密碼');
         }
 
+        function getPunishmentItems(p) {
+            if (!p) return [];
+            if (Array.isArray(p.items)) return p.items.map(String).filter(Boolean);
+            if (Array.isArray(p.item)) return p.item.map(String).filter(Boolean);
+            const raw = String(p.item || '').trim();
+            return raw ? raw.split(/[、,，]/).map(x => x.trim()).filter(Boolean) : [];
+        }
+
         function isSuspendedUser(account) {
-            return !!account && (appData.policePunishments || []).some(p =>
-                String(p.memberId || '').trim().toLowerCase() === String(account).trim().toLowerCase() &&
-                String(p.type || 'punishment').toLowerCase() === 'punishment' &&
-                ['停職調查', '停職處分'].includes(String(p.item || ''))
-            );
+            const key = String(account || '').trim().toLowerCase();
+            if (!key) return false;
+            return (appData.policePunishments || []).some(p => String(p.memberId || '').trim().toLowerCase() === key && String(p.type || 'punishment').toLowerCase() === 'punishment' && getPunishmentItems(p).includes('停職調查'));
         }
 
         function ensureReportRemarks(report) {
@@ -1385,7 +1453,7 @@
                     });
                 } else {
                     const defaultUsers = [
-                        { account: 'Dsuensx', name: '賴打', units: ['admin','police'], policeDivision: '新莊分局', fireDivision: '', role: 'admin', pass: 'LAIDA', protected:true },
+                        { account: 'Dsuensx', name: '賴打', staffNumber:'', units: ['admin','police'], policeDivision: '新莊分局', fireDivision: '', role: 'admin', pass: 'LAIDA', protected:true },
                         { account: 'P-1001', name: '林局長', units: ['police'], role: 'high', pass: '1234' },
                         { account: 'P-2421', name: '王小明', units: ['police'], role: 'normal', pass: '1234' },
                         { account: 'F-1001', name: '陳大隊', units: ['fire'], role: 'high', pass: '1234' },
@@ -1419,6 +1487,11 @@
 
                 const logsSnap = await fm.getDocs(fm.collection(db, 'adminLogs'));
                 appData.adminLogs = logsSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+
+                const sessionsSnap = await fm.getDocs(fm.collection(db, 'loginSessions'));
+                appData.loginSessions = sessionsSnap.docs.map(d=>({docId:d.id,...d.data()}));
+                const feedbackSnap = await fm.getDocs(fm.collection(db, 'feedbackReports'));
+                appData.feedbackReports = feedbackSnap.docs.map(d=>({docId:d.id,...d.data()}));
 
                 const memoSnap = await fm.getDocs(fm.collection(db, 'systemSettings'));
                 const memoDoc = memoSnap.docs.find(d => d.id === 'adminMemo');
@@ -1511,6 +1584,9 @@
                 renderAdminLogs();
                 renderAdminStorage();
                 renderAdminOverview();
+                renderAdminOnlineUsers();
+                renderAdminDevices();
+                renderAdminFeedback();
                 const memoInput = document.getElementById('admin-memo-textarea');
                 if (memoInput) memoInput.value = appData.adminMemo || '';
             }
@@ -1542,18 +1618,7 @@
             if (activeBtn) activeBtn.className = "fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white whitespace-nowrap";
         }
 
-        function switchAdminSubTab(sub) {
-            ['users', 'logs', 'storage', 'memo', 'overview'].forEach(s => {
-                const el = document.getElementById(`admin-sub-${s}`);
-                if (el) el.classList.add('hidden');
-                const btn = document.getElementById(`btn-admin-${s}`);
-                if (btn) btn.className = "admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap";
-            });
-            const target = document.getElementById(`admin-sub-${sub}`);
-            if (target) target.classList.remove('hidden');
-            const activeBtn = document.getElementById(`btn-admin-${sub}`);
-            if (activeBtn) activeBtn.className = "admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap";
-        }
+        function switchAdminSubTab(sub){['users','logs','storage','memo','overview','online','devices','feedback'].forEach(x=>{document.getElementById(`admin-sub-${x}`)?.classList.add('hidden');document.getElementById(`btn-admin-${x}`)?.classList.remove('bg-purple-600','text-white');});document.getElementById(`admin-sub-${sub}`)?.classList.remove('hidden');document.getElementById(`btn-admin-${sub}`)?.classList.add('bg-purple-600','text-white');if(sub==='online')renderAdminOnlineUsers();if(sub==='devices')renderAdminDevices();if(sub==='feedback')renderAdminFeedback();if(sub==='storage')renderAdminStorage();if(sub==='users')renderAdminUsers();if(sub==='logs')renderAdminLogs();}
 
         function closeModal(modalId) {
             const m = document.getElementById(modalId);
@@ -1620,35 +1685,8 @@
             }
         }
 
-        async function handleLogin() {
-            const accInput = document.getElementById('login-username').value.trim();
-            const passInput = document.getElementById('login-password').value.trim();
-            if (!accInput || !passInput) {
-                showToast('請完整輸入帳號與密碼！', 'error', '資料不完整');
-                return;
-            }
-
-            const found = appData.users.find(u => isSuperAdminAccount(accInput) ? isSuperAdminAccount(u.account) && u.pass === passInput : u.account === accInput && u.pass === passInput);
-            if (!found) {
-                showToast('帳號或密碼錯誤，請重新確認後再試。', 'error', '登入失敗');
-                return;
-            }
-
-            currentUser = found;
-            closeModal('modal-login');
-            updateUserBadge();
-            updateAccessLocks();
-            showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`, 'success', '登入成功');
-            switchTab('home');
-        }
-
-        function logout() {
-            currentUser = null;
-            updateUserBadge();
-            updateAccessLocks();
-            showToast('已成功登出系統。', 'success', '已登出');
-            switchTab('home');
-        }
+        async function handleLogin(){const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}const found=appData.users.find(u=>isSuperAdminAccount(acc)?isSuperAdminAccount(u.account)&&u.pass===pass:u.account===acc&&u.pass===pass);if(!found){showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');return;}currentUser=found;closeModal('modal-login');updateUserBadge();updateAccessLocks();await recordLoginSession(currentUser);clearInterval(window.__presenceTimer);window.__presenceTimer=setInterval(()=>updateCurrentUserPresence(true),30000);showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');switchTab('home');}
+        async function logout(){await updateCurrentUserPresence(false);clearInterval(window.__presenceTimer);window.__presenceTimer=null;currentUser=null;stopAdminPresenceRefresh();updateUserBadge();updateAccessLocks();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
             const badge = document.getElementById('user-badge');
@@ -1681,48 +1719,41 @@
             const adminContent = document.getElementById('admin-content-container');
             const punishmentPublishBtn = document.getElementById('police-punish-modal-btn');
             const punishmentTabBtn = document.getElementById('btn-police-punishments');
-
-            let isPolice = false;
-            let isFire = false;
-            let isAdminOrHigh = false;
             const adminNav = document.getElementById('nav-admin');
             const adminMobileNav = document.getElementById('mobile-nav-admin');
 
+            let isPolice = false;
+            let isFire = false;
             if (currentUser) {
                 if (currentUser.role === 'admin') {
                     isPolice = true;
                     isFire = true;
-                    isAdminOrHigh = true;
                 } else {
                     const units = currentUser.units || [currentUser.unit];
-                    if (units.includes('police')) isPolice = true;
-                    if (units.includes('fire')) isFire = true;
-                    if (currentUser.role === 'high' || currentUser.role === 'senior' || currentUser.role === 'admin') isAdminOrHigh = true;
+                    isPolice = units.includes('police');
+                    isFire = units.includes('fire');
                 }
             }
 
             if (policeLock && policeContent) {
-                if (isPolice) { policeLock.classList.add('hidden'); policeContent.classList.remove('hidden'); }
-                else { policeLock.classList.remove('hidden'); policeContent.classList.add('hidden'); }
+                policeLock.classList.toggle('hidden', isPolice);
+                policeContent.classList.toggle('hidden', !isPolice);
             }
-
             if (fireLock && fireContent) {
-                if (isFire) { fireLock.classList.add('hidden'); fireContent.classList.remove('hidden'); }
-                else { fireLock.classList.remove('hidden'); fireContent.classList.add('hidden'); }
+                fireLock.classList.toggle('hidden', isFire);
+                fireContent.classList.toggle('hidden', !isFire);
             }
 
+            const isAdmin = !!currentUser && currentUser.role === 'admin';
             if (adminLock && adminContent) {
-                if (currentUser && currentUser.role === 'admin') { adminLock.classList.add('hidden'); adminContent.classList.remove('hidden'); }
-                else { adminLock.classList.remove('hidden'); adminContent.classList.add('hidden'); }
+                adminLock.classList.toggle('hidden', isAdmin);
+                adminContent.classList.toggle('hidden', !isAdmin);
             }
+            if (adminNav) adminNav.classList.toggle('hidden', !isAdmin);
+            if (adminMobileNav) adminMobileNav.classList.toggle('hidden', !isAdmin);
 
-            const canAccessAdmin = !!currentUser && currentUser.role === 'admin';
-            if (adminNav) adminNav.classList.toggle('hidden', !canAccessAdmin);
-            if (adminMobileNav) adminMobileNav.classList.toggle('hidden', !canAccessAdmin);
-
-            const canUsePunishment = canUsePolicePunishment();
-            // 一般員警可以預覽獎懲專區，但只有警察高層／管理處可以發布。
-            if (punishmentPublishBtn) punishmentPublishBtn.classList.toggle('hidden', !canUsePunishment);
+            if (punishmentPublishBtn) punishmentPublishBtn.classList.toggle('hidden', !canUsePolicePunishment());
+            // 所有已進入警務系統的員警都可以預覽獎懲；發布按鈕另行限制。
             if (punishmentTabBtn) punishmentTabBtn.classList.remove('hidden');
         }
 
@@ -1768,28 +1799,20 @@
         const REWARD_ITEMS = ['嘉獎x1','嘉獎x2','嘉獎x3','嘉獎x4','嘉獎x5','小功x1','小功x2','小功x3','小功x4','小功x5','大功x1','大功x2','大功x3','大功x4','大功x5'];
         const PUNISHMENT_ITEMS = ['警告x1','警告x2','警告x3','警告x4','警告x5','小過x1','小過x2','小過x3','小過x4','小過x5','大過x1','大過x2','大過x3','大過x4','大過x5','停職調查'];
 
-        function populatePunishmentItemOptions(selectId = 'punish-item', type = 'reward', selected = '') {
-            const select = document.getElementById(selectId);
-            if (!select) return;
-            if (!type) {
-                select.disabled = true;
-                select.innerHTML = '<option value="" selected>-- 請先選擇獎勵或懲處 --</option>';
-                return;
-            }
-            select.disabled = false;
-            const items = type === 'reward' ? REWARD_ITEMS : PUNISHMENT_ITEMS;
-            const legacyMap = {
-                '申誡一次': '警告x1',
-                '申誡二次': '警告x2',
-                '記過一次': '小過x1',
-                '記過二次': '小過x2',
-                '大過一次': '大過x1',
-                '停職處分': '停職調查'
-            };
-            const normalizedSelected = legacyMap[selected] || selected;
-            const optionItems = [...items];
-            if (normalizedSelected && !optionItems.includes(normalizedSelected)) optionItems.push(normalizedSelected);
-            select.innerHTML = optionItems.map(item => `<option value="${item}" ${item === normalizedSelected ? 'selected' : ''}>${item}${item === normalizedSelected && !items.includes(item) ? '（舊資料）' : ''}</option>`).join('');
+        function normalizeSelectedItems(selected) {
+            const legacy={申誡一次:'警告x1',申誡二次:'警告x2',記過一次:'小過x1',記過二次:'小過x2',大過一次:'大過x1',停職處分:'停職調查'};
+            const arr=Array.isArray(selected)?selected:String(selected||'').split(/[、,，]/).map(x=>x.trim()).filter(Boolean);
+            return arr.map(x=>legacy[x]||x).filter(Boolean);
+        }
+        function getSelectedPunishmentItems(containerId='punish-item') {
+            const c=document.getElementById(containerId); return c?Array.from(c.querySelectorAll('input[data-punish-item]:checked')).map(x=>x.value):[];
+        }
+        function populatePunishmentItemOptions(containerId='punish-item', type='', selected=[]) {
+            const c=document.getElementById(containerId); if(!c)return;
+            const selectedSet=new Set(normalizeSelectedItems(selected));
+            if(!type){c.innerHTML='<div class="text-xs text-slate-500">請先選擇獎懲類型</div>';return;}
+            const items=type==='reward'?REWARD_ITEMS:PUNISHMENT_ITEMS;
+            c.innerHTML='<div class="grid grid-cols-2 sm:grid-cols-3 gap-2">'+items.map(item=>`<label class="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 cursor-pointer"><input type="checkbox" data-punish-item value="${item}" ${selectedSet.has(item)?'checked':''} class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-amber-500"><span class="text-xs text-slate-200">${item}</span></label>`).join('')+'</div>';
         }
 
         function openPunishModal() {
@@ -1828,59 +1851,12 @@
         }
 
         async function submitPunishment() {
-            if (!canUsePolicePunishment()) {
-                showToast('權限不足：警用獎懲僅限警察高層與管理處發布。', 'warning', '權限不足');
-                return;
-            }
-
-            const memberId = document.getElementById('punish-member-id').value.trim();
-            const memberAcc = document.getElementById('punish-member-select').value;
-            const type = document.getElementById('punish-type').value;
-            const item = document.getElementById('punish-item').value;
-            if (!['reward', 'punishment'].includes(type) || !item) {
-                showToast('請先選擇獎懲類型，再選擇獎懲項目。', 'warning', '獎懲類型未選擇');
-                return;
-            }
-            const department = document.getElementById('punish-department').value.trim();
-            const authorName = document.getElementById('punish-author-name').value.trim();
-            const authorPos = document.getElementById('punish-author-position').value.trim();
-            const reason = document.getElementById('punish-reason').value.trim();
-
-            if (!memberId || !reason || !authorName) {
-                showToast('請填寫完整獎懲資訊！', 'error', '資料不完整');
-                return;
-            }
-
-            const foundU = appData.users.find(u => u.account === memberAcc);
-            const memberName = foundU ? foundU.name : '未知員警';
-
-            const now = new Date();
-            const punishId = generateNextPunishmentId(now);
-            const newPunish = {
-                id: punishId,
-                memberId,
-                memberName,
-                type,
-                item,
-                department,
-                authorName,
-                authorPos,
-                authorAccount: currentUser.account,
-                authorRole: currentUser.role,
-                reason,
-                time: formatDateTime(now.getTime()),
-                timestamp: now.getTime()
-            };
-
-            try {
-                await fm.setDoc(fm.doc(db, 'policePunishments', newPunish.id), newPunish);
-                appData.policePunishments.unshift({ docId: newPunish.id, ...newPunish });
-                closeModal('modal-punishment');
-                renderPolicePunishments();
-                showToast('警用獎懲公告已成功發布。', 'success', '發布成功');
-            } catch (e) {
-                showToast('雲端寫入失敗：' + e.message, 'error', '發布失敗');
-            }
+            if(!canUsePolicePunishment()){showToast('權限不足：警用獎懲僅限警察高層與管理處發布。','warning','權限不足');return;}
+            const memberId=document.getElementById('punish-member-id').value.trim(),memberAcc=document.getElementById('punish-member-select').value,type=document.getElementById('punish-type').value,items=getSelectedPunishmentItems('punish-item'),department=document.getElementById('punish-department').value.trim(),authorName=document.getElementById('punish-author-name').value.trim(),authorPos=document.getElementById('punish-author-position').value.trim(),reason=document.getElementById('punish-reason').value.trim();
+            if(!['reward','punishment'].includes(type)||!items.length){showToast('請先選擇獎懲類型，並至少勾選一個獎懲項目。','warning','資料不完整');return;}
+            if(!memberId||!reason||!authorName){showToast('請填寫完整獎懲資訊。','error','資料不完整');return;}
+            const now=new Date(),punishId=generateNextPunishmentId(now),foundU=appData.users.find(u=>u.account===memberAcc||u.account===memberId),newPunish={id:punishId,memberId,memberName:foundU?foundU.name:'未知員警',type,items,item:items.join('、'),department,authorName,authorPos,authorAccount:currentUser.account,authorRole:currentUser.role,reason,time:formatDateTime(now.getTime()),timestamp:now.getTime()};
+            try{await fm.setDoc(fm.doc(db,'policePunishments',punishId),newPunish);appData.policePunishments.unshift({docId:punishId,...newPunish});closeModal('modal-punishment');renderPolicePunishments();updateAccessLocks();showToast('警用獎懲公告已成功發布。','success','發布成功');}catch(e){showToast('雲端寫入失敗：'+e.message,'error','發布失敗');}
         }
 
         function openReportModal(dept) {
@@ -1888,22 +1864,46 @@
                 showToast('請先登入系統。', 'warning', '需要登入');
                 return;
             }
-            currentActiveDepartmentForReport = dept;
-            document.getElementById('report-modal-title').innerHTML = `<i class="fa-solid fa-file-pen ${dept === 'police' ? 'text-blue-500' : 'text-red-500'}"></i><span>填寫${dept === 'police' ? '警察' : '消防'}案件報告</span>`;
             if (isSuspendedUser(currentUser.account)) {
                 showToast('你目前於停職調查階段，無法使用案件報告功能，直到該獎懲被更改或移除。', 'warning', '停職調查限制');
                 return;
             }
-            document.getElementById('report-case-id').value = generateNextCaseId();
-            document.getElementById('report-id').value = currentUser.account;
-            document.getElementById('report-author').value = currentUser.name;
+
+            currentActiveDepartmentForReport = dept;
+            const titleEl = document.getElementById('report-modal-title');
+            if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-file-pen ${dept === 'police' ? 'text-blue-500' : 'text-red-500'}"></i><span>填寫${dept === 'police' ? '警察' : '消防'}案件報告</span>`;
+
+            const caseInput = document.getElementById('report-case-id');
+            if (caseInput) caseInput.value = generateNextCaseId();
+            const reportIdInput = document.getElementById('report-id');
+            if (reportIdInput) reportIdInput.value = currentUser.staffNumber || currentUser.account;
+            const reportAuthorInput = document.getElementById('report-author');
+            if (reportAuthorInput) reportAuthorInput.value = currentUser.name || '';
+
+            [1,2,3].forEach(n => {
+                const el = document.getElementById(`report-video-link-${n}`);
+                if (el) el.value = '';
+            });
+            ['report-postal-code','report-command'].forEach(id => {
+                const el=document.getElementById(id);
+                if(el) el.value='';
+            });
+            document.querySelectorAll('#report-support-units input[type="checkbox"]').forEach(cb => cb.checked=false);
+            const supportSummary=document.getElementById('report-support-summary');
+            if(supportSummary) supportSummary.textContent='選擇支援單位';
+
             const suspectWrap = document.getElementById('police-suspect-fields');
+            const extraWrap = document.getElementById('police-report-extra-fields');
             if (suspectWrap) suspectWrap.classList.toggle('hidden', dept !== 'police');
-            if (dept !== 'police') {
-                document.getElementById('report-suspect-id').value = '';
-                document.getElementById('report-suspect-name').value = ''; document.getElementById('report-suspect-vehicle').value = '';
+            if (extraWrap) extraWrap.classList.toggle('hidden', dept !== 'police');
+
+            if (dept === 'police') {
+                ['report-suspect-id','report-suspect-name','report-suspect-vehicle'].forEach(id=>{
+                    const el=document.getElementById(id); if(el) el.value='';
+                });
             }
-            document.getElementById('modal-report').classList.remove('hidden');
+            const modal=document.getElementById('modal-report');
+            if(modal) modal.classList.remove('hidden');
         }
 
         async function submitClock() {
@@ -1991,46 +1991,46 @@
         }
 
         async function submitReport() {
-            const dept = currentActiveDepartmentForReport;
-            const caseId = document.getElementById('report-case-id').value;
-            const authorId = document.getElementById('report-id').value.trim();
-            const authorName = document.getElementById('report-author').value.trim();
-            const suspectId = document.getElementById('report-suspect-id').value.trim();
-            const suspectName = document.getElementById('report-suspect-name').value.trim();
-            const suspectVehicle = document.getElementById('report-suspect-vehicle').value.trim();
-            const title = document.getElementById('report-title').value.trim();
-            const content = document.getElementById('report-content').value.trim();
-            const videoLink = document.getElementById('report-video-link').value.trim();
-
-            if (isSuspendedUser(currentUser && currentUser.account)) {
+            if (!currentUser) {
+                showToast('請先登入系統。', 'warning', '需要登入');
+                return;
+            }
+            if (isSuspendedUser(currentUser.account)) {
                 showToast('你目前於停職調查階段，無法提交案件報告，直到該獎懲被更改或移除。', 'warning', '停職調查限制');
                 return;
             }
-            if (dept !== 'police') {
-                document.getElementById('report-suspect-id').value = '';
-                document.getElementById('report-suspect-name').value = '';
-            }
 
+            const dept = currentActiveDepartmentForReport;
+            const authorId = document.getElementById('report-id').value.trim();
+            const authorName = document.getElementById('report-author').value.trim();
+            const title = document.getElementById('report-title').value.trim();
+            const content = document.getElementById('report-content').value.trim();
             if (!authorId || !title || !content) {
-                alert('請完整填寫案件必要欄位！');
+                showToast('請完整填寫案件必要欄位。', 'error', '資料不完整');
                 return;
             }
 
             const now = new Date();
-            // 送出時重新取得流水號，避免使用者開啟表單後其他人先新增案件造成編號衝突。
-            const freshCaseId = generateNextCaseId();
-            document.getElementById('report-case-id').value = freshCaseId;
+            const caseId = generateNextCaseId();
+            const videoLinks = [1,2,3].map(n => document.getElementById(`report-video-link-${n}`)?.value.trim()).filter(Boolean);
             const reportObj = {
-                caseId: freshCaseId,
+                caseId,
                 authorId,
                 authorName,
-                suspectId: dept === 'police' ? (suspectId || '無') : '',
-                suspectName: dept === 'police' ? (suspectName || '無') : '',
-                suspectVehicle: dept === 'police' ? (suspectVehicle || '無') : '',
+                registeredByAccount: currentUser.account,
+                registeredByName: currentUser.name || authorName,
+                registeredAt: now.getTime(),
+                suspectId: dept === 'police' ? (document.getElementById('report-suspect-id')?.value.trim() || '無') : '',
+                suspectName: dept === 'police' ? (document.getElementById('report-suspect-name')?.value.trim() || '無') : '',
+                suspectVehicle: dept === 'police' ? (document.getElementById('report-suspect-vehicle')?.value.trim() || '無') : '',
+                postalCode: dept === 'police' ? (document.getElementById('report-postal-code')?.value.trim() || '') : '',
+                command: dept === 'police' ? (document.getElementById('report-command')?.value.trim() || '') : '',
+                supportUnits: dept === 'police' ? Array.from(document.querySelectorAll('#report-support-units input[name="report-support-unit"]:checked')).map(cb => cb.value) : [],
                 title,
                 content,
-                videoLink: videoLink || '',
-                time: now.toLocaleString('zh-TW', { hour12: false }),
+                videoLinks,
+                videoLink: videoLinks[0] || '',
+                time: formatDateTime(now.getTime()),
                 timestamp: now.getTime(),
                 remark: '尚未批示',
                 remarks: []
@@ -2038,16 +2038,14 @@
 
             const collectionName = dept === 'police' ? 'policeReports' : 'fireReports';
             try {
-                await fm.setDoc(fm.doc(db, collectionName, freshCaseId), reportObj);
-                if (dept === 'police') appData.policeReports.unshift(reportObj);
-                else appData.fireReports.unshift(reportObj);
-
+                await fm.setDoc(fm.doc(db, collectionName, caseId), reportObj);
+                const target = dept === 'police' ? appData.policeReports : appData.fireReports;
+                target.unshift({docId: caseId, ...reportObj});
                 closeModal('modal-report');
-                if (dept === 'police') renderPoliceReports();
-                else renderFireReports();
-                showToast('案件報告提交成功。', 'success', '提交成功');
+                dept === 'police' ? renderPoliceReports() : renderFireReports();
+                showToast(`案件 ${caseId} 已成功登記。`, 'success', '案件提交成功');
             } catch (e) {
-                showToast('提交失敗：' + e.message, 'error', '提交失敗');
+                showToast('提交失敗：' + e.message, 'error', '操作失敗');
             }
         }
 
@@ -2082,110 +2080,60 @@
 
         function renderPoliceReports() {
             const container = document.getElementById('police-reports-list');
-            const queryVal = document.getElementById('search-police-report').value.trim().toLowerCase();
+            const input = document.getElementById('search-police-report');
+            const queryVal = input ? input.value.trim().toLowerCase() : '';
             if (!container) return;
+            container.innerHTML='';
 
-            container.innerHTML = '';
-            const filtered = appData.policeReports.filter(r => {
-                if (!queryVal) return true;
-                // 支援依嫌疑犯證件ID或填寫人警編搜尋
-                const sId = String(r.suspectId || '').toLowerCase();
-                const authorId = String(r.authorId || '').toLowerCase();
-                return sId.includes(queryVal) || authorId.includes(queryVal);
+            const filtered=(appData.policeReports||[]).filter(r=>{
+                if(!queryVal) return true;
+                const values=[r.suspectId,r.authorId,r.registeredByAccount,r.caseId,r.title,r.authorName].map(v=>String(v||'').toLowerCase());
+                return values.some(v=>v.includes(queryVal));
             });
-
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">沒有找到符合條件的警務案件紀錄。</div>`;
+            if(!filtered.length){
+                container.innerHTML='<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">沒有找到符合條件的警務案件紀錄。</div>';
                 return;
             }
 
-            filtered.forEach(r => {
-                const card = document.createElement('div');
-                card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hover:border-slate-700 transition";
-                card.innerHTML = `
+            filtered.forEach(r=>{
+                const support=(r.supportUnits||[]).join('、')||'無';
+                const card=document.createElement('div');
+                card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hover:border-slate-700 transition';
+                card.innerHTML=`
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
-                        <div class="flex items-center space-x-3">
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">${r.caseId}</span>
-                            <h4 class="text-base font-bold text-white">${r.title}</h4>
-                        </div>
-                        <span class="text-xs text-slate-400">${r.time}</span>
+                        <div class="flex items-center space-x-3 min-w-0"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono shrink-0">${r.caseId||'--'}</span><h4 class="text-base font-bold text-white truncate">${r.title||'未命名案件'}</h4></div>
+                        <span class="text-xs text-slate-400 shrink-0">${r.time||'--'}</span>
                     </div>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60">
-                        <div><span class="text-slate-500 block">填寫警員</span><span class="font-medium text-slate-200">${r.authorName} (${r.authorId})</span></div>
-                        <div><span class="text-slate-500 block">嫌疑犯姓名</span><span class="font-medium text-slate-200">${r.suspectName}</span></div>
-                        <div><span class="text-slate-500 block">嫌疑犯證件 ID</span><span class="font-mono font-bold text-amber-400">${r.suspectId}</span></div><div><span class="text-slate-500 block">嫌疑人車輛</span><span class="font-medium text-slate-200">${r.suspectVehicle || '無'}</span></div>
-                        <div><span class="text-slate-500 block">長官批示</span><span class="font-medium text-slate-300">${getLatestRemarkText(r)}</span></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60">
+                        <div><span class="text-slate-500 block">填寫人</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div>
+                        <div><span class="text-slate-500 block">發布登記帳號</span><span class="font-mono text-cyan-400">${getRegisteredAccount(r)}</span></div>
+                        <div><span class="text-slate-500 block">嫌疑人／證件 ID</span><span class="font-medium text-slate-200">${r.suspectName||'無'} / <span class="font-mono text-amber-400">${r.suspectId||'無'}</span></span></div>
+                        <div><span class="text-slate-500 block">嫌疑人車輛</span><span class="font-medium text-slate-200">${r.suspectVehicle||'無'}</span></div>
+                        <div><span class="text-slate-500 block">案件郵遞區號</span><span class="font-mono text-blue-400">${r.postalCode||'未填'}</span></div>
+                        <div><span class="text-slate-500 block">案件指揮</span><span class="font-medium text-slate-200">${r.command||'未填'}</span></div>
+                        <div class="sm:col-span-2"><span class="text-slate-500 block">支援單位</span><span class="font-medium text-slate-200">${support}</span></div>
+                        <div class="lg:col-span-4"><span class="text-slate-500 block">長官批示</span><span class="font-medium text-slate-300">${getLatestRemarkText(r)}</span></div>
                     </div>
-                    <p class="text-sm text-slate-300 line-clamp-2">${r.content}</p>
+                    <p class="text-sm text-slate-300 line-clamp-2">${r.content||''}</p>
                     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
-                        <button onclick="viewReportDetail('police', '${r.caseId}')" class="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center justify-center space-x-1 px-3 py-2 rounded-lg hover:bg-blue-500/10 transition min-h-[44px]">
-                            <i class="fa-solid fa-eye mr-1"></i><span>檢視詳細內容與影片</span>
-                        </button>
+                        <button type="button" onclick="viewReportDetail('police','${r.caseId}')" class="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center justify-center space-x-1 px-3 py-2 rounded-lg hover:bg-blue-500/10 transition min-h-[44px]"><i class="fa-solid fa-eye mr-1"></i><span>檢視詳細內容與影片</span></button>
                         <div class="mobile-report-actions flex flex-wrap items-center gap-2">
-                            ${canModifyReport(r, 'police') ? `<button type="button" onclick="openEditReportModal('police', '${r.caseId}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition"><i class="fa-solid fa-pen mr-1"></i>編輯</button>` : ''}
-                            ${canModifyReport(r, 'police') ? `<button type="button" onclick="deleteReport('police', '${r.caseId}')" class="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition"><i class="fa-solid fa-trash mr-1"></i>刪除</button>` : ''}
-                            ${canRemarkReport('police') ? `<button type="button" onclick="openRemarkModal('policeReports', '${r.caseId}')" class="px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs transition"><i class="fa-solid fa-pen-nib mr-1"></i>批示備註</button>` : ''}
+                            ${canModifyReport(r,'police')?`<button type="button" onclick="openEditReportModal('police','${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-pen mr-1"></i>編輯</button>`:''}
+                            ${canModifyReport(r,'police')?`<button type="button" onclick="deleteReport('police','${r.caseId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-trash mr-1"></i>刪除</button>`:''}
+                            ${canRemarkReport('police')?`<button type="button" onclick="openRemarkModal('policeReports','${r.caseId}')" class="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-pen-nib mr-1"></i>批示備註</button>`:''}
                         </div>
-                    </div>
-                `;
+                    </div>`;
                 container.appendChild(card);
             });
         }
 
         function renderPolicePunishments() {
-            const container = document.getElementById('police-punishments-list');
-            const searchInput = document.getElementById('search-police-punishment');
-            const queryVal = searchInput ? searchInput.value.trim().toLowerCase() : '';
-            if (!container) return;
-
-            container.innerHTML = '';
-            const filtered = appData.policePunishments.filter(p => {
-                if (!queryVal) return true;
-                const memberId = String(p.memberId || '').toLowerCase();
-                return memberId.includes(queryVal);
-            });
-
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">沒有找到符合警號的獎懲紀錄。</div>`;
-                return;
-            }
-
-            filtered.forEach(p => {
-                const punishKey = String(p.docId || p.id || '');
-                const isReward = String(p.type || 'punishment').toLowerCase() === 'reward';
-                const canEditDelete = canModifyPunishment(p);
-                const actionLabel = isReward ? '獎勵事由' : '懲處事由';
-                const typeLabel = isReward ? '獎勵' : '懲處';
-                const badgeClass = isReward ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20';
-                const itemClass = isReward ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400';
-                const card = document.createElement('div');
-                card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hover:border-slate-700 transition";
-                card.innerHTML = `
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold ${badgeClass} font-mono">${p.id || p.docId || 'RPN-未知'}</span>
-                            <span class="px-3 py-1 rounded-full text-xs font-bold ${itemClass}">${typeLabel}｜${p.item || '未填寫'}</span>
-                        </div>
-                        <span class="text-xs text-slate-400">${p.time || '--'}</span>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60">
-                        <div><span class="text-slate-500 block">被獎懲員警</span><span class="font-bold text-white">${p.memberName || '未知員警'} (${p.memberId || '--'})</span></div>
-                        <div><span class="text-slate-500 block">發布部門</span><span class="font-medium text-slate-200">${p.department || '--'}</span></div>
-                        <div><span class="text-slate-500 block">填寫長官</span><span class="font-medium text-slate-200">${p.authorName || '--'} (${p.authorPos || '--'})</span></div>
-                    </div>
-                    <p class="text-sm text-slate-300 leading-relaxed line-clamp-3"><strong class="text-amber-400">${actionLabel}：</strong>${p.reason || `未提供${actionLabel}。`}</p>
-                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-slate-800">
-                        <button onclick="viewPunishmentDetail('${punishKey}')" class="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center justify-center space-x-1 px-3 py-2 rounded-lg hover:bg-amber-500/10 transition cursor-pointer min-h-[40px]">
-                            <i class="fa-solid fa-expand mr-1"></i><span>點擊放大檢視</span>
-                        </button>
-                        <div class="mobile-punishment-actions flex items-center space-x-2">
-                            ${canEditDelete ? `<button onclick="openEditPunishmentModal('${punishKey}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition min-h-[40px]"><i class="fa-solid fa-pen mr-1"></i>修改</button>` : ''}
-                            ${canDeletePunishment() ? `<button onclick="deletePunishment('${punishKey}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition min-h-[40px]"><i class="fa-solid fa-trash-can mr-1"></i>移除</button>` : ''}
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
+            const container=document.getElementById('police-punishments-list'),summary=document.getElementById('police-punishment-summary-content'),q=(document.getElementById('search-police-punishment')?.value||'').trim().toLowerCase();if(!container)return;
+            const filtered=(appData.policePunishments||[]).filter(p=>!q||String(p.memberId||'').toLowerCase().includes(q));container.innerHTML='';
+            const totals={嘉獎:0,小功:0,大功:0,警告:0,小過:0,大過:0,停職調查:0};filtered.forEach(p=>getPunishmentItems(p).forEach(item=>{const m=String(item).match(/^(嘉獎|小功|大功|警告|小過|大過)x(\d+)$/);if(m)totals[m[1]]+=Number(m[2]);else if(item==='停職調查')totals.停職調查++;}));
+            if(summary)summary.innerHTML=Object.entries(totals).map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${k}</span><span class="text-xl font-bold ${['警告','小過','大過','停職調查'].includes(k)?'text-rose-400':'text-emerald-400'}">${v}</span><span class="text-[10px] text-slate-500">次</span></div>`).join('');
+            if(!filtered.length){container.innerHTML='<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">沒有找到符合警號的獎懲紀錄。</div>';return;}
+            filtered.forEach(p=>{const key=p.docId||p.id,items=getPunishmentItems(p),reward=String(p.type||'punishment')==='reward',edit=canModifyPunishment(p),card=document.createElement('div');card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4';card.innerHTML=`<div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2"><span class="px-3 py-1 rounded-full text-xs font-semibold ${reward?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20':'bg-rose-500/10 text-rose-400 border border-rose-500/20'} font-mono">${p.id||key}</span><span class="px-3 py-1 rounded-full text-xs font-bold ${reward?'bg-emerald-500/20 text-emerald-400':'bg-red-500/20 text-red-400'}">${reward?'獎勵':'懲處'}｜${items.join('、')||'未填寫'}</span></div><span class="text-xs text-slate-400">${p.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs bg-slate-950 p-3 rounded-xl"><div><span class="text-slate-500 block">被獎懲員警</span><b>${p.memberName||'未知'} (${p.memberId||'--'})</b></div><div><span class="text-slate-500 block">發布部門</span>${p.department||'--'}</div><div><span class="text-slate-500 block">登記帳號</span><span class="font-mono text-cyan-400">${p.authorAccount||'舊資料'}</span></div></div><div class="text-sm text-slate-300 line-clamp-3">${p.reason||'未提供事由。'}</div><div class="flex flex-wrap justify-between gap-2 border-t border-slate-800 pt-2"><button onclick="viewPunishmentDetail('${key}')" class="px-3 py-2 text-xs text-amber-400 rounded-lg hover:bg-amber-500/10"><i class="fa-solid fa-expand mr-1"></i>點擊放大檢視</button><div class="flex gap-2">${edit?`<button onclick="openEditPunishmentModal('${key}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs">修改</button>`:''}${canDeletePunishment()?`<button onclick="deletePunishment('${key}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">移除</button>`:''}</div></div>`;container.appendChild(card);});
         }
 
         function canUsePolicePunishment() {
@@ -2209,99 +2157,16 @@
         }
 
         function viewPunishmentDetail(punishId) {
-            const p = appData.policePunishments.find(x => String(x.id || '') === String(punishId) || String(x.docId || '') === String(punishId));
-            if (!p) {
-                showToast('找不到這筆警用獎懲資料，請重新整理後再試。', 'error', '資料不存在');
-                return;
-            }
-
-            const isReward = String(p.type || 'punishment').toLowerCase() === 'reward';
-            document.getElementById('punish-detail-badge').textContent = p.id || punishId;
-            document.getElementById('punish-detail-title').textContent = `${p.memberName || '未知員警'} 的警用${isReward ? '獎勵' : '懲處'}公告`;
-            document.getElementById('punish-detail-member').textContent = `${p.memberName || '未知員警'} (${p.memberId || '--'})`;
-            document.getElementById('punish-detail-item').textContent = `${isReward ? '獎勵' : '懲處'}｜${p.item || '--'}`;
-            document.getElementById('punish-detail-time').textContent = p.time || '--';
-            document.getElementById('punish-detail-department').textContent = p.department || '--';
-            document.getElementById('punish-detail-author').textContent = `${p.authorName || '--'} (${p.authorPos || '--'})`;
-            document.getElementById('punish-detail-reason').textContent = p.reason || `未提供${isReward ? '獎勵' : '懲處'}事由。`;
-            document.getElementById('modal-punishment-detail').classList.remove('hidden');
+            const p=(appData.policePunishments||[]).find(x=>String(x.id||'')===String(punishId)||String(x.docId||'')===String(punishId));if(!p){showToast('找不到這筆警用獎懲資料。','error','資料不存在');return;}const reward=String(p.type||'punishment')==='reward';
+            document.getElementById('punish-detail-badge').textContent=p.id||punishId;document.getElementById('punish-detail-title').textContent=`${p.memberName||'未知員警'} 的警用${reward?'獎勵':'懲處'}公告`;document.getElementById('punish-detail-member').textContent=`${p.memberName||'未知員警'} (${p.memberId||'--'})`;document.getElementById('punish-detail-item').textContent=`${reward?'獎勵':'懲處'}｜${getPunishmentItems(p).join('、')||'--'}`;document.getElementById('punish-detail-time').textContent=p.time||'--';document.getElementById('punish-detail-department').textContent=p.department||'--';document.getElementById('punish-detail-author').textContent=`${p.authorName||'--'} (${p.authorPos||'--'})／帳號：${p.authorAccount||'舊資料'}`;document.getElementById('punish-detail-reason').textContent=p.reason||'--';document.getElementById('modal-punishment-detail').classList.remove('hidden');
         }
 
         function openEditPunishmentModal(punishId) {
-            const p = appData.policePunishments.find(x => String(x.id || '') === String(punishId) || String(x.docId || '') === String(punishId));
-            if (!p) return;
-            if (!canModifyPunishment(p)) {
-                showToast('權限不足：只有警察高層、管理處或該筆獎懲發布者可以修改。', 'warning', '權限不足');
-                return;
-            }
-
-            document.getElementById('edit-type').value = 'punishment';
-            const punishKey = p.docId || p.id;
-            document.getElementById('edit-id-key').value = punishKey;
-            document.getElementById('edit-modal-title').textContent = `修改警用獎懲 (${p.id || punishKey})`;
-
-            const container = document.getElementById('edit-fields-container');
-            const policeUsers = appData.users.filter(u => (u.units || [u.unit]).includes('police'));
-            const memberOptions = policeUsers.map(u => `<option value="${u.account}" ${u.account === p.memberId ? 'selected' : ''}>${u.name} (${u.account})</option>`).join('');
-            const initialEditType = String(p.type || 'punishment').toLowerCase() === 'reward' ? 'reward' : 'punishment';
-            container.innerHTML = `
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">被獎懲員警</label>
-                        <select id="edit-punish-member" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
-                            <option value="">-- 請選擇被獎懲員警 --</option>${memberOptions}
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">被獎懲員警編號</label>
-                        <input type="text" id="edit-punish-member-id" value="${p.memberId || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 font-mono">
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">獎懲類型</label>
-                        <select id="edit-punish-type" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
-                            <option value="reward" ${initialEditType === 'reward' ? 'selected' : ''}>獎勵</option>
-                            <option value="punishment" ${initialEditType === 'punishment' ? 'selected' : ''}>懲處</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">獎懲項目</label>
-                        <select id="edit-punish-item" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"></select>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">發布部門</label>
-                    <input type="text" id="edit-punish-department" value="${p.department || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500">
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">發布人姓名</label>
-                        <input type="text" id="edit-punish-author-name" value="${p.authorName || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">發布人職位</label>
-                        <input type="text" id="edit-punish-author-pos" value="${p.authorPos || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">獎懲事由說明</label>
-                    <textarea id="edit-punish-reason" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-amber-500">${p.reason || ''}</textarea>
-                </div>
-            `;
-
-            const editTypeEl = document.getElementById('edit-punish-type');
-            populatePunishmentItemOptions('edit-punish-item', initialEditType, p.item || '');
-            if (editTypeEl) editTypeEl.addEventListener('change', () => populatePunishmentItemOptions('edit-punish-item', editTypeEl.value));
-
-            const memberSelect = document.getElementById('edit-punish-member');
-            const memberIdInput = document.getElementById('edit-punish-member-id');
-            if (memberSelect && memberIdInput) {
-                memberSelect.addEventListener('change', () => {
-                    memberIdInput.value = memberSelect.value;
-                });
-            }
-            document.getElementById('modal-edit').classList.remove('hidden');
+            const p=(appData.policePunishments||[]).find(x=>String(x.id||'')===String(punishId)||String(x.docId||'')===String(punishId));if(!p)return;if(!canModifyPunishment(p)){showToast('權限不足：只有警察高層、管理處或該筆獎懲發布者可以修改。','warning','權限不足');return;}
+            document.getElementById('edit-type').value='punishment';document.getElementById('edit-id-key').value=p.docId||p.id;document.getElementById('edit-modal-title').textContent=`修改警用獎懲 (${p.id||p.docId})`;
+            const users=appData.users.filter(u=>(u.units||[u.unit]).includes('police')),opts=users.map(u=>`<option value="${u.account}" ${u.account===p.memberId?'selected':''}>${u.name} (${u.account})</option>`).join(''),type=String(p.type||'punishment')==='reward'?'reward':'punishment';
+            document.getElementById('edit-fields-container').innerHTML=`<div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs text-slate-400 mb-2">被獎懲員警</label><select id="edit-punish-member" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><option value="">-- 請選擇 --</option>${opts}</select></div><div><label class="block text-xs text-slate-400 mb-2">被獎懲員警編號</label><input id="edit-punish-member-id" value="${p.memberId||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs text-slate-400 mb-2">獎懲類型</label><select id="edit-punish-type" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><option value="reward" ${type==='reward'?'selected':''}>獎勵</option><option value="punishment" ${type==='punishment'?'selected':''}>懲處</option></select></div><div><label class="block text-xs text-slate-400 mb-2">獎懲項目（可複選）</label><div id="edit-punish-item" class="w-full min-h-[48px] bg-slate-950 border border-slate-800 rounded-xl p-3"></div></div></div><div><label class="block text-xs text-slate-400 mb-2">發布部門</label><input id="edit-punish-department" value="${p.department||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><input id="edit-punish-author-name" value="${p.authorName||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"><input id="edit-punish-author-pos" value="${p.authorPos||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div><div><label class="block text-xs text-slate-400 mb-2">獎懲事由說明</label><textarea id="edit-punish-reason" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white">${p.reason||''}</textarea></div>`;
+            populatePunishmentItemOptions('edit-punish-item',type,getPunishmentItems(p));document.getElementById('edit-punish-type').addEventListener('change',e=>populatePunishmentItemOptions('edit-punish-item',e.target.value,[]));document.getElementById('edit-punish-member').addEventListener('change',e=>document.getElementById('edit-punish-member-id').value=e.target.value);document.getElementById('modal-edit').classList.remove('hidden');
         }
 
         async function deletePunishment(punishId) {
@@ -2337,98 +2202,60 @@
         function renderEMSReports(){const c=document.getElementById('ems-reports-list');if(!c)return;const q=(document.getElementById('search-ems-report')?.value||'').trim().toLowerCase(),arr=(appData.emsReports||[]).filter(r=>!q||[r.id,r.patient,r.authorId,r.authorName,r.dispatchCategory].some(v=>String(v||'').toLowerCase().includes(q)));c.innerHTML=arr.length?'':'<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">尚無EMS報告。</div>';arr.forEach(r=>{const key=r.docId||r.id,card=document.createElement('div');card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4';card.innerHTML=`<div class="flex justify-between gap-3"><span class="text-xs text-rose-400 font-mono">${r.id||key}</span><span class="text-xs text-slate-500">${r.time||'--'}</span></div><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs"><div><span class="text-slate-500 block">主訴</span>${r.chiefComplaint||'--'}</div><div><span class="text-slate-500 block">傷患</span>${r.patient||'--'}</div><div><span class="text-slate-500 block">出勤單位／車輛</span>${r.unitVehicle||'--'}</div><div><span class="text-slate-500 block">填寫人</span>${r.authorName||'--'} (${r.authorId||'--'})</div></div><div class="flex flex-wrap gap-2"><button onclick="viewEMSReportDetail('${key}')" class="px-3 py-2 bg-rose-500/10 text-rose-300 rounded-lg text-xs">檢視</button>${canModifyEMS(r)?`<button onclick="openEMSReportModal('${key}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs">編輯</button><button onclick="deleteEMSReport('${key}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button>`:''}${currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire')))?`<button onclick="openRemarkModal('emsReports','${key}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs">高層批示</button>`:''}</div>`;c.appendChild(card);});}
 
         function renderFireReports() {
-            const container = document.getElementById('fire-reports-list');
-            const input = document.getElementById('search-fire-report');
-            const queryVal = input ? input.value.trim().toLowerCase() : '';
-            if (!container) return;
-
-            container.innerHTML = '';
-            const filtered = appData.fireReports.filter(r => {
-                if (!queryVal) return true;
-                const caseId = String(r.caseId || '').toLowerCase();
-                const title = String(r.title || '').toLowerCase();
-                const authorId = String(r.authorId || '').toLowerCase();
-                const authorName = String(r.authorName || '').toLowerCase();
-                return caseId.includes(queryVal) || title.includes(queryVal) || authorId.includes(queryVal) || authorName.includes(queryVal);
-            });
-
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">沒有找到符合條件的消防案件紀錄。</div>`;
-                return;
-            }
-
-            filtered.forEach(r => {
-                const card = document.createElement('div');
-                card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hover:border-slate-700 transition";
-                card.innerHTML = `
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
-                        <div class="flex items-center space-x-3 min-w-0">
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 font-mono shrink-0">${r.caseId}</span>
-                            <h4 class="text-base font-bold text-white truncate">${r.title}</h4>
-                        </div>
-                        <span class="text-xs text-slate-400 shrink-0">${r.time}</span>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60">
-                        <div><span class="text-slate-500 block">填寫隊員</span><span class="font-medium text-slate-200">${r.authorName} (${r.authorId})</span></div>
-                        <div><span class="text-slate-500 block">長官批示</span><span class="font-medium text-slate-300">${getLatestRemarkText(r)}</span></div>
-                    </div>
-                    <p class="text-sm text-slate-300 line-clamp-2">${r.content}</p>
-                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
-                        <button type="button" onclick="viewReportDetail('fire', '${r.caseId}')" class="text-xs text-red-400 hover:text-red-300 font-semibold flex items-center justify-center space-x-1 px-3 py-2 rounded-lg hover:bg-red-500/10 transition min-h-[44px]">
-                            <i class="fa-solid fa-eye mr-1"></i><span>檢視詳細內容與影片</span>
-                        </button>
-                        <div class="mobile-report-actions flex flex-wrap items-center gap-2">
-                            ${canModifyReport(r, 'fire') ? `<button type="button" onclick="openEditReportModal('fire', '${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition min-h-[44px]"><i class="fa-solid fa-pen mr-1"></i>編輯</button>` : ''}
-                            ${canModifyReport(r, 'fire') ? `<button type="button" onclick="deleteReport('fire', '${r.caseId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition min-h-[44px]"><i class="fa-solid fa-trash mr-1"></i>刪除</button>` : ''}
-                            ${canRemarkReport('fire') ? `<button type="button" onclick="openRemarkModal('fireReports', '${r.caseId}')" class="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs transition min-h-[44px]"><i class="fa-solid fa-pen-nib mr-1"></i>批示備註</button>` : ''}
-                        </div>
-                    </div>
-                `;
+            const container=document.getElementById('fire-reports-list');
+            const query=(document.getElementById('search-fire-report')?.value||'').trim().toLowerCase();
+            if(!container)return;
+            container.innerHTML='';
+            const filtered=(appData.fireReports||[]).filter(r=>!query||[r.caseId,r.title,r.authorId,r.authorName,r.registeredByAccount].some(v=>String(v||'').toLowerCase().includes(query)));
+            if(!filtered.length){container.innerHTML='<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">沒有找到符合條件的消防案件紀錄。</div>';return;}
+            filtered.forEach(r=>{
+                const card=document.createElement('div');
+                card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hover:border-slate-700 transition';
+                card.innerHTML=`<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex items-center space-x-3 min-w-0"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 font-mono shrink-0">${r.caseId||'--'}</span><h4 class="text-base font-bold text-white truncate">${r.title||'未命名案件'}</h4></div><span class="text-xs text-slate-400 shrink-0">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">填寫隊員</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div><div><span class="text-slate-500 block">發布登記帳號</span><span class="font-mono text-cyan-400">${getRegisteredAccount(r)}</span></div><div class="sm:col-span-2"><span class="text-slate-500 block">長官批示</span><span class="font-medium text-slate-300">${getLatestRemarkText(r)}</span></div></div><p class="text-sm text-slate-300 line-clamp-2">${r.content||''}</p><div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-slate-800/80"><button type="button" onclick="viewReportDetail('fire','${r.caseId}')" class="text-xs text-red-400 hover:text-red-300 font-semibold flex items-center justify-center px-3 py-2 rounded-lg hover:bg-red-500/10 transition min-h-[44px]"><i class="fa-solid fa-eye mr-1"></i><span>檢視詳細內容與影片</span></button><div class="mobile-report-actions flex flex-wrap gap-2">${canModifyReport(r,'fire')?`<button type="button" onclick="openEditReportModal('fire','${r.caseId}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px]">編輯</button>`:''}${canModifyReport(r,'fire')?`<button type="button" onclick="deleteReport('fire','${r.caseId}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px]">刪除</button>`:''}${canRemarkReport('fire')?`<button type="button" onclick="openRemarkModal('fireReports','${r.caseId}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs min-h-[44px]">批示備註</button>`:''}</div></div>`;
                 container.appendChild(card);
             });
         }
 
         function userHasUnit(unit) { if(!currentUser) return false; if(currentUser.role==='admin') return true; return (currentUser.units||[currentUser.unit]).includes(unit); }
-        function canModifyReport(r, dept) { if(!currentUser||!r)return false; if(currentUser.role==='admin')return true; if(currentUser.role==='high')return userHasUnit(dept); return r.authorId===currentUser.account; }
+        function canModifyReport(r, dept) { if(!currentUser||!r)return false; if(currentUser.role==='admin')return true; if(currentUser.role==='high' && dept==='police' && userHasUnit('police'))return true; return String(r.registeredByAccount||r.authorId||'').toLowerCase()===String(currentUser.account||'').toLowerCase(); }
+        function canChangeReportCaseId(dept) { return !!currentUser && (currentUser.role==='admin' || (dept==='police' && currentUser.role==='high' && userHasUnit('police'))); }
+        function getRegisteredAccount(r) { return r?.registeredByAccount || r?.authorAccount || r?.authorId || '--'; }
+        function getReportVideoLinks(r) { return Array.isArray(r?.videoLinks) ? r.videoLinks.filter(Boolean) : (r?.videoLink ? [r.videoLink] : []); }
         function canRemarkReport(dept) { if(!currentUser)return false; if(currentUser.role==='admin')return true; return userHasUnit(dept)&&(currentUser.role==='high'||currentUser.role==='senior'); }
         function canManageClockRecords(){ return !!currentUser&&currentUser.role==='admin'; }
 
         function viewReportDetail(dept, caseId) {
-            const list = dept === 'police' ? appData.policeReports : appData.fireReports;
-            const r = list.find(x => x.caseId === caseId);
-            if (!r) return;
-
-            document.getElementById('detail-case-badge').textContent = r.caseId;
-            document.getElementById('detail-title').textContent = r.title;
-            document.getElementById('detail-author').textContent = `${r.authorName} (${r.authorId})`;
-            document.getElementById('detail-suspect-name').textContent = r.suspectName || '--';
-            document.getElementById('detail-suspect-id').textContent = r.suspectId || '--'; document.getElementById('detail-suspect-vehicle').textContent = r.suspectVehicle || '--';
-            document.getElementById('detail-suspect-name-wrap').classList.toggle('hidden', dept !== 'police');
-            document.getElementById('detail-suspect-id-wrap').classList.toggle('hidden', dept !== 'police'); document.getElementById('detail-suspect-vehicle-wrap').classList.toggle('hidden', dept !== 'police');
-            document.getElementById('detail-time').textContent = r.time;
-            document.getElementById('detail-content').textContent = r.content;
-            const detailRemarkEl = document.getElementById('detail-remark');
-            const remarks = getReportRemarks(r);
-            detailRemarkEl.innerHTML = remarks.length ? remarks.map(x => `<div class="mb-2 last:mb-0"><span class="text-amber-400 font-semibold">${x.authorName || '長官'}</span><span class="text-slate-500"> ${x.time || formatDateTime(x.timestamp)}</span><div class="mt-1 text-slate-300 whitespace-pre-wrap">${x.text || ''}</div></div>`).join('') : '尚未有長官批示。';
-
-            const actionBar = document.getElementById('detail-action-bar');
-            if (actionBar) {
-                const actions = [];
-                if (canModifyReport(r, dept)) actions.push(`<button type="button" onclick="openEditReportModal('${dept}', '${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs"><i class="fa-solid fa-pen mr-1"></i>編輯案件</button>`);
-                if (canModifyReport(r, dept)) actions.push(`<button type="button" onclick="deleteReport('${dept}', '${r.caseId}'); closeModal('modal-report-detail')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs"><i class="fa-solid fa-trash mr-1"></i>刪除案件</button>`);
-                if (canRemarkReport(dept)) actions.push(`<button type="button" onclick="openRemarkModal('${dept === 'police' ? 'policeReports' : 'fireReports'}', '${r.caseId}')" class="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs"><i class="fa-solid fa-pen-nib mr-1"></i>新增長官批示</button>`);
-                actionBar.innerHTML = actions.join('');
+            const list=dept==='police'?appData.policeReports:appData.fireReports;
+            const r=list.find(x=>x.caseId===caseId);
+            if(!r){showToast('找不到案件資料。','error','資料不存在');return;}
+            document.getElementById('detail-case-badge').textContent=r.caseId||caseId;
+            document.getElementById('detail-title').textContent=r.title||'未命名案件';
+            document.getElementById('detail-author').textContent=`${r.authorName||'--'} (${r.authorId||'--'})`;
+            const reg=document.getElementById('detail-registered-account'); if(reg)reg.textContent=getRegisteredAccount(r);
+            document.getElementById('detail-suspect-name').textContent=r.suspectName||'--';
+            document.getElementById('detail-suspect-id').textContent=r.suspectId||'--';
+            document.getElementById('detail-suspect-vehicle').textContent=r.suspectVehicle||'--';
+            document.getElementById('detail-suspect-name-wrap').classList.toggle('hidden',dept!=='police');
+            document.getElementById('detail-suspect-id-wrap').classList.toggle('hidden',dept!=='police');
+            document.getElementById('detail-suspect-vehicle-wrap').classList.toggle('hidden',dept!=='police');
+            const extra=document.getElementById('detail-police-extra-wrap');
+            if(extra){extra.classList.toggle('hidden',dept!=='police');}
+            if(dept==='police'){
+                document.getElementById('detail-postal-code').textContent=r.postalCode||'未填';
+                document.getElementById('detail-command').textContent=r.command||'未填';
+                document.getElementById('detail-support-units').textContent=(r.supportUnits||[]).join('、')||'無';
             }
+            document.getElementById('detail-time').textContent=r.time||formatDateTime(r.timestamp);
+            document.getElementById('detail-content').textContent=r.content||'';
+            const remarks=getReportRemarks(r),detailRemarkEl=document.getElementById('detail-remark');
+            detailRemarkEl.innerHTML=remarks.length?remarks.map(x=>`<div class="mb-3 last:mb-0"><div><span class="text-amber-400 font-semibold">${x.authorName||'長官'}</span><span class="text-slate-500 ml-2">${x.time||formatDateTime(x.timestamp)}</span></div><div class="mt-1 text-slate-300 whitespace-pre-wrap">${x.text||''}</div></div>`).join(''):'尚未有長官批示。';
 
-            const vidWrap = document.getElementById('detail-video-wrapper');
-            const vidLink = document.getElementById('detail-video-link');
-            if (r.videoLink) {
-                vidWrap.classList.remove('hidden');
-                vidLink.href = r.videoLink;
-            } else {
-                vidWrap.classList.add('hidden');
-            }
+            const links=getReportVideoLinks(r),vidWrap=document.getElementById('detail-video-wrapper'),vidBox=document.getElementById('detail-video-links');
+            if(links.length){vidWrap.classList.remove('hidden');vidBox.innerHTML=links.map((url,i)=>`<a href="${url}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-xs text-blue-400 hover:text-blue-300 hover:underline"><i class="fa-solid fa-video"></i><span>開啟影片 ${i+1}</span></a>`).join('');}
+            else{vidWrap.classList.add('hidden');vidBox.innerHTML='';}
 
+            const actionBar=document.getElementById('detail-action-bar');
+            if(actionBar){const actions=[];if(canModifyReport(r,dept))actions.push(`<button type="button" onclick="openEditReportModal('${dept}','${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-pen mr-1"></i>編輯案件</button>`);if(canModifyReport(r,dept))actions.push(`<button type="button" onclick="deleteReport('${dept}','${r.caseId}');closeModal('modal-report-detail')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-trash mr-1"></i>刪除案件</button>`);if(canRemarkReport(dept))actions.push(`<button type="button" onclick="openRemarkModal('${dept==='police'?'policeReports':'fireReports'}','${r.caseId}')" class="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-pen-nib mr-1"></i>新增長官批示</button>`);actionBar.innerHTML=actions.join('');}
             document.getElementById('modal-report-detail').classList.remove('hidden');
         }
 
@@ -2463,44 +2290,27 @@
         }
 
         function openEditReportModal(dept, caseId) {
-            const list = dept === 'police' ? appData.policeReports : appData.fireReports;
-            const r = list.find(x => x.caseId === caseId);
-            if (!r) return;
-            if (!canModifyReport(r, dept)) {
-                showToast('權限不足：只有高層、管理處或案件發布者可以編輯。', 'warning', '權限不足');
-                return;
-            }
-
-            document.getElementById('edit-type').value = `${dept}-report`;
-            document.getElementById('edit-id-key').value = caseId;
-            document.getElementById('edit-modal-title').textContent = `編輯案件報告 (${caseId})`;
-
-            const container = document.getElementById('edit-fields-container');
-            container.innerHTML = `
+            const list=dept==='police'?appData.policeReports:appData.fireReports;
+            const r=list.find(x=>x.caseId===caseId);
+            if(!r)return;
+            if(!canModifyReport(r,dept)){showToast('權限不足：只有高層、管理處或案件發布者可以編輯。','warning','權限不足');return;}
+            document.getElementById('edit-type').value=`${dept}-report`;
+            document.getElementById('edit-id-key').value=caseId;
+            document.getElementById('edit-modal-title').textContent=`編輯${dept==='police'?'警察':'消防'}案件報告 (${caseId})`;
+            const canChangeId=canChangeReportCaseId(dept);
+            const videos=getReportVideoLinks(r);
+            const container=document.getElementById('edit-fields-container');
+            container.innerHTML=`
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題</label>
-                    <input type="text" id="edit-rep-title" value="${r.title}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件編號</label>
+                    <input id="edit-rep-case-id" value="${r.caseId||caseId}" ${canChangeId?'':'readonly'} class="w-full bg-slate-950 ${canChangeId?'':'opacity-60 cursor-not-allowed'} border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono">
+                    ${canChangeId?'<p class="text-[11px] text-amber-400 mt-1">僅管理中心與警察高層可修改案件編號。</p>':''}
                 </div>
-                ${dept === 'police' ? `
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯姓名</label>
-                        <input type="text" id="edit-rep-sname" value="${r.suspectName || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">身分證件 ID</label>
-                        <input type="text" id="edit-rep-sid" value="${r.suspectId || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono">
-                    </div><div class="sm:col-span-2"><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑人車輛</label><input type="text" id="edit-rep-vehicle" value="${r.suspectVehicle || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div>
-                </div>` : ''}
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細經過</label>
-                    <textarea id="edit-rep-content" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500">${r.content}</textarea>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">影片連結</label>
-                    <input type="url" id="edit-rep-video" value="${r.videoLink || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
-                </div>
-            `;
+                <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題</label><input id="edit-rep-title" value="${r.title||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div>
+                ${dept==='police'?`<div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯姓名</label><input id="edit-rep-sname" value="${r.suspectName||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">身分證件 ID</label><input id="edit-rep-sid" value="${r.suspectId||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div><div class="sm:col-span-2"><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑人車輛</label><input id="edit-rep-vehicle" value="${r.suspectVehicle||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件地點郵遞區號</label><input id="edit-rep-postal" value="${r.postalCode||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件指揮</label><input id="edit-rep-command" value="${r.command||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">支援單位（可複選）</label><details class="bg-slate-950 border border-slate-800 rounded-xl"><summary class="cursor-pointer px-4 py-3 text-sm text-slate-300">編輯支援單位</summary><div id="edit-support-units" class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border-t border-slate-800">${['偵查隊','霹靂小組','海巡署北部分署第八岸巡隊','交通分隊','新莊分局','消防局第二救災救護大隊'].map(u=>`<label class="flex items-center gap-2 min-h-[44px] p-2 border border-slate-800 rounded-lg"><input type="checkbox" name="edit-support-unit" value="${u}" ${(r.supportUnits||[]).includes(u)?'checked':''}><span class="text-xs">${u}</span></label>`).join('')}</div></details></div>`:''}
+                ${dept==='fire'?'':''}
+                <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細經過</label><textarea id="edit-rep-content" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white">${r.content||''}</textarea></div>
+                <div class="space-y-2"><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">相關影片連結（最多 3 部，可不填）</label>${[1,2,3].map((n,i)=>`<input type="url" id="edit-rep-video-${n}" value="${videos[i]||''}" placeholder="影片連結 ${n}（可留空）" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">`).join('')}</div>`;
             document.getElementById('modal-edit').classList.remove('hidden');
         }
 
@@ -2580,108 +2390,52 @@
         }
 
         async function submitEdit() {
-            const editType = document.getElementById('edit-type').value;
-            const idKey = document.getElementById('edit-id-key').value;
+            const editType=document.getElementById('edit-type').value;
+            const idKey=document.getElementById('edit-id-key').value;
 
-            if (editType.endsWith('-clock')) { const dept=editType.split('-')[0],list=dept==='police'?appData.policeClocks:appData.fireClocks,c=list.find(x=>String(x.docId||x.id)===String(idKey)); if(!canManageClockRecords()||!c)return; c.account=document.getElementById('edit-clock-account').value.trim(); c.name=document.getElementById('edit-clock-name').value.trim(); c.status=document.getElementById('edit-clock-status').value.trim(); c.vehicle=document.getElementById('edit-clock-vehicle').value.trim(); c.time=document.getElementById('edit-clock-time').value.trim(); c.remark=document.getElementById('edit-clock-remark').value.trim(); try{await fm.updateDoc(fm.doc(db,dept==='police'?'policeClocks':'fireClocks',c.docId||c.id),{account:c.account,name:c.name,status:c.status,vehicle:c.vehicle,time:c.time,remark:c.remark});await logAdminAction('編輯打卡紀錄',`${dept}:${c.docId||c.id}`);closeModal('modal-edit');dept==='police'?renderPoliceClocks():renderFireClocks();showToast('打卡紀錄已更新。','success','更新成功');}catch(e){showToast('更新失敗：'+e.message,'error','操作失敗');} return; }
-
-            if (editType === 'punishment') {
-                const p = appData.policePunishments.find(x => String(x.id || '') === String(idKey) || String(x.docId || '') === String(idKey));
-                if (!p) return;
-                if (!canModifyPunishment(p)) {
-                    showToast('權限不足：只有警察高層、管理處或該筆獎懲發布者可以修改。', 'warning', '權限不足');
-                    return;
-                }
-
-                const memberId = document.getElementById('edit-punish-member-id').value.trim();
-                const memberAcc = document.getElementById('edit-punish-member').value;
-                const type = document.getElementById('edit-punish-type').value;
-                const item = document.getElementById('edit-punish-item').value;
-                const department = document.getElementById('edit-punish-department').value.trim();
-                const authorName = document.getElementById('edit-punish-author-name').value.trim();
-                const authorPos = document.getElementById('edit-punish-author-pos').value.trim();
-                const reason = document.getElementById('edit-punish-reason').value.trim();
-
-                if (!memberId || !authorName || !reason) {
-                    showToast('請完整填寫獎懲資訊！', 'error', '資料不完整');
-                    return;
-                }
-
-                const foundU = appData.users.find(u => u.account === (memberAcc || memberId));
-                p.memberId = memberId;
-                p.memberName = foundU ? foundU.name : (p.memberName || '未知員警');
-                p.type = type;
-                p.item = item;
-                p.department = department;
-                p.authorName = authorName;
-                p.authorPos = authorPos;
-                p.reason = reason;
-
-                try {
-                    await fm.updateDoc(fm.doc(db, 'policePunishments', p.docId || p.id), {
-                        memberId: p.memberId,
-                        memberName: p.memberName,
-                        type: p.type,
-                        item: p.item,
-                        department: p.department,
-                        authorName: p.authorName,
-                        authorPos: p.authorPos,
-                        reason: p.reason,
-                        updatedAt: Date.now(),
-                        updatedBy: currentUser ? currentUser.account : ''
-                    });
-                    await logAdminAction('編輯警用獎懲', p.id);
-                    closeModal('modal-edit');
-                    renderPolicePunishments();
-                    updateAccessLocks();
-                    showToast('警用獎懲修改已成功儲存。', 'success', '修改成功');
-                } catch (e) {
-                    showToast('更新失敗：' + e.message, 'error', '修改失敗');
-                }
+            if(editType.endsWith('-clock')){
+                const dept=editType.split('-')[0],list=dept==='police'?appData.policeClocks:appData.fireClocks,c=list.find(x=>String(x.docId||x.id)===String(idKey));
+                if(!canManageClockRecords()||!c){showToast('管理處權限不足。','warning','權限不足');return;}
+                c.account=document.getElementById('edit-clock-account').value.trim();c.name=document.getElementById('edit-clock-name').value.trim();c.status=document.getElementById('edit-clock-status').value.trim();c.vehicle=document.getElementById('edit-clock-vehicle').value.trim();c.time=document.getElementById('edit-clock-time').value.trim();c.remark=document.getElementById('edit-clock-remark').value.trim();
+                try{await fm.updateDoc(fm.doc(db,dept==='police'?'policeClocks':'fireClocks',c.docId||c.id),{account:c.account,name:c.name,status:c.status,vehicle:c.vehicle,time:c.time,remark:c.remark});await logAdminAction('編輯打卡紀錄',`${dept}:${c.docId||c.id}`);closeModal('modal-edit');dept==='police'?renderPoliceClocks():renderFireClocks();showToast('打卡紀錄已更新。','success','更新成功');}catch(e){showToast('更新失敗：'+e.message,'error','操作失敗');}
                 return;
             }
 
-            if (editType.includes('report')) {
-                const dept = editType.split('-')[0];
-                const list = dept === 'police' ? appData.policeReports : appData.fireReports;
-                const r = list.find(x => x.caseId === idKey);
-                if (!r) return;
-                if (!canModifyReport(r, dept)) {
-                    showToast('權限不足：只有高層、管理處或案件發布者可以編輯。', 'warning', '權限不足');
-                    return;
-                }
+            if(editType==='punishment'){
+                const p=(appData.policePunishments||[]).find(x=>String(x.id||'')===String(idKey)||String(x.docId||'')===String(idKey));if(!p)return;
+                if(!canModifyPunishment(p)){showToast('權限不足：無法修改這筆獎懲。','warning','權限不足');return;}
+                const memberId=document.getElementById('edit-punish-member-id').value.trim();const memberAcc=document.getElementById('edit-punish-member').value;const type=document.getElementById('edit-punish-type').value;const items=getSelectedPunishmentItems('edit-punish-item');const department=document.getElementById('edit-punish-department').value.trim();const authorName=document.getElementById('edit-punish-author-name').value.trim();const authorPos=document.getElementById('edit-punish-author-pos').value.trim();const reason=document.getElementById('edit-punish-reason').value.trim();
+                if(!memberId||!authorName||!reason||!['reward','punishment'].includes(type)||!items.length){showToast('請完整填寫獎懲類型與至少一個獎懲項目。','warning','資料不完整');return;}
+                const foundU=appData.users.find(u=>u.account===(memberAcc||memberId));p.memberId=memberId;p.memberName=foundU?foundU.name:(p.memberName||'未知員警');p.type=type;p.items=items;p.item=items.join('、');p.department=department;p.authorName=authorName;p.authorPos=authorPos;p.reason=reason;
+                try{await fm.updateDoc(fm.doc(db,'policePunishments',p.docId||p.id),{memberId:p.memberId,memberName:p.memberName,type:p.type,items:p.items,item:p.item,department:p.department,authorName:p.authorName,authorPos:p.authorPos,reason:p.reason,updatedAt:Date.now(),updatedBy:currentUser?.account||''});await logAdminAction('編輯警用獎懲',p.id||p.docId);closeModal('modal-edit');renderPolicePunishments();updateAccessLocks();showToast('警用獎懲修改已成功儲存。','success','修改成功');}catch(e){showToast('更新失敗：'+e.message,'error','修改失敗');}
+                return;
+            }
 
-                r.title = document.getElementById('edit-rep-title').value.trim();
-                if (dept === 'police') {
-                    r.suspectName = document.getElementById('edit-rep-sname').value.trim();
-                    r.suspectId = document.getElementById('edit-rep-sid').value.trim();
-                    r.suspectVehicle = document.getElementById('edit-rep-vehicle').value.trim();
-                } else {
-                    r.suspectName = '';
-                    r.suspectId = '';
-                    r.suspectVehicle = '';
+            if(editType.includes('report')){
+                const dept=editType.split('-')[0],list=dept==='police'?appData.policeReports:appData.fireReports,r=list.find(x=>x.caseId===idKey);if(!r)return;
+                if(!canModifyReport(r,dept)){showToast('權限不足：只有高層、管理處或案件發布者可以編輯。','warning','權限不足');return;}
+                const requestedCaseId=(document.getElementById('edit-rep-case-id')?.value||r.caseId).trim();
+                const nextCaseId=canChangeReportCaseId(dept)?requestedCaseId:r.caseId;
+                if(!/^REP-\d{11,}$/.test(nextCaseId)){showToast('案件編號格式錯誤，請使用 REP-西元年月日＋當日流水號。','warning','案件編號錯誤');return;}
+                if(nextCaseId!==r.caseId){
+                    const duplicate=[...(appData.policeReports||[]),...(appData.fireReports||[])].some(x=>x.caseId===nextCaseId&&x.caseId!==r.caseId);
+                    if(duplicate){showToast('新的案件編號已存在，請重新輸入。','warning','案件編號重複');return;}
                 }
-                r.content = document.getElementById('edit-rep-content').value.trim();
-                r.videoLink = document.getElementById('edit-rep-video').value.trim();
-
-                const collectionName = dept === 'police' ? 'policeReports' : 'fireReports';
-                try {
-                    await fm.updateDoc(fm.doc(db, collectionName, idKey), {
-                        title: r.title,
-                        suspectName: r.suspectName,
-                        suspectId: r.suspectId,
-                        suspectVehicle: r.suspectVehicle || '',
-                        content: r.content,
-                        videoLink: r.videoLink
-                    });
-                    logAdminAction('編輯案件報告', idKey);
-                    closeModal('modal-edit');
-                    if (dept === 'police') renderPoliceReports();
-                    else renderFireReports();
-                    alert('修改已成功儲存！');
-                } catch (e) {
-                    alert('更新失敗：' + e.message);
-                }
+                r.title=document.getElementById('edit-rep-title').value.trim();r.content=document.getElementById('edit-rep-content').value.trim();
+                if(dept==='police'){r.suspectName=document.getElementById('edit-rep-sname').value.trim();r.suspectId=document.getElementById('edit-rep-sid').value.trim();r.suspectVehicle=document.getElementById('edit-rep-vehicle').value.trim();r.postalCode=document.getElementById('edit-rep-postal')?.value.trim()||'';r.command=document.getElementById('edit-rep-command')?.value.trim()||'';r.supportUnits=Array.from(document.querySelectorAll('#edit-support-units input[name="edit-support-unit"]:checked')).map(cb=>cb.value);}else{r.suspectName='';r.suspectId='';r.suspectVehicle='';}
+                r.videoLinks=[1,2,3].map(n=>document.getElementById(`edit-rep-video-${n}`)?.value.trim()).filter(Boolean);r.videoLink=r.videoLinks[0]||'';
+                try{
+                    const collectionName=dept==='police'?'policeReports':'fireReports';
+                    const payload={caseId:nextCaseId,title:r.title,content:r.content,suspectName:r.suspectName,suspectId:r.suspectId,suspectVehicle:r.suspectVehicle||'',postalCode:r.postalCode||'',command:r.command||'',supportUnits:r.supportUnits||[],videoLinks:r.videoLinks||[],videoLink:r.videoLink||'',registeredByAccount:r.registeredByAccount||r.authorAccount||currentUser.account,registeredByName:r.registeredByName||r.authorName||currentUser.name};
+                    if(nextCaseId!==r.caseId){
+                        await fm.setDoc(fm.doc(db,collectionName,nextCaseId),{...r,...payload});
+                        await fm.deleteDoc(fm.doc(db,collectionName,r.docId||r.caseId));
+                        r.caseId=nextCaseId;r.docId=nextCaseId;
+                    }else{
+                        await fm.updateDoc(fm.doc(db,collectionName,r.docId||r.caseId),payload);
+                    }
+                    await logAdminAction('編輯案件報告',nextCaseId);closeModal('modal-edit');dept==='police'?renderPoliceReports():renderFireReports();showToast('案件修改已成功儲存。','success','修改成功');
+                }catch(e){showToast('更新失敗：'+e.message,'error','修改失敗');}
             }
         }
 
@@ -2835,6 +2589,19 @@
             return true;
         }
 
+        function getDeviceInfo(){const n=window.navigator||{};const sc=window.screen||{};return {userAgent:n.userAgent||'',platform:n.platform||'',language:n.language||'',languages:Array.isArray(n.languages)?n.languages.join(', '):'',screen:`${sc.width||0}x${sc.height||0}`,touchPoints:n.maxTouchPoints||0,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||''};}
+        function getDeviceLabel(d){const ua=String(d?.userAgent||'');const browser=/Edg\//.test(ua)?'Edge':/Chrome\//.test(ua)?'Chrome':/Firefox\//.test(ua)?'Firefox':/Safari\//.test(ua)&&!/Chrome\//.test(ua)?'Safari':'其他';const os=/Windows/.test(ua)?'Windows':/Android/.test(ua)?'Android':/(iPhone|iPad|iPod)/.test(ua)?'iOS':/Mac OS/.test(ua)?'macOS':/Linux/.test(ua)?'Linux':'其他';return `${os} / ${browser}`;}
+        async function recordLoginSession(user){if(!user||!fm||!db)return;const now=Date.now(),device=getDeviceInfo(),id=`LOGIN-${String(user.account).replace(/[^a-zA-Z0-9_-]/g,'_')}-${now}`,session={id,account:user.account,name:user.name,loginAt:now,time:formatDateTime(now),device};try{await fm.setDoc(fm.doc(db,'loginSessions',id),session);await fm.updateDoc(fm.doc(db,'users',user.docId||user.account),{online:true,lastSeen:now,lastLoginAt:now,lastDevice:device});user.online=true;user.lastSeen=now;user.lastLoginAt=now;user.lastDevice=device;appData.loginSessions.unshift({docId:id,...session});}catch(e){console.warn('login audit',e);}}
+        async function updateCurrentUserPresence(online){if(!currentUser||!fm||!db)return;const now=Date.now();currentUser.online=!!online;currentUser.lastSeen=online?now:0;try{await fm.updateDoc(fm.doc(db,'users',currentUser.docId||currentUser.account),{online:!!online,lastSeen:online?now:0});}catch(e){}}
+        function isUserOnline(u){return !!u?.online&&Number(u.lastSeen||0)>0&&(Date.now()-Number(u.lastSeen))<90000;}
+        function startAdminPresenceRefresh(){clearInterval(window.__adminPresenceTimer);window.__adminPresenceTimer=setInterval(()=>{if(currentUser&&currentUser.role==='admin'&&!document.getElementById('tab-admin')?.classList.contains('hidden'))renderAdminOnlineUsers();},15000);}
+        function stopAdminPresenceRefresh(){clearInterval(window.__adminPresenceTimer);window.__adminPresenceTimer=null;}
+function renderAdminOnlineUsers(){const c=document.getElementById('admin-online-list');if(!c)return;c.innerHTML=(appData.users||[]).map(u=>{const on=isUserOnline(u);return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between"><div><b class="text-white">${u.name||'--'}</b><div class="text-xs text-slate-500 font-mono">${u.account}${u.staffNumber?`／${u.staffNumber}`:''}</div></div><span class="px-3 py-1 rounded-full text-xs ${on?'bg-emerald-500/10 text-emerald-400':'bg-slate-800 text-slate-400'}">● ${on?'在線':'離線'}</span></div>`;}).join('');}
+        function renderAdminDevices(){const t=document.getElementById('admin-devices-tbody');if(!t)return;const since=Date.now()-7*24*60*60*1000,rows=(appData.loginSessions||[]).filter(x=>Number(x.loginAt||0)>=since).sort((a,b)=>b.loginAt-a.loginAt);t.innerHTML=rows.length?rows.map(x=>`<tr><td class="p-3 font-mono text-white">${x.account}</td><td class="p-3 text-slate-300">${formatDateTime(x.loginAt,x.time)}</td><td class="p-3 text-slate-300">${getDeviceLabel(x.device)}</td><td class="p-3 text-slate-400 break-all max-w-md">${x.device?.userAgent||'--'}</td><td class="p-3 text-slate-400">${x.device?.screen||'--'}</td><td class="p-3 text-slate-400">${x.device?.language||'--'} / ${x.device?.timeZone||'--'}</td></tr>`).join(''):'<tr><td colspan="6" class="p-6 text-center text-slate-500">最近一週尚無登入裝置紀錄。</td></tr>';}
+        async function submitFeedback(){if(!currentUser){showToast('請先登入後再回報。','warning','需要登入');return;}const subject=document.getElementById('feedback-subject').value.trim(),details=document.getElementById('feedback-details').value.trim();if(!subject||!details){showToast('請填寫主旨與詳細資訊。','error','資料不完整');return;}const now=Date.now(),id=`FB-${now}`,obj={id,subject,details,account:currentUser.account,name:currentUser.name,staffNumber:currentUser.staffNumber||'',time:formatDateTime(now),timestamp:now,status:'未處理'};try{await fm.setDoc(fm.doc(db,'feedbackReports',id),obj);appData.feedbackReports.unshift({docId:id,...obj});closeModal('modal-feedback');showToast('回報已送至管理中心。','success','回報成功');renderAdminFeedback();}catch(e){showToast('回報送出失敗：'+e.message,'error','操作失敗');}}
+        function openFeedbackModal(){if(!currentUser){showToast('請先登入後再回報。','warning','需要登入');return;}document.getElementById('feedback-account-preview').textContent=`${currentUser.name} (${currentUser.account})`;document.getElementById('modal-feedback').classList.remove('hidden');}
+        function renderAdminFeedback(){const c=document.getElementById('admin-feedback-list');if(!c)return;const rows=(appData.feedbackReports||[]).sort((a,b)=>b.timestamp-a.timestamp);c.innerHTML=rows.length?rows.map(r=>`<div class="bg-slate-900 border border-slate-800 rounded-2xl p-5"><div class="flex justify-between"><h4 class="font-bold text-white">${r.subject||'無主旨'}</h4><span class="text-xs text-slate-500">${formatDateTime(r.timestamp,r.time)}</span></div><div class="text-xs text-cyan-400 font-mono mt-2">${r.name||'--'} (${r.account||'--'})${r.staffNumber?`／${r.staffNumber}`:''}</div><div class="mt-3 bg-slate-950 rounded-xl p-4 text-sm text-slate-300 whitespace-pre-wrap">${r.details||''}</div></div>`).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">目前沒有回報內容。</div>';}
+
         function renderAdminUsers() {
             const tbody = document.getElementById('admin-users-tbody');
             if (!tbody) return;
@@ -2849,6 +2616,7 @@
                 tr.className = "hover:bg-slate-800/40 transition";
                 tr.innerHTML = `
                     <td class="p-4 font-mono font-bold text-white">${u.account}</td>
+                    <td class="p-4 font-mono text-cyan-400">${u.staffNumber||'--'}</td>
                     <td class="p-4 text-slate-200">${u.name}</td>
                     <td class="p-4 text-slate-300">${unitNames}</td>
                     <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : u.role === 'high' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : u.role === 'senior' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${roleText}</span></td>
@@ -2868,13 +2636,13 @@
             }
             document.getElementById('new-user-account').value = '';
             document.getElementById('new-user-name').value = '';
-            document.getElementById('new-user-password').value = '';
+            document.getElementById('new-user-password').value = ''; document.getElementById('new-user-staff-number').value = '';
             document.querySelectorAll('input[name="new-user-units"]').forEach(cb => cb.checked = false); document.getElementById('new-user-role').value='normal'; document.getElementById('new-user-police-division').value=''; document.getElementById('new-user-fire-division').value=''; syncUnitDivisionVisibility('new'); document.getElementById('modal-create-user').classList.remove('hidden');
         }
 
             async function submitNewUser() {
             if (!currentUser || currentUser.role !== 'admin') { showToast('只有最高管理員可以建立帳號。','warning','權限不足'); return; }
-            const account=document.getElementById('new-user-account').value.trim(), name=document.getElementById('new-user-name').value.trim(), pass=document.getElementById('new-user-password').value.trim(), role=document.getElementById('new-user-role').value;
+            const account=document.getElementById('new-user-account').value.trim(), name=document.getElementById('new-user-name').value.trim(), pass=document.getElementById('new-user-password').value.trim(), role=document.getElementById('new-user-role').value, staffNumber=document.getElementById('new-user-staff-number')?.value.trim()||'';
             const units=Array.from(document.querySelectorAll('input[name="new-user-units"]:checked')).map(x=>x.value);
             const policeDivision=document.getElementById('new-user-police-division').value, fireDivision=document.getElementById('new-user-fire-division').value;
             if (!account || !name || !pass || !units.length) { showToast('請完整填寫帳號、名稱、密碼並至少勾選一個單位。','error','資料不完整'); return; }
@@ -2882,7 +2650,7 @@
             if (isSuperAdminAccount(account)) { showToast('Dsuensx 為系統最高權限保護帳號。','warning','操作受限'); return; }
             if (!validateUnitSelections(units,policeDivision,fireDivision)) return;
             if (appData.users.some(u=>String(u.account).toLowerCase()===account.toLowerCase())) { showToast('此帳號／編號已存在。','warning','帳號重複'); return; }
-            const u={account,name,pass,role,units,policeDivision:units.includes('police')?policeDivision:'',fireDivision:units.includes('fire')?fireDivision:''};
+            const u={account,name,pass,role,units,staffNumber,policeDivision:units.includes('police')?policeDivision:'',fireDivision:units.includes('fire')?fireDivision:''};
             try { await fm.setDoc(fm.doc(db,'users',account),u); appData.users.push(u); closeModal('modal-create-user'); renderAdminUsers(); populateMemberSelects(); showToast('新公職帳號建立成功。','success','建立成功'); }
             catch(e){ showToast('建立失敗：'+e.message,'error','操作失敗'); }
         }
@@ -2903,7 +2671,7 @@
             document.getElementById('edit-user-account-input').value = u.account;
             document.getElementById('edit-user-name-input').value = u.name;
             document.getElementById('edit-user-role-input').value = u.role;
-            document.getElementById('edit-user-password-input').value = '';
+            document.getElementById('edit-user-password-input').value = ''; document.getElementById('edit-user-staff-number-input').value = u.staffNumber || ''; const ea=document.getElementById('edit-user-account-input'); if(ea){ea.readOnly=u.role==='admin';ea.classList.toggle('opacity-60',u.role==='admin');}
 
             const units = u.units || [u.unit];
             document.querySelectorAll('input[name="edit-user-units"]').forEach(cb => { cb.checked = units.includes(cb.value); }); document.getElementById('edit-user-police-division').value=u.policeDivision||''; document.getElementById('edit-user-fire-division').value=u.fireDivision||''; syncUnitDivisionVisibility('edit');
@@ -2916,16 +2684,17 @@
             if (!currentUser || currentUser.role!=='admin') { showToast('只有最高管理員可以修改帳號資料。','warning','權限不足'); return; }
             if (superTarget && !superOperator) { showToast('Dsuensx 最高權限帳號受到保護，僅本人可以修改。','warning','權限不足'); return; }
             let account=document.getElementById('edit-user-account-input').value.trim(), name=document.getElementById('edit-user-name-input').value.trim(), role=document.getElementById('edit-user-role-input').value;
-            const pass=document.getElementById('edit-user-password-input').value.trim();
+            const pass=document.getElementById('edit-user-password-input').value.trim(); const staffNumber=document.getElementById('edit-user-staff-number-input')?.value.trim()||'';
             let units=Array.from(document.querySelectorAll('input[name="edit-user-units"]:checked')).map(x=>x.value);
             const policeDivision=document.getElementById('edit-user-police-division').value || '新莊分局', fireDivision=document.getElementById('edit-user-fire-division').value;
             if (superTarget) { account='Dsuensx'; role='admin'; units=['admin','police']; }
+            if (appData.users.find(x=>x.account===origAccount)?.role==='admin' || role==='admin') account=origAccount;
             if (!account || !name || !units.length) { showToast('請完整填寫帳號、名稱並至少勾選一個單位。','error','資料不完整'); return; }
             if (units.length>2 && !superTarget) { showToast('每個帳號最多只能勾選兩個單位。','warning','資料不符合'); return; }
             if (!validateUnitSelections(units,policeDivision,fireDivision)) return;
             const u=appData.users.find(x=>x.account===origAccount); if(!u) return;
-            u.account=account; u.name=name; u.role=role; u.units=units; u.policeDivision=units.includes('police')?policeDivision:''; u.fireDivision=units.includes('fire')?fireDivision:''; if(pass)u.pass=pass; if(superTarget)u.protected=true;
-            try { const docId=u.docId||origAccount; if(!superTarget&&origAccount!==account) await fm.deleteDoc(fm.doc(db,'users',docId)); await fm.setDoc(fm.doc(db,'users',superTarget?docId:account),{account:u.account,name:u.name,pass:u.pass,role:u.role,units:u.units,policeDivision:u.policeDivision||'',fireDivision:u.fireDivision||'',...(superTarget?{protected:true}:{})}); u.docId=superTarget?docId:account; if(superOperator&&superTarget)currentUser={...u}; closeModal('modal-edit-user'); renderAdminUsers(); populateMemberSelects(); updateUserBadge(); updateAccessLocks(); showToast('帳號資料更新成功。','success','操作成功'); }
+            u.account=account; u.name=name; u.role=role; u.units=units; u.staffNumber=staffNumber; u.policeDivision=units.includes('police')?policeDivision:''; u.fireDivision=units.includes('fire')?fireDivision:''; if(pass)u.pass=pass; if(superTarget)u.protected=true;
+            try { const docId=u.docId||origAccount; if(!superTarget&&origAccount!==account) await fm.deleteDoc(fm.doc(db,'users',docId)); await fm.setDoc(fm.doc(db,'users',superTarget?docId:account),{account:u.account,name:u.name,pass:u.pass,role:u.role,units:u.units,staffNumber:u.staffNumber||'',policeDivision:u.policeDivision||'',fireDivision:u.fireDivision||'',online:u.online||false,lastSeen:u.lastSeen||0,lastLoginAt:u.lastLoginAt||0,lastDevice:u.lastDevice||null,...(superTarget?{protected:true}:{})}); u.docId=superTarget?docId:account; if(superOperator&&superTarget)currentUser={...u}; closeModal('modal-edit-user'); renderAdminUsers(); populateMemberSelects(); updateUserBadge(); updateAccessLocks(); showToast('帳號資料更新成功。','success','操作成功'); }
             catch(e){ showToast('更新失敗：'+e.message,'error','操作失敗'); }
         }
 
@@ -3057,6 +2826,8 @@
             }
         }
     </script>
+
+    <div id="modal-feedback" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative"><div class="flex items-center justify-between"><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-message-exclamation text-amber-400 mr-2"></i>異常／意見回報</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-feedback"><i class="fa-solid fa-xmark text-lg"></i></button></div><div class="space-y-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">主旨</label><input id="feedback-subject" maxlength="120" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細資訊</label><textarea id="feedback-details" rows="7" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white"></textarea></div><div class="text-xs text-slate-500">回報帳號：<span id="feedback-account-preview" class="font-mono text-slate-300">--</span></div><button id="submit-feedback-btn" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl">送出回報</button></div></div></div>
 
     <footer class="mt-auto border-t border-slate-800 bg-slate-950/80">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-xs text-slate-500 space-y-2">
