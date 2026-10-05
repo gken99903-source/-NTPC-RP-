@@ -1906,49 +1906,57 @@
 
                 await ensureSuperAdminAccount();
 
-                const policeRepSnap = await fm.getDocs(fm.collection(db, 'policeReports'));
+                const safeCollectionDocs = async (collectionName) => {
+                    try {
+                        return await fm.getDocs(fm.collection(db, collectionName));
+                    } catch (err) {
+                        console.warn(`雲端集合 ${collectionName} 讀取失敗，略過本集合以避免中斷其他資料同步：`, err);
+                        return { docs: [] };
+                    }
+                };
+                const policeRepSnap = await safeCollectionDocs('policeReports');
                 appData.policeReports = policeRepSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
-                const policePendingSnap = await fm.getDocs(fm.collection(db, 'policePendingReports'));
+                const policePendingSnap = await safeCollectionDocs('policePendingReports');
                 appData.policePendingReports = policePendingSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
-                const reportNotifySnap = await fm.getDocs(fm.collection(db, 'reportNotifications'));
+                const reportNotifySnap = await safeCollectionDocs('reportNotifications');
                 appData.reportNotifications = reportNotifySnap.docs.map(d => ({ docId: d.id, ...d.data() }));
 
-                const punishSnap = await fm.getDocs(fm.collection(db, 'policePunishments'));
+                const punishSnap = await safeCollectionDocs('policePunishments');
                 appData.policePunishments = punishSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
 
-                const fireRepSnap = await fm.getDocs(fm.collection(db, 'fireReports'));
+                const fireRepSnap = await safeCollectionDocs('fireReports');
                 appData.fireReports = fireRepSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
 
-                const emsSnap = await fm.getDocs(fm.collection(db, 'emsReports'));
+                const emsSnap = await safeCollectionDocs('emsReports');
                 appData.emsReports = emsSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
 
-                const policeClockSnap = await fm.getDocs(fm.collection(db, 'policeClocks'));
+                const policeClockSnap = await safeCollectionDocs('policeClocks');
                 appData.policeClocks = policeClockSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
 
-                const fireClockSnap = await fm.getDocs(fm.collection(db, 'fireClocks'));
+                const fireClockSnap = await safeCollectionDocs('fireClocks');
                 appData.fireClocks = fireClockSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
 
-                const logsSnap = await fm.getDocs(fm.collection(db, 'adminLogs'));
+                const logsSnap = await safeCollectionDocs('adminLogs');
                 appData.adminLogs = logsSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
 
-                const sessionsSnap = await fm.getDocs(fm.collection(db, 'loginSessions'));
+                const sessionsSnap = await safeCollectionDocs('loginSessions');
                 appData.loginSessions = sessionsSnap.docs.map(d=>({docId:d.id,...d.data()}));
-                const feedbackSnap = await fm.getDocs(fm.collection(db, 'feedbackReports'));
+                const feedbackSnap = await safeCollectionDocs('feedbackReports');
                 appData.feedbackReports = feedbackSnap.docs.map(d=>({docId:d.id,...d.data()}));
 
-                const annSnap = await fm.getDocs(fm.collection(db, 'announcements'));
+                const annSnap = await safeCollectionDocs('announcements');
                 appData.announcements = annSnap.docs.map(d=>({docId:d.id,...d.data()}));
-                const blockedSnap = await fm.getDocs(fm.collection(db, 'blockedDevices'));
+                const blockedSnap = await safeCollectionDocs('blockedDevices');
                 appData.blockedDevices = blockedSnap.docs.map(d=>({docId:d.id,...d.data()}));
-                const loginFailureSnap = await fm.getDocs(fm.collection(db, 'loginFailures'));
+                const loginFailureSnap = await safeCollectionDocs('loginFailures');
                 appData.loginFailures = loginFailureSnap.docs.map(d=>({docId:d.id,...d.data()}));
-                const adminClockSnap = await fm.getDocs(fm.collection(db, 'adminClocks'));
+                const adminClockSnap = await safeCollectionDocs('adminClocks');
                 appData.adminClocks = adminClockSnap.docs.map(d=>({docId:d.id,...d.data()}));
 
-                const academyCodeSnap = await fm.getDocs(fm.collection(db, 'academyCodes'));
+                const academyCodeSnap = await safeCollectionDocs('academyCodes');
                 appData.academyCodes = academyCodeSnap.docs.map(d=>({docId:d.id,...d.data()})).filter(x=>x.code);
 
-                const memoSnap = await fm.getDocs(fm.collection(db, 'systemSettings'));
+                const memoSnap = await safeCollectionDocs('systemSettings');
                 const rulesDoc = memoSnap.docs.find(d => d.id === 'policeViolationRules');
                 if (rulesDoc && Array.isArray(rulesDoc.data().rules)) {
                     appData.policeViolationRules = rulesDoc.data().rules.map(x => [String(x.name || x[0] || ''), Number(x.minutes ?? x[1] ?? 0)]).filter(x => x[0] && Number.isFinite(x[1]));
