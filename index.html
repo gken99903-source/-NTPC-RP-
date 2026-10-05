@@ -769,6 +769,7 @@
                     <button id="academy-code-login-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3 rounded-xl text-sm font-medium">登入考核</button>
                 </div>
                 <p id="academy-code-status" class="text-xs text-slate-500 min-h-[1rem]"></p>
+                <button id="academy-code-manage-btn" type="button" class="hidden mx-auto px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs border border-slate-700"><i class="fa-solid fa-list-check mr-2"></i>管理層：查看／刪除考核代碼</button>
             </div>
 
             <div id="academy-content" class="hidden space-y-6">
@@ -781,6 +782,7 @@
                     <div class="flex items-center gap-2">
                         <span id="academy-expiry" class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-400 font-mono">代碼有效時間：--</span>
                         <button id="academy-logout-btn" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300">結束考核</button>
+                        <button id="academy-code-manage-btn-content" type="button" class="hidden px-3 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/20 text-xs text-indigo-300">代碼管理</button>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -835,6 +837,7 @@
                     <button id="btn-admin-devices" data-sub="devices" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-laptop mr-2"></i>登入裝置稽核</button>
                     <button id="btn-admin-feedback" data-sub="feedback" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-message-exclamation mr-2"></i>異常／意見回報</button>
                     <button id="btn-admin-academy" data-sub="academy" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-graduation-cap mr-2"></i>專生考核系統</button>
+                    <button id="btn-admin-jail-rules" data-sub="jail-rules" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-scale-balanced mr-2"></i>警用刑期表</button>
                 </div>
 
                 <div id="admin-sub-users" class="space-y-4">
@@ -953,7 +956,7 @@
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                                 <h3 class="text-lg font-bold text-slate-200"><i class="fa-solid fa-graduation-cap text-indigo-400 mr-2"></i>專生考核系統</h3>
-                                <p class="text-xs text-slate-500 mt-1">生成 30 分鐘臨時考核代碼。代碼不寫入 Firebase；考核案件也只留在學生瀏覽器快取。</p>
+                                <p class="text-xs text-slate-500 mt-1">生成 30 分鐘臨時考核代碼。代碼會同步保存於雲端，管理層可查看與刪除；考核案件仍只留在學生瀏覽器快取。</p>
                             </div>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5">
@@ -961,8 +964,22 @@
                             <button id="generate-academy-fire-btn" class="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-medium"><i class="fa-solid fa-fire-extinguisher mr-2"></i>生成消防考核代碼</button>
                         </div>
                     </div>
-                    <div class="text-xs text-slate-500">每種考核同時最多保留 5 個未過期代碼；可手動註銷已建立代碼。</div>
+                    <div class="text-xs text-slate-500">每種考核同時最多保留 5 個未過期代碼；管理層可查看與刪除已建立代碼。</div>
                     <div id="admin-academy-code-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                </div>
+                <div id="admin-sub-jail-rules" class="hidden space-y-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+                        <div><h3 class="text-lg font-bold text-slate-200"><i class="fa-solid fa-scale-balanced text-amber-400 mr-2"></i>警用案件刑期表</h3><p class="text-xs text-slate-500 mt-1">可直接修改既有條例、刑期，或新增自訂條例。儲存後所有新案件與編輯案件會使用最新規則。</p></div>
+                        <div id="admin-jail-rules-list" class="space-y-2"></div>
+                        <div class="border-t border-slate-800 pt-5 space-y-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <input id="new-jail-rule-name" type="text" placeholder="新增條例名稱" class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
+                                <input id="new-jail-rule-minutes" type="number" min="0" step="0.1" placeholder="監獄分鐘數" class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
+                                <button id="add-jail-rule-btn" type="button" class="bg-amber-600 hover:bg-amber-500 text-white rounded-xl px-4 py-3 text-sm font-semibold"><i class="fa-solid fa-plus mr-2"></i>新增刑期</button>
+                            </div>
+                            <button id="save-jail-rules-btn" type="button" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>儲存並更新刑期表</button>
+                        </div>
+                    </div>
                 </div>
                 <div id="admin-sub-overview" class="hidden space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1517,6 +1534,8 @@
             blockedDevices: [],
             loginFailures: [],
             adminClocks: [],
+            academyCodes: [],
+            policeViolationRules: [],
             adminMemo: ''
         };
 
@@ -1663,6 +1682,14 @@
             if (profileRefreshBtn) profileRefreshBtn.addEventListener('click', renderMyProfile);
             const academyCodeLoginBtn = document.getElementById('academy-code-login-btn');
             if (academyCodeLoginBtn) academyCodeLoginBtn.addEventListener('click', handleAcademyCodeLogin);
+            const academyCodeManageBtn = document.getElementById('academy-code-manage-btn');
+            if (academyCodeManageBtn) academyCodeManageBtn.addEventListener('click', openAcademyCodeManagement);
+            const academyCodeManageBtnContent = document.getElementById('academy-code-manage-btn-content');
+            if (academyCodeManageBtnContent) academyCodeManageBtnContent.addEventListener('click', openAcademyCodeManagement);
+            const addJailRuleBtn = document.getElementById('add-jail-rule-btn');
+            if (addJailRuleBtn) addJailRuleBtn.addEventListener('click', addJailRule);
+            const saveJailRulesBtn = document.getElementById('save-jail-rules-btn');
+            if (saveJailRulesBtn) saveJailRulesBtn.addEventListener('click', saveJailRules);
             const academyPoliceBtn = document.getElementById('academy-police-report-btn');
             if (academyPoliceBtn) academyPoliceBtn.addEventListener('click', () => openReportModal('police'));
             const academyFireBtn = document.getElementById('academy-fire-report-btn');
@@ -1882,7 +1909,19 @@
                 const adminClockSnap = await fm.getDocs(fm.collection(db, 'adminClocks'));
                 appData.adminClocks = adminClockSnap.docs.map(d=>({docId:d.id,...d.data()}));
 
+                const academyCodeSnap = await fm.getDocs(fm.collection(db, 'academyCodes'));
+                appData.academyCodes = academyCodeSnap.docs.map(d=>({docId:d.id,...d.data()})).filter(x=>x.code);
+
                 const memoSnap = await fm.getDocs(fm.collection(db, 'systemSettings'));
+                const rulesDoc = memoSnap.docs.find(d => d.id === 'policeViolationRules');
+                if (rulesDoc && Array.isArray(rulesDoc.data().rules)) {
+                    appData.policeViolationRules = rulesDoc.data().rules.map(x => [String(x.name || x[0] || ''), Number(x.minutes ?? x[1] ?? 0)]).filter(x => x[0] && Number.isFinite(x[1]));
+                }
+                if (!appData.policeViolationRules.length) {
+                    appData.policeViolationRules = POLICE_VIOLATION_DEFAULTS.map(x => [...x]);
+                    await fm.setDoc(fm.doc(db, 'systemSettings', 'policeViolationRules'), { rules: appData.policeViolationRules, updatedAt: Date.now(), updatedBy: currentUser?.account || 'system' });
+                }
+                POLICE_VIOLATION_RULES = appData.policeViolationRules.map(x => [...x]);
                 const memoDoc = memoSnap.docs.find(d => d.id === 'adminMemo');
                 if (memoDoc) {
                     appData.adminMemo = memoDoc.data().content || '';
@@ -2020,7 +2059,7 @@
             if (activeBtn) activeBtn.className = "fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white whitespace-nowrap";
         }
 
-        function switchAdminSubTab(sub){['users','announcements','clock','logs','storage','memo','overview','online','devices','feedback','academy'].forEach(x=>{document.getElementById(`admin-sub-${x}`)?.classList.add('hidden');document.getElementById(`btn-admin-${x}`)?.classList.remove('bg-purple-600','text-white');});document.getElementById(`admin-sub-${sub}`)?.classList.remove('hidden');document.getElementById(`btn-admin-${sub}`)?.classList.add('bg-purple-600','text-white');if(sub==='online')refreshAdminOnlineUsers();if(sub==='devices')renderAdminDevices();if(sub==='feedback')renderAdminFeedback();if(sub==='storage')renderAdminStorage();if(sub==='users')renderAdminUsers();if(sub==='logs')renderAdminLogs();if(sub==='academy')renderAdminAcademyCodes();if(sub==='announcements')renderAdminAnnouncements();if(sub==='clock')renderAdminClocks();}
+        function switchAdminSubTab(sub){['users','announcements','clock','logs','storage','memo','overview','online','devices','feedback','academy','jail-rules'].forEach(x=>{document.getElementById(`admin-sub-${x}`)?.classList.add('hidden');document.getElementById(`btn-admin-${x}`)?.classList.remove('bg-purple-600','text-white');});document.getElementById(`admin-sub-${sub}`)?.classList.remove('hidden');document.getElementById(`btn-admin-${sub}`)?.classList.add('bg-purple-600','text-white');if(sub==='online')refreshAdminOnlineUsers();if(sub==='devices')renderAdminDevices();if(sub==='feedback')renderAdminFeedback();if(sub==='storage')renderAdminStorage();if(sub==='users')renderAdminUsers();if(sub==='logs')renderAdminLogs();if(sub==='academy')renderAdminAcademyCodes();if(sub==='jail-rules')renderAdminJailRules();if(sub==='announcements')renderAdminAnnouncements();if(sub==='clock')renderAdminClocks();}
 
         function closeModal(modalId) {
             const m = document.getElementById(modalId);
@@ -2231,75 +2270,110 @@
             return { code, type, expiresAt };
         }
 
-        function loadAcademyCodes() {
+        async function loadAcademyCodes() {
+            let cloudRows = Array.isArray(appData.academyCodes) ? appData.academyCodes.filter(x => x && x.code) : [];
             try {
-                const rows = JSON.parse(localStorage.getItem('ntpcrp_academy_codes') || '[]');
-                return Array.isArray(rows) ? rows.filter(x => x && x.code && Number(x.expiresAt) > 0).slice(-30) : [];
-            } catch (e) { return []; }
+                if (fm && db) {
+                    const snap = await fm.getDocs(fm.collection(db, 'academyCodes'));
+                    cloudRows = snap.docs.map(d => ({docId:d.id, ...d.data()})).filter(x => x && x.code);
+                }
+            } catch (e) {}
+            let localRows = [];
+            try { localRows = JSON.parse(localStorage.getItem('ntpcrp_academy_codes') || '[]'); } catch (e) { localRows = []; }
+            const merged = [...cloudRows];
+            localRows.forEach(row => { if(row && row.code && !merged.some(x=>x.code===row.code)) merged.push(row); });
+            appData.academyCodes = merged;
+            if (fm && db && isManagementUser()) {
+                for (const row of localRows) {
+                    if (!row?.code || cloudRows.some(x=>x.code===row.code)) continue;
+                    try { await fm.setDoc(fm.doc(db,'academyCodes',row.code), row); } catch(e) {}
+                }
+            }
+            return merged.filter(x => x && x.code && Number(x.expiresAt) > 0 || x && x.code);
         }
 
         function saveAcademyCodes(rows) {
-            try { localStorage.setItem('ntpcrp_academy_codes', JSON.stringify(rows.slice(-30))); } catch (e) {}
+            appData.academyCodes = Array.isArray(rows) ? rows : [];
+            try { localStorage.setItem('ntpcrp_academy_codes', JSON.stringify(appData.academyCodes.slice(-30))); } catch (e) {}
         }
 
-        function removeAcademyCode(code, silent = false) {
-            const rows = loadAcademyCodes();
-            const next = rows.filter(x => x.code !== code);
-            saveAcademyCodes(next);
-            if (academyExamSession?.code === code) {
-                logoutAcademySession(true);
-            }
-            renderAdminAcademyCodes();
-            if (!silent) showToast('考核代碼已註銷。', 'success', '代碼已移除');
+        function isManagementUser() { return !!currentUser && ['admin','high','senior'].includes(currentUser.role); }
+
+        async function removeAcademyCode(code, silent = false) {
+            if (!isManagementUser()) { showToast('只有管理層可以刪除考核代碼。','warning','權限不足'); return; }
+            const row = (appData.academyCodes || []).find(x => x.code === code);
+            try {
+                if (fm && db) await fm.deleteDoc(fm.doc(db, 'academyCodes', code));
+                appData.academyCodes = (appData.academyCodes || []).filter(x => x.code !== code);
+                try { localStorage.setItem('ntpcrp_academy_codes', JSON.stringify(appData.academyCodes.slice(-30))); } catch(e) {}
+                if (academyExamSession?.code === code) logoutAcademySession(true);
+                renderAdminAcademyCodes();
+                renderManagementAcademyCodes();
+                if (!silent) showSubmitSuccessAnimation('代碼已移除', '專生考核代碼已成功刪除。');
+            } catch (e) { showToast('刪除考核代碼失敗：' + e.message, 'error', '操作失敗'); }
         }
 
-        function generateAcademyCode(type) {
+        async function generateAcademyCode(type) {
             if (!currentUser || currentUser.role !== 'admin') {
                 showToast('只有最高管理員可以生成專生考核代碼。', 'warning', '權限不足');
                 return;
             }
             const now = Date.now();
-            const rows = loadAcademyCodes().filter(x => Number(x.expiresAt) > now);
+            const rows = (await loadAcademyCodes()).filter(x => Number(x.expiresAt) > now);
             const activeCount = rows.filter(x => x.type === type).length;
             if (activeCount >= 5) {
-                showToast(`${type === 'police' ? '警務' : '消防'}考核代碼目前已達 5 個上限，請先註銷或等待代碼過期。`, 'warning', '已達生成上限');
+                showToast(`${type === 'police' ? '警務' : '消防'}考核代碼目前已達 5 個上限，請先刪除或等待代碼過期。`, 'warning', '已達生成上限');
                 return;
             }
             const expiresAt = now + 30 * 60 * 1000;
             const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase().padEnd(6, 'X');
             const code = `NTP-${type === 'police' ? 'P' : 'F'}-${expiresAt.toString(36).toUpperCase()}-${randomPart}-${academyChecksum(type, expiresAt, randomPart)}`;
-            rows.push({ code, type, expiresAt, createdAt: now, creator: currentUser.account });
-            saveAcademyCodes(rows);
-            renderAdminAcademyCodes();
-            try { navigator.clipboard?.writeText(code); } catch (e) {}
-            showToast(`${type === 'police' ? '警務' : '消防'}考核代碼已生成：${code}`, 'success', '考核代碼生成成功');
+            const obj = { code, type, expiresAt, createdAt: now, creator: currentUser.account };
+            try {
+                if (fm && db) await fm.setDoc(fm.doc(db, 'academyCodes', code), obj);
+                appData.academyCodes = [...(appData.academyCodes || []).filter(x => x.code !== code), {docId:code, ...obj}];
+                saveAcademyCodes(appData.academyCodes);
+                renderAdminAcademyCodes();
+                renderManagementAcademyCodes();
+                try { navigator.clipboard?.writeText(code); } catch (e) {}
+                showToast(`${type === 'police' ? '警務' : '消防'}考核代碼已生成：${code}`, 'success', '考核代碼生成成功');
+            } catch (e) { showToast('考核代碼生成失敗：' + e.message, 'error', '操作失敗'); }
         }
 
-        function renderAdminAcademyCodes() {
-            const host = document.getElementById('admin-academy-code-list');
+        function renderAcademyCodeCards(host, rows, management = false) {
             if (!host) return;
-            const rows = loadAcademyCodes().sort((a,b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
-            if (!rows.length) {
-                host.innerHTML = '<div class="md:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">目前沒有本瀏覽器產生的考核代碼。</div>';
-                return;
-            }
+            if (!rows.length) { host.innerHTML = '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">目前沒有可瀏覽的考核代碼。</div>'; return; }
             host.innerHTML = rows.map(row => {
                 const remain = Math.max(0, Number(row.expiresAt) - Date.now());
-                const mins = Math.floor(remain / 60000);
-                const secs = Math.floor((remain % 60000) / 1000);
-                const expired = remain <= 0;
+                const mins = Math.floor(remain / 60000), secs = Math.floor((remain % 60000) / 1000), expired = remain <= 0;
                 return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-                    <div class="flex items-center justify-between gap-3">
-                        <span class="text-xs font-bold ${row.type === 'police' ? 'text-blue-400' : 'text-red-400'}">${row.type === 'police' ? '警務考核' : '消防考核'}</span>
-                        <span class="text-[11px] ${expired ? 'text-rose-400' : 'text-emerald-400'}">${expired ? '已過期' : `剩餘 ${mins}分 ${String(secs).padStart(2,'0')}秒`}</span>
-                    </div>
+                    <div class="flex items-center justify-between gap-3"><span class="text-xs font-bold ${row.type === 'police' ? 'text-blue-400' : 'text-red-400'}">${row.type === 'police' ? '警務考核' : '消防考核'}</span><span class="text-[11px] ${expired ? 'text-rose-400' : 'text-emerald-400'}">${expired ? '已過期' : `剩餘 ${mins}分 ${String(secs).padStart(2,'0')}秒`}</span></div>
                     <div class="mt-3 font-mono text-sm text-white break-all">${row.code}</div>
-                    <div class="mt-2 text-[11px] text-slate-500">生成：${formatDateTime(row.createdAt)}　有效至：${formatDateTime(row.expiresAt)}</div>
-                    <button type="button" onclick="removeAcademyCode('${row.code}')" class="mt-3 w-full px-3 py-2 rounded-xl bg-red-600/10 hover:bg-red-600/20 border border-red-500/20 text-red-400 text-xs">
-                        <i class="fa-solid fa-ban mr-1"></i>手動註銷此考核代碼
-                    </button>
+                    <div class="mt-2 text-[11px] text-slate-500">生成：${formatDateTime(row.createdAt)}　有效至：${formatDateTime(row.expiresAt)}　生成者：${row.creator || '--'}</div>
+                    ${management ? `<button type="button" onclick="removeAcademyCode('${row.code}')" class="mt-3 w-full px-3 py-2 rounded-xl bg-red-600/10 hover:bg-red-600/20 border border-red-500/20 text-red-400 text-xs"><i class="fa-solid fa-trash mr-1"></i>刪除考核代碼</button>` : ''}
                 </div>`;
             }).join('');
+        }
+
+        async function renderAdminAcademyCodes() {
+            const host = document.getElementById('admin-academy-code-list');
+            if (!host) return;
+            const rows = (await loadAcademyCodes()).sort((a,b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+            renderAcademyCodeCards(host, rows, true);
+        }
+
+        async function openAcademyCodeManagement() {
+            if (!isManagementUser()) { showToast('只有管理層可以查看考核代碼。','warning','權限不足'); return; }
+            const modal = document.getElementById('modal-academy-code-management');
+            if (modal) modal.classList.remove('hidden');
+            await renderManagementAcademyCodes();
+        }
+
+        async function renderManagementAcademyCodes() {
+            const host = document.getElementById('management-academy-code-list');
+            if (!host) return;
+            const rows = (await loadAcademyCodes()).sort((a,b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+            renderAcademyCodeCards(host, rows, isManagementUser());
         }
 
         function generateAcademyCaseId(dept) {
@@ -2355,6 +2429,7 @@
             const lock = document.getElementById('academy-lock-overlay');
             const content = document.getElementById('academy-content');
             if (!lock || !content) return;
+            const managementVisible=!isManagementUser(); const manageBtn=document.getElementById('academy-code-manage-btn'); if(manageBtn) manageBtn.classList.toggle('hidden', managementVisible); const manageBtn2=document.getElementById('academy-code-manage-btn-content'); if(manageBtn2) manageBtn2.classList.toggle('hidden', managementVisible);
             if (!academyExamSession || Number(academyExamSession.expiresAt) <= Date.now()) {
                 if (academyExamSession) logoutAcademySession(true);
                 lock.classList.remove('hidden');
@@ -2374,11 +2449,14 @@
             document.getElementById('academy-expiry').textContent = `代碼剩餘：${mins}分 ${String(secs).padStart(2,'0')}秒`;
         }
 
-        function handleAcademyCodeLogin() {
+        async function handleAcademyCodeLogin() {
+            await cloudDataReadyPromise;
             const input = document.getElementById('academy-code-input');
             const status = document.getElementById('academy-code-status');
-            const parsed = parseAcademyCode(input?.value || '');
-            if (!parsed) {
+            const rawCode = String(input?.value || '').trim().toUpperCase();
+            const parsed = parseAcademyCode(rawCode);
+            const cloudRow = (appData.academyCodes || []).find(x => String(x.code || '').toUpperCase() === rawCode);
+            if (!parsed || !cloudRow || Number(cloudRow.expiresAt) <= Date.now()) {
                 if (status) status.textContent = '考核代碼無效、格式錯誤或已過期。';
                 showToast('考核代碼無效或已過期。', 'error', '登入失敗');
                 return;
@@ -2395,11 +2473,6 @@
         }
 
         function logoutAcademySession(silent = false) {
-            const endingCode = academyExamSession?.code || '';
-            if (endingCode) {
-                const rows = loadAcademyCodes();
-                saveAcademyCodes(rows.filter(x => x.code !== endingCode));
-            }
             academyExamSession = null;
             academyExamCache = { policeReports: [], fireReports: [], emsReports: [] };
             safeSessionRemove('ntpcrp_academy_session');
@@ -2796,8 +2869,18 @@
             return `${prefix}${nextSerial}`;
         }
 
-        const POLICE_VIOLATION_RULES=[['故意殺人',45],['劫獄',30],['襲擊公務人員',30],['貪污',30],['搶劫銀行',15],['妨害公務',7],['搶劫珠寶',7],['持有毒品',7],['搶劫超商',5],['損害物品',5],['非法槍枝',5],['盜竊車輛',5],['搶劫保險箱',5],['盜竊房屋',5],['盜竊ATM',5],['假冒公務員',3],['公共危險',3],['公然侮辱',3],['故意傷害',3],['社會秩序',3],['其餘',3]];
+        const POLICE_VIOLATION_DEFAULTS=[['故意殺人',45],['劫獄',30],['襲擊公務人員',30],['貪污',30],['搶劫銀行',15],['妨害公務',7],['搶劫珠寶',7],['持有毒品',7],['搶劫超商',5],['損害物品',5],['非法槍枝',5],['盜竊車輛',5],['搶劫保險箱',5],['盜竊房屋',5],['盜竊ATM',5],['假冒公務員',3],['公共危險',3],['公然侮辱',3],['故意傷害',3],['社會秩序',3],['其餘',3]];
+        let POLICE_VIOLATION_RULES=POLICE_VIOLATION_DEFAULTS.map(x=>[...x]);
         function formatJailMinutes(minutes){const n=Number(minutes||0);return `${Number.isInteger(n)?n:n.toFixed(1)} 分鐘`;}
+        function renderAdminJailRules(){
+            const host=document.getElementById('admin-jail-rules-list'); if(!host)return;
+            host.innerHTML=POLICE_VIOLATION_RULES.map(([name,min],i)=>`<div class="grid grid-cols-1 sm:grid-cols-[1fr_150px_auto] gap-2 items-center bg-slate-950 border border-slate-800 rounded-xl p-3"><input id="jail-rule-name-${i}" value="${name.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white"><input id="jail-rule-min-${i}" type="number" min="0" step="0.1" value="${min}" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white"><button type="button" onclick="deleteJailRule(${i})" class="px-3 py-2 rounded-lg bg-red-600/10 text-red-400 border border-red-500/20 text-xs">刪除</button></div>`).join('');
+        }
+        function deleteJailRule(index){if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以修改刑期表。','warning','權限不足');return;}POLICE_VIOLATION_RULES.splice(index,1);renderAdminJailRules();}
+        function addJailRule(){if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以修改刑期表。','warning','權限不足');return;}const name=document.getElementById('new-jail-rule-name')?.value.trim(),minutes=Number(document.getElementById('new-jail-rule-minutes')?.value);if(!name||!Number.isFinite(minutes)||minutes<0){showToast('請填寫條例名稱與有效刑期。','warning','資料不完整');return;}if(POLICE_VIOLATION_RULES.some(x=>x[0]===name)){showToast('此條例已存在。','warning','無法新增');return;}POLICE_VIOLATION_RULES.push([name,minutes]);document.getElementById('new-jail-rule-name').value='';document.getElementById('new-jail-rule-minutes').value='';renderAdminJailRules();}
+        async function saveJailRules(){if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以更新刑期表。','warning','權限不足');return;}const next=POLICE_VIOLATION_RULES.map((_,i)=>[(document.getElementById(`jail-rule-name-${i}`)?.value||'').trim(),Number(document.getElementById(`jail-rule-min-${i}`)?.value)]).filter(x=>x[0]&&Number.isFinite(x[1])&&x[1]>=0);if(!next.length){showToast('至少保留一筆有效刑期規則。','warning','資料錯誤');return;}const seen=new Set();for(const x of next){if(seen.has(x[0])){showToast(`條例「${x[0]}」重複。`,'warning','資料錯誤');return;}seen.add(x[0]);}try{await fm.setDoc(fm.doc(db,'systemSettings','policeViolationRules'),{rules:next,updatedAt:Date.now(),updatedBy:currentUser.account});POLICE_VIOLATION_RULES=next;appData.policeViolationRules=next.map(x=>[...x]);renderAdminJailRules();if(document.getElementById('modal-report')&&!document.getElementById('modal-report').classList.contains('hidden'))renderViolationOptions('report',getViolationSelection('report').violations);showSubmitSuccessAnimation('刑期表更新成功','警用案件刑期規則已更新。');}catch(e){showToast('刑期表更新失敗：'+e.message,'error','操作失敗');}}
+
+
         function calculatePoliceJailTime(violations,organizedCrime){const base=(Array.isArray(violations)?violations:[]).reduce((sum,name)=>{const row=POLICE_VIOLATION_RULES.find(x=>x[0]===name);return sum+(row?row[1]:0);},0);return Math.round((organizedCrime?base*4/3:base)*10)/10;}
         function renderViolationOptions(prefix='report',selected=[]){const host=document.getElementById(`${prefix}-violation-options`);if(!host)return;const set=new Set(Array.isArray(selected)?selected:[]);host.innerHTML=POLICE_VIOLATION_RULES.map(([name,min])=>`<label data-violation-name="${name.toLowerCase()}" class="violation-option flex items-center justify-between gap-2 min-h-[44px] p-3 rounded-xl border border-slate-800 bg-slate-900/70 cursor-pointer"><span class="flex items-center gap-2 min-w-0"><input type="checkbox" name="${prefix}-violation" value="${name}" ${set.has(name)?'checked':''} onchange="updateViolationJailTotal('${prefix}')" class="w-4 h-4 accent-amber-500"><span class="text-sm text-slate-200 truncate">${name}</span></span><span class="text-[11px] text-slate-500 shrink-0">${min}min</span></label>`).join('');updateViolationJailTotal(prefix);}
         function filterViolationOptions(prefix='report'){const q=(document.getElementById(`${prefix}-violation-search`)?.value||'').trim().toLowerCase();document.querySelectorAll(`#${prefix}-violation-options .violation-option`).forEach(el=>el.classList.toggle('hidden',!!q&&!el.dataset.violationName.includes(q)));}
@@ -3830,6 +3913,8 @@
         }
     </script>
 
+    <div id="modal-academy-code-management" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl"><div class="flex items-center justify-between p-5 border-b border-slate-800"><div><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-list-check text-indigo-400 mr-2"></i>專生考核代碼管理</h3><p class="text-xs text-slate-500 mt-1">管理層可查看與刪除雲端考核代碼。</p></div><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-academy-code-management"><i class="fa-solid fa-xmark text-lg"></i></button></div><div id="management-academy-code-list" class="p-5 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto max-h-[75vh]"></div></div></div>
+
     <div id="modal-admin-clock" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl"><div class="flex justify-between items-center"><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-business-time text-purple-400 mr-2"></i>管理中心打卡</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-admin-clock"><i class="fa-solid fa-xmark"></i></button></div><div class="bg-slate-950 border border-slate-800 rounded-2xl p-4"><div class="text-xs text-slate-500">目前管理員</div><div id="admin-clock-user-preview" class="mt-1 font-bold text-white">--</div></div><div><label class="block text-xs font-semibold text-slate-400 mb-2">打卡狀態</label><select id="admin-clock-status" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><option value="上班">上班</option><option value="下班">下班</option></select></div><div><label class="block text-xs font-semibold text-slate-400 mb-2">備註（可選）</label><textarea id="admin-clock-remark" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white" placeholder="例如：晚間值勤、臨時加班"></textarea></div><button id="submit-admin-clock-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white py-3 rounded-xl font-semibold">確認打卡</button></div></div>
 
     <div id="modal-feedback" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative"><div class="flex items-center justify-between"><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-message-exclamation text-amber-400 mr-2"></i>異常／意見回報</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-feedback"><i class="fa-solid fa-xmark text-lg"></i></button></div><div class="space-y-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">主旨</label><input id="feedback-subject" maxlength="120" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細資訊</label><textarea id="feedback-details" rows="7" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white"></textarea></div><div class="text-xs text-slate-500">回報帳號：<span id="feedback-account-preview" class="font-mono text-slate-300">--</span></div><button id="submit-feedback-btn" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl">送出回報</button></div></div></div>
@@ -3838,9 +3923,10 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-xs text-slate-500 space-y-2">
             <p>此網站由 <span class="text-slate-300 font-semibold">賴打 (yt_laida)</span> 及 <span class="text-slate-300 font-semibold">希大 (tw_failure)</span> 共同創作</p>
             <p>如有異常請聯繫政府信箱通報</p>
-            <a href="https://discord.gg/zUV9Rb4UPH" target="_blank" rel="noopener noreferrer" title="相關技術群組 Discord" class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:text-white hover:bg-indigo-500/20 transition" aria-label="相關技術群組 Discord">
-                <i class="fa-brands fa-discord text-lg"></i>
+            <a href="https://discord.gg/zUV9Rb4UPH" target="_blank" rel="noopener noreferrer" title="相關技術群組" class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:text-white hover:bg-indigo-500/20 transition" aria-label="相關技術群組 Discord">
+                <i class="fa-brands fa-discord text-lg"></i><span class="sr-only">相關技術群組</span>
             </a>
+            <p class="text-[11px] text-indigo-300/80">相關技術群組</p>
         </div>
     </footer>
 </body>
