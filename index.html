@@ -117,9 +117,9 @@
         /* 首頁網站公告：深色系、每 5 秒垂直交叉淡入淡出 */
         #site-announcement-bar { position: relative; overflow: hidden; background: linear-gradient(90deg, rgba(15,23,42,.98), rgba(17,24,39,.96)); border: 1px solid rgba(71,85,105,.7); border-radius: 1rem; box-shadow: 0 16px 40px rgba(0,0,0,.25); }
         .announcement-track { position: relative; min-height: 58px; }
-        .announcement-item { position: absolute; inset: 0; display: flex; align-items: center; gap: .75rem; padding: .8rem 1rem; opacity: 0; transform: translateY(22px); transition: opacity .55s ease, transform .55s ease; pointer-events: none; }
-        .announcement-item.active { opacity: 1; transform: translateY(0); pointer-events: auto; }
-        .announcement-item.exit-up { opacity: 0; transform: translateY(-22px); }
+        .announcement-item { position: absolute; inset: 0; display: flex; align-items: center; gap: .75rem; padding: .8rem 1rem; opacity: 0; transform: translate3d(0,22px,0); transition: opacity .42s ease, transform .42s ease; pointer-events: none; will-change: transform, opacity; backface-visibility: hidden; }
+        .announcement-item.active { opacity: 1; transform: translate3d(0,0,0); pointer-events: auto; }
+        .announcement-item.exit-up { opacity: 0; transform: translate3d(0,-22px,0); }
         .announcement-content { min-width: 0; flex: 1; }
         .announcement-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .announcement-publisher { flex: 0 0 auto; white-space: nowrap; }
@@ -246,9 +246,9 @@
             align-items: center;
             justify-content: center;
             padding: 1rem;
-            background: rgba(2, 6, 23, 0.72);
-            backdrop-filter: blur(8px);
+            background: rgba(2, 6, 23, 0.88);
             opacity: 0;
+            will-change: opacity;
             visibility: hidden;
             transition: opacity .2s ease, visibility .2s ease;
         }
@@ -259,8 +259,10 @@
             border: 1px solid rgba(52, 211, 153, .25);
             border-radius: 1.5rem;
             background: rgba(15, 23, 42, .98);
-            box-shadow: 0 25px 70px rgba(0,0,0,.45);
+            box-shadow: 0 18px 48px rgba(0,0,0,.42);
             text-align: center;
+            will-change: transform;
+            backface-visibility: hidden;
             transform: scale(.94) translateY(8px);
             transition: transform .28s cubic-bezier(.2,.8,.2,1);
         }
@@ -2462,13 +2464,17 @@
         function showSubmitSuccessAnimation(title='送出成功', message='案件資料已成功送出。') {
             const overlay = document.getElementById('submit-success-animation');
             if (!overlay) return;
-            document.getElementById('submit-success-title').textContent = title;
-            document.getElementById('submit-success-message').textContent = message;
-            overlay.classList.remove('show');
-            void overlay.offsetWidth;
-            overlay.classList.add('show');
+            const titleEl = document.getElementById('submit-success-title');
+            const messageEl = document.getElementById('submit-success-message');
+            if (titleEl) titleEl.textContent = title;
+            if (messageEl) messageEl.textContent = message;
             clearTimeout(window.__submitSuccessTimer);
-            window.__submitSuccessTimer = setTimeout(() => overlay.classList.remove('show'), 1350);
+            overlay.classList.remove('show');
+            // 不使用 offsetWidth 強制同步 reflow，改用下一幀重啟動畫，降低手機掉幀。
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => overlay.classList.add('show'));
+            });
+            window.__submitSuccessTimer = setTimeout(() => overlay.classList.remove('show'), 1450);
         }
 
         async function handleLogin(){await cloudDataReadyPromise;const device=getDeviceInfo();if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}const found=appData.users.find(u=>isSuperAdminAccount(acc)?isSuperAdminAccount(u.account)&&u.pass===pass:u.account===acc&&u.pass===pass);if(!found){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));currentUser=found;saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);await pruneOldLoginSessions();if(currentUser.role==='admin')startAdminPresenceRefresh();clearInterval(window.__presenceTimer);window.__presenceTimer=setInterval(()=>updateCurrentUserPresence(true),30000);showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');switchTab('home');}
@@ -3363,9 +3369,9 @@
 
                 if (dept === 'police') renderPoliceClocks();
                 else renderFireClocks();
-                alert('打卡紀錄已刪除。');
+                showSubmitSuccessAnimation('移除成功', '打卡紀錄已成功移除。');
             } catch (e) {
-                alert('刪除失敗：' + e.message);
+                showToast('刪除失敗：' + e.message, 'error', '操作失敗');
             }
         }
 
@@ -3664,7 +3670,7 @@
                 populateMemberSelects();
                 showToast('帳號已刪除。', 'success', '操作成功');
             } catch (e) {
-                alert('刪除失敗：' + e.message);
+                showToast('刪除失敗：' + e.message, 'error', '操作失敗');
             }
         }
 
@@ -3785,7 +3791,7 @@
         function openAdminClockModal(status){if(!currentUser||currentUser.role!=='admin'){showToast('管理中心打卡僅限最高管理員。','warning','權限不足');return;}document.getElementById('admin-clock-status').value=status;document.getElementById('admin-clock-remark').value='';document.getElementById('admin-clock-user-preview').textContent=`${currentUser.name} (${currentUser.account})`;document.getElementById('modal-admin-clock').classList.remove('hidden');}
         async function submitAdminClock(){if(!currentUser||currentUser.role!=='admin')return;const status=document.getElementById('admin-clock-status').value,remark=document.getElementById('admin-clock-remark').value.trim()||'無',now=Date.now(),id=`ADMCLK-${now}`,obj={id,account:currentUser.account,name:currentUser.name,status,remark,time:formatDateTime(now),timestamp:now};try{await fm.setDoc(fm.doc(db,'adminClocks',id),obj);appData.adminClocks.unshift({docId:id,...obj});closeModal('modal-admin-clock');renderAdminClocks();renderAdminOverview();showToast('管理中心打卡成功。','success','打卡成功');}catch(e){showToast('管理中心打卡失敗：'+e.message,'error','操作失敗');}}
         function renderAdminClocks(){const t=document.getElementById('admin-clocks-tbody');if(!t)return;const rows=[...(appData.adminClocks||[])].sort((a,b)=>b.timestamp-a.timestamp);t.innerHTML=rows.length?rows.map(c=>`<tr><td class="p-4 font-medium text-white">${c.name||'--'} (${c.account||'--'})</td><td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs ${c.status==='上班'?'bg-emerald-500/10 text-emerald-400':'bg-rose-500/10 text-rose-400'}">${c.status}</span></td><td class="p-4 text-slate-300 text-xs">${c.time||formatDateTime(c.timestamp)}</td><td class="p-4 text-slate-400 text-xs">${c.remark||'無'}</td><td class="p-4 text-right"><button onclick="deleteAdminClock('${c.docId||c.id}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button></td></tr>`).join(''):'<tr><td colspan="5" class="p-6 text-center text-slate-500">尚無管理中心打卡紀錄。</td></tr>';}
-        async function deleteAdminClock(id){if(!currentUser||currentUser.role!=='admin')return;if(!(await showConfirm('確定刪除此筆管理中心打卡紀錄嗎？','刪除管理中心打卡紀錄','確定刪除')))return;try{await fm.deleteDoc(fm.doc(db,'adminClocks',id));appData.adminClocks=appData.adminClocks.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除管理中心打卡紀錄',id);renderAdminClocks();renderAdminOverview();}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
+        async function deleteAdminClock(id){if(!currentUser||currentUser.role!=='admin')return;if(!(await showConfirm('確定刪除此筆管理中心打卡紀錄嗎？','刪除管理中心打卡紀錄','確定刪除')))return;try{await fm.deleteDoc(fm.doc(db,'adminClocks',id));appData.adminClocks=appData.adminClocks.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除管理中心打卡紀錄',id);renderAdminClocks();renderAdminOverview();showSubmitSuccessAnimation('移除成功','管理中心打卡紀錄已成功移除。');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
 
         async function saveMemo() {
             const text = document.getElementById('admin-memo-textarea').value.trim();
