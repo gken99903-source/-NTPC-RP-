@@ -175,6 +175,30 @@
             touch-action: pan-y;
         }
 
+        /* 全站二次確認：置中動畫彈窗，取代瀏覽器原生 confirm */
+        #app-confirm-overlay {
+            position: fixed; inset: 0; z-index: 180; display: flex; align-items: center; justify-content: center;
+            padding: 1rem; background: rgba(2,6,23,.78); backdrop-filter: blur(10px);
+            opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .22s ease, visibility .22s ease;
+        }
+        #app-confirm-overlay.show { opacity: 1; visibility: visible; pointer-events: auto; }
+        .app-confirm-card {
+            width: min(430px, calc(100vw - 2rem)); padding: 1.5rem; border: 1px solid rgba(71,85,105,.85);
+            border-radius: 1.5rem; background: rgba(15,23,42,.98); box-shadow: 0 28px 90px rgba(0,0,0,.55);
+            transform: translateY(18px) scale(.94); transition: transform .28s cubic-bezier(.2,.8,.2,1);
+        }
+        #app-confirm-overlay.show .app-confirm-card { transform: translateY(0) scale(1); }
+        .app-confirm-icon { width: 58px; height: 58px; margin: 0 auto 1rem; border-radius: 999px; display:flex; align-items:center; justify-content:center;
+            background: rgba(59,130,246,.10); border:1px solid rgba(96,165,250,.22); color:#60a5fa; font-size:1.35rem;
+            animation: confirm-pop .42s cubic-bezier(.2,.8,.2,1) both; }
+        @keyframes confirm-pop { 0%{transform:scale(.55);opacity:0} 70%{transform:scale(1.08);opacity:1} 100%{transform:scale(1)} }
+        .app-confirm-actions { display:flex; gap:.75rem; margin-top:1.25rem; }
+        .app-confirm-actions button { flex:1; min-height:46px; border-radius:.85rem; font-weight:700; transition:transform .15s ease, background .2s ease; }
+        .app-confirm-actions button:active { transform:scale(.97); }
+        #app-confirm-cancel { background:#1e293b; color:#cbd5e1; border:1px solid #334155; }
+        #app-confirm-ok { background:#2563eb; color:white; box-shadow:0 10px 28px rgba(37,99,235,.22); }
+        #app-confirm-ok:hover { background:#3b82f6; }
+
         /* 案件送出成功微動畫 */
         #submit-success-animation {
             position: fixed;
@@ -258,6 +282,17 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
     <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+    <div id="app-confirm-overlay" aria-hidden="true">
+        <div class="app-confirm-card" role="dialog" aria-modal="true" aria-labelledby="app-confirm-title">
+            <div class="app-confirm-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            <div id="app-confirm-title" class="text-xl font-bold text-white text-center">確認操作</div>
+            <div id="app-confirm-message" class="text-sm leading-relaxed text-slate-400 mt-2 text-center whitespace-pre-wrap"></div>
+            <div class="app-confirm-actions">
+                <button id="app-confirm-cancel" type="button">取消</button>
+                <button id="app-confirm-ok" type="button">確定</button>
+            </div>
+        </div>
+    </div>
     <div id="submit-success-animation" aria-hidden="true">
         <div class="submit-success-card">
             <svg class="submit-success-check" viewBox="0 0 76 76" aria-hidden="true">
@@ -1417,6 +1452,7 @@
         let academyExamCache = { policeReports: [], fireReports: [], emsReports: [] };
         let db = null;
         let fm = null;
+        let cloudDataReadyPromise = Promise.resolve();
 
         let appData = {
             users: [],
@@ -1435,10 +1471,10 @@
             adminMemo: ''
         };
 
-        window.addEventListener('firebase-ready', async () => {
+        window.addEventListener('firebase-ready', () => {
             db = window.db;
             fm = window.firebaseModules;
-            await loadAllDataFromCloud();
+            cloudDataReadyPromise = loadAllDataFromCloud();
         });
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1940,7 +1976,38 @@
             if (m) m.classList.add('hidden');
         }
 
+        let appConfirmResolver = null;
+        function showConfirm(message, title='確認操作', confirmText='確定', cancelText='取消') {
+            return new Promise(resolve => {
+                const overlay=document.getElementById('app-confirm-overlay');
+                const titleEl=document.getElementById('app-confirm-title');
+                const msgEl=document.getElementById('app-confirm-message');
+                const ok=document.getElementById('app-confirm-ok');
+                const cancel=document.getElementById('app-confirm-cancel');
+                if(!overlay||!ok||!cancel){ resolve(false); return; }
+                if(appConfirmResolver) appConfirmResolver(false);
+                appConfirmResolver=resolve;
+                titleEl.textContent=title; msgEl.textContent=message; ok.textContent=confirmText; cancel.textContent=cancelText;
+                overlay.classList.remove('show'); void overlay.offsetWidth; overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false');
+                setTimeout(()=>ok.focus(),80);
+            });
+        }
+        function finishConfirm(value){
+            const overlay=document.getElementById('app-confirm-overlay');
+            if(overlay){overlay.classList.remove('show');overlay.setAttribute('aria-hidden','true');}
+            const resolve=appConfirmResolver; appConfirmResolver=null; if(resolve) resolve(value);
+        }
+        document.addEventListener('DOMContentLoaded',()=>{
+            document.getElementById('app-confirm-ok')?.addEventListener('click',()=>finishConfirm(true));
+            document.getElementById('app-confirm-cancel')?.addEventListener('click',()=>finishConfirm(false));
+            document.getElementById('app-confirm-overlay')?.addEventListener('click',e=>{if(e.target.id==='app-confirm-overlay')finishConfirm(false);});
+        });
+
         function showToast(message, type = 'info', title = '') {
+            if (type === 'success') {
+                showSubmitSuccessAnimation(title || '操作成功', message);
+                return;
+            }
             const container = document.getElementById('toast-container');
             if (!container) return;
 
@@ -2363,7 +2430,7 @@
             window.__submitSuccessTimer = setTimeout(() => overlay.classList.remove('show'), 1350);
         }
 
-        async function handleLogin(){if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}const found=appData.users.find(u=>isSuperAdminAccount(acc)?isSuperAdminAccount(u.account)&&u.pass===pass:u.account===acc&&u.pass===pass);if(!found){showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');return;}currentUser=found;saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);await pruneOldLoginSessions();if(currentUser.role==='admin')startAdminPresenceRefresh();clearInterval(window.__presenceTimer);window.__presenceTimer=setInterval(()=>updateCurrentUserPresence(true),30000);showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');switchTab('home');}
+        async function handleLogin(){await cloudDataReadyPromise;if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}const found=appData.users.find(u=>isSuperAdminAccount(acc)?isSuperAdminAccount(u.account)&&u.pass===pass:u.account===acc&&u.pass===pass);if(!found){showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');return;}currentUser=found;saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);await pruneOldLoginSessions();if(currentUser.role==='admin')startAdminPresenceRefresh();clearInterval(window.__presenceTimer);window.__presenceTimer=setInterval(()=>updateCurrentUserPresence(true),30000);showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');switchTab('home');}
         async function logout(){await updateCurrentUserPresence(false);clearInterval(window.__presenceTimer);window.__presenceTimer=null;clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();sessionStorage.removeItem('ntpcrp_session');updateUserBadge();updateAccessLocks();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
@@ -2738,7 +2805,6 @@
                 closeModal('modal-report');
                 dept === 'police' ? renderPoliceReports() : renderFireReports();
                 showSubmitSuccessAnimation('案件送出成功', `案件 ${caseId} 已成功登記。`);
-                showToast(`案件 ${caseId} 已成功登記。`, 'success', '案件提交成功');
                 renderMyProfile();
             } catch (e) {
                 showToast('提交失敗：' + e.message, 'error', '操作失敗');
@@ -2873,7 +2939,7 @@
                 showToast('權限不足：只有警察高層與管理處可以移除警用獎懲。', 'warning', '權限不足');
                 return;
             }
-            if (!confirm('確定要刪除這筆警用獎懲公告嗎？')) return;
+            if (!(await showConfirm('確定要刪除這筆警用獎懲公告嗎？', '刪除警用獎懲', '確定刪除'))) return;
 
             try {
                 await fm.deleteDoc(fm.doc(db, 'policePunishments', p.docId || p.id));
@@ -2937,7 +3003,7 @@
         }
         function renderEMSRemarkHistory(r){const el=document.getElementById('ems-remark-history');if(!el)return;const rr=getReportRemarks(r);el.innerHTML=rr.length?rr.map(x=>`<div class="rounded-lg border border-slate-800 bg-slate-950/70 p-3"><div class="flex justify-between"><span class="text-xs text-amber-400">${x.authorName||'高層'}</span><span class="text-[11px] text-slate-500">${x.time||formatDateTime(x.timestamp)}</span></div><div class="text-xs text-slate-300 mt-1 whitespace-pre-wrap">${x.text||''}</div></div>`).join(''):'<div class="text-xs text-slate-500">目前尚無高層批示。</div>';}
         function viewEMSReportDetail(id){const r=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r)return;document.getElementById('ems-detail-id').textContent=r.id||r.docId;document.getElementById('ems-detail-title').textContent=`${r.patient||'傷患'} 的EMS救護出勤報告`;const fields=[['主訴',r.chiefComplaint],['派遣類別',r.dispatchCategory],['傷患RP名稱 / ID',r.patient],['出勤單位 / 車輛',r.unitVehicle],['GCS評分 E',r.gcsE],['派遣時間',r.dispatchTime],['抵達時間',r.arrivalTime],['離開時間',r.leaveTime],['到院時間',r.hospitalTime],['返隊時間',r.returnTime],['填寫人',`${r.authorName||'--'} (${r.authorId||'--'})`],['建立時間',r.time||formatDateTime(r.timestamp)]];document.getElementById('ems-detail-fields').innerHTML=fields.map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${k}</span><span class="text-sm text-slate-200">${v||'--'}</span></div>`).join('');document.getElementById('ems-detail-treatment').textContent=r.treatment||'--';renderEMSRemarkHistory(r);const actionHost=document.getElementById('ems-detail-action-bar');if(actionHost){const a=[];if(canModifyEMS(r))a.push(`<button type="button" onclick="closeModal('modal-ems-detail');openEMSReportModal('${id}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs"><i class="fa-solid fa-pen mr-1"></i>編輯</button>`);if(canModifyEMS(r))a.push(`<button type="button" onclick="deleteEMSReport('${id}'); closeModal('modal-ems-detail')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs"><i class="fa-solid fa-trash mr-1"></i>刪除</button>`);if(currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire'))) )a.push(`<button type="button" onclick="closeModal('modal-ems-detail');openRemarkModal('emsReports','${id}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs"><i class="fa-solid fa-pen-nib mr-1"></i>高層批示</button>`);actionHost.innerHTML=a.join('');}document.getElementById('modal-ems-detail').classList.remove('hidden');}
-        async function deleteEMSReport(id){const r=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r||!canModifyEMS(r)){showToast('你無權限刪除這筆EMS報告。','warning','權限不足');return;}if(!confirm('確定要刪除這筆EMS救護出勤報告嗎？'))return;try{await fm.deleteDoc(fm.doc(db,'emsReports',r.docId||r.id));appData.emsReports=appData.emsReports.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除EMS救護報告',r.id||id);renderEMSReports();renderMyProfile();showToast('EMS救護出勤報告已刪除。','success','刪除成功');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
+        async function deleteEMSReport(id){const r=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r||!canModifyEMS(r)){showToast('你無權限刪除這筆EMS報告。','warning','權限不足');return;}if(!(await showConfirm('確定要刪除這筆 EMS 救護出勤報告嗎？','刪除 EMS 報告','確定刪除')))return;try{await fm.deleteDoc(fm.doc(db,'emsReports',r.docId||r.id));appData.emsReports=appData.emsReports.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除EMS救護報告',r.id||id);renderEMSReports();renderMyProfile();showToast('EMS救護出勤報告已刪除。','success','刪除成功');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
         function renderEMSReports(){const c=document.getElementById('ems-reports-list');if(!c)return;const q=(document.getElementById('search-ems-report')?.value||'').trim().toLowerCase(),arr=(appData.emsReports||[]).filter(r=>!q||[r.id,r.patient,r.authorId,r.authorName,r.dispatchCategory].some(v=>String(v||'').toLowerCase().includes(q)));c.innerHTML=arr.length?'':'<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">尚無EMS報告。</div>';arr.forEach(r=>{const key=r.docId||r.id,card=document.createElement('div');card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4';card.innerHTML=`<div class="flex justify-between gap-3"><span class="text-xs text-rose-400 font-mono">${r.id||key}</span><span class="text-xs text-slate-500">${r.time||'--'}</span></div><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs"><div><span class="text-slate-500 block">主訴</span>${r.chiefComplaint||'--'}</div><div><span class="text-slate-500 block">傷患</span>${r.patient||'--'}</div><div><span class="text-slate-500 block">出勤單位／車輛</span>${r.unitVehicle||'--'}</div><div><span class="text-slate-500 block">填寫人</span>${r.authorName||'--'} (${r.authorId||'--'})</div></div><div class="flex flex-wrap gap-2"><button onclick="viewEMSReportDetail('${key}')" class="px-3 py-2 bg-rose-500/10 text-rose-300 rounded-lg text-xs">檢視</button>${canModifyEMS(r)?`<button onclick="openEMSReportModal('${key}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs">編輯</button><button onclick="deleteEMSReport('${key}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button>`:''}${currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire')))?`<button onclick="openRemarkModal('emsReports','${key}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs">高層批示</button>`:''}</div>`;c.appendChild(card);});}
 
         function renderFireReports() {
@@ -3012,7 +3078,7 @@
                 showToast('權限不足：只有高層、管理處或案件發布者可以刪除。', 'warning', '權限不足');
                 return;
             }
-            if (!confirm('確定要刪除這筆案件報告嗎？')) return;
+            if (!(await showConfirm('確定要刪除這筆案件報告嗎？', '刪除案件報告', '確定刪除'))) return;
             const collectionName = dept === 'police' ? 'policeReports' : 'fireReports';
             try {
                 await fm.deleteDoc(fm.doc(db, collectionName, caseId));
@@ -3247,7 +3313,7 @@
 
         async function deleteClockRecord(dept, clockId) {
             if (!canManageClockRecords()) { showToast('只有管理處可以刪除打卡紀錄。','warning','權限不足'); return; }
-            if (!confirm('確定要刪除這筆打卡紀錄嗎？')) return;
+            if (!(await showConfirm('確定要刪除這筆打卡紀錄嗎？', '刪除打卡紀錄', '確定刪除'))) return;
             const collectionName = dept === 'police' ? 'policeClocks' : 'fireClocks';
             try {
                 await fm.deleteDoc(fm.doc(db, collectionName, clockId));
@@ -3332,7 +3398,13 @@
         function getDeviceInfo(){const n=window.navigator||{};const sc=window.screen||{};const ua=n.userAgent||'';const browser=/Edg\//.test(ua)?'Edge':/Chrome\//.test(ua)?'Chrome':/Firefox\//.test(ua)?'Firefox':/Safari\//.test(ua)&&!/Chrome\//.test(ua)?'Safari':'其他';return {userAgent:ua,platform:n.platform||'',browser,screen:`${sc.width||0}x${sc.height||0}`,touchPoints:n.maxTouchPoints||0};}
         function getDeviceLabel(d){return `${d?.platform||'未知平台'} / ${d?.browser||'其他瀏覽器'}`;}
         function getDeviceFingerprint(device=getDeviceInfo()){const ua=String(device?.userAgent||'');const browser=device?.browser||( /Edg\//.test(ua)?'Edge':/Chrome\//.test(ua)?'Chrome':/Firefox\//.test(ua)?'Firefox':/Safari\//.test(ua)&&!/Chrome\//.test(ua)?'Safari':'其他');return btoa(unescape(encodeURIComponent([ua,device?.platform||'',browser,device?.screen||'',device?.touchPoints||0].join('|')))).replace(/[^a-zA-Z0-9]/g,'').slice(0,80);}
-        function isCurrentDeviceBlocked(){const fp=getDeviceFingerprint();return (appData.blockedDevices||[]).some(x=>x.fingerprint===fp&&x.active!==false);}
+        function isCurrentDeviceBlocked(){
+            const fp=getDeviceFingerprint();
+            return (appData.blockedDevices||[]).some(x=>x.active!==false && String(x.fingerprint||'')===String(fp));
+        }
+        function findDeviceSessionByFingerprint(fingerprint){
+            return (appData.loginSessions||[]).find(x=>{const xfp=x.fingerprint||getDeviceFingerprint(x.device||{});return String(xfp)===String(fingerprint);});
+        }
         async function recordLoginSession(user){if(!user||!fm||!db)return;const now=Date.now(),device=getDeviceInfo(),fingerprint=getDeviceFingerprint(device),id=`LOGIN-${String(user.account).replace(/[^a-zA-Z0-9_-]/g,'_')}-${now}`,session={id,account:user.account,name:user.name,loginAt:now,time:formatDateTime(now),device,fingerprint};try{await fm.setDoc(fm.doc(db,'loginSessions',id),session);await fm.updateDoc(fm.doc(db,'users',user.docId||user.account),{online:true,lastSeen:now,lastLoginAt:now,lastDevice:device});user.online=true;user.lastSeen=now;user.lastLoginAt=now;user.lastDevice=device;appData.loginSessions.unshift({docId:id,...session});}catch(e){console.warn('login audit',e);}}
 
         async function pruneOldLoginSessions() {
@@ -3354,16 +3426,37 @@
         function renderAdminOnlineUsers(){const c=document.getElementById('admin-online-list');if(!c)return;c.innerHTML=(appData.users||[]).map(u=>{const on=isUserOnline(u);return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between"><div><b class="text-white">${u.name||'--'}</b><div class="text-xs text-slate-500 font-mono">${u.account}${u.staffNumber?`／${u.staffNumber}`:''}</div></div><span class="px-3 py-1 rounded-full text-xs ${on?'bg-emerald-500/10 text-emerald-400':'bg-slate-800 text-slate-400'}">● ${on?'在線':'離線'}</span></div>`;}).join('');}
         function renderAdminDevices(){const t=document.getElementById('admin-devices-tbody');if(!t)return;const since=Date.now()-3*24*60*60*1000,rows=(appData.loginSessions||[]).filter(x=>Number(x.loginAt||0)>=since).sort((a,b)=>b.loginAt-a.loginAt);const blocked=(fp)=>(appData.blockedDevices||[]).some(x=>x.fingerprint===fp&&x.active!==false);t.innerHTML=rows.length?rows.map(x=>`<tr><td class="p-3 font-mono text-white">${x.account}</td><td class="p-3 text-slate-300">${formatDateTime(x.loginAt,x.time)}</td><td class="p-3 text-slate-300">${getDeviceLabel(x.device)}</td><td class="p-3 text-slate-400">${x.device?.screen||'--'}</td><td class="p-3 text-slate-400 font-mono">${x.fingerprint||getDeviceFingerprint(x.device)}</td><td class="p-3 text-right">${blocked(x.fingerprint||getDeviceFingerprint(x.device))?`<button onclick="unblockDevice('${x.fingerprint||getDeviceFingerprint(x.device)}')" class="px-2.5 py-1 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">解封裝置</button>`:`<button onclick="blockDevice('${x.fingerprint||getDeviceFingerprint(x.device)}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">封鎖裝置</button>`}</td></tr>`).join(''):'<tr><td colspan="6" class="p-6 text-center text-slate-500">最近 3 日尚無登入裝置紀錄。</td></tr>';const clear=document.getElementById('clear-all-login-sessions-btn');if(clear)clear.classList.toggle('hidden',!isSuperAdminAccount(currentUser?.account));const bc=document.getElementById('admin-blocked-devices-list');if(bc){const br=(appData.blockedDevices||[]).filter(x=>x.active!==false);bc.innerHTML=br.length?br.map(x=>`<div class="bg-slate-900 border border-red-500/10 rounded-2xl p-4 flex items-center justify-between gap-3"><div><div class="font-mono text-xs text-red-300">${x.fingerprint||'--'}</div><div class="text-xs text-slate-500 mt-1">封鎖人員：${x.blockedBy||'--'} ／ ${formatDateTime(x.blockedAt)}</div><div class="text-xs text-slate-400 mt-1">${getDeviceLabel(x.device)} ／ ${x.device?.screen||'--'}</div></div><button onclick="unblockDevice('${x.fingerprint}')" class="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">解封</button></div>`).join(''):'<div class="text-xs text-slate-500 bg-slate-900 border border-slate-800 rounded-xl p-4">目前沒有被封鎖的裝置。</div>';}}
 
-        async function deleteAllLoginSessions(){if(!isSuperAdminAccount(currentUser?.account)){showToast('只有 Dsuensx 可以刪除所有登入紀錄。','warning','權限不足');return;}if(!confirm('確定要一鍵刪除所有登入紀錄嗎？此操作會留下管理稽核紀錄。'))return;try{for(const x of [...(appData.loginSessions||[])]){await fm.deleteDoc(fm.doc(db,'loginSessions',x.docId||x.id));}appData.loginSessions=[];await logAdminAction('一鍵刪除所有登入紀錄','loginSessions/*');renderAdminDevices();showToast('所有登入紀錄已刪除。','success','操作完成');}catch(e){showToast('刪除登入紀錄失敗：'+e.message,'error','操作失敗');}}
+        async function deleteAllLoginSessions(){if(!isSuperAdminAccount(currentUser?.account)){showToast('只有 Dsuensx 可以刪除所有登入紀錄。','warning','權限不足');return;}if(!(await showConfirm('確定要一鍵刪除所有登入紀錄嗎？此操作會留下管理稽核紀錄。','刪除全部登入紀錄','確定刪除')))return;try{for(const x of [...(appData.loginSessions||[])]){await fm.deleteDoc(fm.doc(db,'loginSessions',x.docId||x.id));}appData.loginSessions=[];await logAdminAction('一鍵刪除所有登入紀錄','loginSessions/*');renderAdminDevices();showToast('所有登入紀錄已刪除。','success','操作完成');}catch(e){showToast('刪除登入紀錄失敗：'+e.message,'error','操作失敗');}}
 
-        async function blockDevice(fingerprint){if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以封鎖裝置。','warning','權限不足');return;}if(!fingerprint)return;if((appData.blockedDevices||[]).some(x=>x.fingerprint===fingerprint&&x.active!==false))return;if(!confirm('確定要封鎖此裝置嗎？系統只會使用現有的裝置、瀏覽器與螢幕資訊，不會蒐集 IP。'))return;const now=Date.now(),obj={fingerprint,active:true,blockedAt:now,blockedBy:currentUser.account,device:(appData.loginSessions||[]).find(x=>x.fingerprint===fingerprint)?.device||null};try{await fm.setDoc(fm.doc(db,'blockedDevices',fingerprint),obj);appData.blockedDevices.push({docId:fingerprint,...obj});await logAdminAction('封鎖登入裝置',fingerprint);renderAdminDevices();showToast('裝置已封鎖。','success','操作完成');}catch(e){showToast('封鎖失敗：'+e.message,'error','操作失敗');}}
-        async function unblockDevice(fingerprint){if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以解封裝置。','warning','權限不足');return;}if(!confirm('確定要解封此裝置嗎？'))return;try{await fm.updateDoc(fm.doc(db,'blockedDevices',fingerprint),{active:false,unblockedAt:Date.now(),unblockedBy:currentUser.account});const row=appData.blockedDevices.find(x=>x.fingerprint===fingerprint);if(row)row.active=false;await logAdminAction('解封登入裝置',fingerprint);renderAdminDevices();showToast('裝置已解封。','success','操作完成');}catch(e){showToast('解封失敗：'+e.message,'error','操作失敗');}}
+        async function blockDevice(fingerprint){
+            if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以封鎖裝置。','warning','權限不足');return;}
+            if(!fingerprint)return;
+            const existing=(appData.blockedDevices||[]).find(x=>String(x.fingerprint)===String(fingerprint));
+            if(existing&&existing.active!==false){showToast('此裝置目前已在封鎖名單中。','warning','裝置已封鎖');return;}
+            if(!(await showConfirm('確定要封鎖此裝置嗎？系統只會使用現有的裝置、瀏覽器與螢幕資訊，不會蒐集 IP。','封鎖登入裝置','確定封鎖')))return;
+            const now=Date.now(),session=findDeviceSessionByFingerprint(fingerprint),obj={fingerprint,active:true,blockedAt:now,blockedBy:currentUser.account,device:session?.device||existing?.device||null};
+            try{
+                await fm.setDoc(fm.doc(db,'blockedDevices',fingerprint),obj);
+                const idx=(appData.blockedDevices||[]).findIndex(x=>String(x.fingerprint)===String(fingerprint));
+                if(idx>=0) appData.blockedDevices[idx]={docId:fingerprint,...obj}; else appData.blockedDevices.push({docId:fingerprint,...obj});
+                await logAdminAction('封鎖登入裝置',fingerprint);renderAdminDevices();showToast('裝置已封鎖。','success','操作完成');
+            }catch(e){showToast('封鎖失敗：'+e.message,'error','操作失敗');}
+        }
+        async function unblockDevice(fingerprint){
+            if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以解封裝置。','warning','權限不足');return;}
+            if(!(await showConfirm('確定要解封此裝置嗎？解封後，該裝置即可再次嘗試登入。','解封登入裝置','確定解封')))return;
+            try{
+                await fm.setDoc(fm.doc(db,'blockedDevices',fingerprint),{fingerprint,active:false,unblockedAt:Date.now(),unblockedBy:currentUser.account},{merge:true});
+                const row=appData.blockedDevices.find(x=>String(x.fingerprint)===String(fingerprint));if(row)row.active=false;
+                await logAdminAction('解封登入裝置',fingerprint);renderAdminDevices();showToast('裝置已解封。','success','操作完成');
+            }catch(e){showToast('解封失敗：'+e.message,'error','操作失敗');}
+        }
 
         async function submitFeedback(){if(!currentUser){showToast('請先登入後再回報。','warning','需要登入');return;}const subject=document.getElementById('feedback-subject').value.trim(),details=document.getElementById('feedback-details').value.trim();if(!subject||!details){showToast('請填寫主旨與詳細資訊。','error','資料不完整');return;}const now=Date.now(),id=`FB-${now}`,obj={id,subject,details,account:currentUser.account,name:currentUser.name,staffNumber:currentUser.staffNumber||'',time:formatDateTime(now),timestamp:now,status:'未處理'};try{await fm.setDoc(fm.doc(db,'feedbackReports',id),obj);appData.feedbackReports.unshift({docId:id,...obj});closeModal('modal-feedback');showToast('回報已送至管理中心。','success','回報成功');renderAdminFeedback();}catch(e){showToast('回報送出失敗：'+e.message,'error','操作失敗');}}
         function openFeedbackModal(){if(!currentUser){showToast('請先登入後再回報。','warning','需要登入');return;}document.getElementById('feedback-account-preview').textContent=`${currentUser.name} (${currentUser.account})`;document.getElementById('modal-feedback').classList.remove('hidden');}
         function renderAdminFeedback(){const c=document.getElementById('admin-feedback-list');if(!c)return;const rows=(appData.feedbackReports||[]).sort((a,b)=>b.timestamp-a.timestamp);c.innerHTML=rows.length?rows.map(r=>`<div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2"><div><h4 class="font-bold text-white">${r.subject||'無主旨'}</h4><div class="text-xs text-cyan-400 font-mono mt-1">${r.name||'--'} (${r.account||'--'})${r.staffNumber?`／${r.staffNumber}`:''}</div></div><span class="text-xs text-slate-500">${formatDateTime(r.timestamp,r.time)}</span></div><div class="bg-slate-950 rounded-xl p-4 text-sm text-slate-300 whitespace-pre-wrap">${r.details||''}</div><div class="grid grid-cols-1 md:grid-cols-[160px_1fr_auto] gap-2"><select id="fb-status-${r.docId||r.id}" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"><option ${r.status==='未處理'?'selected':''}>未處理</option><option ${r.status==='處理中'?'selected':''}>處理中</option><option ${r.status==='已處理'?'selected':''}>已處理</option></select><input id="fb-note-${r.docId||r.id}" value="${String(r.adminNote||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" placeholder="管理員備注..." class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"><div class="flex gap-2"><button onclick="saveFeedbackAdmin('${r.docId||r.id}')" class="px-3 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-xs">儲存備注</button><button onclick="deleteFeedback('${r.docId||r.id}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-xl text-xs">刪除訊息</button></div></div>${r.adminNote?`<div class="text-xs text-amber-300 bg-amber-500/5 border border-amber-500/10 rounded-xl p-3">管理員備注：${r.adminNote}</div>`:''}</div>`).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">目前沒有回報內容。</div>';}
         async function saveFeedbackAdmin(id){if(!currentUser||currentUser.role!=='admin')return;const r=appData.feedbackReports.find(x=>String(x.docId||x.id)===String(id));if(!r)return;const status=document.getElementById(`fb-status-${id}`)?.value||'未處理',adminNote=document.getElementById(`fb-note-${id}`)?.value.trim()||'';try{await fm.updateDoc(fm.doc(db,'feedbackReports',r.docId||r.id),{status,adminNote,adminNoteBy:currentUser.account,adminNoteAt:Date.now()});r.status=status;r.adminNote=adminNote;r.adminNoteBy=currentUser.account;r.adminNoteAt=Date.now();await logAdminAction('備注／更新意見回報',r.docId||r.id);renderAdminFeedback();showToast('回報備注已儲存。','success','儲存成功');}catch(e){showToast('儲存失敗：'+e.message,'error','操作失敗');}}
-        async function deleteFeedback(id){if(!currentUser||currentUser.role!=='admin')return;const r=appData.feedbackReports.find(x=>String(x.docId||x.id)===String(id));if(!r)return;if(!confirm('確定刪除此回報訊息嗎？刪除動作會留下稽核紀錄。'))return;try{await fm.deleteDoc(fm.doc(db,'feedbackReports',r.docId||r.id));appData.feedbackReports=appData.feedbackReports.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除意見／異常回報',id);renderAdminFeedback();showToast('回報訊息已刪除。','success','刪除成功');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
+        async function deleteFeedback(id){if(!currentUser||currentUser.role!=='admin')return;const r=appData.feedbackReports.find(x=>String(x.docId||x.id)===String(id));if(!r)return;if(!(await showConfirm('確定刪除此回報訊息嗎？刪除動作會留下稽核紀錄。','刪除回報訊息','確定刪除')))return;try{await fm.deleteDoc(fm.doc(db,'feedbackReports',r.docId||r.id));appData.feedbackReports=appData.feedbackReports.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除意見／異常回報',id);renderAdminFeedback();showToast('回報訊息已刪除。','success','刪除成功');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
 
         function renderAdminUsers() {
             const tbody = document.getElementById('admin-users-tbody');
@@ -3477,7 +3570,7 @@
                 showToast('Dsuensx 最高權限帳號無法刪除。', 'warning', '操作受限');
                 return;
             }
-            if (!confirm(`確定要刪除帳號 ${account} 嗎？`)) return;
+            if (!(await showConfirm(`確定要刪除帳號 ${account} 嗎？`, '刪除使用者帳號', '確定刪除'))) return;
             try {
                 await fm.deleteDoc(fm.doc(db, 'users', account));
                 appData.users = appData.users.filter(x => x.account !== account);
@@ -3606,7 +3699,7 @@
         function openAdminClockModal(status){if(!currentUser||currentUser.role!=='admin'){showToast('管理中心打卡僅限最高管理員。','warning','權限不足');return;}document.getElementById('admin-clock-status').value=status;document.getElementById('admin-clock-remark').value='';document.getElementById('admin-clock-user-preview').textContent=`${currentUser.name} (${currentUser.account})`;document.getElementById('modal-admin-clock').classList.remove('hidden');}
         async function submitAdminClock(){if(!currentUser||currentUser.role!=='admin')return;const status=document.getElementById('admin-clock-status').value,remark=document.getElementById('admin-clock-remark').value.trim()||'無',now=Date.now(),id=`ADMCLK-${now}`,obj={id,account:currentUser.account,name:currentUser.name,status,remark,time:formatDateTime(now),timestamp:now};try{await fm.setDoc(fm.doc(db,'adminClocks',id),obj);appData.adminClocks.unshift({docId:id,...obj});closeModal('modal-admin-clock');renderAdminClocks();renderAdminOverview();showToast('管理中心打卡成功。','success','打卡成功');}catch(e){showToast('管理中心打卡失敗：'+e.message,'error','操作失敗');}}
         function renderAdminClocks(){const t=document.getElementById('admin-clocks-tbody');if(!t)return;const rows=[...(appData.adminClocks||[])].sort((a,b)=>b.timestamp-a.timestamp);t.innerHTML=rows.length?rows.map(c=>`<tr><td class="p-4 font-medium text-white">${c.name||'--'} (${c.account||'--'})</td><td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs ${c.status==='上班'?'bg-emerald-500/10 text-emerald-400':'bg-rose-500/10 text-rose-400'}">${c.status}</span></td><td class="p-4 text-slate-300 text-xs">${c.time||formatDateTime(c.timestamp)}</td><td class="p-4 text-slate-400 text-xs">${c.remark||'無'}</td><td class="p-4 text-right"><button onclick="deleteAdminClock('${c.docId||c.id}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button></td></tr>`).join(''):'<tr><td colspan="5" class="p-6 text-center text-slate-500">尚無管理中心打卡紀錄。</td></tr>';}
-        async function deleteAdminClock(id){if(!currentUser||currentUser.role!=='admin')return;if(!confirm('確定刪除此筆管理中心打卡紀錄嗎？'))return;try{await fm.deleteDoc(fm.doc(db,'adminClocks',id));appData.adminClocks=appData.adminClocks.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除管理中心打卡紀錄',id);renderAdminClocks();renderAdminOverview();}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
+        async function deleteAdminClock(id){if(!currentUser||currentUser.role!=='admin')return;if(!(await showConfirm('確定刪除此筆管理中心打卡紀錄嗎？','刪除管理中心打卡紀錄','確定刪除')))return;try{await fm.deleteDoc(fm.doc(db,'adminClocks',id));appData.adminClocks=appData.adminClocks.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除管理中心打卡紀錄',id);renderAdminClocks();renderAdminOverview();}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
 
         async function saveMemo() {
             const text = document.getElementById('admin-memo-textarea').value.trim();
