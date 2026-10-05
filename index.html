@@ -1191,7 +1191,7 @@
             </div>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件編號 (系統自動產生)</label>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件編號</label>
                     <input type="text" id="report-case-id" readonly class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 font-mono cursor-not-allowed">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
@@ -3263,7 +3263,7 @@
                 if(!canModifyReport(r,dept)){showToast('權限不足：只有高層、管理處或案件發布者可以編輯。','warning','權限不足');return;}
                 const requestedCaseId=(document.getElementById('edit-rep-case-id')?.value||r.caseId).trim();
                 const nextCaseId=canChangeReportCaseId(dept)?requestedCaseId:r.caseId;
-                if(!/^REP-\d{11,}$/.test(nextCaseId)){showToast('案件編號格式錯誤，請使用 REP-西元年月日＋當日流水號。','warning','案件編號錯誤');return;}
+                if(!nextCaseId){showToast('案件編號不可為空白。','warning','案件編號錯誤');return;}
                 if(nextCaseId!==r.caseId){
                     const duplicate=[...(appData.policeReports||[]),...(appData.fireReports||[])].some(x=>x.caseId===nextCaseId&&x.caseId!==r.caseId);
                     if(duplicate){showToast('新的案件編號已存在，請重新輸入。','warning','案件編號重複');return;}
