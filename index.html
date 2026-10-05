@@ -181,11 +181,36 @@
             .police-sub-btn, .fire-sub-btn, .admin-sub-btn { min-height: 44px; touch-action: manipulation; }
         }
 
-        /* 行動裝置：避免案件表單的巢狀滾動被頁面／瀏覽器手勢攔截 */
-        [id^="modal-"] > div[class*="overflow-y-auto"] {
+        /* 行動裝置：案件表單使用獨立滾動面板，避免手機無法滑到最下方 */
+        .mobile-modal-scroll {
+            max-height: min(90vh, calc(100dvh - 1rem));
+            overflow-y: auto !important;
+            overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
             touch-action: pan-y;
+            scrollbar-gutter: stable;
+        }
+        @media (max-width: 767px) {
+            .mobile-modal-overlay {
+                align-items: flex-start !important;
+                overflow: hidden;
+                padding: .5rem !important;
+            }
+            .mobile-modal-scroll {
+                width: 100%;
+                max-height: calc(100dvh - 1rem);
+                height: auto;
+                min-height: 0;
+                margin: 0 auto;
+                padding: 1rem !important;
+                border-radius: 1.25rem !important;
+            }
+            /* 讓案件表單底部按鈕永遠留出可滑動空間 */
+            #modal-report .mobile-modal-scroll,
+            #modal-edit .mobile-modal-scroll {
+                padding-bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+            }
         }
 
         /* 全站二次確認：置中動畫彈窗，取代瀏覽器原生 confirm */
@@ -1155,8 +1180,8 @@
     </div>
     <div id="modal-ems-detail" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl max-h-[92vh] overflow-y-auto"><div class="flex justify-between items-center"><h3 id="ems-detail-title" class="text-xl font-bold text-white">EMS救護出勤報告</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-ems-detail"><i class="fa-solid fa-xmark"></i></button></div><span id="ems-detail-id" class="text-xs text-rose-400 font-mono"></span><div id="ems-detail-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4"></div><div class="mt-4"><div class="text-xs text-slate-400 mb-2">給予處置</div><div id="ems-detail-treatment" class="bg-slate-950 border border-slate-800 rounded-xl p-4 whitespace-pre-wrap text-sm text-slate-200"></div></div><div class="mt-4"><div class="text-xs text-slate-400 mb-2">高層批示</div><div id="ems-remark-history" class="space-y-2"></div><div id="ems-detail-action-bar" class="flex flex-wrap gap-2 pt-2"></div></div></div></div>
     <!-- Report Modal -->
-    <div id="modal-report" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+    <div id="modal-report" class="mobile-modal-overlay fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="mobile-modal-scroll bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
                 <h3 id="report-modal-title" class="text-xl font-bold text-white flex items-center space-x-2">
                     <i class="fa-solid fa-file-pen text-blue-500"></i>
@@ -1289,8 +1314,8 @@
     </div>
 
     <!-- Edit Record Modal -->
-    <div id="modal-edit" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
+    <div id="modal-edit" class="mobile-modal-overlay fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="mobile-modal-scroll bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
                 <h3 class="text-xl font-bold text-white flex items-center space-x-2">
                     <i class="fa-solid fa-pen-to-square text-emerald-500"></i>
