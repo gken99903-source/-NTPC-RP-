@@ -2447,7 +2447,17 @@
                 return;
             }
             const key=String(currentUser.account||'').toLowerCase();
-            const notes=(appData.reportNotifications||[]).filter(n=>String(n.recipientAccount||'').toLowerCase()===key).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+            const rawNotes=(appData.reportNotifications||[]).filter(n=>String(n.recipientAccount||'').toLowerCase()===key).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+            // 同一案件只允許一張案件通知：不論 type/status 是否因舊資料而不同，都只保留最新一筆。
+            // 這會同時處理「案件已重新送件」重複兩張、退件通知重複兩張，以及舊審核中通知殘留的情況。
+            const seenReportCases=new Set();
+            const notes=rawNotes.filter(n=>{
+                if(!n.caseId) return true;
+                const reportKey=`${String(n.recipientAccount||'').toLowerCase()}:${String(n.caseId)}`;
+                if(seenReportCases.has(reportKey)) return false;
+                seenReportCases.add(reportKey);
+                return true;
+            });
             const minePending=[...(appData.policePendingReports||[]).map(r=>({...r,__dept:'police'})), ...(appData.firePendingReports||[]).map(r=>({...r,__dept:'fire'}))].filter(r=>String(r.registeredByAccount||'').toLowerCase()===key);
             const rejected=minePending.filter(r=>r.reviewStatus==='rejected').sort((a,b)=>(b.updatedAt||b.reviewedAt||b.submittedAt||0)-(a.updatedAt||a.reviewedAt||a.submittedAt||0));
             const pending=minePending.filter(r=>r.reviewStatus==='pending').sort((a,b)=>(b.updatedAt||b.submittedAt||0)-(a.updatedAt||a.submittedAt||0));
@@ -2479,7 +2489,20 @@
             if(historyHost) historyHost.innerHTML=historyCards||'<div class="text-sm text-slate-500 text-center py-8">目前沒有被退回的歷史案件。</div>';
 
             if(profileHost){
-                profileHost.innerHTML=(rejected.slice(0,3).map(r=>`<div class="rounded-2xl border border-red-500/40 bg-red-950/25 p-4"><div class="font-bold text-red-200">案件 ${r.caseId||'--'} 已退件</div><div class="text-xs text-red-300 mt-1">${r.rejectionReason||'未提供退件原因'}</div></div>`).join('')+notes.slice(0,5).map(n=>`<div class="rounded-2xl border ${n.status==='rejected'?'border-red-500/40 bg-red-950/25':n.status==='approved'?'border-emerald-500/25 bg-emerald-950/15':'border-amber-500/25 bg-amber-950/10'} p-4"><div class="font-bold text-slate-200">${n.title||'案件通知'} ${n.caseId?`<span class="text-[11px] font-mono text-slate-500 ml-2">${n.caseId}</span>`:''}</div><p class="text-sm text-slate-300 mt-1 whitespace-pre-wrap">${n.message||''}</p><span class="text-[11px] text-slate-500">${formatDateTime(n.timestamp)}</span></div>`).join(''))||'<div class="text-sm text-slate-500 text-center py-6">目前沒有案件審核通知。</div>';
+                // 個人資訊頁使用與「個人通知」相同的去重後資料，直接建立卡片陣列，避免
+                // 在 DOM 尚未完成切換或舊資料異常時誤判成「沒有通知」。
+                const profileItems=[];
+                rejected.slice(0,3).forEach(r=>{
+                    profileItems.push(`<div class="rounded-2xl border border-red-500/40 bg-red-950/25 p-4"><div class="flex flex-wrap items-center gap-2"><div class="font-bold text-red-200">案件 ${r.caseId||'--'} 已退件</div><span class="px-2 py-1 rounded-full text-[10px] font-semibold bg-red-500/15 text-red-300">退件</span></div><div class="text-xs text-red-300 mt-1">${r.rejectionReason||'未提供退件原因'}</div><div class="text-[11px] text-slate-500 mt-2">${formatDateTime(r.reviewedAt||r.updatedAt||r.submittedAt)}</div></div>`);
+                });
+                notes.slice(0,5).forEach(n=>{
+                    const rejectedNote=n.status==='rejected', approved=n.status==='approved';
+                    const cls=rejectedNote?'border-red-500/40 bg-red-950/25':approved?'border-emerald-500/25 bg-emerald-950/15':'border-amber-500/25 bg-amber-950/10';
+                    const badge=rejectedNote?'bg-red-500/15 text-red-300':approved?'bg-emerald-500/15 text-emerald-300':'bg-amber-500/15 text-amber-300';
+                    const label=rejectedNote?'退件':approved?'審核完成':'審核中';
+                    profileItems.push(`<div class="rounded-2xl border ${cls} p-4"><div class="flex flex-wrap items-center gap-2"><div class="font-bold text-slate-200">${n.title||'案件通知'}</div>${n.caseId?`<span class="text-[11px] font-mono text-slate-500">${n.caseId}</span>`:''}<span class="px-2 py-1 rounded-full text-[10px] font-semibold ${badge}">${label}</span></div><p class="text-sm text-slate-300 mt-1 whitespace-pre-wrap">${n.message||'案件狀態已更新。'}</p><span class="text-[11px] text-slate-500">${formatDateTime(n.timestamp)}</span></div>`);
+                });
+                profileHost.innerHTML=profileItems.length?profileItems.join(''):'<div class="text-sm text-slate-500 text-center py-6">目前沒有案件審核通知。</div>';
             }
         }
 
