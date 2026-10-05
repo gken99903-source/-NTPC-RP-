@@ -315,7 +315,7 @@
                 <div class="relative z-10 px-8 py-20 sm:py-28 max-w-3xl space-y-6">
                     <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">New Taipei Roleplay 3.0</span>
                     <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">新北市公職人員<br><span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">勤務與案件管制系統</span></h1>
-                    <div><span class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.6</span></div>
+                    <div><span class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.5</span></div>
                     <p class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。本系統支援獨立單位權限隔離、補打卡自訂日期時分、報告權限控管與完整的年月日區間執勤時數統計。</p>
                     <div class="flex flex-wrap justify-center gap-4 pt-2">
                         <button data-tab="police" class="tab-shortcut-btn bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
@@ -839,6 +839,7 @@
                             <button id="generate-academy-fire-btn" class="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-medium"><i class="fa-solid fa-fire-extinguisher mr-2"></i>生成消防考核代碼</button>
                         </div>
                     </div>
+                    <div class="text-xs text-slate-500">每種考核同時最多保留 5 個未過期代碼；可手動註銷已建立代碼。</div>
                     <div id="admin-academy-code-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                 </div>
                 <div id="admin-sub-overview" class="hidden space-y-6">
@@ -2054,16 +2055,33 @@
             try { localStorage.setItem('ntpcrp_academy_codes', JSON.stringify(rows.slice(-30))); } catch (e) {}
         }
 
+        function removeAcademyCode(code, silent = false) {
+            const rows = loadAcademyCodes();
+            const next = rows.filter(x => x.code !== code);
+            saveAcademyCodes(next);
+            if (academyExamSession?.code === code) {
+                logoutAcademySession(true);
+            }
+            renderAdminAcademyCodes();
+            if (!silent) showToast('考核代碼已註銷。', 'success', '代碼已移除');
+        }
+
         function generateAcademyCode(type) {
             if (!currentUser || currentUser.role !== 'admin') {
                 showToast('只有最高管理員可以生成專生考核代碼。', 'warning', '權限不足');
                 return;
             }
-            const expiresAt = Date.now() + 30 * 60 * 1000;
+            const now = Date.now();
+            const rows = loadAcademyCodes().filter(x => Number(x.expiresAt) > now);
+            const activeCount = rows.filter(x => x.type === type).length;
+            if (activeCount >= 5) {
+                showToast(`${type === 'police' ? '警務' : '消防'}考核代碼目前已達 5 個上限，請先註銷或等待代碼過期。`, 'warning', '已達生成上限');
+                return;
+            }
+            const expiresAt = now + 30 * 60 * 1000;
             const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase().padEnd(6, 'X');
             const code = `NTP-${type === 'police' ? 'P' : 'F'}-${expiresAt.toString(36).toUpperCase()}-${randomPart}-${academyChecksum(type, expiresAt, randomPart)}`;
-            const rows = loadAcademyCodes().filter(x => Number(x.expiresAt) > Date.now());
-            rows.push({ code, type, expiresAt, createdAt: Date.now(), creator: currentUser.account });
+            rows.push({ code, type, expiresAt, createdAt: now, creator: currentUser.account });
             saveAcademyCodes(rows);
             renderAdminAcademyCodes();
             try { navigator.clipboard?.writeText(code); } catch (e) {}
@@ -2090,6 +2108,9 @@
                     </div>
                     <div class="mt-3 font-mono text-sm text-white break-all">${row.code}</div>
                     <div class="mt-2 text-[11px] text-slate-500">生成：${formatDateTime(row.createdAt)}　有效至：${formatDateTime(row.expiresAt)}</div>
+                    <button type="button" onclick="removeAcademyCode('${row.code}')" class="mt-3 w-full px-3 py-2 rounded-xl bg-red-600/10 hover:bg-red-600/20 border border-red-500/20 text-red-400 text-xs">
+                        <i class="fa-solid fa-ban mr-1"></i>手動註銷此考核代碼
+                    </button>
                 </div>`;
             }).join('');
         }
@@ -2187,6 +2208,11 @@
         }
 
         function logoutAcademySession(silent = false) {
+            const endingCode = academyExamSession?.code || '';
+            if (endingCode) {
+                const rows = loadAcademyCodes();
+                saveAcademyCodes(rows.filter(x => x.code !== endingCode));
+            }
             academyExamSession = null;
             academyExamCache = { policeReports: [], fireReports: [], emsReports: [] };
             safeSessionRemove('ntpcrp_academy_session');
@@ -2210,7 +2236,50 @@
                 <div class="mt-2 font-mono text-sm text-slate-300">${r.id || '--'}</div>
                 <h4 class="mt-2 font-bold text-white">${r.title || '未命名考核案件'}</h4>
                 <p class="mt-2 text-sm text-slate-400 whitespace-pre-wrap line-clamp-3">${r.content || '--'}</p>
+                <button type="button" onclick="viewAcademyReportDetail('${r.type}','${r.id}')" class="mt-4 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-300 rounded-xl text-xs">
+                    <i class="fa-solid fa-up-right-and-down-left-from-center mr-1"></i>檢視完整報告
+                </button>
             </div>`).join('') : '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">目前尚無考核案件，請使用上方模板開始模擬。</div>';
+        }
+
+        function viewAcademyReportDetail(type, id) {
+            let r = null;
+            if (type === 'EMS') r = (academyExamCache.emsReports || []).find(x => String(x.id) === String(id));
+            else {
+                const list = type === '警務' ? academyExamCache.policeReports : academyExamCache.fireReports;
+                r = (list || []).find(x => String(x.caseId) === String(id));
+            }
+            if (!r) { showToast('找不到考核案件資料。', 'error', '資料不存在'); return; }
+            if (type === 'EMS') {
+                document.getElementById('ems-detail-id').textContent = r.id || id;
+                document.getElementById('ems-detail-title').textContent = `${r.patient || '傷患'} 的EMS救護出勤報告`;
+                const fields=[['主訴',r.chiefComplaint],['派遣類別',r.dispatchCategory],['傷患 RP 名稱 / ID',r.patient],['出勤單位 / 車輛',r.unitVehicle],['GCS評分 E',r.gcsE],['派遣時間',r.dispatchTime],['抵達時間',r.arrivalTime],['離開時間',r.leaveTime],['到院時間',r.hospitalTime],['返隊時間',r.returnTime],['填寫人',`${r.authorName||'專生考生'} (${r.authorId||'警專專生'})`],['建立時間',r.time||formatDateTime(r.timestamp)]];
+                document.getElementById('ems-detail-fields').innerHTML=fields.map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${k}</span><span class="text-sm text-slate-200">${v||'--'}</span></div>`).join('');
+                document.getElementById('ems-detail-treatment').textContent=r.treatment||'--';
+                const action=document.getElementById('ems-detail-action-bar'); if(action) action.innerHTML='';
+                document.getElementById('modal-ems-detail').classList.remove('hidden');
+                return;
+            }
+            const dept = type === '警務' ? 'police' : 'fire';
+            document.getElementById('detail-case-badge').textContent=r.caseId||id;
+            document.getElementById('detail-title').textContent=r.title||'未命名案件';
+            document.getElementById('detail-author').textContent=`${r.authorName||'--'} (${r.authorId||'--'})`;
+            document.getElementById('detail-registered-account').textContent=r.registeredByAccount||'警專專生';
+            document.getElementById('detail-suspect-name').textContent=r.suspectName||'--';
+            document.getElementById('detail-suspect-id').textContent=r.suspectId||'--';
+            document.getElementById('detail-suspect-vehicle').textContent=r.suspectVehicle||'--';
+            document.getElementById('detail-suspect-name-wrap').classList.toggle('hidden',dept!=='police');
+            document.getElementById('detail-suspect-id-wrap').classList.toggle('hidden',dept!=='police');
+            document.getElementById('detail-suspect-vehicle-wrap').classList.toggle('hidden',dept!=='police');
+            const extra=document.getElementById('detail-police-extra-wrap'); if(extra) extra.classList.toggle('hidden',dept!=='police');
+            if(dept==='police'){document.getElementById('detail-postal-code').textContent=r.postalCode||'未填';document.getElementById('detail-command').textContent=r.command||'未填';document.getElementById('detail-support-units').textContent=(r.supportUnits||[]).join('、')||'無';}
+            document.getElementById('detail-time').textContent=r.time||formatDateTime(r.timestamp);
+            document.getElementById('detail-content').textContent=r.content||'';
+            document.getElementById('detail-remark').innerHTML='專生考核案件：本報告僅保留於本次考核瀏覽器快取，未寫入正式案件資料庫。';
+            const links=getReportVideoLinks(r),vidWrap=document.getElementById('detail-video-wrapper'),vidBox=document.getElementById('detail-video-links');
+            if(links.length){vidWrap.classList.remove('hidden');vidBox.innerHTML=links.map((url,i)=>`<a href="${url}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-xs text-blue-400 hover:text-blue-300 hover:underline"><i class="fa-solid fa-video"></i><span>開啟影片 ${i+1}</span></a>`).join('');} else {vidWrap.classList.add('hidden');vidBox.innerHTML='';}
+            const actionBar=document.getElementById('detail-action-bar'); if(actionBar) actionBar.innerHTML='';
+            document.getElementById('modal-report-detail').classList.remove('hidden');
         }
 
         function showSubmitSuccessAnimation(title='送出成功', message='案件資料已成功送出。') {
