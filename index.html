@@ -481,6 +481,7 @@
 
                 <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
                     <button id="btn-police-reports" data-sub="reports" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史案件報告庫</button>
+                    <button id="btn-police-review" data-sub="review" class="police-sub-btn hidden px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-stamp mr-2"></i>高層審核系統</button>
                     <button id="btn-police-punishments" data-sub="punishments" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-gavel mr-2"></i>警用獎懲專區</button>
                     <button id="btn-police-clocks" data-sub="clocks" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clipboard-user mr-2"></i>即時出勤打卡紀錄</button>
                     <button id="btn-police-hours" data-sub="hours" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數統計</button>
@@ -497,6 +498,16 @@
                         </div>
                     </div>
                     <div id="police-reports-list" class="grid grid-cols-1 gap-4"></div>
+                </div>
+
+                <div id="police-sub-review" class="hidden space-y-5">
+                    <div class="bg-slate-900 border border-blue-500/20 rounded-2xl p-6 shadow-xl">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-stamp text-blue-400 mr-2"></i>高層審核系統</h3><p class="text-xs text-slate-500 mt-1">僅警察高層與管理中心可審核；案件在核准前不會進入共享案件報告庫。</p></div>
+                            <span id="police-review-count" class="px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold">待審 0 件</span>
+                        </div>
+                    </div>
+                    <div id="police-review-list" class="grid grid-cols-1 gap-4"></div>
                 </div>
 
                 <div id="police-sub-punishments" class="hidden space-y-4">
@@ -753,6 +764,13 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            <div id="profile-notification-center" class="bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl">
+                <div class="flex items-center justify-between gap-3 mb-5">
+                    <div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-bell text-cyan-400 mr-2"></i>個人通知中心</h3><p class="text-xs text-slate-500 mt-1">案件審核、退件與重新送件狀態會在這裡通知你。</p></div>
+                    <span id="profile-notification-count" class="px-3 py-1.5 rounded-full bg-slate-950 border border-slate-800 text-xs text-slate-400">0 則</span>
+                </div>
+                <div id="profile-notification-list" class="space-y-3"></div>
             </div>
         </section>
 
@@ -1448,6 +1466,17 @@
         </div>
     </div>
 
+    <!-- Police Review Reject Modal -->
+    <div id="modal-review-reject" class="fixed inset-0 z-[70] bg-slate-950/85 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-red-500/20 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-5 shadow-2xl">
+            <div class="flex justify-between items-center"><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-rotate-left text-red-400 mr-2"></i>案件退件</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-review-reject"><i class="fa-solid fa-xmark"></i></button></div>
+            <input type="hidden" id="review-reject-case-id">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">退件原因（必填）</label>
+            <textarea id="review-reject-reason" rows="5" placeholder="請詳細說明退件原因，供寄件人修改後重新送件。" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-red-500"></textarea>
+            <button id="submit-review-reject-btn" class="w-full bg-red-600 hover:bg-red-500 text-white font-medium py-3 rounded-xl">確認退件</button>
+        </div>
+    </div>
+
     <!-- Create User Modal -->
     <div id="modal-create-user" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
@@ -1522,6 +1551,8 @@
         let appData = {
             users: [],
             policeReports: [],
+            policePendingReports: [],
+            reportNotifications: [],
             fireReports: [],
             policePunishments: [],
             emsReports: [],
@@ -1720,6 +1751,7 @@
 
             const submitRemarkBtn = document.getElementById('submit-remark-btn');
             if (submitRemarkBtn) submitRemarkBtn.addEventListener('click', submitRemark);
+            const rejectReviewBtn=document.getElementById('submit-review-reject-btn'); if(rejectReviewBtn) rejectReviewBtn.addEventListener('click', rejectPolicePendingReport);
 
             const submitNewUserBtn = document.getElementById('submit-new-user-btn');
             if (submitNewUserBtn) submitNewUserBtn.addEventListener('click', submitNewUser);
@@ -1876,6 +1908,10 @@
 
                 const policeRepSnap = await fm.getDocs(fm.collection(db, 'policeReports'));
                 appData.policeReports = policeRepSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
+                const policePendingSnap = await fm.getDocs(fm.collection(db, 'policePendingReports'));
+                appData.policePendingReports = policePendingSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
+                const reportNotifySnap = await fm.getDocs(fm.collection(db, 'reportNotifications'));
+                appData.reportNotifications = reportNotifySnap.docs.map(d => ({ docId: d.id, ...d.data() }));
 
                 const punishSnap = await fm.getDocs(fm.collection(db, 'policePunishments'));
                 appData.policePunishments = punishSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
@@ -1932,6 +1968,8 @@
 
                 updateAccessLocks();
                 renderPoliceReports();
+                renderPoliceReview();
+                renderMyProfile();
                 renderPolicePunishments();
                 renderPoliceClocks();
                 renderFireReports();
@@ -2034,7 +2072,7 @@
         }
 
         function switchPoliceSubTab(sub) {
-            ['reports', 'punishments', 'clocks', 'hours', 'citizen', 'vehicles'].forEach(s => {
+            ['reports', 'review', 'punishments', 'clocks', 'hours', 'citizen', 'vehicles'].forEach(s => {
                 const el = document.getElementById(`police-sub-${s}`);
                 if (el) el.classList.add('hidden');
                 const btn = document.getElementById(`btn-police-${s}`);
@@ -2044,6 +2082,7 @@
             if (target) target.classList.remove('hidden');
             const activeBtn = document.getElementById(`btn-police-${sub}`);
             if (activeBtn) activeBtn.className = "police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white whitespace-nowrap";
+            if(sub==='review') renderPoliceReview();
         }
 
         function switchFireSubTab(sub) {
@@ -2229,6 +2268,19 @@
             return matches(appData.policeReports) + matches(appData.fireReports) + matches(appData.emsReports);
         }
 
+        function renderPersonalNotifications(){
+            const host=document.getElementById('profile-notification-list'), badge=document.getElementById('profile-notification-count'); if(!host||!badge)return;
+            if(!currentUser){host.innerHTML='<div class="text-sm text-slate-500 text-center py-6">登入後即可查看個人案件通知。</div>';badge.textContent='0 則';return;}
+            const key=String(currentUser.account||'').toLowerCase();
+            const notes=(appData.reportNotifications||[]).filter(n=>String(n.recipientAccount||'').toLowerCase()===key).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+            const pending=(appData.policePendingReports||[]).filter(r=>String(r.registeredByAccount||'').toLowerCase()===key).sort((a,b)=>(b.updatedAt||b.submittedAt||0)-(a.updatedAt||a.submittedAt||0));
+            badge.textContent=`${notes.length} 則`;
+            if(!notes.length && !pending.length){host.innerHTML='<div class="text-sm text-slate-500 text-center py-6">目前沒有案件審核通知。</div>';return;}
+            const reportCards=pending.map(r=>{const rejected=r.reviewStatus==='rejected', statusText=rejected?'退件': '審核中'; const cls=rejected?'border-red-500/50 bg-red-950/30':'border-amber-500/30 bg-amber-950/10'; const icon=rejected?'fa-circle-xmark text-red-400':'fa-hourglass-half text-amber-400'; const reason=rejected?`<div class="mt-3 rounded-xl bg-red-950/40 border border-red-500/20 p-3"><span class="text-[11px] text-red-300 font-semibold">退件原因</span><div class="text-sm text-red-100 mt-1 whitespace-pre-wrap">${r.rejectionReason||'未提供原因'}</div></div>`:''; const edit=rejected?`<button onclick="openEditReportModal('police-pending-report','${r.caseId}')" class="mt-3 px-3 py-2 rounded-lg bg-red-600/20 text-red-300 text-xs">重新編輯送件</button>`:''; return `<div class="rounded-2xl border ${cls} p-5"><div class="flex items-start gap-3"><i class="fa-solid ${icon} mt-1"></i><div class="flex-1 min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="font-bold text-white">${r.title||'未命名案件'}</span><span class="text-[11px] font-mono text-slate-500">${r.caseId||'--'}</span><span class="px-2 py-1 rounded-full text-[11px] font-semibold ${rejected?'bg-red-500/15 text-red-300':'bg-amber-500/15 text-amber-300'}">${statusText}</span></div><div class="text-xs text-slate-400 mt-2">送件時間：${formatDateTime(r.submittedAt||r.timestamp)}</div><p class="text-sm text-slate-300 mt-3 line-clamp-4 whitespace-pre-wrap">${r.content||''}</p>${reason}${edit}</div></div></div>`;}).join('');
+            const cards=notes.map(n=>{const rejected=n.status==='rejected',approved=n.status==='approved'; const cls=rejected?'border-red-500/40 bg-red-950/25':approved?'border-emerald-500/25 bg-emerald-950/15':'border-amber-500/25 bg-amber-950/10'; const icon=rejected?'fa-rotate-left text-red-400':approved?'fa-check-circle text-emerald-400':'fa-hourglass-half text-amber-400'; return `<div class="rounded-2xl border ${cls} p-4"><div class="flex items-start gap-3"><i class="fa-solid ${icon} mt-1"></i><div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-2"><span class="font-bold text-slate-200">${n.title||'案件通知'}</span><span class="text-[11px] font-mono text-slate-500">${n.caseId||''}</span></div><p class="text-sm text-slate-300 mt-1 whitespace-pre-wrap">${n.message||''}</p><span class="text-[11px] text-slate-500">${formatDateTime(n.timestamp)}</span></div></div></div>`;}).join('');
+            host.innerHTML=reportCards+cards;
+        }
+
         function renderMyProfile() {
             const lock = document.getElementById('profile-login-lock');
             const content = document.getElementById('profile-content');
@@ -2245,6 +2297,7 @@
             document.getElementById('profile-units').textContent = getUnitDisplayNames(currentUser);
             document.getElementById('profile-total-hours').textContent = `${calculateUserTotalDutyHours(currentUser.account)} 小時`;
             document.getElementById('profile-total-reports').textContent = getUserReportCount(currentUser.account);
+            renderPersonalNotifications();
         }
 
         function academyChecksum(type, expiresAt, randomPart) {
@@ -2593,6 +2646,7 @@
             const adminContent = document.getElementById('admin-content-container');
             const punishmentPublishBtn = document.getElementById('police-punish-modal-btn');
             const punishmentTabBtn = document.getElementById('btn-police-punishments');
+            const policeReviewBtn = document.getElementById('btn-police-review');
             const adminNav = document.getElementById('nav-admin');
             const adminMobileNav = document.getElementById('mobile-nav-admin');
 
@@ -2629,6 +2683,9 @@
             if (punishmentPublishBtn) punishmentPublishBtn.classList.toggle('hidden', !canUsePolicePunishment());
             // 所有已進入警務系統的員警都可以預覽獎懲；發布按鈕另行限制。
             if (punishmentTabBtn) punishmentTabBtn.classList.remove('hidden');
+            const canReviewPolice = !!currentUser && (currentUser.role === 'admin' || (currentUser.role === 'high' && userHasUnit('police')));
+            if (policeReviewBtn) policeReviewBtn.classList.toggle('hidden', !canReviewPolice);
+            if (!canReviewPolice && document.getElementById('police-sub-review') && !document.getElementById('police-sub-review').classList.contains('hidden')) switchPoliceSubTab('reports');
         }
 
         function openClockModal(dept, isRetro) {
@@ -2949,15 +3006,32 @@
                 return;
             }
 
-            const collectionName = dept === 'police' ? 'policeReports' : 'fireReports';
+            const collectionName = dept === 'police' ? 'policePendingReports' : 'fireReports';
             try {
-                await fm.setDoc(fm.doc(db, collectionName, caseId), reportObj);
-                const target = dept === 'police' ? appData.policeReports : appData.fireReports;
-                target.unshift({docId: caseId, ...reportObj});
-                closeModal('modal-report');
-                dept === 'police' ? renderPoliceReports() : renderFireReports();
-                showSubmitSuccessAnimation('案件送出成功', dept==='police' ? `案件 ${caseId} 已成功登記，總監獄時間：${formatJailMinutes(reportObj.jailMinutes)}。` : `案件 ${caseId} 已成功登記。`);
-                renderMyProfile();
+                if (dept === 'police') {
+                    reportObj.reviewStatus = 'pending';
+                    reportObj.reviewedAt = 0;
+                    reportObj.reviewedBy = '';
+                    reportObj.rejectionReason = '';
+                    reportObj.submittedAt = now.getTime();
+                    await fm.setDoc(fm.doc(db, collectionName, caseId), reportObj);
+                    appData.policePendingReports.unshift({docId: caseId, ...reportObj});
+                    const notification = { type:'report', caseId, recipientAccount:currentUser.account, status:'pending', title:'案件已送出，等待高層審核', message:`案件 ${caseId} 已送入高層審核系統。`, timestamp:Date.now(), read:false };
+                    const nref = fm.doc(fm.collection(db,'reportNotifications'));
+                    await fm.setDoc(nref, notification);
+                    appData.reportNotifications.unshift({docId:nref.id,...notification});
+                    closeModal('modal-report');
+                    renderPoliceReports(); renderPoliceReview(); renderMyProfile();
+                    showSubmitSuccessAnimation('案件送出成功', `案件 ${caseId} 已送出，等待警局高層或管理中心審核。`);
+                } else {
+                    await fm.setDoc(fm.doc(db, collectionName, caseId), reportObj);
+                    const target = appData.fireReports;
+                    target.unshift({docId: caseId, ...reportObj});
+                    closeModal('modal-report');
+                    renderFireReports();
+                    showSubmitSuccessAnimation('案件送出成功', `案件 ${caseId} 已成功登記。`);
+                    renderMyProfile();
+                }
             } catch (e) {
                 showToast('提交失敗：' + e.message, 'error', '操作失敗');
             }
@@ -2991,6 +3065,26 @@
                     <div class="text-xs text-slate-300 whitespace-pre-wrap">${remark.text || ''}</div>
                 </div>`).join('');
         }
+
+        function canReviewPoliceReports(){ return !!currentUser && (currentUser.role==='admin' || (currentUser.role==='high' && userHasUnit('police'))); }
+        function renderPoliceReview(){
+            const host=document.getElementById('police-review-list'), count=document.getElementById('police-review-count'); if(!host)return;
+            if(!canReviewPoliceReports()){host.innerHTML=''; if(count)count.textContent='待審 0 件'; return;}
+            const rows=(appData.policePendingReports||[]).filter(r=>r.reviewStatus==='pending').sort((a,b)=>(b.submittedAt||b.timestamp||0)-(a.submittedAt||a.timestamp||0));
+            if(count)count.textContent=`待審 ${rows.length} 件`;
+            if(!rows.length){host.innerHTML='<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">目前沒有待審核的警用案件。</div>';return;}
+            host.innerHTML=rows.map(r=>`<div class="bg-slate-900 border border-blue-500/20 rounded-2xl p-6 shadow-xl space-y-4"><div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">${r.caseId||'--'}</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">待審核</span><h4 class="text-base font-bold text-white">${r.title||'未命名案件'}</h4></div><span class="text-xs text-slate-400">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">寄件人</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div><div><span class="text-slate-500 block">寄件帳號</span><span class="font-mono text-cyan-400">${r.registeredByAccount||'--'}</span></div><div><span class="text-slate-500 block">總監獄時間</span><span class="font-semibold text-amber-300">${formatJailMinutes(r.jailMinutes)}</span></div></div><p class="text-sm text-slate-300 line-clamp-4">${r.content||''}</p><div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800"><button type="button" onclick="viewPendingPoliceReportDetail('${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-eye mr-1"></i>檢視完整案件</button><button type="button" onclick="approvePolicePendingReport('${r.caseId}')" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-check mr-1"></i>審核完畢並送出</button><button type="button" onclick="openRejectPolicePending('${r.caseId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-rotate-left mr-1"></i>退件</button></div></div>`).join('');
+        }
+        function viewPendingPoliceReportDetail(caseId){ const r=(appData.policePendingReports||[]).find(x=>x.caseId===caseId); if(!r)return; viewReportDetailFromObject('police',r,true); }
+        function viewReportDetailFromObject(dept,r,isPending=false){
+            document.getElementById('detail-case-badge').textContent=r.caseId||'--'; document.getElementById('detail-title').textContent=r.title||'未命名案件'; document.getElementById('detail-author').textContent=`${r.authorName||'--'} (${r.authorId||'--'})`; const reg=document.getElementById('detail-registered-account'); if(reg)reg.textContent=getRegisteredAccount(r); document.getElementById('detail-suspect-name').textContent=r.suspectName||'--'; document.getElementById('detail-suspect-id').textContent=r.suspectId||'--'; document.getElementById('detail-suspect-vehicle').textContent=r.suspectVehicle||'--'; document.getElementById('detail-suspect-name-wrap').classList.toggle('hidden',dept!=='police'); document.getElementById('detail-suspect-id-wrap').classList.toggle('hidden',dept!=='police'); document.getElementById('detail-suspect-vehicle-wrap').classList.toggle('hidden',dept!=='police'); document.getElementById('detail-police-extra-wrap').classList.toggle('hidden',dept!=='police'); document.getElementById('detail-postal-code').textContent=r.postalCode||'未填'; document.getElementById('detail-command').textContent=r.command||'未填'; document.getElementById('detail-support-units').textContent=(r.supportUnits||[]).join('、')||'無'; document.getElementById('detail-time').textContent=r.time||formatDateTime(r.timestamp); document.getElementById('detail-content').textContent=r.content||''; const rr=getReportRemarks(r),dh=document.getElementById('detail-remark'); dh.innerHTML=rr.length?rr.map(x=>`<div class="mb-3"><span class="text-amber-400 font-semibold">${x.authorName||'長官'}</span><span class="text-slate-500 ml-2">${x.time||formatDateTime(x.timestamp)}</span><div class="mt-1 text-slate-300 whitespace-pre-wrap">${x.text||''}</div></div>`).join(''):'尚未有長官批示。'; const links=getReportVideoLinks(r),vw=document.getElementById('detail-video-wrapper'),vb=document.getElementById('detail-video-links'); if(links.length){vw.classList.remove('hidden');vb.innerHTML=links.map((url,i)=>`<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-400 hover:underline">影片 ${i+1}</a>`).join('');}else{vw.classList.add('hidden');vb.innerHTML='';} const bar=document.getElementById('detail-action-bar'); if(bar)bar.innerHTML=isPending&&canReviewPoliceReports()?`<button type="button" onclick="approvePolicePendingReport('${r.caseId}');closeModal('modal-report-detail')" class="px-3 py-2 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">審核完畢並送出</button><button type="button" onclick="openRejectPolicePending('${r.caseId}');closeModal('modal-report-detail')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">退件</button>`:''; document.getElementById('modal-report-detail').classList.remove('hidden');
+        }
+        async function approvePolicePendingReport(caseId){
+            if(!canReviewPoliceReports()){showToast('只有警察高層與管理中心可以審核案件。','warning','權限不足');return;} const r=(appData.policePendingReports||[]).find(x=>x.caseId===caseId); if(!r)return;
+            try{ const shared={...r,reviewStatus:'approved',reviewedAt:Date.now(),reviewedBy:currentUser.account}; delete shared.rejectionReason; await fm.setDoc(fm.doc(db,'policeReports',caseId),shared); await fm.deleteDoc(fm.doc(db,'policePendingReports',r.docId||caseId)); appData.policeReports.unshift({docId:caseId,...shared}); appData.policePendingReports=appData.policePendingReports.filter(x=>x.caseId!==caseId); const n={type:'report',caseId,recipientAccount:r.registeredByAccount,status:'approved',title:'案件已審核完畢',message:`案件 ${caseId} 已經高層審核完畢並正式送出。`,timestamp:Date.now(),read:false}; const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); appData.reportNotifications.unshift({docId:nr.id,...n}); await logAdminAction('審核案件完畢並送出',caseId); renderPoliceReview(); renderPoliceReports(); renderMyProfile(); showSubmitSuccessAnimation('審核完成','案件已審核完畢並同步至共享案件報告庫。'); }catch(e){showToast('審核送出失敗：'+e.message,'error','操作失敗');}
+        }
+        function openRejectPolicePending(caseId){ if(!canReviewPoliceReports()){showToast('只有警察高層與管理中心可以退件。','warning','權限不足');return;} document.getElementById('review-reject-case-id').value=caseId; document.getElementById('review-reject-reason').value=''; document.getElementById('modal-review-reject').classList.remove('hidden'); }
+        async function rejectPolicePendingReport(){ const caseId=document.getElementById('review-reject-case-id').value; const reason=document.getElementById('review-reject-reason').value.trim(); if(!canReviewPoliceReports()){showToast('權限不足。','warning','權限不足');return;} if(!reason){showToast('請填寫退件原因。','warning','退件原因必填');return;} const r=(appData.policePendingReports||[]).find(x=>x.caseId===caseId); if(!r)return; try{ const patch={reviewStatus:'rejected',rejectionReason:reason,reviewedAt:Date.now(),reviewedBy:currentUser.account,updatedAt:Date.now()}; await fm.updateDoc(fm.doc(db,'policePendingReports',r.docId||caseId),patch); Object.assign(r,patch); const n={type:'report',caseId,recipientAccount:r.registeredByAccount,status:'rejected',title:'案件遭退件',message:`案件 ${caseId} 已退件：${reason}`,timestamp:Date.now(),read:false}; const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); appData.reportNotifications.unshift({docId:nr.id,...n}); await logAdminAction('退件案件報告',caseId); closeModal('modal-review-reject'); renderPoliceReview(); renderMyProfile(); showToast('案件已退件，寄件人可重新編輯送件。','success','退件完成'); }catch(e){showToast('退件失敗：'+e.message,'error','操作失敗');} }
 
         function renderPoliceReports() {
             const container = document.getElementById('police-reports-list');
@@ -3250,14 +3344,16 @@
         }
 
         function openEditReportModal(dept, caseId) {
-            const list=dept==='police'?appData.policeReports:appData.fireReports;
+            const isPending=dept==='police-pending-report';
+            const actualDept=isPending?'police':dept;
+            const list=isPending?appData.policePendingReports:(actualDept==='police'?appData.policeReports:appData.fireReports);
             const r=list.find(x=>x.caseId===caseId);
             if(!r)return;
-            if(!canModifyReport(r,dept)){showToast('權限不足：只有高層、管理處或案件發布者可以編輯。','warning','權限不足');return;}
-            document.getElementById('edit-type').value=`${dept}-report`;
+            if(isPending){if(!currentUser||String(r.registeredByAccount||'').toLowerCase()!==String(currentUser.account||'').toLowerCase()){showToast('只有案件寄件人可以編輯。','warning','權限不足');return;} if(r.reviewStatus==='pending'){showToast('案件目前正在等待審核，暫時無法修改。','warning','等待審核');return;}} else if(!canModifyReport(r,actualDept)){showToast('權限不足：只有高層、管理處或案件發布者可以編輯。','warning','權限不足');return;}
+            document.getElementById('edit-type').value=isPending?'police-pending-report':`${actualDept}-report`;
             document.getElementById('edit-id-key').value=caseId;
-            document.getElementById('edit-modal-title').textContent=`編輯${dept==='police'?'警察':'消防'}案件報告 (${caseId})`;
-            const canChangeId=canChangeReportCaseId(dept);
+            document.getElementById('edit-modal-title').textContent=`編輯${actualDept==='police'?'警察':'消防'}案件報告 (${caseId})`;
+            const canChangeId=!isPending && canChangeReportCaseId(actualDept);
             const videos=getReportVideoLinks(r);
             const container=document.getElementById('edit-fields-container');
             container.innerHTML=`
@@ -3267,11 +3363,11 @@
                     ${canChangeId?'<p class="text-[11px] text-amber-400 mt-1">僅管理中心與警察高層可修改案件編號。</p>':''}
                 </div>
                 <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題</label><input id="edit-rep-title" value="${r.title||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div>
-                ${dept==='police'?`<div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯姓名</label><input id="edit-rep-sname" value="${r.suspectName||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">身分證件 ID</label><input id="edit-rep-sid" value="${r.suspectId||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div><div class="sm:col-span-2"><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑人車輛</label><input id="edit-rep-vehicle" value="${r.suspectVehicle||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件地點郵遞區號</label><input id="edit-rep-postal" value="${r.postalCode||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件指揮</label><input id="edit-rep-command" value="${r.command||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">支援單位（可複選）</label><details class="bg-slate-950 border border-slate-800 rounded-xl"><summary class="cursor-pointer px-4 py-3 text-sm text-slate-300">編輯支援單位</summary><div id="edit-support-units" class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border-t border-slate-800">${['偵查隊','霹靂小組','海巡署北部分署第八岸巡隊','交通分隊','新莊分局','消防局第二救災救護大隊'].map(u=>`<label class="flex items-center gap-2 min-h-[44px] p-2 border border-slate-800 rounded-lg"><input type="checkbox" name="edit-support-unit" value="${u}" ${(r.supportUnits||[]).includes(u)?'checked':''}><span class="text-xs">${u}</span></label>`).join('')}</div></details></div><div class="space-y-3 bg-slate-950/70 border border-amber-500/20 rounded-2xl p-4"><div class="flex items-center justify-between gap-3"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">違反條例（可複選、可搜尋）</label><p class="text-[11px] text-slate-500 mt-1">組織犯罪刑罰加重⅓。</p></div><span id="edit-rep-jail-total" class="shrink-0 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold">總計 ${formatJailMinutes(r.jailMinutes)}</span></div><input id="edit-rep-violation-search" type="search" oninput="filterViolationOptions('edit-rep')" placeholder="搜尋條例名稱..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500"><div id="edit-rep-violation-options" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1"></div><label class="flex items-center gap-3 min-h-[44px] p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 cursor-pointer"><input type="checkbox" id="edit-rep-organized-crime" onchange="updateViolationJailTotal('edit-rep')" ${r.organizedCrime?'checked':''} class="w-4 h-4 accent-amber-500"><span class="text-sm text-amber-200">組織犯罪刑罰加重⅓</span></label></div>`:''}
+                ${actualDept==='police'?`<div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯姓名</label><input id="edit-rep-sname" value="${r.suspectName||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">身分證件 ID</label><input id="edit-rep-sid" value="${r.suspectId||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div><div class="sm:col-span-2"><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑人車輛</label><input id="edit-rep-vehicle" value="${r.suspectVehicle||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件地點郵遞區號</label><input id="edit-rep-postal" value="${r.postalCode||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件指揮</label><input id="edit-rep-command" value="${r.command||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">支援單位（可複選）</label><details class="bg-slate-950 border border-slate-800 rounded-xl"><summary class="cursor-pointer px-4 py-3 text-sm text-slate-300">編輯支援單位</summary><div id="edit-support-units" class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border-t border-slate-800">${['偵查隊','霹靂小組','海巡署北部分署第八岸巡隊','交通分隊','新莊分局','消防局第二救災救護大隊'].map(u=>`<label class="flex items-center gap-2 min-h-[44px] p-2 border border-slate-800 rounded-lg"><input type="checkbox" name="edit-support-unit" value="${u}" ${(r.supportUnits||[]).includes(u)?'checked':''}><span class="text-xs">${u}</span></label>`).join('')}</div></details></div><div class="space-y-3 bg-slate-950/70 border border-amber-500/20 rounded-2xl p-4"><div class="flex items-center justify-between gap-3"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">違反條例（可複選、可搜尋）</label><p class="text-[11px] text-slate-500 mt-1">組織犯罪刑罰加重⅓。</p></div><span id="edit-rep-jail-total" class="shrink-0 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold">總計 ${formatJailMinutes(r.jailMinutes)}</span></div><input id="edit-rep-violation-search" type="search" oninput="filterViolationOptions('edit-rep')" placeholder="搜尋條例名稱..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500"><div id="edit-rep-violation-options" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1"></div><label class="flex items-center gap-3 min-h-[44px] p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 cursor-pointer"><input type="checkbox" id="edit-rep-organized-crime" onchange="updateViolationJailTotal('edit-rep')" ${r.organizedCrime?'checked':''} class="w-4 h-4 accent-amber-500"><span class="text-sm text-amber-200">組織犯罪刑罰加重⅓</span></label></div>`:''}
                 ${dept==='fire'?'':''}
                 <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細經過</label><textarea id="edit-rep-content" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white">${r.content||''}</textarea></div>
                 <div class="space-y-2"><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">相關影片連結（最多 3 部，可不填）</label>${[1,2,3].map((n,i)=>`<input type="url" id="edit-rep-video-${n}" value="${videos[i]||''}" placeholder="影片連結 ${n}（可留空）" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">`).join('')}</div>`;
-            if(dept==='police') renderViolationOptions('edit-rep', r.violations||[]);
+            if(actualDept==='police') renderViolationOptions('edit-rep', r.violations||[]);
             document.getElementById('modal-edit').classList.remove('hidden');
         }
 
@@ -3373,8 +3469,14 @@
             }
 
             if(editType.includes('report')){
-                const dept=editType.split('-')[0],list=dept==='police'?appData.policeReports:appData.fireReports,r=list.find(x=>x.caseId===idKey);if(!r)return;
-                if(!canModifyReport(r,dept)){showToast('權限不足：只有高層、管理處或案件發布者可以編輯。','warning','權限不足');return;}
+                const isPending = editType === 'police-pending-report';
+                const dept=editType.split('-')[0];
+                const list=isPending ? appData.policePendingReports : (dept==='police'?appData.policeReports:appData.fireReports);
+                const r=list.find(x=>x.caseId===idKey); if(!r)return;
+                if(isPending){
+                    if(!currentUser || String(r.registeredByAccount||'').toLowerCase()!==String(currentUser.account||'').toLowerCase()){showToast('只有案件寄件人可以修改待審核案件。','warning','權限不足');return;}
+                    if(r.reviewStatus==='pending'){showToast('案件目前正在等待審核，暫時無法修改。','warning','等待審核');return;}
+                } else if(!canModifyReport(r,dept)){showToast('權限不足：只有高層、管理處或案件發布者可以編輯。','warning','權限不足');return;}
                 const requestedCaseId=(document.getElementById('edit-rep-case-id')?.value||r.caseId).trim();
                 const nextCaseId=canChangeReportCaseId(dept)?requestedCaseId:r.caseId;
                 if(!nextCaseId){showToast('案件編號不可為空白。','warning','案件編號錯誤');return;}
@@ -3386,16 +3488,24 @@
                 if(dept==='police'){r.suspectName=document.getElementById('edit-rep-sname').value.trim();r.suspectId=document.getElementById('edit-rep-sid').value.trim();r.suspectVehicle=document.getElementById('edit-rep-vehicle').value.trim();r.postalCode=document.getElementById('edit-rep-postal')?.value.trim()||'';r.command=document.getElementById('edit-rep-command')?.value.trim()||'';r.supportUnits=Array.from(document.querySelectorAll('#edit-support-units input[name="edit-support-unit"]:checked')).map(cb=>cb.value);const vd=getViolationSelection('edit-rep');r.violations=vd.violations;r.organizedCrime=vd.organizedCrime;r.jailMinutes=vd.jailMinutes;}else{r.suspectName='';r.suspectId='';r.suspectVehicle='';}
                 r.videoLinks=[1,2,3].map(n=>document.getElementById(`edit-rep-video-${n}`)?.value.trim()).filter(Boolean);r.videoLink=r.videoLinks[0]||'';
                 try{
-                    const collectionName=dept==='police'?'policeReports':'fireReports';
+                    const collectionName=isPending?'policePendingReports':(dept==='police'?'policeReports':'fireReports');
                     const payload={caseId:nextCaseId,title:r.title,content:r.content,suspectName:r.suspectName,suspectId:r.suspectId,suspectVehicle:r.suspectVehicle||'',postalCode:r.postalCode||'',command:r.command||'',supportUnits:r.supportUnits||[],violations:r.violations||[],organizedCrime:!!r.organizedCrime,jailMinutes:Number(r.jailMinutes||0),videoLinks:r.videoLinks||[],videoLink:r.videoLink||'',registeredByAccount:r.registeredByAccount||r.authorAccount||currentUser.account,registeredByName:r.registeredByName||r.authorName||currentUser.name};
-                    if(nextCaseId!==r.caseId){
+                    if(isPending){
+                        const pendingPayload={...payload,reviewStatus:'pending',rejectionReason:'',reviewedAt:0,reviewedBy:'',submittedAt:Date.now(),updatedAt:Date.now()};
+                        await fm.updateDoc(fm.doc(db,'policePendingReports',r.docId||r.caseId),pendingPayload);
+                        Object.assign(r,pendingPayload);
+                        const notification={type:'report',caseId:nextCaseId,recipientAccount:currentUser.account,status:'pending',title:'案件已重新送件',message:`案件 ${nextCaseId} 已重新送入高層審核。`,timestamp:Date.now(),read:false};
+                        const nref=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nref,notification); appData.reportNotifications.unshift({docId:nref.id,...notification});
+                        await logAdminAction('案件退件後重新送件',nextCaseId); closeModal('modal-edit'); renderMyProfile(); renderPoliceReview(); showSubmitSuccessAnimation('重新送件成功',`案件 ${nextCaseId} 已重新送出，等待高層審核。`);
+                    } else if(nextCaseId!==r.caseId){
                         await fm.setDoc(fm.doc(db,collectionName,nextCaseId),{...r,...payload});
                         await fm.deleteDoc(fm.doc(db,collectionName,r.docId||r.caseId));
                         r.caseId=nextCaseId;r.docId=nextCaseId;
+                        await logAdminAction('編輯案件報告',nextCaseId);closeModal('modal-edit');dept==='police'?renderPoliceReports():renderFireReports();renderMyProfile();showToast('案件修改已成功儲存。','success','修改成功');
                     }else{
                         await fm.updateDoc(fm.doc(db,collectionName,r.docId||r.caseId),payload);
+                        await logAdminAction('編輯案件報告',nextCaseId);closeModal('modal-edit');dept==='police'?renderPoliceReports():renderFireReports();renderMyProfile();showToast('案件修改已成功儲存。','success','修改成功');
                     }
-                    await logAdminAction('編輯案件報告',nextCaseId);closeModal('modal-edit');dept==='police'?renderPoliceReports():renderFireReports();renderMyProfile();showToast('案件修改已成功儲存。','success','修改成功');
                 }catch(e){showToast('更新失敗：'+e.message,'error','修改失敗');}
             }
         }
