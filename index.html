@@ -3084,7 +3084,7 @@
             if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-file-pen ${dept === 'police' ? 'text-blue-500' : 'text-red-500'}"></i><span>填寫${dept === 'police' ? '警察' : '消防'}案件報告</span>`;
 
             const caseInput = document.getElementById('report-case-id');
-            if (caseInput) caseInput.value = academyMode ? generateAcademyCaseId(dept) : generateNextCaseId();
+            if (caseInput) caseInput.value = academyMode ? generateAcademyCaseId(dept) : generateNextCaseId(dept);
             const reportIdInput = document.getElementById('report-id');
             if (reportIdInput) reportIdInput.value = academyMode ? '警專專生' : (currentUser.staffNumber || currentUser.account);
             const reportAuthorInput = document.getElementById('report-author');
@@ -3181,29 +3181,77 @@
             }
         }
 
-        function generateNextCaseId() {
+        function generateNextCaseId(dept = currentActiveDepartmentForReport) {
             const now = new Date();
             const yyyy = now.getFullYear();
             const mm = String(now.getMonth() + 1).padStart(2, '0');
             const dd = String(now.getDate()).padStart(2, '0');
             const dateKey = `${yyyy}${mm}${dd}`;
-            const prefix = `REP-${dateKey}`;
+            const prefix = dept === 'police' ? `NTPD-${dateKey}` : `NTFD-${dateKey}`;
 
-            // 警察與消防共用當日流水號，格式：REP-YYYYMMDD001、REP-YYYYMMDD002...
-            const allReports = [...(appData.policeReports || []), ...(appData.fireReports || [])];
-            let maxSerial = 0;
-            allReports.forEach(report => {
+            // 警察、消防各自使用獨立流水號：NTPD-YYYYMMDD001 / NTFD-YYYYMMDD001。
+            const reports = dept === 'police' ? (appData.policeReports || []) : (appData.fireReports || []);
+            const pending = dept === 'police' ? (appData.policePendingReports || []) : (appData.firePendingReports || []);
+            const used = new Set();
+            [...reports, ...pending].forEach(report => {
                 const caseId = String(report.caseId || '');
                 const match = caseId.match(new RegExp(`^${prefix}(\\d+)$`));
-                if (match) {
-                    maxSerial = Math.max(maxSerial, Number(match[1]) || 0);
-                }
+                if (match) used.add(Number(match[1]) || 0);
             });
-
-            const nextSerial = String(maxSerial + 1).padStart(3, '0');
-            return `${prefix}${nextSerial}`;
+            let next = 1;
+            while (used.has(next)) next++;
+            return `${prefix}${String(next).padStart(3, '0')}`;
         }
 
+        async function renumberDailyCaseReports(dateKey, dept) {
+            if (dept !== 'police' && dept !== 'fire') return new Map();
+            const prefix = dept === 'police' ? `NTPD-${dateKey}` : `NTFD-${dateKey}`;
+            const finalCollection = dept === 'police' ? 'policeReports' : 'fireReports';
+            const pendingCollection = dept === 'police' ? 'policePendingReports' : 'firePendingReports';
+            const finalList = dept === 'police' ? (appData.policeReports || []) : (appData.fireReports || []);
+            const pendingList = dept === 'police' ? (appData.policePendingReports || []) : (appData.firePendingReports || []);
+            const rows=[];
+            finalList.filter(r=>String(r.caseId||'').startsWith(prefix)).forEach(r=>rows.push({...r,__collection:finalCollection,__oldId:String(r.caseId),__pending:false}));
+            pendingList.filter(r=>String(r.caseId||'').startsWith(prefix)).forEach(r=>rows.push({...r,__collection:pendingCollection,__oldId:String(r.caseId),__pending:true}));
+            rows.sort((a,b)=>{
+                const na=Number(String(a.__oldId).slice(prefix.length))||0, nb=Number(String(b.__oldId).slice(prefix.length))||0;
+                return na-nb || Number(a.timestamp||a.registeredAt||a.submittedAt||0)-Number(b.timestamp||b.registeredAt||b.submittedAt||0);
+            });
+            const mapping=new Map();
+            rows.forEach((r,i)=>{const next=`${prefix}${String(i+1).padStart(3,'0')}`;if(r.__oldId!==next)mapping.set(r.__oldId,next);});
+            if(!mapping.size)return mapping;
+            const changed=rows.filter(r=>mapping.has(r.__oldId));
+            const token=`__REN_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+            const staged=[];
+            try{
+                // 先暫存，避免 003→002、002→001 時與舊文件撞名。
+                for(const r of changed){
+                    const tempId=`${token}_${dept}_${r.__pending?'pending':'final'}_${r.__oldId}`;
+                    const copy={...r};delete copy.__collection;delete copy.__oldId;delete copy.__pending;
+                    await fm.setDoc(fm.doc(db,r.__collection,tempId),{...copy,caseId:tempId});
+                    staged.push({r,tempId});
+                }
+                for(const r of changed) await fm.deleteDoc(fm.doc(db,r.__collection,r.__oldId));
+                for(const item of staged){
+                    const newId=mapping.get(item.r.__oldId),copy={...item.r};delete copy.__collection;delete copy.__oldId;delete copy.__pending;
+                    await fm.setDoc(fm.doc(db,item.r.__collection,newId),{...copy,caseId:newId});
+                    await fm.deleteDoc(fm.doc(db,item.r.__collection,item.tempId));
+                }
+                [...finalList,...pendingList].forEach(r=>{const n=mapping.get(String(r.caseId||''));if(n)r.caseId=n;});
+                for(const n of (appData.reportNotifications||[])){
+                    const mapped=mapping.get(String(n.caseId||''));
+                    if(!mapped)continue;
+                    const oldId=String(n.caseId);
+                    const patch={caseId:mapped};
+                    if(String(n.message||'').includes(oldId))patch.message=String(n.message).replaceAll(oldId,mapped);
+                    try{await fm.updateDoc(fm.doc(db,'reportNotifications',n.docId),patch);Object.assign(n,patch);}catch(_){}
+                }
+                return mapping;
+            }catch(e){
+                for(const item of staged){try{await fm.deleteDoc(fm.doc(db,item.r.__collection,item.tempId));}catch(_){} }
+                throw e;
+            }
+        }
         const POLICE_VIOLATION_DEFAULTS=[['故意殺人',45],['劫獄',30],['襲擊公務人員',30],['貪污',30],['搶劫銀行',15],['妨害公務',7],['搶劫珠寶',7],['持有毒品',7],['搶劫超商',5],['損害物品',5],['非法槍枝',5],['盜竊車輛',5],['搶劫保險箱',5],['盜竊房屋',5],['盜竊ATM',5],['假冒公務員',3],['公共危險',3],['公然侮辱',3],['故意傷害',3],['社會秩序',3],['其餘',3]];
         let POLICE_VIOLATION_RULES=POLICE_VIOLATION_DEFAULTS.map(x=>[...x]);
         function formatJailMinutes(minutes){const n=Number(minutes||0);return `${Number.isInteger(n)?n:n.toFixed(1)} 分鐘`;}
@@ -3244,7 +3292,7 @@
             }
 
             const now = new Date();
-            const caseId = generateNextCaseId();
+            const caseId = generateNextCaseId(dept);
             const videoLinks = [1,2,3].map(n => document.getElementById(`report-video-link-${n}`)?.value.trim()).filter(Boolean);
             const violationData = dept === 'police' ? getViolationSelection('report') : {violations:[], organizedCrime:false, jailMinutes:0};
             // 警察刑期／違反條例為選填，未選擇時以 0 分鐘儲存，不阻擋案件送出。
@@ -3252,6 +3300,9 @@
                 caseId,
                 authorId,
                 authorName,
+                // 原始案件填寫者固定保存；後續編輯只更新 lastEditedBy，不覆蓋原始人員。
+                createdByAccount: academyMode ? `ACADEMY:${academyExamSession.code}` : currentUser.account,
+                createdByName: academyMode ? '警專專生' : (currentUser.name || authorName),
                 registeredByAccount: academyMode ? `ACADEMY:${academyExamSession.code}` : currentUser.account,
                 registeredByName: academyMode ? '警專專生' : (currentUser.name || authorName),
                 registeredAt: now.getTime(),
@@ -3634,6 +3685,9 @@
                 if (dept === 'police') appData.policeReports = appData.policeReports.filter(x => x.caseId !== caseId);
                 else appData.fireReports = appData.fireReports.filter(x => x.caseId !== caseId);
 
+                // 刪除後自動壓縮該日流水號：001 刪除後 002→001、003→002……
+                const dateMatch = String(caseId).match(/^REP-(\d{8})\d+$/);
+                if (dateMatch) await renumberDailyCaseReports(dateMatch[1], dept);
                 await logAdminAction('刪除案件報告', caseId);
                 if (dept === 'police') renderPoliceReports();
                 else renderFireReports();
@@ -3781,6 +3835,8 @@
                 const requestedCaseId=(document.getElementById('edit-rep-case-id')?.value||r.caseId).trim();
                 const nextCaseId=canChangeReportCaseId(dept)?requestedCaseId:r.caseId;
                 if(!nextCaseId){showToast('案件編號不可為空白。','warning','案件編號錯誤');return;}
+                const casePrefix=dept==='police'?'NTPD-':'NTFD-';
+                if(!new RegExp('^'+casePrefix+'\\d{11,}$').test(nextCaseId)){showToast('案件編號格式錯誤，請使用 '+casePrefix+'西元年月日＋當日流水號。','warning','案件編號錯誤');return;}
                 if(nextCaseId!==r.caseId){
                     const duplicate=[...(appData.policeReports||[]),...(appData.fireReports||[])].some(x=>x.caseId===nextCaseId&&x.caseId!==r.caseId);
                     if(duplicate){showToast('新的案件編號已存在，請重新輸入。','warning','案件編號重複');return;}
@@ -3791,7 +3847,9 @@
                 r.videoLinks=[1,2,3].map(n=>document.getElementById(`edit-rep-video-${n}`)?.value.trim()).filter(Boolean);r.videoLink=r.videoLinks[0]||'';
                 try{
                     const collectionName=isPending?(dept==='police'?'policePendingReports':'firePendingReports'):(dept==='police'?'policeReports':'fireReports');
-                    const payload={caseId:nextCaseId,title:r.title,content:r.content,suspectName:r.suspectName,suspectId:r.suspectId,suspectVehicle:r.suspectVehicle||'',postalCode:r.postalCode||'',command:r.command||'',supportUnits:r.supportUnits||[],...(dept==='police'?{violations:r.violations||[],organizedCrime:!!r.organizedCrime,jailMinutes:Number(r.jailMinutes||0)}:{}),videoLinks:r.videoLinks||[],videoLink:r.videoLink||'',registeredByAccount:r.registeredByAccount||r.authorAccount||currentUser.account,registeredByName:r.registeredByName||r.authorName||currentUser.name};
+                    const originalAuthorId=r.authorId||r.createdByAccount||r.registeredByAccount||r.authorAccount||currentUser.account;
+                    const originalAuthorName=r.authorName||r.createdByName||r.registeredByName||currentUser.name;
+                    const payload={caseId:nextCaseId,title:r.title,content:r.content,authorId:originalAuthorId,authorName:originalAuthorName,suspectName:r.suspectName,suspectId:r.suspectId,suspectVehicle:r.suspectVehicle||'',postalCode:r.postalCode||'',command:r.command||'',supportUnits:r.supportUnits||[],...(dept==='police'?{violations:r.violations||[],organizedCrime:!!r.organizedCrime,jailMinutes:Number(r.jailMinutes||0)}:{}),videoLinks:r.videoLinks||[],videoLink:r.videoLink||'',createdByAccount:r.createdByAccount||r.registeredByAccount||originalAuthorId,createdByName:r.createdByName||r.registeredByName||originalAuthorName,registeredByAccount:r.registeredByAccount||r.createdByAccount||originalAuthorId,registeredByName:r.registeredByName||r.createdByName||originalAuthorName,lastEditedByAccount:currentUser.account,lastEditedByName:currentUser.name,lastEditedAt:Date.now()};
                     if(isPending){
                         const pendingPayload={...payload,reviewStatus:'pending',rejectionReason:'',reviewedAt:0,reviewedBy:'',submittedAt:Date.now(),updatedAt:Date.now()};
                         await fm.updateDoc(fm.doc(db,dept==='police'?'policePendingReports':'firePendingReports',r.docId||r.caseId),pendingPayload);
