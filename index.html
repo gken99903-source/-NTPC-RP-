@@ -1573,7 +1573,14 @@
         window.addEventListener('firebase-ready', () => {
             db = window.db;
             fm = window.firebaseModules;
-            cloudDataReadyPromise = loadAllDataFromCloud();
+            // 雲端同步與登入工作階段分開處理；即使某個集合讀取失敗，也不影響 10 分鐘內刷新恢復登入。
+            cloudDataReadyPromise = (async () => {
+                try {
+                    await loadAllDataFromCloud();
+                } finally {
+                    try { await restoreBrowserSession(); } catch (e) { console.warn('登入工作階段恢復略過：', e); }
+                }
+            })();
         });
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1906,72 +1913,83 @@
 
                 await ensureSuperAdminAccount();
 
-                const safeCollectionDocs = async (collectionName) => {
-                    try {
-                        return await fm.getDocs(fm.collection(db, collectionName));
-                    } catch (err) {
-                        console.warn(`雲端集合 ${collectionName} 讀取失敗，略過本集合以避免中斷其他資料同步：`, err);
-                        return { docs: [] };
+                const safeCollectionDocs = async (collectionName, retries = 2) => {
+                    let lastError = null;
+                    for (let attempt = 0; attempt <= retries; attempt++) {
+                        try {
+                            return { ok: true, docs: (await fm.getDocs(fm.collection(db, collectionName))).docs };
+                        } catch (err) {
+                            lastError = err;
+                            if (attempt < retries) await new Promise(r => setTimeout(r, 350 * (attempt + 1)));
+                        }
                     }
+                    console.warn(`雲端集合 ${collectionName} 讀取失敗，保留目前資料並繼續同步：`, lastError);
+                    return { ok: false, docs: [], error: lastError };
                 };
                 const policeRepSnap = await safeCollectionDocs('policeReports');
-                appData.policeReports = policeRepSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
+                if (policeRepSnap.ok) appData.policeReports = policeRepSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
                 const policePendingSnap = await safeCollectionDocs('policePendingReports');
-                appData.policePendingReports = policePendingSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
+                if (policePendingSnap.ok) appData.policePendingReports = policePendingSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
                 const reportNotifySnap = await safeCollectionDocs('reportNotifications');
-                appData.reportNotifications = reportNotifySnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+                if (reportNotifySnap.ok) appData.reportNotifications = reportNotifySnap.docs.map(d => ({ docId: d.id, ...d.data() }));
 
                 const punishSnap = await safeCollectionDocs('policePunishments');
-                appData.policePunishments = punishSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+                if (punishSnap.ok) appData.policePunishments = punishSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
 
                 const fireRepSnap = await safeCollectionDocs('fireReports');
-                appData.fireReports = fireRepSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
+                if (fireRepSnap.ok) appData.fireReports = fireRepSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
 
                 const emsSnap = await safeCollectionDocs('emsReports');
-                appData.emsReports = emsSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
+                if (emsSnap.ok) appData.emsReports = emsSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
 
                 const policeClockSnap = await safeCollectionDocs('policeClocks');
-                appData.policeClocks = policeClockSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+                if (policeClockSnap.ok) appData.policeClocks = policeClockSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
 
                 const fireClockSnap = await safeCollectionDocs('fireClocks');
-                appData.fireClocks = fireClockSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+                if (fireClockSnap.ok) appData.fireClocks = fireClockSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
 
                 const logsSnap = await safeCollectionDocs('adminLogs');
-                appData.adminLogs = logsSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+                if (logsSnap.ok) appData.adminLogs = logsSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
 
                 const sessionsSnap = await safeCollectionDocs('loginSessions');
-                appData.loginSessions = sessionsSnap.docs.map(d=>({docId:d.id,...d.data()}));
+                if (sessionsSnap.ok) appData.loginSessions = sessionsSnap.docs.map(d=>({docId:d.id,...d.data()}));
                 const feedbackSnap = await safeCollectionDocs('feedbackReports');
-                appData.feedbackReports = feedbackSnap.docs.map(d=>({docId:d.id,...d.data()}));
+                if (feedbackSnap.ok) appData.feedbackReports = feedbackSnap.docs.map(d=>({docId:d.id,...d.data()}));
 
                 const annSnap = await safeCollectionDocs('announcements');
-                appData.announcements = annSnap.docs.map(d=>({docId:d.id,...d.data()}));
+                if (annSnap.ok) appData.announcements = annSnap.docs.map(d=>({docId:d.id,...d.data()}));
                 const blockedSnap = await safeCollectionDocs('blockedDevices');
-                appData.blockedDevices = blockedSnap.docs.map(d=>({docId:d.id,...d.data()}));
+                if (blockedSnap.ok) appData.blockedDevices = blockedSnap.docs.map(d=>({docId:d.id,...d.data()}));
                 const loginFailureSnap = await safeCollectionDocs('loginFailures');
-                appData.loginFailures = loginFailureSnap.docs.map(d=>({docId:d.id,...d.data()}));
+                if (loginFailureSnap.ok) appData.loginFailures = loginFailureSnap.docs.map(d=>({docId:d.id,...d.data()}));
                 const adminClockSnap = await safeCollectionDocs('adminClocks');
-                appData.adminClocks = adminClockSnap.docs.map(d=>({docId:d.id,...d.data()}));
+                if (adminClockSnap.ok) appData.adminClocks = adminClockSnap.docs.map(d=>({docId:d.id,...d.data()}));
 
                 const academyCodeSnap = await safeCollectionDocs('academyCodes');
-                appData.academyCodes = academyCodeSnap.docs.map(d=>({docId:d.id,...d.data()})).filter(x=>x.code);
+                if (academyCodeSnap.ok) appData.academyCodes = academyCodeSnap.docs.map(d=>({docId:d.id,...d.data()})).filter(x=>x.code);
 
-                const memoSnap = await safeCollectionDocs('systemSettings');
-                const rulesDoc = memoSnap.docs.find(d => d.id === 'policeViolationRules');
-                if (rulesDoc && Array.isArray(rulesDoc.data().rules)) {
-                    appData.policeViolationRules = rulesDoc.data().rules.map(x => [String(x.name || x[0] || ''), Number(x.minutes ?? x[1] ?? 0)]).filter(x => x[0] && Number.isFinite(x[1]));
-                }
-                if (!appData.policeViolationRules.length) {
-                    appData.policeViolationRules = POLICE_VIOLATION_DEFAULTS.map(x => [...x]);
-                    await fm.setDoc(fm.doc(db, 'systemSettings', 'policeViolationRules'), { rules: appData.policeViolationRules, updatedAt: Date.now(), updatedBy: currentUser?.account || 'system' });
-                }
-                POLICE_VIOLATION_RULES = appData.policeViolationRules.map(x => [...x]);
-                const memoDoc = memoSnap.docs.find(d => d.id === 'adminMemo');
-                if (memoDoc) {
-                    appData.adminMemo = memoDoc.data().content || '';
+                const settingsSnap = await safeCollectionDocs('systemSettings');
+                if (settingsSnap.ok) {
+                    const rulesDoc = settingsSnap.docs.find(d => d.id === 'policeViolationRules');
+                    if (rulesDoc && Array.isArray(rulesDoc.data().rules)) {
+                        appData.policeViolationRules = rulesDoc.data().rules.map(x => [String(x.name || x[0] || ''), Number(x.minutes ?? x[1] ?? 0)]).filter(x => x[0] && Number.isFinite(x[1]));
+                    }
+                    if (!appData.policeViolationRules.length) {
+                        appData.policeViolationRules = POLICE_VIOLATION_DEFAULTS.map(x => [...x]);
+                        try { await fm.setDoc(fm.doc(db, 'systemSettings', 'policeViolationRules'), { rules: appData.policeViolationRules, updatedAt: Date.now(), updatedBy: currentUser?.account || 'system' }); } catch (e) { console.warn('預設刑期表寫入失敗，略過：', e); }
+                    }
+                    POLICE_VIOLATION_RULES = appData.policeViolationRules.map(x => [...x]);
+                    const memoDoc = settingsSnap.docs.find(d => d.id === 'adminMemo');
+                    if (memoDoc) {
+                        appData.adminMemo = memoDoc.data().content || '';
+                    } else {
+                        appData.adminMemo = '1. 本週重點：加強轄區夜間巡邏與消防安檢。\n2. 各分局/大隊長請於每日下班前完成同仁打卡與案件審核。';
+                        try { await fm.setDoc(fm.doc(db, 'systemSettings', 'adminMemo'), { content: appData.adminMemo, updatedAt: Date.now(), updatedBy: currentUser?.account || 'system' }); } catch (e) { console.warn('預設備忘錄寫入失敗，略過：', e); }
+                    }
                 } else {
-                    appData.adminMemo = '1. 本週重點：加強轄區夜間巡邏與消防安檢。\n2. 各分局/大隊長請於每日下班前完成同仁打卡與案件審核。';
-                    await fm.setDoc(fm.doc(db, 'systemSettings', 'adminMemo'), { content: appData.adminMemo });
+                    // 新增集合權限不足時，不清空既有本機資料，也不讓整個雲端同步中斷。
+                    POLICE_VIOLATION_RULES = (appData.policeViolationRules?.length ? appData.policeViolationRules : POLICE_VIOLATION_DEFAULTS).map(x => [...x]);
+                    if (!appData.policeViolationRules.length) appData.policeViolationRules = POLICE_VIOLATION_DEFAULTS.map(x => [...x]);
                 }
 
                 updateAccessLocks();
@@ -2216,32 +2234,38 @@
 
         async function restoreBrowserSession() {
             const raw = safeSessionGet('ntpcrp_session');
-            if (!raw) return;
+            if (!raw) return false;
             try {
                 const saved = JSON.parse(raw);
                 const lastActive = Number(saved.lastActive || saved.loginAt || 0);
+                // 保留「10 分鐘內重新整理不登出」：刷新只要仍在 10 分鐘活動期限內即可恢復。
                 if (!saved.account || !lastActive || Date.now() - lastActive > 10 * 60 * 1000) {
                     safeSessionRemove('ntpcrp_session');
-                    return;
+                    return false;
                 }
-                const found = appData.users.find(u => String(u.account).toLowerCase() === String(saved.account).toLowerCase());
-                if (!found) { safeSessionRemove('ntpcrp_session'); return; }
+                const found = (appData.users || []).find(u => String(u.account).toLowerCase() === String(saved.account).toLowerCase());
+                if (!found) { safeSessionRemove('ntpcrp_session'); return false; }
                 currentUser = found;
-                safeSessionSet('ntpcrp_session', JSON.stringify({ account: currentUser.account, loginAt: saved.loginAt || Date.now(), lastActive: Date.now() }));
+                const sessionPayload = { account: currentUser.account, loginAt: Number(saved.loginAt || Date.now()), lastActive: Date.now() };
+                safeSessionSet('ntpcrp_session', JSON.stringify(sessionPayload));
                 updateUserBadge();
                 updateAccessLocks();
                 renderMyProfile();
-                await updateCurrentUserPresence(true);
+                try { await updateCurrentUserPresence(true); } catch (e) {}
                 clearInterval(window.__presenceTimer);
                 window.__presenceTimer = setInterval(() => {
                     if (currentUser) {
-                        safeSessionSet('ntpcrp_session', JSON.stringify({ account: currentUser.account, loginAt: saved.loginAt || Date.now(), lastActive: Date.now() }));
-                        updateCurrentUserPresence(true);
+                        const latest = { account: currentUser.account, loginAt: sessionPayload.loginAt, lastActive: Date.now() };
+                        safeSessionSet('ntpcrp_session', JSON.stringify(latest));
+                        try { updateCurrentUserPresence(true); } catch (e) {}
                     }
                 }, 30000);
                 if (currentUser.role === 'admin') startAdminPresenceRefresh();
+                return true;
             } catch (e) {
+                console.warn('瀏覽器登入工作階段恢復失敗：', e);
                 safeSessionRemove('ntpcrp_session');
+                return false;
             }
         }
 
