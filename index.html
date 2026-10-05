@@ -1237,6 +1237,13 @@
                     </div></details></div>
                 </div>
 
+                <div id="police-violation-fields" class="space-y-3 bg-slate-950/70 border border-amber-500/20 rounded-2xl p-4">
+                    <div class="flex items-center justify-between gap-3"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">違反條例（可複選、可搜尋）</label><p class="text-[11px] text-slate-500 mt-1">勾選後自動計算總監獄時間；組織犯罪刑罰加重⅓。</p></div><span id="report-jail-total" class="shrink-0 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold">總計 0 分鐘</span></div>
+                    <input id="report-violation-search" type="search" oninput="filterViolationOptions('report')" placeholder="搜尋條例名稱..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500">
+                    <div id="report-violation-options" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1"></div>
+                    <label class="flex items-center gap-3 min-h-[44px] p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 cursor-pointer"><input type="checkbox" id="report-organized-crime" onchange="updateViolationJailTotal('report')" class="w-4 h-4 accent-amber-500"><span class="text-sm text-amber-200">組織犯罪刑罰加重⅓</span></label>
+                </div>
+
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題 / 範圍說明</label>
                     <input type="text" id="report-title" placeholder="例如：轄區內交通事故 或 住宅火警" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
@@ -1293,6 +1300,7 @@
                         <div><span class="text-xs text-slate-400 block">案件指揮</span><span id="detail-command" class="font-semibold text-slate-200">--</span></div>
                         <div><span class="text-xs text-slate-400 block">支援單位</span><span id="detail-support-units" class="font-medium text-slate-200">--</span></div>
                     </div>
+                    <div id="detail-jail-summary" class="hidden col-span-2 sm:col-span-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4"></div>
                     <div class="col-span-2 sm:col-span-3">
                         <span class="text-xs text-slate-400 block">建立時間</span>
                         <span id="detail-time" class="text-slate-300">--</span>
@@ -2452,6 +2460,7 @@
             document.getElementById('detail-suspect-vehicle-wrap').classList.toggle('hidden',dept!=='police');
             const extra=document.getElementById('detail-police-extra-wrap'); if(extra) extra.classList.toggle('hidden',dept!=='police');
             if(dept==='police'){document.getElementById('detail-postal-code').textContent=r.postalCode||'未填';document.getElementById('detail-command').textContent=r.command||'未填';document.getElementById('detail-support-units').textContent=(r.supportUnits||[]).join('、')||'無';}
+            const jailSummary=document.getElementById('detail-jail-summary');if(jailSummary){jailSummary.classList.toggle('hidden',dept!=='police');jailSummary.innerHTML=dept==='police'?`<div class="text-xs text-slate-400">違反條例</div><div class="text-sm text-slate-200 mt-1">${(r.violations||[]).join('、')||'未選擇'}</div><div class="text-sm font-semibold text-amber-300 mt-2">總監獄時間：${formatJailMinutes(r.jailMinutes)}${r.organizedCrime?'（組織犯罪加重⅓）':''}</div>`:'';}
             document.getElementById('detail-time').textContent=r.time||formatDateTime(r.timestamp);
             document.getElementById('detail-content').textContent=r.content||'';
             document.getElementById('detail-remark').innerHTML='專生考核案件：本報告僅保留於本次考核瀏覽器快取，未寫入正式案件資料庫。';
@@ -2682,6 +2691,7 @@
                 if(el) el.value='';
             });
             document.querySelectorAll('#report-support-units input[type="checkbox"]').forEach(cb => cb.checked=false);
+            const violationSearch=document.getElementById('report-violation-search');if(violationSearch)violationSearch.value='';const organized=document.getElementById('report-organized-crime');if(organized)organized.checked=false;renderViolationOptions('report');
             const supportSummary=document.getElementById('report-support-summary');
             if(supportSummary) supportSummary.textContent='選擇支援單位';
 
@@ -2689,6 +2699,8 @@
             const extraWrap = document.getElementById('police-report-extra-fields');
             if (suspectWrap) suspectWrap.classList.toggle('hidden', dept !== 'police');
             if (extraWrap) extraWrap.classList.toggle('hidden', dept !== 'police');
+            const violationWrap=document.getElementById('police-violation-fields');
+            if(violationWrap) violationWrap.classList.toggle('hidden',dept!=='police');
 
             if (dept === 'police') {
                 ['report-suspect-id','report-suspect-name','report-suspect-vehicle'].forEach(id=>{
@@ -2784,6 +2796,14 @@
             return `${prefix}${nextSerial}`;
         }
 
+        const POLICE_VIOLATION_RULES=[['故意殺人',45],['劫獄',30],['襲擊公務人員',30],['貪污',30],['搶劫銀行',15],['妨害公務',7],['搶劫珠寶',7],['持有毒品',7],['搶劫超商',5],['損害物品',5],['非法槍枝',5],['盜竊車輛',5],['搶劫保險箱',5],['盜竊房屋',5],['盜竊ATM',5],['假冒公務員',3],['公共危險',3],['公然侮辱',3],['故意傷害',3],['社會秩序',3],['其餘',3]];
+        function formatJailMinutes(minutes){const n=Number(minutes||0);return `${Number.isInteger(n)?n:n.toFixed(1)} 分鐘`;}
+        function calculatePoliceJailTime(violations,organizedCrime){const base=(Array.isArray(violations)?violations:[]).reduce((sum,name)=>{const row=POLICE_VIOLATION_RULES.find(x=>x[0]===name);return sum+(row?row[1]:0);},0);return Math.round((organizedCrime?base*4/3:base)*10)/10;}
+        function renderViolationOptions(prefix='report',selected=[]){const host=document.getElementById(`${prefix}-violation-options`);if(!host)return;const set=new Set(Array.isArray(selected)?selected:[]);host.innerHTML=POLICE_VIOLATION_RULES.map(([name,min])=>`<label data-violation-name="${name.toLowerCase()}" class="violation-option flex items-center justify-between gap-2 min-h-[44px] p-3 rounded-xl border border-slate-800 bg-slate-900/70 cursor-pointer"><span class="flex items-center gap-2 min-w-0"><input type="checkbox" name="${prefix}-violation" value="${name}" ${set.has(name)?'checked':''} onchange="updateViolationJailTotal('${prefix}')" class="w-4 h-4 accent-amber-500"><span class="text-sm text-slate-200 truncate">${name}</span></span><span class="text-[11px] text-slate-500 shrink-0">${min}min</span></label>`).join('');updateViolationJailTotal(prefix);}
+        function filterViolationOptions(prefix='report'){const q=(document.getElementById(`${prefix}-violation-search`)?.value||'').trim().toLowerCase();document.querySelectorAll(`#${prefix}-violation-options .violation-option`).forEach(el=>el.classList.toggle('hidden',!!q&&!el.dataset.violationName.includes(q)));}
+        function updateViolationJailTotal(prefix='report'){const violations=Array.from(document.querySelectorAll(`input[name="${prefix}-violation"]:checked`)).map(x=>x.value),organized=!!document.getElementById(`${prefix}-organized-crime`)?.checked,total=calculatePoliceJailTime(violations,organized),out=document.getElementById(`${prefix}-jail-total`);if(out)out.textContent=`總計 ${formatJailMinutes(total)}`;return {violations,organizedCrime:organized,jailMinutes:total};}
+        function getViolationSelection(prefix='report'){return updateViolationJailTotal(prefix);}
+
         async function submitReport() {
             const academyMode = !!academyExamSession && academyExamSession.type === currentActiveDepartmentForReport;
             if (!currentUser && !academyMode) {
@@ -2808,6 +2828,7 @@
             const now = new Date();
             const caseId = generateNextCaseId();
             const videoLinks = [1,2,3].map(n => document.getElementById(`report-video-link-${n}`)?.value.trim()).filter(Boolean);
+            const violationData=dept==='police'?getViolationSelection('report'):{violations:[],organizedCrime:false,jailMinutes:0};
             const reportObj = {
                 caseId,
                 authorId,
@@ -2821,6 +2842,7 @@
                 postalCode: dept === 'police' ? (document.getElementById('report-postal-code')?.value.trim() || '') : '',
                 command: dept === 'police' ? (document.getElementById('report-command')?.value.trim() || '') : '',
                 supportUnits: dept === 'police' ? Array.from(document.querySelectorAll('#report-support-units input[name="report-support-unit"]:checked')).map(cb => cb.value) : [],
+                violations:violationData.violations, organizedCrime:violationData.organizedCrime, jailMinutes:violationData.jailMinutes,
                 title,
                 content,
                 videoLinks,
@@ -2851,7 +2873,7 @@
                 target.unshift({docId: caseId, ...reportObj});
                 closeModal('modal-report');
                 dept === 'police' ? renderPoliceReports() : renderFireReports();
-                showSubmitSuccessAnimation('案件送出成功', `案件 ${caseId} 已成功登記。`);
+                showSubmitSuccessAnimation('案件送出成功', dept==='police' ? `案件 ${caseId} 已成功登記，總監獄時間：${formatJailMinutes(reportObj.jailMinutes)}。` : `案件 ${caseId} 已成功登記。`);
                 renderMyProfile();
             } catch (e) {
                 showToast('提交失敗：' + e.message, 'error', '操作失敗');
@@ -2921,6 +2943,8 @@
                         <div><span class="text-slate-500 block">案件郵遞區號</span><span class="font-mono text-blue-400">${r.postalCode||'未填'}</span></div>
                         <div><span class="text-slate-500 block">案件指揮</span><span class="font-medium text-slate-200">${r.command||'未填'}</span></div>
                         <div class="sm:col-span-2"><span class="text-slate-500 block">支援單位</span><span class="font-medium text-slate-200">${support}</span></div>
+                        <div><span class="text-slate-500 block">總監獄時間</span><span class="font-semibold text-amber-300">${formatJailMinutes(r.jailMinutes)}</span>${r.organizedCrime?'<span class="text-[11px] text-amber-400 ml-2">組織犯罪 +⅓</span>':''}</div>
+                        <div><span class="text-slate-500 block">違反條例</span><span class="font-medium text-slate-300">${(r.violations||[]).join('、')||'未選擇'}</span></div>
                         <div class="lg:col-span-4"><span class="text-slate-500 block">長官批示</span><span class="font-medium text-slate-300">${getLatestRemarkText(r)}</span></div>
                     </div>
                     <p class="text-sm text-slate-300 line-clamp-2">${r.content||''}</p>
@@ -3063,7 +3087,7 @@
             filtered.forEach(r=>{
                 const card=document.createElement('div');
                 card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hover:border-slate-700 transition';
-                card.innerHTML=`<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex items-center space-x-3 min-w-0"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 font-mono shrink-0">${r.caseId||'--'}</span><h4 class="text-base font-bold text-white truncate">${r.title||'未命名案件'}</h4></div><span class="text-xs text-slate-400 shrink-0">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">填寫隊員</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div><div><span class="text-slate-500 block">發布登記帳號</span><span class="font-mono text-cyan-400">${getRegisteredAccount(r)}</span></div><div class="sm:col-span-2"><span class="text-slate-500 block">長官批示</span><span class="font-medium text-slate-300">${getLatestRemarkText(r)}</span></div></div><p class="text-sm text-slate-300 line-clamp-2">${r.content||''}</p><div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-slate-800/80"><button type="button" onclick="viewReportDetail('fire','${r.caseId}')" class="text-xs text-red-400 hover:text-red-300 font-semibold flex items-center justify-center px-3 py-2 rounded-lg hover:bg-red-500/10 transition min-h-[44px]"><i class="fa-solid fa-eye mr-1"></i><span>檢視詳細內容與影片</span></button><div class="mobile-report-actions flex flex-wrap gap-2">${canModifyReport(r,'fire')?`<button type="button" onclick="openEditReportModal('fire','${r.caseId}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px]">編輯</button>`:''}${canModifyReport(r,'fire')?`<button type="button" onclick="deleteReport('fire','${r.caseId}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px]">刪除</button>`:''}${canRemarkReport('fire')?`<button type="button" onclick="openRemarkModal('fireReports','${r.caseId}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs min-h-[44px]">批示備註</button>`:''}</div></div>`;
+                card.innerHTML=`<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex items-center space-x-3 min-w-0"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 font-mono shrink-0">${r.caseId||'--'}</span><h4 class="text-base font-bold text-white truncate">${r.title||'未命名案件'}</h4></div><span class="text-xs text-slate-400 shrink-0">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">填寫隊員</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div><div><span class="text-slate-500 block">發布登記帳號</span><span class="font-mono text-cyan-400">${getRegisteredAccount(r)}</span></div><div><span class="text-slate-500 block">總監獄時間</span><span class="font-semibold text-amber-300">${formatJailMinutes(r.jailMinutes)}</span>${r.organizedCrime?'<span class="text-[11px] text-amber-400 ml-2">組織犯罪 +⅓</span>':''}</div><div class="sm:col-span-2"><span class="text-slate-500 block">違反條例</span><span class="font-medium text-slate-300">${(r.violations||[]).join('、')||'未選擇'}</span></div><div class="sm:col-span-2"><span class="text-slate-500 block">長官批示</span><span class="font-medium text-slate-300">${getLatestRemarkText(r)}</span></div></div><p class="text-sm text-slate-300 line-clamp-2">${r.content||''}</p><div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-slate-800/80"><button type="button" onclick="viewReportDetail('fire','${r.caseId}')" class="text-xs text-red-400 hover:text-red-300 font-semibold flex items-center justify-center px-3 py-2 rounded-lg hover:bg-red-500/10 transition min-h-[44px]"><i class="fa-solid fa-eye mr-1"></i><span>檢視詳細內容與影片</span></button><div class="mobile-report-actions flex flex-wrap gap-2">${canModifyReport(r,'fire')?`<button type="button" onclick="openEditReportModal('fire','${r.caseId}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px]">編輯</button>`:''}${canModifyReport(r,'fire')?`<button type="button" onclick="deleteReport('fire','${r.caseId}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px]">刪除</button>`:''}${canRemarkReport('fire')?`<button type="button" onclick="openRemarkModal('fireReports','${r.caseId}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs min-h-[44px]">批示備註</button>`:''}</div></div>`;
                 container.appendChild(card);
             });
         }
@@ -3160,10 +3184,11 @@
                     ${canChangeId?'<p class="text-[11px] text-amber-400 mt-1">僅管理中心與警察高層可修改案件編號。</p>':''}
                 </div>
                 <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題</label><input id="edit-rep-title" value="${r.title||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div>
-                ${dept==='police'?`<div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯姓名</label><input id="edit-rep-sname" value="${r.suspectName||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">身分證件 ID</label><input id="edit-rep-sid" value="${r.suspectId||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div><div class="sm:col-span-2"><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑人車輛</label><input id="edit-rep-vehicle" value="${r.suspectVehicle||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件地點郵遞區號</label><input id="edit-rep-postal" value="${r.postalCode||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件指揮</label><input id="edit-rep-command" value="${r.command||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">支援單位（可複選）</label><details class="bg-slate-950 border border-slate-800 rounded-xl"><summary class="cursor-pointer px-4 py-3 text-sm text-slate-300">編輯支援單位</summary><div id="edit-support-units" class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border-t border-slate-800">${['偵查隊','霹靂小組','海巡署北部分署第八岸巡隊','交通分隊','新莊分局','消防局第二救災救護大隊'].map(u=>`<label class="flex items-center gap-2 min-h-[44px] p-2 border border-slate-800 rounded-lg"><input type="checkbox" name="edit-support-unit" value="${u}" ${(r.supportUnits||[]).includes(u)?'checked':''}><span class="text-xs">${u}</span></label>`).join('')}</div></details></div>`:''}
+                ${dept==='police'?`<div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯姓名</label><input id="edit-rep-sname" value="${r.suspectName||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">身分證件 ID</label><input id="edit-rep-sid" value="${r.suspectId||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div><div class="sm:col-span-2"><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑人車輛</label><input id="edit-rep-vehicle" value="${r.suspectVehicle||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件地點郵遞區號</label><input id="edit-rep-postal" value="${r.postalCode||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件指揮</label><input id="edit-rep-command" value="${r.command||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">支援單位（可複選）</label><details class="bg-slate-950 border border-slate-800 rounded-xl"><summary class="cursor-pointer px-4 py-3 text-sm text-slate-300">編輯支援單位</summary><div id="edit-support-units" class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border-t border-slate-800">${['偵查隊','霹靂小組','海巡署北部分署第八岸巡隊','交通分隊','新莊分局','消防局第二救災救護大隊'].map(u=>`<label class="flex items-center gap-2 min-h-[44px] p-2 border border-slate-800 rounded-lg"><input type="checkbox" name="edit-support-unit" value="${u}" ${(r.supportUnits||[]).includes(u)?'checked':''}><span class="text-xs">${u}</span></label>`).join('')}</div></details></div><div class="space-y-3 bg-slate-950/70 border border-amber-500/20 rounded-2xl p-4"><div class="flex items-center justify-between gap-3"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">違反條例（可複選、可搜尋）</label><p class="text-[11px] text-slate-500 mt-1">組織犯罪刑罰加重⅓。</p></div><span id="edit-rep-jail-total" class="shrink-0 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold">總計 ${formatJailMinutes(r.jailMinutes)}</span></div><input id="edit-rep-violation-search" type="search" oninput="filterViolationOptions('edit-rep')" placeholder="搜尋條例名稱..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500"><div id="edit-rep-violation-options" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1"></div><label class="flex items-center gap-3 min-h-[44px] p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 cursor-pointer"><input type="checkbox" id="edit-rep-organized-crime" onchange="updateViolationJailTotal('edit-rep')" ${r.organizedCrime?'checked':''} class="w-4 h-4 accent-amber-500"><span class="text-sm text-amber-200">組織犯罪刑罰加重⅓</span></label></div>`:''}
                 ${dept==='fire'?'':''}
                 <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細經過</label><textarea id="edit-rep-content" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white">${r.content||''}</textarea></div>
                 <div class="space-y-2"><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">相關影片連結（最多 3 部，可不填）</label>${[1,2,3].map((n,i)=>`<input type="url" id="edit-rep-video-${n}" value="${videos[i]||''}" placeholder="影片連結 ${n}（可留空）" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">`).join('')}</div>`;
+            if(dept==='police') renderViolationOptions('edit-rep', r.violations||[]);
             document.getElementById('modal-edit').classList.remove('hidden');
         }
 
@@ -3275,11 +3300,11 @@
                     if(duplicate){showToast('新的案件編號已存在，請重新輸入。','warning','案件編號重複');return;}
                 }
                 r.title=document.getElementById('edit-rep-title').value.trim();r.content=document.getElementById('edit-rep-content').value.trim();
-                if(dept==='police'){r.suspectName=document.getElementById('edit-rep-sname').value.trim();r.suspectId=document.getElementById('edit-rep-sid').value.trim();r.suspectVehicle=document.getElementById('edit-rep-vehicle').value.trim();r.postalCode=document.getElementById('edit-rep-postal')?.value.trim()||'';r.command=document.getElementById('edit-rep-command')?.value.trim()||'';r.supportUnits=Array.from(document.querySelectorAll('#edit-support-units input[name="edit-support-unit"]:checked')).map(cb=>cb.value);}else{r.suspectName='';r.suspectId='';r.suspectVehicle='';}
+                if(dept==='police'){r.suspectName=document.getElementById('edit-rep-sname').value.trim();r.suspectId=document.getElementById('edit-rep-sid').value.trim();r.suspectVehicle=document.getElementById('edit-rep-vehicle').value.trim();r.postalCode=document.getElementById('edit-rep-postal')?.value.trim()||'';r.command=document.getElementById('edit-rep-command')?.value.trim()||'';r.supportUnits=Array.from(document.querySelectorAll('#edit-support-units input[name="edit-support-unit"]:checked')).map(cb=>cb.value);const vd=getViolationSelection('edit-rep');r.violations=vd.violations;r.organizedCrime=vd.organizedCrime;r.jailMinutes=vd.jailMinutes;}else{r.suspectName='';r.suspectId='';r.suspectVehicle='';}
                 r.videoLinks=[1,2,3].map(n=>document.getElementById(`edit-rep-video-${n}`)?.value.trim()).filter(Boolean);r.videoLink=r.videoLinks[0]||'';
                 try{
                     const collectionName=dept==='police'?'policeReports':'fireReports';
-                    const payload={caseId:nextCaseId,title:r.title,content:r.content,suspectName:r.suspectName,suspectId:r.suspectId,suspectVehicle:r.suspectVehicle||'',postalCode:r.postalCode||'',command:r.command||'',supportUnits:r.supportUnits||[],videoLinks:r.videoLinks||[],videoLink:r.videoLink||'',registeredByAccount:r.registeredByAccount||r.authorAccount||currentUser.account,registeredByName:r.registeredByName||r.authorName||currentUser.name};
+                    const payload={caseId:nextCaseId,title:r.title,content:r.content,suspectName:r.suspectName,suspectId:r.suspectId,suspectVehicle:r.suspectVehicle||'',postalCode:r.postalCode||'',command:r.command||'',supportUnits:r.supportUnits||[],violations:r.violations||[],organizedCrime:!!r.organizedCrime,jailMinutes:Number(r.jailMinutes||0),videoLinks:r.videoLinks||[],videoLink:r.videoLink||'',registeredByAccount:r.registeredByAccount||r.authorAccount||currentUser.account,registeredByName:r.registeredByName||r.authorName||currentUser.name};
                     if(nextCaseId!==r.caseId){
                         await fm.setDoc(fm.doc(db,collectionName,nextCaseId),{...r,...payload});
                         await fm.deleteDoc(fm.doc(db,collectionName,r.docId||r.caseId));
