@@ -507,7 +507,7 @@
                 <div id="police-sub-review" class="hidden space-y-5">
                     <div class="bg-slate-900 border border-blue-500/20 rounded-2xl p-6 shadow-xl">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-stamp text-blue-400 mr-2"></i>高層審核系統</h3><p class="text-xs text-slate-500 mt-1">僅警察高層與管理中心可審核；案件在核准前不會進入共享案件報告庫。</p></div>
+                            <div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-stamp text-blue-400 mr-2"></i>高層審核系統</h3><p class="text-xs text-slate-500 mt-1">僅警察高層、高階成員與管理中心可審核；案件在核准前不會進入共享案件報告庫。</p></div>
                             <span id="police-review-count" class="px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold">待審 0 件</span>
                         </div>
                     </div>
@@ -662,7 +662,7 @@
                 <div id="fire-sub-review" class="hidden space-y-5">
                     <div class="bg-slate-900 border border-red-500/20 rounded-2xl p-6 shadow-xl">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-stamp text-red-400 mr-2"></i>消防案件高層審核系統</h3><p class="text-xs text-slate-500 mt-1">僅消防高層與管理中心可審核；案件核准前不會進入共享消防案件報告庫。</p></div>
+                            <div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-stamp text-red-400 mr-2"></i>消防案件高層審核系統</h3><p class="text-xs text-slate-500 mt-1">僅消防高層、高階成員與管理中心可審核；案件核准前不會進入共享消防案件報告庫。</p></div>
                             <span id="fire-review-count" class="px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold">待審 0 件</span>
                         </div>
                     </div>
@@ -1613,6 +1613,7 @@
                     try { await restoreBrowserSession(); } catch (e) { console.warn('登入工作階段恢復略過：', e); }
                 }
             })();
+            cloudDataReadyPromise.finally(() => startRealtimeRefresh());
         });
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -2052,6 +2053,43 @@
             }
         }
 
+        // 每 10 秒同步一次通知、案件報告與高層審核資料。採資料同步而非整頁重載，避免登入狀態、輸入中的表單與彈窗被中斷。
+        let realtimeRefreshTimer = null;
+        let realtimeRefreshBusy = false;
+        async function refreshRealtimeData() {
+            if (!db || !fm || realtimeRefreshBusy) return;
+            realtimeRefreshBusy = true;
+            try {
+                const read = async (name) => {
+                    try { return { ok:true, docs:(await fm.getDocs(fm.collection(db,name))).docs }; }
+                    catch(e){ console.warn('10秒同步集合讀取失敗：', name, e); return {ok:false,docs:[]}; }
+                };
+                const [police, policePending, fire, firePending, notifications] = await Promise.all([
+                    read('policeReports'), read('policePendingReports'), read('fireReports'), read('firePendingReports'), read('reportNotifications')
+                ]);
+                if (police.ok) appData.policeReports = police.docs.map(d=>({docId:d.id,...d.data()})).map(r=>({...r,remarks:ensureReportRemarks(r)}));
+                if (policePending.ok) appData.policePendingReports = policePending.docs.map(d=>({docId:d.id,...d.data()})).map(r=>({...r,remarks:ensureReportRemarks(r)}));
+                if (fire.ok) appData.fireReports = fire.docs.map(d=>({docId:d.id,...d.data()})).map(r=>({...r,remarks:ensureReportRemarks(r)}));
+                if (firePending.ok) appData.firePendingReports = firePending.docs.map(d=>({docId:d.id,...d.data()})).map(r=>({...r,remarks:ensureReportRemarks(r)}));
+                if (notifications.ok) appData.reportNotifications = notifications.docs.map(d=>({docId:d.id,...d.data()}));
+
+                renderPersonalNotifications();
+                renderPoliceReports();
+                renderFireReports();
+                if (canReviewPoliceReports()) renderPoliceReview();
+                if (canReviewFireReports()) renderFireReview();
+            } catch(e) {
+                console.warn('10秒自動同步失敗，保留目前畫面資料：', e);
+            } finally {
+                realtimeRefreshBusy = false;
+            }
+        }
+        function startRealtimeRefresh() {
+            clearInterval(realtimeRefreshTimer);
+            realtimeRefreshTimer = setInterval(refreshRealtimeData, 10000);
+            refreshRealtimeData();
+        }
+
         function populateMemberSelects() {
             const policeSelect = document.getElementById('police-calc-member');
             const fireSelect = document.getElementById('fire-calc-member');
@@ -2133,6 +2171,10 @@
         }
 
         function switchPoliceSubTab(sub) {
+            if (sub === 'review' && !canReviewPoliceReports()) {
+                showToast('高層審核系統僅限警察高層、高階成員與管理中心使用。', 'warning', '權限不足');
+                sub = 'reports';
+            }
             ['reports', 'review', 'punishments', 'clocks', 'hours', 'citizen', 'vehicles'].forEach(s => {
                 const el = document.getElementById(`police-sub-${s}`);
                 if (el) el.classList.add('hidden');
@@ -2147,6 +2189,10 @@
         }
 
         function switchFireSubTab(sub) {
+            if (sub === 'review' && !canReviewFireReports()) {
+                showToast('高層審核系統僅限消防高層、高階成員與管理中心使用。', 'warning', '權限不足');
+                sub = 'reports';
+            }
             ['reports', 'review', 'ems', 'clocks', 'hours'].forEach(s => {
                 const el = document.getElementById(`fire-sub-${s}`);
                 if (el) el.classList.add('hidden');
@@ -2799,8 +2845,8 @@
             if (punishmentPublishBtn) punishmentPublishBtn.classList.toggle('hidden', !canUsePolicePunishment());
             // 所有已進入警務系統的員警都可以預覽獎懲；發布按鈕另行限制。
             if (punishmentTabBtn) punishmentTabBtn.classList.remove('hidden');
-            const canReviewPolice = !!currentUser && (currentUser.role === 'admin' || (currentUser.role === 'high' && userHasUnit('police')));
-            const canReviewFire = !!currentUser && (currentUser.role === 'admin' || (currentUser.role === 'high' && userHasUnit('fire')));
+            const canReviewPolice = !!currentUser && (currentUser.role === 'admin' || ((currentUser.role === 'high' || currentUser.role === 'senior') && userHasUnit('police')));
+            const canReviewFire = !!currentUser && (currentUser.role === 'admin' || ((currentUser.role === 'high' || currentUser.role === 'senior') && userHasUnit('fire')));
             if (policeReviewBtn) policeReviewBtn.classList.toggle('hidden', !canReviewPolice);
             if (fireReviewBtn) fireReviewBtn.classList.toggle('hidden', !canReviewFire);
             if (!canReviewPolice && document.getElementById('police-sub-review') && !document.getElementById('police-sub-review').classList.contains('hidden')) switchPoliceSubTab('reports');
@@ -3180,7 +3226,7 @@
                 </div>`).join('');
         }
 
-        function canReviewFireReports(){ return !!currentUser && (currentUser.role==='admin' || (currentUser.role==='high' && userHasUnit('fire'))); }
+        function canReviewFireReports(){ return !!currentUser && (currentUser.role==='admin' || ((currentUser.role==='high' || currentUser.role==='senior') && userHasUnit('fire'))); }
         function renderFireReview(){
             const host=document.getElementById('fire-review-list'), count=document.getElementById('fire-review-count'); if(!host)return;
             if(!canReviewFireReports()){host.innerHTML=''; if(count)count.textContent='待審 0 件'; return;}
@@ -3190,9 +3236,9 @@
             host.innerHTML=rows.map(r=>`<div class="bg-slate-900 border border-red-500/20 rounded-2xl p-6 shadow-xl space-y-4"><div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 font-mono">${r.caseId||'--'}</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">待審核</span><h4 class="text-base font-bold text-white">${r.title||'未命名案件'}</h4></div><span class="text-xs text-slate-400">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">寄件人</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div><div><span class="text-slate-500 block">寄件帳號</span><span class="font-mono text-cyan-400">${r.registeredByAccount||'--'}</span></div></div><p class="text-sm text-slate-300 line-clamp-4">${r.content||''}</p><div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800"><button type="button" onclick="viewPendingFireReportDetail('${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-eye mr-1"></i>檢視完整案件</button><button type="button" onclick="approveFirePendingReport('${r.caseId}')" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-check mr-1"></i>審核完畢並送出</button><button type="button" onclick="openRejectFirePending('${r.caseId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-rotate-left mr-1"></i>退件</button></div></div>`).join('');
         }
         function viewPendingFireReportDetail(caseId){ const r=(appData.firePendingReports||[]).find(x=>x.caseId===caseId); if(!r)return; viewReportDetailFromObject('fire',r,true,'fire'); }
-        async function approveFirePendingReport(caseId){ if(!canReviewFireReports()){showToast('只有消防高層與管理中心可以審核案件。','warning','權限不足');return;} const r=(appData.firePendingReports||[]).find(x=>x.caseId===caseId); if(!r)return; try{const shared={...r,reviewStatus:'approved',reviewedAt:Date.now(),reviewedBy:currentUser.account};delete shared.rejectionReason;await fm.setDoc(fm.doc(db,'fireReports',caseId),shared);await fm.deleteDoc(fm.doc(db,'firePendingReports',r.docId||caseId));appData.fireReports.unshift({docId:caseId,...shared});appData.firePendingReports=appData.firePendingReports.filter(x=>x.caseId!==caseId);const n={type:'report',department:'fire',caseId,recipientAccount:r.registeredByAccount,status:'approved',title:'消防案件已審核完畢',message:`消防案件 ${caseId} 已經高層審核完畢並正式送出。`,timestamp:Date.now(),read:false};const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);appData.reportNotifications.unshift({docId:nr.id,...n});await logAdminAction('消防案件審核完畢並送出',caseId);renderFireReview();renderFireReports();renderMyProfile();showSubmitSuccessAnimation('審核完成','消防案件已審核完畢並同步至共享消防案件報告庫。');}catch(e){showToast('審核送出失敗：'+e.message,'error','操作失敗');}}
+        async function approveFirePendingReport(caseId){ if(!canReviewFireReports()){showToast('只有消防高層、高階成員與管理中心可以審核案件。','warning','權限不足');return;} const r=(appData.firePendingReports||[]).find(x=>x.caseId===caseId); if(!r)return; try{const shared={...r,reviewStatus:'approved',reviewedAt:Date.now(),reviewedBy:currentUser.account};delete shared.rejectionReason;await fm.setDoc(fm.doc(db,'fireReports',caseId),shared);await fm.deleteDoc(fm.doc(db,'firePendingReports',r.docId||caseId));appData.fireReports.unshift({docId:caseId,...shared});appData.firePendingReports=appData.firePendingReports.filter(x=>x.caseId!==caseId);const n={type:'report',department:'fire',caseId,recipientAccount:r.registeredByAccount,status:'approved',title:'消防案件已審核完畢',message:`消防案件 ${caseId} 已經高層審核完畢並正式送出。`,timestamp:Date.now(),read:false};const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);appData.reportNotifications.unshift({docId:nr.id,...n});await logAdminAction('消防案件審核完畢並送出',caseId);renderFireReview();renderFireReports();renderMyProfile();showSubmitSuccessAnimation('審核完成','消防案件已審核完畢並同步至共享消防案件報告庫。');}catch(e){showToast('審核送出失敗：'+e.message,'error','操作失敗');}}
         function openRejectFirePending(caseId){if(!canReviewFireReports()){showToast('只有消防高層與管理中心可以退件。','warning','權限不足');return;}document.getElementById('review-reject-case-id').value=caseId;document.getElementById('review-reject-dept').value='fire';document.getElementById('review-reject-reason').value='';document.getElementById('modal-review-reject').classList.remove('hidden');}
-                function canReviewPoliceReports(){ return !!currentUser && (currentUser.role==='admin' || (currentUser.role==='high' && userHasUnit('police'))); }
+                function canReviewPoliceReports(){ return !!currentUser && (currentUser.role==='admin' || ((currentUser.role==='high' || currentUser.role==='senior') && userHasUnit('police'))); }
         function renderPoliceReview(){
             const host=document.getElementById('police-review-list'), count=document.getElementById('police-review-count'); if(!host)return;
             if(!canReviewPoliceReports()){host.innerHTML=''; if(count)count.textContent='待審 0 件'; return;}
@@ -3206,7 +3252,7 @@
             document.getElementById('detail-case-badge').textContent=r.caseId||'--'; document.getElementById('detail-title').textContent=r.title||'未命名案件'; document.getElementById('detail-author').textContent=`${r.authorName||'--'} (${r.authorId||'--'})`; const reg=document.getElementById('detail-registered-account'); if(reg)reg.textContent=getRegisteredAccount(r); document.getElementById('detail-suspect-name').textContent=r.suspectName||'--'; document.getElementById('detail-suspect-id').textContent=r.suspectId||'--'; document.getElementById('detail-suspect-vehicle').textContent=r.suspectVehicle||'--'; document.getElementById('detail-suspect-name-wrap').classList.toggle('hidden',dept!=='police'); document.getElementById('detail-suspect-id-wrap').classList.toggle('hidden',dept!=='police'); document.getElementById('detail-suspect-vehicle-wrap').classList.toggle('hidden',dept!=='police'); document.getElementById('detail-police-extra-wrap').classList.toggle('hidden',dept!=='police'); document.getElementById('detail-postal-code').textContent=r.postalCode||'未填'; document.getElementById('detail-command').textContent=r.command||'未填'; document.getElementById('detail-support-units').textContent=(r.supportUnits||[]).join('、')||'無'; document.getElementById('detail-time').textContent=r.time||formatDateTime(r.timestamp); document.getElementById('detail-content').textContent=r.content||''; const rr=getReportRemarks(r),dh=document.getElementById('detail-remark'); dh.innerHTML=rr.length?rr.map(x=>`<div class="mb-3"><span class="text-amber-400 font-semibold">${x.authorName||'長官'}</span><span class="text-slate-500 ml-2">${x.time||formatDateTime(x.timestamp)}</span><div class="mt-1 text-slate-300 whitespace-pre-wrap">${x.text||''}</div></div>`).join(''):'尚未有長官批示。'; const links=getReportVideoLinks(r),vw=document.getElementById('detail-video-wrapper'),vb=document.getElementById('detail-video-links'); if(links.length){vw.classList.remove('hidden');vb.innerHTML=links.map((url,i)=>`<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-400 hover:underline">影片 ${i+1}</a>`).join('');}else{vw.classList.add('hidden');vb.innerHTML='';} const bar=document.getElementById('detail-action-bar'); if(bar){const reviewAllowed=dept==='fire'?canReviewFireReports():canReviewPoliceReports();bar.innerHTML=isPending&&reviewAllowed?`<button type="button" onclick="${dept==='fire'?`approveFirePendingReport('${r.caseId}')`:`approvePolicePendingReport('${r.caseId}')`};closeModal('modal-report-detail')" class="px-3 py-2 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">審核完畢並送出</button><button type="button" onclick="${dept==='fire'?`openRejectFirePending('${r.caseId}')`:`openRejectPolicePending('${r.caseId}')`};closeModal('modal-report-detail')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">退件</button>`:'';} document.getElementById('modal-report-detail').classList.remove('hidden');
         }
         async function approvePolicePendingReport(caseId){
-            if(!canReviewPoliceReports()){showToast('只有警察高層與管理中心可以審核案件。','warning','權限不足');return;} const r=(appData.policePendingReports||[]).find(x=>x.caseId===caseId); if(!r)return;
+            if(!canReviewPoliceReports()){showToast('只有警察高層、高階成員與管理中心可以審核案件。','warning','權限不足');return;} const r=(appData.policePendingReports||[]).find(x=>x.caseId===caseId); if(!r)return;
             try{ const shared={...r,reviewStatus:'approved',reviewedAt:Date.now(),reviewedBy:currentUser.account}; delete shared.rejectionReason; await fm.setDoc(fm.doc(db,'policeReports',caseId),shared); await fm.deleteDoc(fm.doc(db,'policePendingReports',r.docId||caseId)); appData.policeReports.unshift({docId:caseId,...shared}); appData.policePendingReports=appData.policePendingReports.filter(x=>x.caseId!==caseId); const n={type:'report',caseId,recipientAccount:r.registeredByAccount,status:'approved',title:'案件已審核完畢',message:`案件 ${caseId} 已經高層審核完畢並正式送出。`,timestamp:Date.now(),read:false}; const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); appData.reportNotifications.unshift({docId:nr.id,...n}); await logAdminAction('審核案件完畢並送出',caseId); renderPoliceReview(); renderPoliceReports(); renderMyProfile(); showSubmitSuccessAnimation('審核完成','案件已審核完畢並同步至共享案件報告庫。'); }catch(e){showToast('審核送出失敗：'+e.message,'error','操作失敗');}
         }
         function openRejectPolicePending(caseId){ if(!canReviewPoliceReports()){showToast('只有警察高層與管理中心可以退件。','warning','權限不足');return;} document.getElementById('review-reject-case-id').value=caseId; document.getElementById('review-reject-dept').value='police'; document.getElementById('review-reject-reason').value=''; document.getElementById('modal-review-reject').classList.remove('hidden'); }
