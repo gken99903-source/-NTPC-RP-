@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新北市 RP 3.0 公職服務系統</title>
+    <title>新北市 RP 3.0 公職服務系統 V1.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -100,6 +100,17 @@
             transition: color 0.2s ease;
         }
         .app-toast-close:hover { color: #e2e8f0; }
+
+        /* 首頁網站公告：深色系、每 5 秒垂直交叉淡入淡出 */
+        #site-announcement-bar { position: relative; overflow: hidden; background: linear-gradient(90deg, rgba(15,23,42,.98), rgba(17,24,39,.96)); border: 1px solid rgba(71,85,105,.7); border-radius: 1rem; box-shadow: 0 16px 40px rgba(0,0,0,.25); }
+        .announcement-track { position: relative; min-height: 58px; }
+        .announcement-item { position: absolute; inset: 0; display: flex; align-items: center; gap: .75rem; padding: .8rem 1rem; opacity: 0; transform: translateY(22px); transition: opacity .55s ease, transform .55s ease; pointer-events: none; }
+        .announcement-item.active { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .announcement-item.exit-up { opacity: 0; transform: translateY(-22px); }
+        .announcement-content { min-width: 0; flex: 1; }
+        .announcement-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .announcement-publisher { flex: 0 0 auto; white-space: nowrap; }
+        @media (max-width: 640px) { .announcement-item { align-items: flex-start; } .announcement-text { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; } .announcement-publisher { font-size: .7rem; } }
 
         /* 行動裝置優化：選單與操作按鍵保持整齊、好點擊 */
         @media (max-width: 767px) {
@@ -306,6 +317,11 @@
 
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Home Tab -->
+        <section id="site-announcement-bar" class="mb-6 hidden" aria-label="網站公告">
+            <div class="px-4 pt-3 text-[11px] uppercase tracking-[.22em] text-slate-500 font-bold"><i class="fa-solid fa-bullhorn mr-2 text-amber-400"></i>網站公告</div>
+            <div id="announcement-track" class="announcement-track px-2 pb-2"></div>
+        </section>
+
         <section id="tab-home" class="space-y-8">
             <div class="relative rounded-3xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-900">
                 <div class="absolute inset-0 z-0">
@@ -734,6 +750,8 @@
 
                 <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
                     <button id="btn-admin-users" data-sub="users" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap"><i class="fa-solid fa-users mr-2"></i>帳號與人員管理</button>
+                    <button id="btn-admin-announcements" data-sub="announcements" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-bullhorn mr-2"></i>發布公告</button>
+                    <button id="btn-admin-clock" data-sub="clock" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-business-time mr-2"></i>管理中心打卡</button>
                     <button id="btn-admin-logs" data-sub="logs" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clock-rotate-left mr-2"></i>一周內移除/編輯紀錄</button>
                     <button id="btn-admin-storage" data-sub="storage" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-database mr-2"></i>雲端資料庫空間</button>
                     <button id="btn-admin-memo" data-sub="memo" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-note-sticky mr-2"></i>管理員共同備忘錄</button>
@@ -761,6 +779,34 @@
                             <tbody id="admin-users-tbody" class="divide-y divide-slate-800/60"></tbody>
                         </table>
                     </div>
+                </div>
+
+                <div id="admin-sub-announcements" class="hidden space-y-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
+                            <div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-bullhorn text-amber-400 mr-2"></i>發布網站公告</h3><p class="text-xs text-slate-500 mt-1">首頁公告每 5 秒自動輪播；公告到期後自動停止顯示。</p></div>
+                            <span class="text-xs text-slate-500">發布人可自行輸入</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-400 mb-2">公告內容</label><textarea id="announcement-text-input" rows="3" maxlength="500" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500" placeholder="請輸入要顯示於首頁上方的公告內容..."></textarea></div>
+                            <div class="space-y-4">
+                                <div><label class="block text-xs font-semibold text-slate-400 mb-2">發布人</label><input id="announcement-publisher-input" maxlength="40" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white" placeholder="例如：系統管理處"></div>
+                                <div><label class="block text-xs font-semibold text-slate-400 mb-2">持續顯示</label><select id="announcement-duration-input" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white"><option value="1d">1 天</option><option value="7d">7 天</option><option value="manual">直到手動下架</option></select></div>
+                                <button id="publish-announcement-btn" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2.5 rounded-xl transition"><i class="fa-solid fa-paper-plane mr-2"></i>立即發布</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div><h3 class="text-lg font-bold text-slate-200">公告管理</h3><div id="admin-announcements-list" class="space-y-3 mt-3"></div></div>
+                </div>
+
+                <div id="admin-sub-clock" class="hidden space-y-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-business-time text-purple-400 mr-2"></i>管理中心值勤打卡</h3><p class="text-xs text-slate-500 mt-1">不需要填寫值勤編號，直接使用目前登入的管理員身分。</p></div>
+                            <div class="flex gap-2"><button id="admin-clock-in-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold">上班打卡</button><button id="admin-clock-out-btn" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold">下班打卡</button></div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl"><table class="w-full text-left text-sm"><thead><tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50"><th class="p-4">管理員</th><th class="p-4">狀態</th><th class="p-4">時間</th><th class="p-4">備註</th><th class="p-4 text-right">操作</th></tr></thead><tbody id="admin-clocks-tbody" class="divide-y divide-slate-800/60"></tbody></table></div>
                 </div>
 
                 <div id="admin-sub-logs" class="hidden space-y-4">
@@ -822,10 +868,11 @@
                     <div id="admin-online-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                 </div>
                 <div id="admin-sub-devices" class="hidden space-y-4">
-                    <div><h3 class="text-lg font-bold text-slate-200">最近 3 日登入裝置資訊</h3><p class="text-xs text-slate-500 mt-1">顯示最近 3 天內登入紀錄，供管理處核對帳號是否遭冒用。</p></div>
-                    <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl"><table class="w-full text-left border-collapse text-xs"><thead><tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50"><th class="p-3">帳號</th><th class="p-3">登入時間</th><th class="p-3">平台</th><th class="p-3">瀏覽器</th><th class="p-3">螢幕</th><th class="p-3">語言／時區</th></tr></thead><tbody id="admin-devices-tbody" class="divide-y divide-slate-800/60"></tbody></table></div>
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3"><div><h3 class="text-lg font-bold text-slate-200">最近 3 日登入裝置資訊</h3><p class="text-xs text-slate-500 mt-1">只使用現有的裝置、瀏覽器與螢幕資訊，不蒐集 IP。</p></div><button id="clear-all-login-sessions-btn" class="hidden bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/20 px-3 py-2 rounded-xl text-xs">一鍵刪除所有登入紀錄</button></div>
+                    <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl"><table class="w-full text-left border-collapse text-xs"><thead><tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50"><th class="p-3">帳號</th><th class="p-3">登入時間</th><th class="p-3">平台／瀏覽器</th><th class="p-3">螢幕</th><th class="p-3">裝置識別</th><th class="p-3 text-right">操作</th></tr></thead><tbody id="admin-devices-tbody" class="divide-y divide-slate-800/60"></tbody></table></div>
+                    <div><h4 class="text-sm font-bold text-slate-300 mb-2">目前封鎖中的裝置</h4><div id="admin-blocked-devices-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div></div>
                 </div>
-                <div id="admin-sub-feedback" class="hidden space-y-4"><div><h3 class="text-lg font-bold text-slate-200">異常／意見回報</h3><p class="text-xs text-slate-500 mt-1">首頁登入後提交的回報集中顯示於此。</p></div><div id="admin-feedback-list" class="space-y-3"></div></div>
+                <div id="admin-sub-feedback" class="hidden space-y-4"><div><h3 class="text-lg font-bold text-slate-200">異常／意見回報</h3><p class="text-xs text-slate-500 mt-1">管理員可備注、刪除；每次備注／刪除都會寫入操作稽核。</p></div><div id="admin-feedback-list" class="space-y-3"></div></div>
                 <div id="admin-sub-academy" class="hidden space-y-6">
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -856,6 +903,9 @@
                             <span class="text-slate-400 text-sm font-medium">消防總案件數</span>
                             <h4 id="stat-fire-reports" class="text-3xl font-bold text-red-400 mt-2">0</h4>
                         </div>
+                        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl"><span class="text-slate-400 text-sm font-medium">警察當前值勤</span><h4 id="stat-police-duty" class="text-3xl font-bold text-blue-400 mt-2">0</h4><p class="text-xs text-slate-500 mt-1">最新狀態為上班</p></div>
+                        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl"><span class="text-slate-400 text-sm font-medium">消防當前值勤</span><h4 id="stat-fire-duty" class="text-3xl font-bold text-red-400 mt-2">0</h4><p class="text-xs text-slate-500 mt-1">最新狀態為上班</p></div>
+                        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl"><span class="text-slate-400 text-sm font-medium">管理中心當前值勤</span><h4 id="stat-admin-duty" class="text-3xl font-bold text-purple-400 mt-2">0</h4><p class="text-xs text-slate-500 mt-1">最新狀態為上班</p></div>
                     </div>
                 </div>
             </div>
@@ -1379,6 +1429,9 @@
             adminLogs: [],
             loginSessions: [],
             feedbackReports: [],
+            announcements: [],
+            blockedDevices: [],
+            adminClocks: [],
             adminMemo: ''
         };
 
@@ -1561,6 +1614,11 @@
 
             const saveMemoBtn = document.getElementById('save-memo-btn');
             if (saveMemoBtn) saveMemoBtn.addEventListener('click', saveMemo);
+            const publishAnnouncementBtn=document.getElementById('publish-announcement-btn'); if(publishAnnouncementBtn)publishAnnouncementBtn.addEventListener('click',publishAnnouncement);
+            const adminClockInBtn=document.getElementById('admin-clock-in-btn'); if(adminClockInBtn)adminClockInBtn.addEventListener('click',()=>openAdminClockModal('上班'));
+            const adminClockOutBtn=document.getElementById('admin-clock-out-btn'); if(adminClockOutBtn)adminClockOutBtn.addEventListener('click',()=>openAdminClockModal('下班'));
+            const submitAdminClockBtn=document.getElementById('submit-admin-clock-btn'); if(submitAdminClockBtn)submitAdminClockBtn.addEventListener('click',submitAdminClock);
+            const clearSessionsBtn=document.getElementById('clear-all-login-sessions-btn'); if(clearSessionsBtn)clearSessionsBtn.addEventListener('click',deleteAllLoginSessions);
             const fbBtn=document.getElementById('home-feedback-btn'); if(fbBtn)fbBtn.addEventListener('click',openFeedbackModal);
             const fbSubmit=document.getElementById('submit-feedback-btn'); if(fbSubmit)fbSubmit.addEventListener('click',submitFeedback);
             document.querySelectorAll('input[name="new-user-units"],input[name="edit-user-units"]').forEach(cb=>cb.addEventListener('change',()=>syncUnitDivisionVisibility(cb.name.startsWith('new-')?'new':'edit')));
@@ -1730,6 +1788,13 @@
                 const feedbackSnap = await fm.getDocs(fm.collection(db, 'feedbackReports'));
                 appData.feedbackReports = feedbackSnap.docs.map(d=>({docId:d.id,...d.data()}));
 
+                const annSnap = await fm.getDocs(fm.collection(db, 'announcements'));
+                appData.announcements = annSnap.docs.map(d=>({docId:d.id,...d.data()}));
+                const blockedSnap = await fm.getDocs(fm.collection(db, 'blockedDevices'));
+                appData.blockedDevices = blockedSnap.docs.map(d=>({docId:d.id,...d.data()}));
+                const adminClockSnap = await fm.getDocs(fm.collection(db, 'adminClocks'));
+                appData.adminClocks = adminClockSnap.docs.map(d=>({docId:d.id,...d.data()}));
+
                 const memoSnap = await fm.getDocs(fm.collection(db, 'systemSettings'));
                 const memoDoc = memoSnap.docs.find(d => d.id === 'adminMemo');
                 if (memoDoc) {
@@ -1750,6 +1815,10 @@
                 renderAdminLogs();
                 renderAdminStorage();
                 renderAdminOverview();
+                renderAdminAnnouncements();
+                renderAdminClocks();
+                renderSiteAnnouncements();
+                const ap=document.getElementById('announcement-publisher-input'); if(ap && !ap.value) ap.value=currentUser?.name||'';
                 populateMemberSelects();
                 restoreBrowserSession();
                 restoreAcademySession();
@@ -1864,7 +1933,7 @@
             if (activeBtn) activeBtn.className = "fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white whitespace-nowrap";
         }
 
-        function switchAdminSubTab(sub){['users','logs','storage','memo','overview','online','devices','feedback','academy'].forEach(x=>{document.getElementById(`admin-sub-${x}`)?.classList.add('hidden');document.getElementById(`btn-admin-${x}`)?.classList.remove('bg-purple-600','text-white');});document.getElementById(`admin-sub-${sub}`)?.classList.remove('hidden');document.getElementById(`btn-admin-${sub}`)?.classList.add('bg-purple-600','text-white');if(sub==='online')refreshAdminOnlineUsers();if(sub==='devices')renderAdminDevices();if(sub==='feedback')renderAdminFeedback();if(sub==='storage')renderAdminStorage();if(sub==='users')renderAdminUsers();if(sub==='logs')renderAdminLogs();if(sub==='academy')renderAdminAcademyCodes();}
+        function switchAdminSubTab(sub){['users','announcements','clock','logs','storage','memo','overview','online','devices','feedback','academy'].forEach(x=>{document.getElementById(`admin-sub-${x}`)?.classList.add('hidden');document.getElementById(`btn-admin-${x}`)?.classList.remove('bg-purple-600','text-white');});document.getElementById(`admin-sub-${sub}`)?.classList.remove('hidden');document.getElementById(`btn-admin-${sub}`)?.classList.add('bg-purple-600','text-white');if(sub==='online')refreshAdminOnlineUsers();if(sub==='devices')renderAdminDevices();if(sub==='feedback')renderAdminFeedback();if(sub==='storage')renderAdminStorage();if(sub==='users')renderAdminUsers();if(sub==='logs')renderAdminLogs();if(sub==='academy')renderAdminAcademyCodes();if(sub==='announcements')renderAdminAnnouncements();if(sub==='clock')renderAdminClocks();}
 
         function closeModal(modalId) {
             const m = document.getElementById(modalId);
@@ -2294,7 +2363,7 @@
             window.__submitSuccessTimer = setTimeout(() => overlay.classList.remove('show'), 1350);
         }
 
-        async function handleLogin(){const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}const found=appData.users.find(u=>isSuperAdminAccount(acc)?isSuperAdminAccount(u.account)&&u.pass===pass:u.account===acc&&u.pass===pass);if(!found){showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');return;}currentUser=found;saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);await pruneOldLoginSessions();if(currentUser.role==='admin')startAdminPresenceRefresh();clearInterval(window.__presenceTimer);window.__presenceTimer=setInterval(()=>updateCurrentUserPresence(true),30000);showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');switchTab('home');}
+        async function handleLogin(){if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}const found=appData.users.find(u=>isSuperAdminAccount(acc)?isSuperAdminAccount(u.account)&&u.pass===pass:u.account===acc&&u.pass===pass);if(!found){showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');return;}currentUser=found;saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);await pruneOldLoginSessions();if(currentUser.role==='admin')startAdminPresenceRefresh();clearInterval(window.__presenceTimer);window.__presenceTimer=setInterval(()=>updateCurrentUserPresence(true),30000);showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');switchTab('home');}
         async function logout(){await updateCurrentUserPresence(false);clearInterval(window.__presenceTimer);window.__presenceTimer=null;clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();sessionStorage.removeItem('ntpcrp_session');updateUserBadge();updateAccessLocks();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
@@ -2887,7 +2956,7 @@
         }
 
         function userHasUnit(unit) { if(!currentUser) return false; if(currentUser.role==='admin') return true; return (currentUser.units||[currentUser.unit]).includes(unit); }
-        function canModifyReport(r, dept) { if(!currentUser||!r)return false; if(currentUser.role==='admin')return true; if(currentUser.role==='high' && dept==='police' && userHasUnit('police'))return true; return String(r.registeredByAccount||r.authorId||'').toLowerCase()===String(currentUser.account||'').toLowerCase(); }
+        function canModifyReport(r, dept) { if(!currentUser||!r)return false; if(isSuperAdminAccount(currentUser.account)||currentUser.role==='admin')return true; if(currentUser.role==='high' && dept==='police' && userHasUnit('police'))return true; return String(r.registeredByAccount||r.authorId||'').toLowerCase()===String(currentUser.account||'').toLowerCase(); }
         function canChangeReportCaseId(dept) { return !!currentUser && (currentUser.role==='admin' || (dept==='police' && currentUser.role==='high' && userHasUnit('police'))); }
         function getRegisteredAccount(r) { return r?.registeredByAccount || r?.authorAccount || r?.authorId || '--'; }
         function getReportVideoLinks(r) { return Array.isArray(r?.videoLinks) ? r.videoLinks.filter(Boolean) : (r?.videoLink ? [r.videoLink] : []); }
@@ -3260,9 +3329,11 @@
             return true;
         }
 
-        function getDeviceInfo(){const n=window.navigator||{};const sc=window.screen||{};return {userAgent:n.userAgent||'',platform:n.platform||'',language:n.language||'',languages:Array.isArray(n.languages)?n.languages.join(', '):'',screen:`${sc.width||0}x${sc.height||0}`,touchPoints:n.maxTouchPoints||0,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||''};}
-        function getDeviceLabel(d){const ua=String(d?.userAgent||'');const browser=/Edg\//.test(ua)?'Edge':/Chrome\//.test(ua)?'Chrome':/Firefox\//.test(ua)?'Firefox':/Safari\//.test(ua)&&!/Chrome\//.test(ua)?'Safari':'其他';const os=/Windows/.test(ua)?'Windows':/Android/.test(ua)?'Android':/(iPhone|iPad|iPod)/.test(ua)?'iOS':/Mac OS/.test(ua)?'macOS':/Linux/.test(ua)?'Linux':'其他';return `${os} / ${browser}`;}
-        async function recordLoginSession(user){if(!user||!fm||!db)return;const now=Date.now(),device=getDeviceInfo(),id=`LOGIN-${String(user.account).replace(/[^a-zA-Z0-9_-]/g,'_')}-${now}`,session={id,account:user.account,name:user.name,loginAt:now,time:formatDateTime(now),device};try{await fm.setDoc(fm.doc(db,'loginSessions',id),session);await fm.updateDoc(fm.doc(db,'users',user.docId||user.account),{online:true,lastSeen:now,lastLoginAt:now,lastDevice:device});user.online=true;user.lastSeen=now;user.lastLoginAt=now;user.lastDevice=device;appData.loginSessions.unshift({docId:id,...session});}catch(e){console.warn('login audit',e);}}
+        function getDeviceInfo(){const n=window.navigator||{};const sc=window.screen||{};const ua=n.userAgent||'';const browser=/Edg\//.test(ua)?'Edge':/Chrome\//.test(ua)?'Chrome':/Firefox\//.test(ua)?'Firefox':/Safari\//.test(ua)&&!/Chrome\//.test(ua)?'Safari':'其他';return {userAgent:ua,platform:n.platform||'',browser,screen:`${sc.width||0}x${sc.height||0}`,touchPoints:n.maxTouchPoints||0};}
+        function getDeviceLabel(d){return `${d?.platform||'未知平台'} / ${d?.browser||'其他瀏覽器'}`;}
+        function getDeviceFingerprint(device=getDeviceInfo()){const ua=String(device?.userAgent||'');const browser=device?.browser||( /Edg\//.test(ua)?'Edge':/Chrome\//.test(ua)?'Chrome':/Firefox\//.test(ua)?'Firefox':/Safari\//.test(ua)&&!/Chrome\//.test(ua)?'Safari':'其他');return btoa(unescape(encodeURIComponent([ua,device?.platform||'',browser,device?.screen||'',device?.touchPoints||0].join('|')))).replace(/[^a-zA-Z0-9]/g,'').slice(0,80);}
+        function isCurrentDeviceBlocked(){const fp=getDeviceFingerprint();return (appData.blockedDevices||[]).some(x=>x.fingerprint===fp&&x.active!==false);}
+        async function recordLoginSession(user){if(!user||!fm||!db)return;const now=Date.now(),device=getDeviceInfo(),fingerprint=getDeviceFingerprint(device),id=`LOGIN-${String(user.account).replace(/[^a-zA-Z0-9_-]/g,'_')}-${now}`,session={id,account:user.account,name:user.name,loginAt:now,time:formatDateTime(now),device,fingerprint};try{await fm.setDoc(fm.doc(db,'loginSessions',id),session);await fm.updateDoc(fm.doc(db,'users',user.docId||user.account),{online:true,lastSeen:now,lastLoginAt:now,lastDevice:device});user.online=true;user.lastSeen=now;user.lastLoginAt=now;user.lastDevice=device;appData.loginSessions.unshift({docId:id,...session});}catch(e){console.warn('login audit',e);}}
 
         async function pruneOldLoginSessions() {
             if (!currentUser || currentUser.role !== 'admin' || !fm || !db) return;
@@ -3281,17 +3352,32 @@
         function startAdminPresenceRefresh(){clearInterval(window.__adminPresenceTimer);window.__adminPresenceTimer=setInterval(()=>{if(currentUser&&currentUser.role==='admin'&&!document.getElementById('tab-admin')?.classList.contains('hidden'))refreshAdminOnlineUsers();},15000);}
         function stopAdminPresenceRefresh(){clearInterval(window.__adminPresenceTimer);window.__adminPresenceTimer=null;}
         function renderAdminOnlineUsers(){const c=document.getElementById('admin-online-list');if(!c)return;c.innerHTML=(appData.users||[]).map(u=>{const on=isUserOnline(u);return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between"><div><b class="text-white">${u.name||'--'}</b><div class="text-xs text-slate-500 font-mono">${u.account}${u.staffNumber?`／${u.staffNumber}`:''}</div></div><span class="px-3 py-1 rounded-full text-xs ${on?'bg-emerald-500/10 text-emerald-400':'bg-slate-800 text-slate-400'}">● ${on?'在線':'離線'}</span></div>`;}).join('');}
-        function renderAdminDevices(){const t=document.getElementById('admin-devices-tbody');if(!t)return;const since=Date.now()-3*24*60*60*1000,rows=(appData.loginSessions||[]).filter(x=>Number(x.loginAt||0)>=since).sort((a,b)=>b.loginAt-a.loginAt);t.innerHTML=rows.length?rows.map(x=>`<tr><td class="p-3 font-mono text-white">${x.account}</td><td class="p-3 text-slate-300">${formatDateTime(x.loginAt,x.time)}</td><td class="p-3 text-slate-300">${getDeviceLabel(x.device)}</td><td class="p-3 text-slate-400 break-all max-w-md">${x.device?.userAgent||'--'}</td><td class="p-3 text-slate-400">${x.device?.screen||'--'}</td><td class="p-3 text-slate-400">${x.device?.language||'--'} / ${x.device?.timeZone||'--'}</td></tr>`).join(''):'<tr><td colspan="6" class="p-6 text-center text-slate-500">最近 3 日尚無登入裝置紀錄。</td></tr>';}
+        function renderAdminDevices(){const t=document.getElementById('admin-devices-tbody');if(!t)return;const since=Date.now()-3*24*60*60*1000,rows=(appData.loginSessions||[]).filter(x=>Number(x.loginAt||0)>=since).sort((a,b)=>b.loginAt-a.loginAt);const blocked=(fp)=>(appData.blockedDevices||[]).some(x=>x.fingerprint===fp&&x.active!==false);t.innerHTML=rows.length?rows.map(x=>`<tr><td class="p-3 font-mono text-white">${x.account}</td><td class="p-3 text-slate-300">${formatDateTime(x.loginAt,x.time)}</td><td class="p-3 text-slate-300">${getDeviceLabel(x.device)}</td><td class="p-3 text-slate-400">${x.device?.screen||'--'}</td><td class="p-3 text-slate-400 font-mono">${x.fingerprint||getDeviceFingerprint(x.device)}</td><td class="p-3 text-right">${blocked(x.fingerprint||getDeviceFingerprint(x.device))?`<button onclick="unblockDevice('${x.fingerprint||getDeviceFingerprint(x.device)}')" class="px-2.5 py-1 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">解封裝置</button>`:`<button onclick="blockDevice('${x.fingerprint||getDeviceFingerprint(x.device)}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">封鎖裝置</button>`}</td></tr>`).join(''):'<tr><td colspan="6" class="p-6 text-center text-slate-500">最近 3 日尚無登入裝置紀錄。</td></tr>';const clear=document.getElementById('clear-all-login-sessions-btn');if(clear)clear.classList.toggle('hidden',!isSuperAdminAccount(currentUser?.account));const bc=document.getElementById('admin-blocked-devices-list');if(bc){const br=(appData.blockedDevices||[]).filter(x=>x.active!==false);bc.innerHTML=br.length?br.map(x=>`<div class="bg-slate-900 border border-red-500/10 rounded-2xl p-4 flex items-center justify-between gap-3"><div><div class="font-mono text-xs text-red-300">${x.fingerprint||'--'}</div><div class="text-xs text-slate-500 mt-1">封鎖人員：${x.blockedBy||'--'} ／ ${formatDateTime(x.blockedAt)}</div><div class="text-xs text-slate-400 mt-1">${getDeviceLabel(x.device)} ／ ${x.device?.screen||'--'}</div></div><button onclick="unblockDevice('${x.fingerprint}')" class="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">解封</button></div>`).join(''):'<div class="text-xs text-slate-500 bg-slate-900 border border-slate-800 rounded-xl p-4">目前沒有被封鎖的裝置。</div>';}}
+
+        async function deleteAllLoginSessions(){if(!isSuperAdminAccount(currentUser?.account)){showToast('只有 Dsuensx 可以刪除所有登入紀錄。','warning','權限不足');return;}if(!confirm('確定要一鍵刪除所有登入紀錄嗎？此操作會留下管理稽核紀錄。'))return;try{for(const x of [...(appData.loginSessions||[])]){await fm.deleteDoc(fm.doc(db,'loginSessions',x.docId||x.id));}appData.loginSessions=[];await logAdminAction('一鍵刪除所有登入紀錄','loginSessions/*');renderAdminDevices();showToast('所有登入紀錄已刪除。','success','操作完成');}catch(e){showToast('刪除登入紀錄失敗：'+e.message,'error','操作失敗');}}
+
+        async function blockDevice(fingerprint){if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以封鎖裝置。','warning','權限不足');return;}if(!fingerprint)return;if((appData.blockedDevices||[]).some(x=>x.fingerprint===fingerprint&&x.active!==false))return;if(!confirm('確定要封鎖此裝置嗎？系統只會使用現有的裝置、瀏覽器與螢幕資訊，不會蒐集 IP。'))return;const now=Date.now(),obj={fingerprint,active:true,blockedAt:now,blockedBy:currentUser.account,device:(appData.loginSessions||[]).find(x=>x.fingerprint===fingerprint)?.device||null};try{await fm.setDoc(fm.doc(db,'blockedDevices',fingerprint),obj);appData.blockedDevices.push({docId:fingerprint,...obj});await logAdminAction('封鎖登入裝置',fingerprint);renderAdminDevices();showToast('裝置已封鎖。','success','操作完成');}catch(e){showToast('封鎖失敗：'+e.message,'error','操作失敗');}}
+        async function unblockDevice(fingerprint){if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以解封裝置。','warning','權限不足');return;}if(!confirm('確定要解封此裝置嗎？'))return;try{await fm.updateDoc(fm.doc(db,'blockedDevices',fingerprint),{active:false,unblockedAt:Date.now(),unblockedBy:currentUser.account});const row=appData.blockedDevices.find(x=>x.fingerprint===fingerprint);if(row)row.active=false;await logAdminAction('解封登入裝置',fingerprint);renderAdminDevices();showToast('裝置已解封。','success','操作完成');}catch(e){showToast('解封失敗：'+e.message,'error','操作失敗');}}
+
         async function submitFeedback(){if(!currentUser){showToast('請先登入後再回報。','warning','需要登入');return;}const subject=document.getElementById('feedback-subject').value.trim(),details=document.getElementById('feedback-details').value.trim();if(!subject||!details){showToast('請填寫主旨與詳細資訊。','error','資料不完整');return;}const now=Date.now(),id=`FB-${now}`,obj={id,subject,details,account:currentUser.account,name:currentUser.name,staffNumber:currentUser.staffNumber||'',time:formatDateTime(now),timestamp:now,status:'未處理'};try{await fm.setDoc(fm.doc(db,'feedbackReports',id),obj);appData.feedbackReports.unshift({docId:id,...obj});closeModal('modal-feedback');showToast('回報已送至管理中心。','success','回報成功');renderAdminFeedback();}catch(e){showToast('回報送出失敗：'+e.message,'error','操作失敗');}}
         function openFeedbackModal(){if(!currentUser){showToast('請先登入後再回報。','warning','需要登入');return;}document.getElementById('feedback-account-preview').textContent=`${currentUser.name} (${currentUser.account})`;document.getElementById('modal-feedback').classList.remove('hidden');}
-        function renderAdminFeedback(){const c=document.getElementById('admin-feedback-list');if(!c)return;const rows=(appData.feedbackReports||[]).sort((a,b)=>b.timestamp-a.timestamp);c.innerHTML=rows.length?rows.map(r=>`<div class="bg-slate-900 border border-slate-800 rounded-2xl p-5"><div class="flex justify-between"><h4 class="font-bold text-white">${r.subject||'無主旨'}</h4><span class="text-xs text-slate-500">${formatDateTime(r.timestamp,r.time)}</span></div><div class="text-xs text-cyan-400 font-mono mt-2">${r.name||'--'} (${r.account||'--'})${r.staffNumber?`／${r.staffNumber}`:''}</div><div class="mt-3 bg-slate-950 rounded-xl p-4 text-sm text-slate-300 whitespace-pre-wrap">${r.details||''}</div></div>`).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">目前沒有回報內容。</div>';}
+        function renderAdminFeedback(){const c=document.getElementById('admin-feedback-list');if(!c)return;const rows=(appData.feedbackReports||[]).sort((a,b)=>b.timestamp-a.timestamp);c.innerHTML=rows.length?rows.map(r=>`<div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2"><div><h4 class="font-bold text-white">${r.subject||'無主旨'}</h4><div class="text-xs text-cyan-400 font-mono mt-1">${r.name||'--'} (${r.account||'--'})${r.staffNumber?`／${r.staffNumber}`:''}</div></div><span class="text-xs text-slate-500">${formatDateTime(r.timestamp,r.time)}</span></div><div class="bg-slate-950 rounded-xl p-4 text-sm text-slate-300 whitespace-pre-wrap">${r.details||''}</div><div class="grid grid-cols-1 md:grid-cols-[160px_1fr_auto] gap-2"><select id="fb-status-${r.docId||r.id}" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"><option ${r.status==='未處理'?'selected':''}>未處理</option><option ${r.status==='處理中'?'selected':''}>處理中</option><option ${r.status==='已處理'?'selected':''}>已處理</option></select><input id="fb-note-${r.docId||r.id}" value="${String(r.adminNote||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" placeholder="管理員備注..." class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"><div class="flex gap-2"><button onclick="saveFeedbackAdmin('${r.docId||r.id}')" class="px-3 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-xs">儲存備注</button><button onclick="deleteFeedback('${r.docId||r.id}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-xl text-xs">刪除訊息</button></div></div>${r.adminNote?`<div class="text-xs text-amber-300 bg-amber-500/5 border border-amber-500/10 rounded-xl p-3">管理員備注：${r.adminNote}</div>`:''}</div>`).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">目前沒有回報內容。</div>';}
+        async function saveFeedbackAdmin(id){if(!currentUser||currentUser.role!=='admin')return;const r=appData.feedbackReports.find(x=>String(x.docId||x.id)===String(id));if(!r)return;const status=document.getElementById(`fb-status-${id}`)?.value||'未處理',adminNote=document.getElementById(`fb-note-${id}`)?.value.trim()||'';try{await fm.updateDoc(fm.doc(db,'feedbackReports',r.docId||r.id),{status,adminNote,adminNoteBy:currentUser.account,adminNoteAt:Date.now()});r.status=status;r.adminNote=adminNote;r.adminNoteBy=currentUser.account;r.adminNoteAt=Date.now();await logAdminAction('備注／更新意見回報',r.docId||r.id);renderAdminFeedback();showToast('回報備注已儲存。','success','儲存成功');}catch(e){showToast('儲存失敗：'+e.message,'error','操作失敗');}}
+        async function deleteFeedback(id){if(!currentUser||currentUser.role!=='admin')return;const r=appData.feedbackReports.find(x=>String(x.docId||x.id)===String(id));if(!r)return;if(!confirm('確定刪除此回報訊息嗎？刪除動作會留下稽核紀錄。'))return;try{await fm.deleteDoc(fm.doc(db,'feedbackReports',r.docId||r.id));appData.feedbackReports=appData.feedbackReports.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除意見／異常回報',id);renderAdminFeedback();showToast('回報訊息已刪除。','success','刪除成功');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
 
         function renderAdminUsers() {
             const tbody = document.getElementById('admin-users-tbody');
             if (!tbody) return;
 
             tbody.innerHTML = '';
-            appData.users.forEach(u => {
+            const roleRank = {admin:0, high:1, senior:2, normal:3};
+            const users = [...(appData.users || [])].sort((a,b)=>{
+                const rr=(roleRank[a.role]??99)-(roleRank[b.role]??99);
+                if(rr) return rr;
+                const au=getUnitDisplayNames(a)||'未指定', bu=getUnitDisplayNames(b)||'未指定';
+                return au.localeCompare(bu,'zh-Hant') || String(a.name||'').localeCompare(String(b.name||''),'zh-Hant');
+            });
+            users.forEach(u => {
                 const units = u.units || [u.unit];
                 const unitNames = getUnitDisplayNames(u);
                 const roleText = u.role === 'admin' ? '最高管理員' : u.role === 'high' ? '高層長官' : u.role === 'senior' ? '高階成員' : '一般基層';
@@ -3464,7 +3550,11 @@
                 appData.emsReports,
                 appData.policeClocks,
                 appData.fireClocks,
-                appData.adminLogs
+                appData.adminLogs,
+                appData.announcements,
+                appData.blockedDevices,
+                appData.adminClocks,
+                appData.feedbackReports
             ];
             const totalDocs = collections.reduce((sum, list) => sum + (list || []).length, 0);
             const payloadBytes = collections.reduce((sum, list) => {
@@ -3493,11 +3583,30 @@
             if (freeEl) freeEl.textContent = `${freeMb.toFixed(1)} MB`;
         }
 
+        function latestDutyCount(rows){const latest=new Map();(rows||[]).forEach(r=>{const key=String(r.account||r.name||r.id||'');if(!key)return;const old=latest.get(key);if(!old||Number(r.timestamp||0)>Number(old.timestamp||0))latest.set(key,r);});return [...latest.values()].filter(r=>r.status==='上班').length;}
         function renderAdminOverview() {
             document.getElementById('stat-total-users').textContent = appData.users.length;
             document.getElementById('stat-police-reports').textContent = appData.policeReports.length;
             document.getElementById('stat-fire-reports').textContent = appData.fireReports.length;
+            const pd=document.getElementById('stat-police-duty'),fd=document.getElementById('stat-fire-duty'),ad=document.getElementById('stat-admin-duty');
+            if(pd)pd.textContent=latestDutyCount(appData.policeClocks);
+            if(fd)fd.textContent=latestDutyCount(appData.fireClocks);
+            if(ad)ad.textContent=latestDutyCount(appData.adminClocks);
         }
+
+        function announcementExpiry(duration,now){return duration==='1d'?now+86400000:duration==='7d'?now+7*86400000:0;}
+        function activeAnnouncements(){const now=Date.now();return (appData.announcements||[]).filter(a=>a.active!==false&&(Number(a.expiresAt||0)===0||Number(a.expiresAt)>now)).sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0));}
+        let announcementTimer=null,announcementIndex=0;
+        function renderSiteAnnouncements(){const bar=document.getElementById('site-announcement-bar'),track=document.getElementById('announcement-track');if(!bar||!track)return;const rows=activeAnnouncements();if(!rows.length){bar.classList.add('hidden');track.innerHTML='';clearInterval(announcementTimer);announcementTimer=null;return;}bar.classList.remove('hidden');track.innerHTML=rows.map((a,i)=>`<div class="announcement-item ${i===0?'active':''}" data-announcement-index="${i}"><div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center"><i class="fa-solid fa-bullhorn"></i></div><div class="announcement-content"><div class="announcement-text text-sm font-semibold text-slate-100">${a.text||''}</div><div class="text-[11px] text-slate-500 mt-0.5">發布時間：${formatDateTime(a.createdAt,a.time)}</div></div><div class="announcement-publisher text-xs text-slate-400">發布人：<span class="text-amber-300 font-semibold">${a.publisher||'未填寫'}</span></div></div>`).join('');announcementIndex=0;clearInterval(announcementTimer);if(rows.length>1)announcementTimer=setInterval(()=>rotateAnnouncements(),5000);}
+        function rotateAnnouncements(){const items=[...document.querySelectorAll('.announcement-item')];if(items.length<2)return;const old=items[announcementIndex%items.length],next=items[(announcementIndex+1)%items.length];old.classList.remove('active');old.classList.add('exit-up');next.classList.remove('exit-up');next.classList.add('active');setTimeout(()=>old.classList.remove('exit-up'),650);announcementIndex=(announcementIndex+1)%items.length;}
+        async function publishAnnouncement(){if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以發布公告。','warning','權限不足');return;}const text=document.getElementById('announcement-text-input')?.value.trim()||'',publisher=document.getElementById('announcement-publisher-input')?.value.trim()||'',duration=document.getElementById('announcement-duration-input')?.value||'1d';if(!text||!publisher){showToast('請填寫公告內容與發布人。','warning','資料不完整');return;}const now=Date.now(),id=`ANN-${now}`,obj={id,text,publisher,duration,createdAt:now,time:formatDateTime(now),expiresAt:announcementExpiry(duration,now),active:true,createdBy:currentUser.account};try{await fm.setDoc(fm.doc(db,'announcements',id),obj);appData.announcements.push({docId:id,...obj});document.getElementById('announcement-text-input').value='';renderAdminAnnouncements();renderSiteAnnouncements();showToast('公告已發布至首頁。','success','發布成功');}catch(e){showToast('公告發布失敗：'+e.message,'error','操作失敗');}}
+        function renderAdminAnnouncements(){const c=document.getElementById('admin-announcements-list');if(!c)return;const rows=[...(appData.announcements||[])].sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0));c.innerHTML=rows.length?rows.map(a=>{const expired=a.expiresAt&&Number(a.expiresAt)<=Date.now();const active=a.active!==false&&!expired;return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col lg:flex-row lg:items-center gap-4"><div class="flex-1 min-w-0"><div class="text-sm font-semibold text-white">${a.text||''}</div><div class="text-xs text-slate-500 mt-1">發布人：${a.publisher||'--'}　／　${a.duration==='manual'?'手動下架':a.duration==='7d'?'7 天':'1 天'}　／　${formatDateTime(a.createdAt,a.time)}</div></div><div class="flex items-center gap-2"><span class="px-2.5 py-1 rounded-full text-xs ${active?'bg-emerald-500/10 text-emerald-400':'bg-slate-800 text-slate-500'}">${active?'發布中':'已下架'}</span>${active?`<button onclick="unpublishAnnouncement('${a.docId||a.id}')" class="px-3 py-1.5 bg-slate-800 text-slate-200 rounded-lg text-xs">手動下架</button>`:`<button onclick="republishAnnouncement('${a.docId||a.id}')" class="px-3 py-1.5 bg-amber-600/20 text-amber-300 rounded-lg text-xs">重新發布</button>`}</div></div>`}).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">尚未建立公告。</div>';}
+        async function unpublishAnnouncement(id){const a=appData.announcements.find(x=>String(x.docId||x.id)===String(id));if(!a)return;try{await fm.updateDoc(fm.doc(db,'announcements',a.docId||a.id),{active:false,unpublishedAt:Date.now(),unpublishedBy:currentUser.account});a.active=false;await logAdminAction('手動下架網站公告',id);renderAdminAnnouncements();renderSiteAnnouncements();showToast('公告已下架。','success','操作完成');}catch(e){showToast('下架失敗：'+e.message,'error','操作失敗');}}
+        async function republishAnnouncement(id){const a=appData.announcements.find(x=>String(x.docId||x.id)===String(id));if(!a)return;const now=Date.now(),expires=announcementExpiry(a.duration,now);try{await fm.updateDoc(fm.doc(db,'announcements',a.docId||a.id),{active:true,createdAt:now,time:formatDateTime(now),expiresAt:expires});a.active=true;a.createdAt=now;a.time=formatDateTime(now);a.expiresAt=expires;await logAdminAction('重新發布網站公告',id);renderAdminAnnouncements();renderSiteAnnouncements();}catch(e){showToast('重新發布失敗：'+e.message,'error','操作失敗');}}
+        function openAdminClockModal(status){if(!currentUser||currentUser.role!=='admin'){showToast('管理中心打卡僅限最高管理員。','warning','權限不足');return;}document.getElementById('admin-clock-status').value=status;document.getElementById('admin-clock-remark').value='';document.getElementById('admin-clock-user-preview').textContent=`${currentUser.name} (${currentUser.account})`;document.getElementById('modal-admin-clock').classList.remove('hidden');}
+        async function submitAdminClock(){if(!currentUser||currentUser.role!=='admin')return;const status=document.getElementById('admin-clock-status').value,remark=document.getElementById('admin-clock-remark').value.trim()||'無',now=Date.now(),id=`ADMCLK-${now}`,obj={id,account:currentUser.account,name:currentUser.name,status,remark,time:formatDateTime(now),timestamp:now};try{await fm.setDoc(fm.doc(db,'adminClocks',id),obj);appData.adminClocks.unshift({docId:id,...obj});closeModal('modal-admin-clock');renderAdminClocks();renderAdminOverview();showToast('管理中心打卡成功。','success','打卡成功');}catch(e){showToast('管理中心打卡失敗：'+e.message,'error','操作失敗');}}
+        function renderAdminClocks(){const t=document.getElementById('admin-clocks-tbody');if(!t)return;const rows=[...(appData.adminClocks||[])].sort((a,b)=>b.timestamp-a.timestamp);t.innerHTML=rows.length?rows.map(c=>`<tr><td class="p-4 font-medium text-white">${c.name||'--'} (${c.account||'--'})</td><td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs ${c.status==='上班'?'bg-emerald-500/10 text-emerald-400':'bg-rose-500/10 text-rose-400'}">${c.status}</span></td><td class="p-4 text-slate-300 text-xs">${c.time||formatDateTime(c.timestamp)}</td><td class="p-4 text-slate-400 text-xs">${c.remark||'無'}</td><td class="p-4 text-right"><button onclick="deleteAdminClock('${c.docId||c.id}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button></td></tr>`).join(''):'<tr><td colspan="5" class="p-6 text-center text-slate-500">尚無管理中心打卡紀錄。</td></tr>';}
+        async function deleteAdminClock(id){if(!currentUser||currentUser.role!=='admin')return;if(!confirm('確定刪除此筆管理中心打卡紀錄嗎？'))return;try{await fm.deleteDoc(fm.doc(db,'adminClocks',id));appData.adminClocks=appData.adminClocks.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除管理中心打卡紀錄',id);renderAdminClocks();renderAdminOverview();}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
 
         async function saveMemo() {
             const text = document.getElementById('admin-memo-textarea').value.trim();
@@ -3510,6 +3619,8 @@
             }
         }
     </script>
+
+    <div id="modal-admin-clock" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl"><div class="flex justify-between items-center"><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-business-time text-purple-400 mr-2"></i>管理中心打卡</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-admin-clock"><i class="fa-solid fa-xmark"></i></button></div><div class="bg-slate-950 border border-slate-800 rounded-2xl p-4"><div class="text-xs text-slate-500">目前管理員</div><div id="admin-clock-user-preview" class="mt-1 font-bold text-white">--</div></div><div><label class="block text-xs font-semibold text-slate-400 mb-2">打卡狀態</label><select id="admin-clock-status" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><option value="上班">上班</option><option value="下班">下班</option></select></div><div><label class="block text-xs font-semibold text-slate-400 mb-2">備註（可選）</label><textarea id="admin-clock-remark" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white" placeholder="例如：晚間值勤、臨時加班"></textarea></div><button id="submit-admin-clock-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white py-3 rounded-xl font-semibold">確認打卡</button></div></div>
 
     <div id="modal-feedback" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative"><div class="flex items-center justify-between"><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-message-exclamation text-amber-400 mr-2"></i>異常／意見回報</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-feedback"><i class="fa-solid fa-xmark text-lg"></i></button></div><div class="space-y-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">主旨</label><input id="feedback-subject" maxlength="120" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細資訊</label><textarea id="feedback-details" rows="7" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white"></textarea></div><div class="text-xs text-slate-500">回報帳號：<span id="feedback-account-preview" class="font-mono text-slate-300">--</span></div><button id="submit-feedback-btn" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl">送出回報</button></div></div></div>
 
