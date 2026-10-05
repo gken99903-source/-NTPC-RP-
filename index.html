@@ -360,6 +360,7 @@
                 <button id="nav-home" data-tab="home" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-blue-400 bg-blue-500/10"><i class="fa-solid fa-house mr-2"></i>首頁大廳</button>
                 <button id="nav-police" data-tab="police" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-shield mr-2"></i>警務系統</button>
                 <button id="nav-fire" data-tab="fire" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-fire-extinguisher mr-2"></i>消防系統</button>
+                <button id="nav-notifications" data-tab="notifications" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800 relative"><i class="fa-solid fa-bell mr-2"></i>個人通知<span id="nav-notification-badge" class="hidden ml-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold items-center justify-center align-middle">0</span></button>
                 <button id="nav-profile" data-tab="profile" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-id-card mr-2"></i>我的資訊</button>
                 <button id="nav-academy" data-tab="academy" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-graduation-cap mr-2"></i>專生考核</button>
                 <button id="nav-admin" data-tab="admin" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-user-gear mr-2"></i>管理員中心</button>
@@ -384,6 +385,7 @@
             <button data-tab="home" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-house"></i><span>首頁大廳</span></button>
             <button data-tab="police" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-shield"></i><span>警務系統</span></button>
             <button data-tab="fire" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-fire-extinguisher"></i><span>消防系統</span></button>
+            <button data-tab="notifications" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-bell"></i><span>個人通知</span><span id="mobile-nav-notification-badge" class="hidden min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold items-center justify-center">0</span></button>
             <button data-tab="profile" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-id-card"></i><span>我的資訊</span></button>
             <button data-tab="academy" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-graduation-cap"></i><span>專生考核</span></button>
             <button data-tab="admin" id="mobile-nav-admin" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-user-gear"></i><span>管理員中心</span></button>
@@ -723,6 +725,21 @@
         </section>
 
         <!-- My Profile Tab -->
+        <section id="tab-notifications" class="hidden space-y-8">
+            <div class="bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                    <div><h2 class="text-2xl font-bold text-white"><i class="fa-solid fa-bell text-cyan-400 mr-2"></i>個人通知</h2><p class="text-sm text-slate-500 mt-1">案件報告審核狀況、退件原因與重新送件狀態。</p></div>
+                    <span id="notification-tab-count" class="px-3 py-1.5 rounded-full bg-slate-950 border border-slate-800 text-xs text-slate-400">0 則通知</span>
+                </div>
+                <div id="notification-tab-list" class="space-y-4"></div>
+            </div>
+            <div class="bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl">
+                <div class="flex items-center gap-2 mb-4"><i class="fa-solid fa-clock-rotate-left text-red-400"></i><h3 class="text-lg font-bold text-white">退回歷史案件</h3><span class="text-xs text-red-300 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-full">僅本人可見</span></div>
+                <p class="text-xs text-slate-500 mb-4">被高層退件的案件不會再出現在一般共享警用資料庫；只有原寄件者可以在這裡查看、查看退件原因並重新編輯送件。</p>
+                <div id="notification-rejected-history" class="space-y-4"></div>
+            </div>
+        </section>
+
         <section id="tab-profile" class="hidden space-y-8">
             <div class="bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl">
                 <div class="flex items-start justify-between gap-4">
@@ -2058,7 +2075,7 @@
                 showToast('管理員中心僅限最高管理員進入。', 'warning', '權限不足');
                 tabId = 'home';
             }
-            ['home', 'police', 'fire', 'profile', 'academy', 'admin'].forEach(t => {
+            ['home', 'police', 'fire', 'notifications', 'profile', 'academy', 'admin'].forEach(t => {
                 const tabEl = document.getElementById(`tab-${t}`);
                 if (tabEl) tabEl.classList.add('hidden');
                 
@@ -2078,6 +2095,7 @@
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
             
+            if (tabId === 'notifications') renderPersonalNotifications();
             if (tabId === 'profile') renderMyProfile();
             if (tabId === 'academy') {
                 renderAcademySession();
@@ -2301,16 +2319,43 @@
         }
 
         function renderPersonalNotifications(){
-            const host=document.getElementById('profile-notification-list'), badge=document.getElementById('profile-notification-count'); if(!host||!badge)return;
-            if(!currentUser){host.innerHTML='<div class="text-sm text-slate-500 text-center py-6">登入後即可查看個人案件通知。</div>';badge.textContent='0 則';return;}
+            const host=document.getElementById('notification-tab-list');
+            const historyHost=document.getElementById('notification-rejected-history');
+            const tabCount=document.getElementById('notification-tab-count');
+            const profileHost=document.getElementById('profile-notification-list');
+            const profileBadge=document.getElementById('profile-notification-count');
+            const navBadge=document.getElementById('nav-notification-badge');
+            const mobileBadge=document.getElementById('mobile-nav-notification-badge');
+            if(!currentUser){
+                if(host) host.innerHTML='<div class="text-sm text-slate-500 text-center py-10">登入後即可查看個人案件通知。</div>';
+                if(historyHost) historyHost.innerHTML='<div class="text-sm text-slate-500 text-center py-8">登入後即可查看退回歷史案件。</div>';
+                if(tabCount) tabCount.textContent='0 則通知';
+                if(profileHost) profileHost.innerHTML='<div class="text-sm text-slate-500 text-center py-6">登入後即可查看個人案件通知。</div>';
+                if(profileBadge) profileBadge.textContent='0 則';
+                if(navBadge){navBadge.classList.add('hidden');navBadge.classList.remove('inline-flex');}
+                if(mobileBadge){mobileBadge.classList.add('hidden');mobileBadge.classList.remove('inline-flex');}
+                return;
+            }
             const key=String(currentUser.account||'').toLowerCase();
             const notes=(appData.reportNotifications||[]).filter(n=>String(n.recipientAccount||'').toLowerCase()===key).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
-            const pending=(appData.policePendingReports||[]).filter(r=>String(r.registeredByAccount||'').toLowerCase()===key).sort((a,b)=>(b.updatedAt||b.submittedAt||0)-(a.updatedAt||a.submittedAt||0));
-            badge.textContent=`${notes.length} 則`;
-            if(!notes.length && !pending.length){host.innerHTML='<div class="text-sm text-slate-500 text-center py-6">目前沒有案件審核通知。</div>';return;}
-            const reportCards=pending.map(r=>{const rejected=r.reviewStatus==='rejected', statusText=rejected?'退件': '審核中'; const cls=rejected?'border-red-500/50 bg-red-950/30':'border-amber-500/30 bg-amber-950/10'; const icon=rejected?'fa-circle-xmark text-red-400':'fa-hourglass-half text-amber-400'; const reason=rejected?`<div class="mt-3 rounded-xl bg-red-950/40 border border-red-500/20 p-3"><span class="text-[11px] text-red-300 font-semibold">退件原因</span><div class="text-sm text-red-100 mt-1 whitespace-pre-wrap">${r.rejectionReason||'未提供原因'}</div></div>`:''; const edit=rejected?`<button onclick="openEditReportModal('police-pending-report','${r.caseId}')" class="mt-3 px-3 py-2 rounded-lg bg-red-600/20 text-red-300 text-xs">重新編輯送件</button>`:''; return `<div class="rounded-2xl border ${cls} p-5"><div class="flex items-start gap-3"><i class="fa-solid ${icon} mt-1"></i><div class="flex-1 min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="font-bold text-white">${r.title||'未命名案件'}</span><span class="text-[11px] font-mono text-slate-500">${r.caseId||'--'}</span><span class="px-2 py-1 rounded-full text-[11px] font-semibold ${rejected?'bg-red-500/15 text-red-300':'bg-amber-500/15 text-amber-300'}">${statusText}</span></div><div class="text-xs text-slate-400 mt-2">送件時間：${formatDateTime(r.submittedAt||r.timestamp)}</div><p class="text-sm text-slate-300 mt-3 line-clamp-4 whitespace-pre-wrap">${r.content||''}</p>${reason}${edit}</div></div></div>`;}).join('');
-            const cards=notes.map(n=>{const rejected=n.status==='rejected',approved=n.status==='approved'; const cls=rejected?'border-red-500/40 bg-red-950/25':approved?'border-emerald-500/25 bg-emerald-950/15':'border-amber-500/25 bg-amber-950/10'; const icon=rejected?'fa-rotate-left text-red-400':approved?'fa-check-circle text-emerald-400':'fa-hourglass-half text-amber-400'; return `<div class="rounded-2xl border ${cls} p-4"><div class="flex items-start gap-3"><i class="fa-solid ${icon} mt-1"></i><div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-2"><span class="font-bold text-slate-200">${n.title||'案件通知'}</span><span class="text-[11px] font-mono text-slate-500">${n.caseId||''}</span></div><p class="text-sm text-slate-300 mt-1 whitespace-pre-wrap">${n.message||''}</p><span class="text-[11px] text-slate-500">${formatDateTime(n.timestamp)}</span></div></div></div>`;}).join('');
-            host.innerHTML=reportCards+cards;
+            const minePending=(appData.policePendingReports||[]).filter(r=>String(r.registeredByAccount||'').toLowerCase()===key);
+            const rejected=minePending.filter(r=>r.reviewStatus==='rejected').sort((a,b)=>(b.updatedAt||b.reviewedAt||b.submittedAt||0)-(a.updatedAt||a.reviewedAt||a.submittedAt||0));
+            const pending=minePending.filter(r=>r.reviewStatus==='pending').sort((a,b)=>(b.updatedAt||b.submittedAt||0)-(a.updatedAt||a.submittedAt||0));
+            const unread=notes.filter(n=>n.read!==true).length;
+            if(tabCount) tabCount.textContent=`${notes.length + pending.length + rejected.length} 則通知`;
+            if(profileBadge) profileBadge.textContent=`${notes.length} 則`;
+            [navBadge,mobileBadge].forEach(b=>{if(!b)return; b.textContent=String(unread+rejected.length); b.classList.toggle('hidden',(unread+rejected.length)<=0); b.classList.toggle('inline-flex',(unread+rejected.length)>0);});
+
+            const statusCards=pending.map(r=>`<div class="rounded-2xl border border-amber-500/30 bg-amber-950/10 p-5"><div class="flex items-start gap-3"><i class="fa-solid fa-hourglass-half text-amber-400 mt-1"></i><div class="flex-1 min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="font-bold text-white">${r.title||'未命名案件'}</span><span class="text-[11px] font-mono text-slate-500">${r.caseId||'--'}</span><span class="px-2 py-1 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-300">審核中</span></div><div class="text-xs text-slate-400 mt-2">送件時間：${formatDateTime(r.submittedAt||r.timestamp)}</div></div></div></div>`).join('');
+            const noteCards=notes.map(n=>{const rejectedNote=n.status==='rejected',approved=n.status==='approved'; const cls=rejectedNote?'border-red-500/40 bg-red-950/25':approved?'border-emerald-500/25 bg-emerald-950/15':'border-amber-500/25 bg-amber-950/10'; const icon=rejectedNote?'fa-circle-xmark text-red-400':approved?'fa-circle-check text-emerald-400':'fa-hourglass-half text-amber-400'; return `<div class="rounded-2xl border ${cls} p-5"><div class="flex items-start gap-3"><i class="fa-solid ${icon} mt-1"></i><div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-2"><span class="font-bold text-white">${n.title||'案件通知'}</span><span class="text-[11px] font-mono text-slate-500">${n.caseId||''}</span><span class="px-2 py-1 rounded-full text-[11px] font-semibold ${rejectedNote?'bg-red-500/15 text-red-300':approved?'bg-emerald-500/15 text-emerald-300':'bg-amber-500/15 text-amber-300'}">${rejectedNote?'退件':approved?'審核完成':'案件通知'}</span></div><p class="text-sm text-slate-300 mt-2 whitespace-pre-wrap">${n.message||''}</p><span class="text-[11px] text-slate-500">${formatDateTime(n.timestamp)}</span></div></div></div>`;}).join('');
+            if(host) host.innerHTML=(statusCards+noteCards)||'<div class="text-sm text-slate-500 text-center py-10">目前沒有案件審核通知。</div>';
+
+            const historyCards=rejected.map(r=>`<div class="rounded-2xl border-2 border-red-500/40 bg-red-950/35 p-5 shadow-lg shadow-red-950/20"><div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3"><div class="flex items-start gap-3"><div class="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/20 flex items-center justify-center text-red-400 shrink-0"><i class="fa-solid fa-rotate-left"></i></div><div><div class="flex flex-wrap items-center gap-2"><h4 class="font-bold text-white">${r.title||'未命名案件'}</h4><span class="text-[11px] font-mono text-red-300">${r.caseId||'--'}</span><span class="px-2 py-1 rounded-full text-[11px] font-bold bg-red-500/20 text-red-300">已退件</span></div><div class="text-xs text-slate-400 mt-1">退件時間：${formatDateTime(r.reviewedAt||r.updatedAt)}</div></div></div><button type="button" onclick="openEditReportModal('police-pending-report','${r.caseId}')" class="px-3 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-200 text-xs font-semibold min-h-[42px]">重新編輯送件</button></div><div class="mt-4 rounded-xl bg-red-950/50 border border-red-500/20 p-4"><div class="text-[11px] text-red-300 font-semibold mb-1">退件原因</div><div class="text-sm text-red-100 whitespace-pre-wrap">${r.rejectionReason||'未提供退件原因'}</div></div><div class="mt-4 text-sm text-slate-300 line-clamp-3 whitespace-pre-wrap">${r.content||''}</div></div>`).join('');
+            if(historyHost) historyHost.innerHTML=historyCards||'<div class="text-sm text-slate-500 text-center py-8">目前沒有被退回的歷史案件。</div>';
+
+            if(profileHost){
+                profileHost.innerHTML=(rejected.slice(0,3).map(r=>`<div class="rounded-2xl border border-red-500/40 bg-red-950/25 p-4"><div class="font-bold text-red-200">案件 ${r.caseId||'--'} 已退件</div><div class="text-xs text-red-300 mt-1">${r.rejectionReason||'未提供退件原因'}</div></div>`).join('')+notes.slice(0,5).map(n=>`<div class="rounded-2xl border ${n.status==='rejected'?'border-red-500/40 bg-red-950/25':n.status==='approved'?'border-emerald-500/25 bg-emerald-950/15':'border-amber-500/25 bg-amber-950/10'} p-4"><div class="font-bold text-slate-200">${n.title||'案件通知'} ${n.caseId?`<span class="text-[11px] font-mono text-slate-500 ml-2">${n.caseId}</span>`:''}</div><p class="text-sm text-slate-300 mt-1 whitespace-pre-wrap">${n.message||''}</p><span class="text-[11px] text-slate-500">${formatDateTime(n.timestamp)}</span></div>`).join(''))||'<div class="text-sm text-slate-500 text-center py-6">目前沒有案件審核通知。</div>';
+            }
         }
 
         function renderMyProfile() {
