@@ -24,6 +24,27 @@
     <style>
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; }
 
+        /* 全站滾動條：依需求改為深色／黑色風格 */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #111827 #020617;
+        }
+        *::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        *::-webkit-scrollbar-track {
+            background: #020617;
+        }
+        *::-webkit-scrollbar-thumb {
+            background: #111827;
+            border-radius: 999px;
+            border: 2px solid #020617;
+        }
+        *::-webkit-scrollbar-thumb:hover {
+            background: #1f2937;
+        }
+
         /* 右下角提示視窗：取代登入／權限相關的瀏覽器 alert */
         #toast-container {
             position: fixed;
@@ -209,7 +230,7 @@
         <section id="tab-home" class="space-y-8">
             <div class="relative rounded-3xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-900">
                 <div class="absolute inset-0 z-0">
-                    <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1600" alt="Cover" class="w-full h-full object-cover opacity-40 transition-all duration-700" onerror="this.src='https://placehold.co/1600x900/0f172a/38bdf8?text=New+Taipei+RP+3.0'">
+                    <img src="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/IMG_2981.png" alt="Cover" class="w-full h-full object-cover opacity-40 transition-all duration-700" onerror="this.src='https://placehold.co/1600x900/0f172a/38bdf8?text=New+Taipei+RP+3.0'">
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"></div>
                 </div>
                 <div class="relative z-10 px-8 py-20 sm:py-28 max-w-3xl space-y-6">
@@ -634,7 +655,7 @@
                     <div id="admin-online-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                 </div>
                 <div id="admin-sub-devices" class="hidden space-y-4">
-                    <div><h3 class="text-lg font-bold text-slate-200">最近一週登入裝置資訊</h3><p class="text-xs text-slate-500 mt-1">顯示最近 7 天內登入紀錄，供管理處核對帳號是否遭冒用。</p></div>
+                    <div><h3 class="text-lg font-bold text-slate-200">最近 3 日登入裝置資訊</h3><p class="text-xs text-slate-500 mt-1">顯示最近 3 天內登入紀錄，供管理處核對帳號是否遭冒用。</p></div>
                     <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl"><table class="w-full text-left border-collapse text-xs"><thead><tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50"><th class="p-3">帳號</th><th class="p-3">登入時間</th><th class="p-3">平台</th><th class="p-3">瀏覽器</th><th class="p-3">螢幕</th><th class="p-3">語言／時區</th></tr></thead><tbody id="admin-devices-tbody" class="divide-y divide-slate-800/60"></tbody></table></div>
                 </div>
                 <div id="admin-sub-feedback" class="hidden space-y-4"><div><h3 class="text-lg font-bold text-slate-200">異常／意見回報</h3><p class="text-xs text-slate-500 mt-1">首頁登入後提交的回報集中顯示於此。</p></div><div id="admin-feedback-list" class="space-y-3"></div></div>
@@ -1685,7 +1706,7 @@
             }
         }
 
-        async function handleLogin(){const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}const found=appData.users.find(u=>isSuperAdminAccount(acc)?isSuperAdminAccount(u.account)&&u.pass===pass:u.account===acc&&u.pass===pass);if(!found){showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');return;}currentUser=found;closeModal('modal-login');updateUserBadge();updateAccessLocks();await recordLoginSession(currentUser);clearInterval(window.__presenceTimer);window.__presenceTimer=setInterval(()=>updateCurrentUserPresence(true),30000);showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');switchTab('home');}
+        async function handleLogin(){const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}const found=appData.users.find(u=>isSuperAdminAccount(acc)?isSuperAdminAccount(u.account)&&u.pass===pass:u.account===acc&&u.pass===pass);if(!found){showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');return;}currentUser=found;closeModal('modal-login');updateUserBadge();updateAccessLocks();await recordLoginSession(currentUser);await pruneOldLoginSessions();clearInterval(window.__presenceTimer);window.__presenceTimer=setInterval(()=>updateCurrentUserPresence(true),30000);showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');switchTab('home');}
         async function logout(){await updateCurrentUserPresence(false);clearInterval(window.__presenceTimer);window.__presenceTimer=null;currentUser=null;stopAdminPresenceRefresh();updateUserBadge();updateAccessLocks();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
@@ -2146,14 +2167,15 @@
         function canModifyPunishment(p) {
             if (!currentUser) return false;
             if (currentUser.role === 'admin') return true;
-            if (currentUser.role === 'high' && (currentUser.units || [currentUser.unit]).includes('police')) return true;
-            return p && (p.authorAccount === currentUser.account || (!p.authorAccount && p.authorName === currentUser.name));
+            const units = currentUser.units || [currentUser.unit];
+            return currentUser.role === 'high' && (units.includes('police') || !!currentUser.policeDivision);
         }
 
         function canDeletePunishment() {
             if (!currentUser) return false;
             if (currentUser.role === 'admin') return true;
-            return currentUser.role === 'high' && (currentUser.units || [currentUser.unit]).includes('police');
+            const units = currentUser.units || [currentUser.unit];
+            return currentUser.role === 'high' && (units.includes('police') || !!currentUser.policeDivision);
         }
 
         function viewPunishmentDetail(punishId) {
@@ -2592,12 +2614,24 @@
         function getDeviceInfo(){const n=window.navigator||{};const sc=window.screen||{};return {userAgent:n.userAgent||'',platform:n.platform||'',language:n.language||'',languages:Array.isArray(n.languages)?n.languages.join(', '):'',screen:`${sc.width||0}x${sc.height||0}`,touchPoints:n.maxTouchPoints||0,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||''};}
         function getDeviceLabel(d){const ua=String(d?.userAgent||'');const browser=/Edg\//.test(ua)?'Edge':/Chrome\//.test(ua)?'Chrome':/Firefox\//.test(ua)?'Firefox':/Safari\//.test(ua)&&!/Chrome\//.test(ua)?'Safari':'其他';const os=/Windows/.test(ua)?'Windows':/Android/.test(ua)?'Android':/(iPhone|iPad|iPod)/.test(ua)?'iOS':/Mac OS/.test(ua)?'macOS':/Linux/.test(ua)?'Linux':'其他';return `${os} / ${browser}`;}
         async function recordLoginSession(user){if(!user||!fm||!db)return;const now=Date.now(),device=getDeviceInfo(),id=`LOGIN-${String(user.account).replace(/[^a-zA-Z0-9_-]/g,'_')}-${now}`,session={id,account:user.account,name:user.name,loginAt:now,time:formatDateTime(now),device};try{await fm.setDoc(fm.doc(db,'loginSessions',id),session);await fm.updateDoc(fm.doc(db,'users',user.docId||user.account),{online:true,lastSeen:now,lastLoginAt:now,lastDevice:device});user.online=true;user.lastSeen=now;user.lastLoginAt=now;user.lastDevice=device;appData.loginSessions.unshift({docId:id,...session});}catch(e){console.warn('login audit',e);}}
+
+        async function pruneOldLoginSessions() {
+            if (!currentUser || currentUser.role !== 'admin' || !fm || !db) return;
+            const cutoff = Date.now() - 3 * 24 * 60 * 60 * 1000;
+            const oldSessions = (appData.loginSessions || []).filter(x => Number(x.loginAt || 0) > 0 && Number(x.loginAt) < cutoff);
+            if (!oldSessions.length) return;
+            for (const session of oldSessions) {
+                try { await fm.deleteDoc(fm.doc(db, 'loginSessions', session.docId || session.id)); } catch (e) { console.warn('login session cleanup', e); }
+            }
+            appData.loginSessions = (appData.loginSessions || []).filter(x => Number(x.loginAt || 0) >= cutoff);
+        }
+
         async function updateCurrentUserPresence(online){if(!currentUser||!fm||!db)return;const now=Date.now();currentUser.online=!!online;currentUser.lastSeen=online?now:0;try{await fm.updateDoc(fm.doc(db,'users',currentUser.docId||currentUser.account),{online:!!online,lastSeen:online?now:0});}catch(e){}}
         function isUserOnline(u){return !!u?.online&&Number(u.lastSeen||0)>0&&(Date.now()-Number(u.lastSeen))<90000;}
         function startAdminPresenceRefresh(){clearInterval(window.__adminPresenceTimer);window.__adminPresenceTimer=setInterval(()=>{if(currentUser&&currentUser.role==='admin'&&!document.getElementById('tab-admin')?.classList.contains('hidden'))renderAdminOnlineUsers();},15000);}
         function stopAdminPresenceRefresh(){clearInterval(window.__adminPresenceTimer);window.__adminPresenceTimer=null;}
 function renderAdminOnlineUsers(){const c=document.getElementById('admin-online-list');if(!c)return;c.innerHTML=(appData.users||[]).map(u=>{const on=isUserOnline(u);return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between"><div><b class="text-white">${u.name||'--'}</b><div class="text-xs text-slate-500 font-mono">${u.account}${u.staffNumber?`／${u.staffNumber}`:''}</div></div><span class="px-3 py-1 rounded-full text-xs ${on?'bg-emerald-500/10 text-emerald-400':'bg-slate-800 text-slate-400'}">● ${on?'在線':'離線'}</span></div>`;}).join('');}
-        function renderAdminDevices(){const t=document.getElementById('admin-devices-tbody');if(!t)return;const since=Date.now()-7*24*60*60*1000,rows=(appData.loginSessions||[]).filter(x=>Number(x.loginAt||0)>=since).sort((a,b)=>b.loginAt-a.loginAt);t.innerHTML=rows.length?rows.map(x=>`<tr><td class="p-3 font-mono text-white">${x.account}</td><td class="p-3 text-slate-300">${formatDateTime(x.loginAt,x.time)}</td><td class="p-3 text-slate-300">${getDeviceLabel(x.device)}</td><td class="p-3 text-slate-400 break-all max-w-md">${x.device?.userAgent||'--'}</td><td class="p-3 text-slate-400">${x.device?.screen||'--'}</td><td class="p-3 text-slate-400">${x.device?.language||'--'} / ${x.device?.timeZone||'--'}</td></tr>`).join(''):'<tr><td colspan="6" class="p-6 text-center text-slate-500">最近一週尚無登入裝置紀錄。</td></tr>';}
+        function renderAdminDevices(){const t=document.getElementById('admin-devices-tbody');if(!t)return;const since=Date.now()-3*24*60*60*1000,rows=(appData.loginSessions||[]).filter(x=>Number(x.loginAt||0)>=since).sort((a,b)=>b.loginAt-a.loginAt);t.innerHTML=rows.length?rows.map(x=>`<tr><td class="p-3 font-mono text-white">${x.account}</td><td class="p-3 text-slate-300">${formatDateTime(x.loginAt,x.time)}</td><td class="p-3 text-slate-300">${getDeviceLabel(x.device)}</td><td class="p-3 text-slate-400 break-all max-w-md">${x.device?.userAgent||'--'}</td><td class="p-3 text-slate-400">${x.device?.screen||'--'}</td><td class="p-3 text-slate-400">${x.device?.language||'--'} / ${x.device?.timeZone||'--'}</td></tr>`).join(''):'<tr><td colspan="6" class="p-6 text-center text-slate-500">最近 3 日尚無登入裝置紀錄。</td></tr>';}
         async function submitFeedback(){if(!currentUser){showToast('請先登入後再回報。','warning','需要登入');return;}const subject=document.getElementById('feedback-subject').value.trim(),details=document.getElementById('feedback-details').value.trim();if(!subject||!details){showToast('請填寫主旨與詳細資訊。','error','資料不完整');return;}const now=Date.now(),id=`FB-${now}`,obj={id,subject,details,account:currentUser.account,name:currentUser.name,staffNumber:currentUser.staffNumber||'',time:formatDateTime(now),timestamp:now,status:'未處理'};try{await fm.setDoc(fm.doc(db,'feedbackReports',id),obj);appData.feedbackReports.unshift({docId:id,...obj});closeModal('modal-feedback');showToast('回報已送至管理中心。','success','回報成功');renderAdminFeedback();}catch(e){showToast('回報送出失敗：'+e.message,'error','操作失敗');}}
         function openFeedbackModal(){if(!currentUser){showToast('請先登入後再回報。','warning','需要登入');return;}document.getElementById('feedback-account-preview').textContent=`${currentUser.name} (${currentUser.account})`;document.getElementById('modal-feedback').classList.remove('hidden');}
         function renderAdminFeedback(){const c=document.getElementById('admin-feedback-list');if(!c)return;const rows=(appData.feedbackReports||[]).sort((a,b)=>b.timestamp-a.timestamp);c.innerHTML=rows.length?rows.map(r=>`<div class="bg-slate-900 border border-slate-800 rounded-2xl p-5"><div class="flex justify-between"><h4 class="font-bold text-white">${r.subject||'無主旨'}</h4><span class="text-xs text-slate-500">${formatDateTime(r.timestamp,r.time)}</span></div><div class="text-xs text-cyan-400 font-mono mt-2">${r.name||'--'} (${r.account||'--'})${r.staffNumber?`／${r.staffNumber}`:''}</div><div class="mt-3 bg-slate-950 rounded-xl p-4 text-sm text-slate-300 whitespace-pre-wrap">${r.details||''}</div></div>`).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">目前沒有回報內容。</div>';}
