@@ -126,6 +126,10 @@
             .mobile-report-actions, .mobile-punishment-actions {
                 align-items: stretch;
             }
+            .mobile-report-actions > button, .mobile-punishment-actions > button {
+                display: inline-flex;
+                align-items: center;
+            }
             .mobile-report-actions + *, .mobile-punishment-actions + * {
                 min-width: 0;
             }
@@ -417,11 +421,15 @@
                         <button id="fire-report-modal-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
                             <i class="fa-solid fa-file-pen"></i><span>填寫消防案件報告</span>
                         </button>
+                        <button id="fire-ems-modal-btn" class="bg-rose-900/60 hover:bg-rose-800 border border-rose-700/60 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                            <i class="fa-solid fa-truck-medical"></i><span>EMS救護出勤報告</span>
+                        </button>
                     </div>
                 </div>
 
                 <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
                     <button id="btn-fire-reports" data-sub="reports" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史消防案件報告</button>
+                    <button id="btn-fire-ems" data-sub="ems" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-truck-medical mr-2"></i>EMS救護出勤報告</button>
                     <button id="btn-fire-clocks" data-sub="clocks" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clipboard-user mr-2"></i>消防出勤打卡紀錄</button>
                     <button id="btn-fire-hours" data-sub="hours" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數統計</button>
                 </div>
@@ -437,6 +445,14 @@
                     <div id="fire-reports-list" class="grid grid-cols-1 gap-4"></div>
                 </div>
 
+
+                <div id="fire-sub-ems" class="hidden space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div><h3 class="text-lg font-bold text-slate-200"><i class="fa-solid fa-truck-medical text-rose-400 mr-2"></i>EMS救護出勤報告</h3><p class="text-xs text-slate-500 mt-1">支援後續編輯、刪除與高層多則批示。</p></div>
+                        <div class="w-full sm:w-80"><input type="text" id="search-ems-report" placeholder="輸入報告編號／傷患ID／填寫人編號搜尋..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-rose-500 font-mono"></div>
+                    </div>
+                    <div id="ems-reports-list" class="grid grid-cols-1 gap-4"></div>
+                </div>
                 <div id="fire-sub-clocks" class="hidden space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <h3 class="text-lg font-bold text-slate-200">消防隊員出勤打卡歷史與狀態</h3>
@@ -640,7 +656,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">密碼</label>
-                    <input type="password" id="login-password" placeholder="請輸入密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                    <div class="relative"><input type="password" id="login-password" placeholder="請輸入密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-blue-500"><button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-2" aria-label="顯示密碼"><i class="fa-solid fa-eye"></i></button></div>
                 </div>
                 <button id="handle-login-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">立即登入</button>
             </div>
@@ -800,6 +816,23 @@
         </div>
     </div>
 
+
+    <div id="modal-ems-report" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[92vh] overflow-y-auto">
+            <div class="flex justify-between items-center"><h3 id="ems-modal-title" class="text-xl font-bold text-white"><i class="fa-solid fa-truck-medical text-rose-400 mr-2"></i>EMS救護出勤報告</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-ems-report"><i class="fa-solid fa-xmark"></i></button></div>
+            <input type="hidden" id="ems-edit-id">
+            <div class="space-y-4">
+                <input type="text" id="ems-report-id" readonly class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 font-mono">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><input type="text" id="ems-chief-complaint" placeholder="主訴" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-dispatch-category" placeholder="派遣類別" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><input type="text" id="ems-patient" placeholder="傷患RP名稱 / ID" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-unit-vehicle" placeholder="出勤單位 / 車輛" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><input type="text" id="ems-gcs-e" placeholder="GCS評分 E" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-author" readonly class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-3 text-sm text-slate-400"></div>
+                <textarea id="ems-treatment" rows="4" placeholder="給予處置" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white"></textarea>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><input type="text" id="ems-dispatch-time" placeholder="派遣時間" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-arrival-time" placeholder="抵達時間" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-leave-time" placeholder="離開時間" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-hospital-time" placeholder="到院時間（無後送填 N/A）" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-return-time" placeholder="返隊時間" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"></div>
+                <button id="submit-ems-report-btn" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-medium py-3 rounded-xl">提交EMS救護出勤報告</button>
+            </div>
+        </div>
+    </div>
+    <div id="modal-ems-detail" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl max-h-[92vh] overflow-y-auto"><div class="flex justify-between items-center"><h3 id="ems-detail-title" class="text-xl font-bold text-white">EMS救護出勤報告</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-ems-detail"><i class="fa-solid fa-xmark"></i></button></div><span id="ems-detail-id" class="text-xs text-rose-400 font-mono"></span><div id="ems-detail-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4"></div><div class="mt-4"><div class="text-xs text-slate-400 mb-2">給予處置</div><div id="ems-detail-treatment" class="bg-slate-950 border border-slate-800 rounded-xl p-4 whitespace-pre-wrap text-sm text-slate-200"></div></div><div class="mt-4"><div class="text-xs text-slate-400 mb-2">高層批示</div><div id="ems-remark-history" class="space-y-2"></div><div id="ems-detail-action-bar" class="flex flex-wrap gap-2 pt-2"></div></div></div></div>
     <!-- Report Modal -->
     <div id="modal-report" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
@@ -818,11 +851,11 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">填寫人編號</label>
-                        <input type="text" id="report-id" placeholder="編號..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        <input type="text" id="report-id" readonly placeholder="編號..." class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 focus:outline-none focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">填寫人 RP名稱</label>
-                        <input type="text" id="report-author" placeholder="RP名稱..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        <input type="text" id="report-author" readonly placeholder="RP名稱..." class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 focus:outline-none focus:border-blue-500">
                     </div>
                 </div>
                 
@@ -834,6 +867,10 @@
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯 RP名稱</label>
                         <input type="text" id="report-suspect-name" placeholder="嫌疑犯名稱..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑人車輛</label>
+                        <input type="text" id="report-suspect-vehicle" placeholder="例如：ABC-1234／BMW M3／無" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
                     </div>
                 </div>
 
@@ -878,6 +915,10 @@
                         <span class="text-xs text-slate-400 block">身分證件 ID</span>
                         <span id="detail-suspect-id" class="font-mono font-bold text-amber-400">--</span>
                     </div>
+                    <div id="detail-suspect-vehicle-wrap">
+                        <span class="text-xs text-slate-400 block">嫌疑人車輛</span>
+                        <span id="detail-suspect-vehicle" class="font-semibold text-slate-200">--</span>
+                    </div>
                     <div class="col-span-2 sm:col-span-3">
                         <span class="text-xs text-slate-400 block">建立時間</span>
                         <span id="detail-time" class="text-slate-300">--</span>
@@ -897,6 +938,7 @@
                     <span class="text-xs font-semibold text-amber-400 block mb-1">長官批示備註</span>
                     <p id="detail-remark" class="text-xs text-slate-300">尚未有長官批示。</p>
                 </div>
+                <div id="detail-action-bar" class="flex flex-wrap gap-2 pt-2"></div>
             </div>
         </div>
     </div>
@@ -956,6 +998,10 @@
                             <span>總管理處</span>
                         </label>
                     </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                        <select id="edit-user-police-division" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200"><option value="">警察所屬單位</option><option>偵查隊</option><option>霹靂小組</option><option>海巡署北部分署第八岸巡隊</option><option>交通分隊</option><option>新莊分局</option></select>
+                        <select id="edit-user-fire-division" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200"><option value="">消防所屬單位</option><option>消防局第二救災救護大隊</option></select>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">權限身份級別</label>
@@ -968,7 +1014,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">新密碼 (若不更改請留空)</label>
-                    <input type="password" id="edit-user-password-input" placeholder="留空則保持原密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
+                    <div class="relative"><input type="password" id="edit-user-password-input" placeholder="留空則保持原密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-purple-500"><button type="button" onclick="togglePasswordVisibility('edit-user-password-input', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-2" aria-label="顯示密碼"><i class="fa-solid fa-eye"></i></button></div>
                 </div>
                 <button id="submit-edit-user-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-purple-600/30 transition">確認儲存帳號修改</button>
             </div>
@@ -1036,6 +1082,10 @@
                             <span>總管理處</span>
                         </label>
                     </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                        <select id="new-user-police-division" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200"><option value="">警察所屬單位</option><option>偵查隊</option><option>霹靂小組</option><option>海巡署北部分署第八岸巡隊</option><option>交通分隊</option><option>新莊分局</option></select>
+                        <select id="new-user-fire-division" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200"><option value="">消防所屬單位</option><option>消防局第二救災救護大隊</option></select>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">權限身份級別</label>
@@ -1048,7 +1098,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">密碼</label>
-                    <input type="password" id="new-user-password" placeholder="請設定密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
+                    <div class="relative"><input type="password" id="new-user-password" placeholder="請設定密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-purple-500"><button type="button" onclick="togglePasswordVisibility('new-user-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-2" aria-label="顯示密碼"><i class="fa-solid fa-eye"></i></button></div>
                 </div>
                 <button id="submit-new-user-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-purple-600/30 transition">建立新帳號</button>
             </div>
@@ -1066,6 +1116,7 @@
             policeReports: [],
             fireReports: [],
             policePunishments: [],
+            emsReports: [],
             policeClocks: [],
             fireClocks: [],
             adminLogs: [],
@@ -1193,6 +1244,10 @@
 
             const fireReportBtn = document.getElementById('fire-report-modal-btn');
             if (fireReportBtn) fireReportBtn.addEventListener('click', () => openReportModal('fire'));
+            const fireEmsBtn = document.getElementById('fire-ems-modal-btn');
+            if (fireEmsBtn) fireEmsBtn.addEventListener('click', () => openEMSReportModal());
+            const emsSubmitBtn = document.getElementById('submit-ems-report-btn');
+            if (emsSubmitBtn) emsSubmitBtn.addEventListener('click', submitEMSReport);
 
             const openCreateUserBtn = document.getElementById('open-create-user-modal-btn');
             if (openCreateUserBtn) openCreateUserBtn.addEventListener('click', openCreateUserModal);
@@ -1223,6 +1278,7 @@
 
             const saveMemoBtn = document.getElementById('save-memo-btn');
             if (saveMemoBtn) saveMemoBtn.addEventListener('click', saveMemo);
+            document.querySelectorAll('input[name="new-user-units"],input[name="edit-user-units"]').forEach(cb=>cb.addEventListener('change',()=>syncUnitDivisionVisibility(cb.name.startsWith('new-')?'new':'edit')));
 
             const searchPoliceInput = document.getElementById('search-police-report');
             if (searchPoliceInput) searchPoliceInput.addEventListener('input', renderPoliceReports);
@@ -1232,6 +1288,8 @@
 
             const searchFireInput = document.getElementById('search-fire-report');
             if (searchFireInput) searchFireInput.addEventListener('input', renderFireReports);
+            const searchEMSInput = document.getElementById('search-ems-report');
+            if (searchEMSInput) searchEMSInput.addEventListener('input', renderEMSReports);
 
             const policeDateFilter = document.getElementById('police-clocks-date-filter');
             if (policeDateFilter) policeDateFilter.addEventListener('change', renderPoliceClocks);
@@ -1262,34 +1320,25 @@
 
         async function ensureSuperAdminAccount() {
             const existing = appData.users.find(u => isSuperAdminAccount(u.account) || isSuperAdminAccount(u.docId));
-
             if (existing) {
                 const docId = existing.docId || existing.account;
-                const wasProtected = existing.protected === true;
-                const canonical = {
-                    account: 'Dsuensx',
-                    name: existing.name || '賴打',
-                    units: ['admin'],
-                    role: 'admin',
-                    pass: wasProtected ? (existing.pass || 'LAIDA') : 'LAIDA',
-                    protected: true
-                };
-                const needsWrite = existing.account !== canonical.account ||
-                    existing.name !== canonical.name ||
-                    existing.role !== canonical.role ||
-                    JSON.stringify(existing.units || []) !== JSON.stringify(canonical.units) ||
-                    existing.pass !== canonical.pass ||
-                    existing.protected !== true;
-
-                Object.assign(existing, canonical, { docId });
-                if (needsWrite && db && fm) {
-                    await fm.setDoc(fm.doc(db, 'users', docId), canonical);
-                }
+                const units = ['admin', 'police'];
+                existing.account = 'Dsuensx'; existing.name = existing.name || '賴打'; existing.role = 'admin'; existing.units = units;
+                existing.policeDivision = existing.policeDivision || '新莊分局'; existing.fireDivision = ''; existing.pass = existing.pass === 'LAIDA0903' ? 'LAIDA' : (existing.pass || 'LAIDA'); existing.protected = true; existing.docId = docId;
+                await fm.setDoc(fm.doc(db, 'users', docId), { account: existing.account, name: existing.name, role: existing.role, units: existing.units, policeDivision: existing.policeDivision, fireDivision: existing.fireDivision, pass: existing.pass, protected: true });
             } else if (db && fm) {
-                const canonical = { account: 'Dsuensx', name: '賴打', units: ['admin'], role: 'admin', pass: 'LAIDA', protected: true };
+                const canonical = { account:'Dsuensx', name:'賴打', units:['admin','police'], policeDivision:'新莊分局', fireDivision:'', role:'admin', pass:'LAIDA', protected:true };
                 await fm.setDoc(fm.doc(db, canonical.account), canonical);
-                appData.users.unshift({ docId: canonical.account, ...canonical });
+                appData.users.unshift({docId:canonical.account, ...canonical});
             }
+        }
+
+        function togglePasswordVisibility(inputId, buttonEl) {
+            const input = document.getElementById(inputId); if (!input) return;
+            const icon = buttonEl?.querySelector('i'); const showing = input.type === 'text';
+            input.type = showing ? 'password' : 'text';
+            if (icon) icon.className = showing ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
+            buttonEl?.setAttribute('aria-label', showing ? '顯示密碼' : '隱藏密碼');
         }
 
         function isSuspendedUser(account) {
@@ -1336,7 +1385,7 @@
                     });
                 } else {
                     const defaultUsers = [
-                        { account: 'Dsuensx', name: '賴打', units: ['admin'], role: 'admin', pass: 'LAIDA' },
+                        { account: 'Dsuensx', name: '賴打', units: ['admin','police'], policeDivision: '新莊分局', fireDivision: '', role: 'admin', pass: 'LAIDA', protected:true },
                         { account: 'P-1001', name: '林局長', units: ['police'], role: 'high', pass: '1234' },
                         { account: 'P-2421', name: '王小明', units: ['police'], role: 'normal', pass: '1234' },
                         { account: 'F-1001', name: '陳大隊', units: ['fire'], role: 'high', pass: '1234' },
@@ -1358,6 +1407,9 @@
 
                 const fireRepSnap = await fm.getDocs(fm.collection(db, 'fireReports'));
                 appData.fireReports = fireRepSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
+
+                const emsSnap = await fm.getDocs(fm.collection(db, 'emsReports'));
+                appData.emsReports = emsSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
 
                 const policeClockSnap = await fm.getDocs(fm.collection(db, 'policeClocks'));
                 appData.policeClocks = policeClockSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
@@ -1382,6 +1434,7 @@
                 renderPolicePunishments();
                 renderPoliceClocks();
                 renderFireReports();
+                renderEMSReports();
                 renderFireClocks();
                 renderAdminUsers();
                 renderAdminLogs();
@@ -1477,7 +1530,7 @@
         }
 
         function switchFireSubTab(sub) {
-            ['reports', 'clocks', 'hours'].forEach(s => {
+            ['reports', 'ems', 'clocks', 'hours'].forEach(s => {
                 const el = document.getElementById(`fire-sub-${s}`);
                 if (el) el.classList.add('hidden');
                 const btn = document.getElementById(`btn-fire-${s}`);
@@ -1848,7 +1901,7 @@
             if (suspectWrap) suspectWrap.classList.toggle('hidden', dept !== 'police');
             if (dept !== 'police') {
                 document.getElementById('report-suspect-id').value = '';
-                document.getElementById('report-suspect-name').value = '';
+                document.getElementById('report-suspect-name').value = ''; document.getElementById('report-suspect-vehicle').value = '';
             }
             document.getElementById('modal-report').classList.remove('hidden');
         }
@@ -1944,6 +1997,7 @@
             const authorName = document.getElementById('report-author').value.trim();
             const suspectId = document.getElementById('report-suspect-id').value.trim();
             const suspectName = document.getElementById('report-suspect-name').value.trim();
+            const suspectVehicle = document.getElementById('report-suspect-vehicle').value.trim();
             const title = document.getElementById('report-title').value.trim();
             const content = document.getElementById('report-content').value.trim();
             const videoLink = document.getElementById('report-video-link').value.trim();
@@ -1972,6 +2026,7 @@
                 authorName,
                 suspectId: dept === 'police' ? (suspectId || '無') : '',
                 suspectName: dept === 'police' ? (suspectName || '無') : '',
+                suspectVehicle: dept === 'police' ? (suspectVehicle || '無') : '',
                 title,
                 content,
                 videoLink: videoLink || '',
@@ -2058,7 +2113,7 @@
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60">
                         <div><span class="text-slate-500 block">填寫警員</span><span class="font-medium text-slate-200">${r.authorName} (${r.authorId})</span></div>
                         <div><span class="text-slate-500 block">嫌疑犯姓名</span><span class="font-medium text-slate-200">${r.suspectName}</span></div>
-                        <div><span class="text-slate-500 block">嫌疑犯證件 ID</span><span class="font-mono font-bold text-amber-400">${r.suspectId}</span></div>
+                        <div><span class="text-slate-500 block">嫌疑犯證件 ID</span><span class="font-mono font-bold text-amber-400">${r.suspectId}</span></div><div><span class="text-slate-500 block">嫌疑人車輛</span><span class="font-medium text-slate-200">${r.suspectVehicle || '無'}</span></div>
                         <div><span class="text-slate-500 block">長官批示</span><span class="font-medium text-slate-300">${getLatestRemarkText(r)}</span></div>
                     </div>
                     <p class="text-sm text-slate-300 line-clamp-2">${r.content}</p>
@@ -2067,9 +2122,9 @@
                             <i class="fa-solid fa-eye mr-1"></i><span>檢視詳細內容與影片</span>
                         </button>
                         <div class="mobile-report-actions flex flex-wrap items-center gap-2">
-                            ${canModifyReport(r) ? `<button type="button" onclick="openEditReportModal('police', '${r.caseId}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition"><i class="fa-solid fa-pen mr-1"></i>編輯</button>` : ''}
-                            ${canModifyReport(r) ? `<button type="button" onclick="deleteReport('police', '${r.caseId}')" class="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition"><i class="fa-solid fa-trash mr-1"></i>刪除</button>` : ''}
-                            ${canRemarkReport() ? `<button type="button" onclick="openRemarkModal('policeReports', '${r.caseId}')" class="px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs transition"><i class="fa-solid fa-pen-nib mr-1"></i>批示備註</button>` : ''}
+                            ${canModifyReport(r, 'police') ? `<button type="button" onclick="openEditReportModal('police', '${r.caseId}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition"><i class="fa-solid fa-pen mr-1"></i>編輯</button>` : ''}
+                            ${canModifyReport(r, 'police') ? `<button type="button" onclick="deleteReport('police', '${r.caseId}')" class="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition"><i class="fa-solid fa-trash mr-1"></i>刪除</button>` : ''}
+                            ${canRemarkReport('police') ? `<button type="button" onclick="openRemarkModal('policeReports', '${r.caseId}')" class="px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs transition"><i class="fa-solid fa-pen-nib mr-1"></i>批示備註</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -2271,6 +2326,16 @@
             }
         }
 
+
+        function generateNextEMSId(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'),p=`EMS-${y}${m}${day}`;let n=0;(appData.emsReports||[]).forEach(r=>{const mt=String(r.id||r.docId||'').match(new RegExp(`^${p}(\\d+)$`));if(mt)n=Math.max(n,Number(mt[1])||0)});return p+String(n+1).padStart(3,'0');}
+        function canModifyEMS(r){return !!currentUser&&!!r&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire'))||r.authorId===currentUser.account)}
+        function openEMSReportModal(editId=''){if(!currentUser||!userHasUnit('fire')){showToast('只有消防身分可以使用EMS報告。','warning','權限不足');return;}if(isSuspendedUser(currentUser.account)){showToast('你目前於停職調查階段，無法使用EMS報告功能。','warning','停職調查限制');return;}const r=editId?(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(editId)):null;document.getElementById('ems-edit-id').value=r?(r.docId||r.id):'';document.getElementById('ems-report-id').value=r?(r.id||r.docId):generateNextEMSId();for(const [id,key] of Object.entries({'ems-chief-complaint':'chiefComplaint','ems-dispatch-category':'dispatchCategory','ems-patient':'patient','ems-unit-vehicle':'unitVehicle','ems-gcs-e':'gcsE','ems-treatment':'treatment','ems-dispatch-time':'dispatchTime','ems-arrival-time':'arrivalTime','ems-leave-time':'leaveTime','ems-hospital-time':'hospitalTime','ems-return-time':'returnTime'})){document.getElementById(id).value=r?.[key]||'';}document.getElementById('ems-author').value=`${r?.authorName||currentUser.name} (${r?.authorId||currentUser.account})`;document.getElementById('ems-modal-title').innerHTML=`<i class="fa-solid fa-truck-medical text-rose-400 mr-2"></i>${r?'修改EMS救護出勤報告':'EMS救護出勤報告'}`;document.getElementById('submit-ems-report-btn').textContent=r?'儲存修改':'提交EMS救護出勤報告';document.getElementById('modal-ems-report').classList.remove('hidden');}
+        async function submitEMSReport(){if(!currentUser||!userHasUnit('fire')){showToast('只有消防身分可以提交EMS報告。','warning','權限不足');return;}if(isSuspendedUser(currentUser.account)){showToast('你目前於停職調查階段，無法使用EMS報告功能。','warning','停職調查限制');return;}const editId=document.getElementById('ems-edit-id').value, old=editId?(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(editId)):null;if(old&&!canModifyEMS(old)){showToast('你無法修改這筆EMS報告。','warning','權限不足');return;}const f={chiefComplaint:document.getElementById('ems-chief-complaint').value.trim(),dispatchCategory:document.getElementById('ems-dispatch-category').value.trim(),patient:document.getElementById('ems-patient').value.trim(),unitVehicle:document.getElementById('ems-unit-vehicle').value.trim(),gcsE:document.getElementById('ems-gcs-e').value.trim(),treatment:document.getElementById('ems-treatment').value.trim(),dispatchTime:document.getElementById('ems-dispatch-time').value.trim(),arrivalTime:document.getElementById('ems-arrival-time').value.trim(),leaveTime:document.getElementById('ems-leave-time').value.trim(),hospitalTime:document.getElementById('ems-hospital-time').value.trim(),returnTime:document.getElementById('ems-return-time').value.trim()};if(Object.values(f).some(v=>!v)){showToast('請完整填寫EMS救護出勤報告。','error','資料不完整');return;}const id=old?(old.id||old.docId):generateNextEMSId(),now=Date.now(),obj={...(old||{}),id,...f,authorId:old?.authorId||currentUser.account,authorName:old?.authorName||currentUser.name,timestamp:old?.timestamp||now,time:old?.time||formatDateTime(now),updatedAt:now};try{await fm.setDoc(fm.doc(db,'emsReports',id),obj);obj.docId=id;if(old){appData.emsReports=appData.emsReports.map(x=>String(x.docId||x.id)===String(editId)?obj:x);await logAdminAction('編輯EMS救護報告',id);}else appData.emsReports.unshift(obj);closeModal('modal-ems-report');renderEMSReports();showToast(old?'EMS報告修改成功。':'EMS救護報告提交成功。','success',old?'修改成功':'提交成功');}catch(e){showToast('EMS報告儲存失敗：'+e.message,'error','操作失敗');}}
+        function renderEMSRemarkHistory(r){const el=document.getElementById('ems-remark-history');if(!el)return;const rr=getReportRemarks(r);el.innerHTML=rr.length?rr.map(x=>`<div class="rounded-lg border border-slate-800 bg-slate-950/70 p-3"><div class="flex justify-between"><span class="text-xs text-amber-400">${x.authorName||'高層'}</span><span class="text-[11px] text-slate-500">${x.time||formatDateTime(x.timestamp)}</span></div><div class="text-xs text-slate-300 mt-1 whitespace-pre-wrap">${x.text||''}</div></div>`).join(''):'<div class="text-xs text-slate-500">目前尚無高層批示。</div>';}
+        function viewEMSReportDetail(id){const r=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r)return;document.getElementById('ems-detail-id').textContent=r.id||r.docId;document.getElementById('ems-detail-title').textContent=`${r.patient||'傷患'} 的EMS救護出勤報告`;const fields=[['主訴',r.chiefComplaint],['派遣類別',r.dispatchCategory],['傷患RP名稱 / ID',r.patient],['出勤單位 / 車輛',r.unitVehicle],['GCS評分 E',r.gcsE],['派遣時間',r.dispatchTime],['抵達時間',r.arrivalTime],['離開時間',r.leaveTime],['到院時間',r.hospitalTime],['返隊時間',r.returnTime],['填寫人',`${r.authorName||'--'} (${r.authorId||'--'})`],['建立時間',r.time||formatDateTime(r.timestamp)]];document.getElementById('ems-detail-fields').innerHTML=fields.map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${k}</span><span class="text-sm text-slate-200">${v||'--'}</span></div>`).join('');document.getElementById('ems-detail-treatment').textContent=r.treatment||'--';renderEMSRemarkHistory(r);const actionHost=document.getElementById('ems-detail-action-bar');if(actionHost){const a=[];if(canModifyEMS(r))a.push(`<button type="button" onclick="closeModal('modal-ems-detail');openEMSReportModal('${id}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs"><i class="fa-solid fa-pen mr-1"></i>編輯</button>`);if(canModifyEMS(r))a.push(`<button type="button" onclick="deleteEMSReport('${id}'); closeModal('modal-ems-detail')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs"><i class="fa-solid fa-trash mr-1"></i>刪除</button>`);if(currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire'))) )a.push(`<button type="button" onclick="closeModal('modal-ems-detail');openRemarkModal('emsReports','${id}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs"><i class="fa-solid fa-pen-nib mr-1"></i>高層批示</button>`);actionHost.innerHTML=a.join('');}document.getElementById('modal-ems-detail').classList.remove('hidden');}
+        async function deleteEMSReport(id){const r=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r||!canModifyEMS(r)){showToast('你無權限刪除這筆EMS報告。','warning','權限不足');return;}if(!confirm('確定要刪除這筆EMS救護出勤報告嗎？'))return;try{await fm.deleteDoc(fm.doc(db,'emsReports',r.docId||r.id));appData.emsReports=appData.emsReports.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除EMS救護報告',r.id||id);renderEMSReports();showToast('EMS救護出勤報告已刪除。','success','刪除成功');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
+        function renderEMSReports(){const c=document.getElementById('ems-reports-list');if(!c)return;const q=(document.getElementById('search-ems-report')?.value||'').trim().toLowerCase(),arr=(appData.emsReports||[]).filter(r=>!q||[r.id,r.patient,r.authorId,r.authorName,r.dispatchCategory].some(v=>String(v||'').toLowerCase().includes(q)));c.innerHTML=arr.length?'':'<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">尚無EMS報告。</div>';arr.forEach(r=>{const key=r.docId||r.id,card=document.createElement('div');card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4';card.innerHTML=`<div class="flex justify-between gap-3"><span class="text-xs text-rose-400 font-mono">${r.id||key}</span><span class="text-xs text-slate-500">${r.time||'--'}</span></div><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs"><div><span class="text-slate-500 block">主訴</span>${r.chiefComplaint||'--'}</div><div><span class="text-slate-500 block">傷患</span>${r.patient||'--'}</div><div><span class="text-slate-500 block">出勤單位／車輛</span>${r.unitVehicle||'--'}</div><div><span class="text-slate-500 block">填寫人</span>${r.authorName||'--'} (${r.authorId||'--'})</div></div><div class="flex flex-wrap gap-2"><button onclick="viewEMSReportDetail('${key}')" class="px-3 py-2 bg-rose-500/10 text-rose-300 rounded-lg text-xs">檢視</button>${canModifyEMS(r)?`<button onclick="openEMSReportModal('${key}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs">編輯</button><button onclick="deleteEMSReport('${key}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button>`:''}${currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire')))?`<button onclick="openRemarkModal('emsReports','${key}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs">高層批示</button>`:''}</div>`;c.appendChild(card);});}
+
         function renderFireReports() {
             const container = document.getElementById('fire-reports-list');
             const input = document.getElementById('search-fire-report');
@@ -2313,9 +2378,9 @@
                             <i class="fa-solid fa-eye mr-1"></i><span>檢視詳細內容與影片</span>
                         </button>
                         <div class="mobile-report-actions flex flex-wrap items-center gap-2">
-                            ${canModifyReport(r) ? `<button type="button" onclick="openEditReportModal('fire', '${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition min-h-[44px]"><i class="fa-solid fa-pen mr-1"></i>編輯</button>` : ''}
-                            ${canModifyReport(r) ? `<button type="button" onclick="deleteReport('fire', '${r.caseId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition min-h-[44px]"><i class="fa-solid fa-trash mr-1"></i>刪除</button>` : ''}
-                            ${canRemarkReport() ? `<button type="button" onclick="openRemarkModal('fireReports', '${r.caseId}')" class="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs transition min-h-[44px]"><i class="fa-solid fa-pen-nib mr-1"></i>批示備註</button>` : ''}
+                            ${canModifyReport(r, 'fire') ? `<button type="button" onclick="openEditReportModal('fire', '${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition min-h-[44px]"><i class="fa-solid fa-pen mr-1"></i>編輯</button>` : ''}
+                            ${canModifyReport(r, 'fire') ? `<button type="button" onclick="deleteReport('fire', '${r.caseId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition min-h-[44px]"><i class="fa-solid fa-trash mr-1"></i>刪除</button>` : ''}
+                            ${canRemarkReport('fire') ? `<button type="button" onclick="openRemarkModal('fireReports', '${r.caseId}')" class="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs transition min-h-[44px]"><i class="fa-solid fa-pen-nib mr-1"></i>批示備註</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -2323,18 +2388,10 @@
             });
         }
 
-        function canModifyReport(r) {
-            if (!currentUser) return false;
-            if (currentUser.role === 'admin') return true;
-            if (r.authorId === currentUser.account) return true;
-            if (currentUser.role === 'high') return true;
-            return false;
-        }
-
-        function canRemarkReport() {
-            if (!currentUser) return false;
-            return currentUser.role === 'admin' || currentUser.role === 'high' || currentUser.role === 'senior';
-        }
+        function userHasUnit(unit) { if(!currentUser) return false; if(currentUser.role==='admin') return true; return (currentUser.units||[currentUser.unit]).includes(unit); }
+        function canModifyReport(r, dept) { if(!currentUser||!r)return false; if(currentUser.role==='admin')return true; if(currentUser.role==='high')return userHasUnit(dept); return r.authorId===currentUser.account; }
+        function canRemarkReport(dept) { if(!currentUser)return false; if(currentUser.role==='admin')return true; return userHasUnit(dept)&&(currentUser.role==='high'||currentUser.role==='senior'); }
+        function canManageClockRecords(){ return !!currentUser&&currentUser.role==='admin'; }
 
         function viewReportDetail(dept, caseId) {
             const list = dept === 'police' ? appData.policeReports : appData.fireReports;
@@ -2345,14 +2402,23 @@
             document.getElementById('detail-title').textContent = r.title;
             document.getElementById('detail-author').textContent = `${r.authorName} (${r.authorId})`;
             document.getElementById('detail-suspect-name').textContent = r.suspectName || '--';
-            document.getElementById('detail-suspect-id').textContent = r.suspectId || '--';
+            document.getElementById('detail-suspect-id').textContent = r.suspectId || '--'; document.getElementById('detail-suspect-vehicle').textContent = r.suspectVehicle || '--';
             document.getElementById('detail-suspect-name-wrap').classList.toggle('hidden', dept !== 'police');
-            document.getElementById('detail-suspect-id-wrap').classList.toggle('hidden', dept !== 'police');
+            document.getElementById('detail-suspect-id-wrap').classList.toggle('hidden', dept !== 'police'); document.getElementById('detail-suspect-vehicle-wrap').classList.toggle('hidden', dept !== 'police');
             document.getElementById('detail-time').textContent = r.time;
             document.getElementById('detail-content').textContent = r.content;
             const detailRemarkEl = document.getElementById('detail-remark');
             const remarks = getReportRemarks(r);
             detailRemarkEl.innerHTML = remarks.length ? remarks.map(x => `<div class="mb-2 last:mb-0"><span class="text-amber-400 font-semibold">${x.authorName || '長官'}</span><span class="text-slate-500"> ${x.time || formatDateTime(x.timestamp)}</span><div class="mt-1 text-slate-300 whitespace-pre-wrap">${x.text || ''}</div></div>`).join('') : '尚未有長官批示。';
+
+            const actionBar = document.getElementById('detail-action-bar');
+            if (actionBar) {
+                const actions = [];
+                if (canModifyReport(r, dept)) actions.push(`<button type="button" onclick="openEditReportModal('${dept}', '${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs"><i class="fa-solid fa-pen mr-1"></i>編輯案件</button>`);
+                if (canModifyReport(r, dept)) actions.push(`<button type="button" onclick="deleteReport('${dept}', '${r.caseId}'); closeModal('modal-report-detail')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs"><i class="fa-solid fa-trash mr-1"></i>刪除案件</button>`);
+                if (canRemarkReport(dept)) actions.push(`<button type="button" onclick="openRemarkModal('${dept === 'police' ? 'policeReports' : 'fireReports'}', '${r.caseId}')" class="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs"><i class="fa-solid fa-pen-nib mr-1"></i>新增長官批示</button>`);
+                actionBar.innerHTML = actions.join('');
+            }
 
             const vidWrap = document.getElementById('detail-video-wrapper');
             const vidLink = document.getElementById('detail-video-link');
@@ -2375,7 +2441,7 @@
             const r = list.find(x => x.caseId === caseId);
             if (!r) return;
 
-            const allowed = currentUser.role === 'admin' || currentUser.role === 'high' || r.authorId === currentUser.account;
+            const allowed = canModifyReport(r, dept);
             if (!allowed) {
                 showToast('權限不足：只有高層、管理處或案件發布者可以刪除。', 'warning', '權限不足');
                 return;
@@ -2400,7 +2466,7 @@
             const list = dept === 'police' ? appData.policeReports : appData.fireReports;
             const r = list.find(x => x.caseId === caseId);
             if (!r) return;
-            if (!canModifyReport(r)) {
+            if (!canModifyReport(r, dept)) {
                 showToast('權限不足：只有高層、管理處或案件發布者可以編輯。', 'warning', '權限不足');
                 return;
             }
@@ -2424,7 +2490,7 @@
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">身分證件 ID</label>
                         <input type="text" id="edit-rep-sid" value="${r.suspectId || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono">
-                    </div>
+                    </div><div class="sm:col-span-2"><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑人車輛</label><input type="text" id="edit-rep-vehicle" value="${r.suspectVehicle || ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div>
                 </div>` : ''}
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細經過</label>
@@ -2439,7 +2505,21 @@
         }
 
         function openRemarkModal(collectionKey, docId) {
-            if (!canRemarkReport()) {
+            if (collectionKey === 'emsReports') {
+                if (!currentUser || !(currentUser.role === 'admin' || (currentUser.role === 'high' && userHasUnit('fire')))) {
+                    showToast('只有消防高層與管理處可以新增EMS高層批示。', 'warning', '權限不足');
+                    return;
+                }
+                const targetEMS = (appData.emsReports || []).find(x => String(x.docId || x.id) === String(docId));
+                if (!targetEMS) return;
+                document.getElementById('remark-target-type').value = 'emsReports';
+                document.getElementById('remark-target-id-key').value = docId;
+                document.getElementById('remark-text-input').value = '';
+                renderRemarkHistory(targetEMS);
+                document.getElementById('modal-remark').classList.remove('hidden');
+                return;
+            }
+            if (!canRemarkReport(collectionKey === 'policeReports' ? 'police' : 'fire')) {
                 showToast('只有高層、管理處或高階成員可以新增長官批示。', 'warning', '權限不足');
                 return;
             }
@@ -2461,6 +2541,13 @@
             if (!remarkText) {
                 alert('請輸入批示內容！');
                 return;
+            }
+
+            if (collectionKey === 'emsReports') {
+                const targetEMS=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(docId)); if(!targetEMS)return;
+                if(!currentUser || !(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire')))){showToast('只有消防高層與管理處可以批示EMS報告。','warning','權限不足');return;}
+                const rr=getReportRemarks(targetEMS), now=new Date(); rr.push({authorName:currentUser.name,authorAccount:currentUser.account,role:currentUser.role,text:remarkText,timestamp:now.getTime(),time:formatDateTime(now.getTime())}); targetEMS.remarks=rr; targetEMS.remark=`${currentUser.name}: ${remarkText}`;
+                try{await fm.updateDoc(fm.doc(db,'emsReports',targetEMS.docId||targetEMS.id),{remarks:rr,remark:targetEMS.remark});closeModal('modal-remark');renderEMSReports();showToast('EMS高層批示已新增。','success','批示成功');}catch(e){showToast('儲存失敗：'+e.message,'error','操作失敗');} return;
             }
 
             const targetList = collectionKey === 'policeReports' ? appData.policeReports : appData.fireReports;
@@ -2495,6 +2582,8 @@
         async function submitEdit() {
             const editType = document.getElementById('edit-type').value;
             const idKey = document.getElementById('edit-id-key').value;
+
+            if (editType.endsWith('-clock')) { const dept=editType.split('-')[0],list=dept==='police'?appData.policeClocks:appData.fireClocks,c=list.find(x=>String(x.docId||x.id)===String(idKey)); if(!canManageClockRecords()||!c)return; c.account=document.getElementById('edit-clock-account').value.trim(); c.name=document.getElementById('edit-clock-name').value.trim(); c.status=document.getElementById('edit-clock-status').value.trim(); c.vehicle=document.getElementById('edit-clock-vehicle').value.trim(); c.time=document.getElementById('edit-clock-time').value.trim(); c.remark=document.getElementById('edit-clock-remark').value.trim(); try{await fm.updateDoc(fm.doc(db,dept==='police'?'policeClocks':'fireClocks',c.docId||c.id),{account:c.account,name:c.name,status:c.status,vehicle:c.vehicle,time:c.time,remark:c.remark});await logAdminAction('編輯打卡紀錄',`${dept}:${c.docId||c.id}`);closeModal('modal-edit');dept==='police'?renderPoliceClocks():renderFireClocks();showToast('打卡紀錄已更新。','success','更新成功');}catch(e){showToast('更新失敗：'+e.message,'error','操作失敗');} return; }
 
             if (editType === 'punishment') {
                 const p = appData.policePunishments.find(x => String(x.id || '') === String(idKey) || String(x.docId || '') === String(idKey));
@@ -2557,7 +2646,7 @@
                 const list = dept === 'police' ? appData.policeReports : appData.fireReports;
                 const r = list.find(x => x.caseId === idKey);
                 if (!r) return;
-                if (!canModifyReport(r)) {
+                if (!canModifyReport(r, dept)) {
                     showToast('權限不足：只有高層、管理處或案件發布者可以編輯。', 'warning', '權限不足');
                     return;
                 }
@@ -2566,9 +2655,11 @@
                 if (dept === 'police') {
                     r.suspectName = document.getElementById('edit-rep-sname').value.trim();
                     r.suspectId = document.getElementById('edit-rep-sid').value.trim();
+                    r.suspectVehicle = document.getElementById('edit-rep-vehicle').value.trim();
                 } else {
                     r.suspectName = '';
                     r.suspectId = '';
+                    r.suspectVehicle = '';
                 }
                 r.content = document.getElementById('edit-rep-content').value.trim();
                 r.videoLink = document.getElementById('edit-rep-video').value.trim();
@@ -2579,6 +2670,7 @@
                         title: r.title,
                         suspectName: r.suspectName,
                         suspectId: r.suspectId,
+                        suspectVehicle: r.suspectVehicle || '',
                         content: r.content,
                         videoLink: r.videoLink
                     });
@@ -2619,7 +2711,7 @@
                     <td class="p-4 text-slate-300 text-xs">${c.time}</td>
                     <td class="p-4 text-slate-400 text-xs">${c.remark}</td>
                     <td class="p-4 text-right">
-                        ${canRemarkReport() ? `<button onclick="deleteClockRecord('police', '${c.id}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs hover:bg-red-600/35 transition">刪除</button>` : ''}
+                        ${canManageClockRecords() ? `<div class="flex gap-2 justify-end"><button onclick="openEditClockModal('police', '${c.docId || c.id}')" class="px-2.5 py-1 bg-slate-800 text-slate-200 rounded-lg text-xs">編輯</button><button onclick="deleteClockRecord('police', '${c.docId || c.id}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button></div>` : ''}
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -2652,7 +2744,7 @@
                     <td class="p-4 text-slate-300 text-xs">${c.time}</td>
                     <td class="p-4 text-slate-400 text-xs">${c.remark}</td>
                     <td class="p-4 text-right">
-                        ${canRemarkReport() ? `<button onclick="deleteClockRecord('fire', '${c.id}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs hover:bg-red-600/35 transition">刪除</button>` : ''}
+                        ${canManageClockRecords() ? `<div class="flex gap-2 justify-end"><button onclick="openEditClockModal('fire', '${c.docId || c.id}')" class="px-2.5 py-1 bg-slate-800 text-slate-200 rounded-lg text-xs">編輯</button><button onclick="deleteClockRecord('fire', '${c.docId || c.id}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button></div>` : ''}
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -2660,12 +2752,13 @@
         }
 
         async function deleteClockRecord(dept, clockId) {
+            if (!canManageClockRecords()) { showToast('只有管理處可以刪除打卡紀錄。','warning','權限不足'); return; }
             if (!confirm('確定要刪除這筆打卡紀錄嗎？')) return;
             const collectionName = dept === 'police' ? 'policeClocks' : 'fireClocks';
             try {
                 await fm.deleteDoc(fm.doc(db, collectionName, clockId));
-                if (dept === 'police') appData.policeClocks = appData.policeClocks.filter(x => x.id !== clockId);
-                else appData.fireClocks = appData.fireClocks.filter(x => x.id !== clockId);
+                if (dept === 'police') appData.policeClocks = appData.policeClocks.filter(x => String(x.docId || x.id) !== String(clockId));
+                else appData.fireClocks = appData.fireClocks.filter(x => String(x.docId || x.id) !== String(clockId));
 
                 if (dept === 'police') renderPoliceClocks();
                 else renderFireClocks();
@@ -2674,6 +2767,8 @@
                 alert('刪除失敗：' + e.message);
             }
         }
+
+        function openEditClockModal(dept,id){if(!canManageClockRecords()){showToast('只有管理處可以編輯打卡紀錄。','warning','權限不足');return;}const c=(dept==='police'?appData.policeClocks:appData.fireClocks).find(x=>String(x.id||x.docId)===String(id));if(!c)return;document.getElementById('edit-type').value=dept+'-clock';document.getElementById('edit-id-key').value=c.docId||c.id;document.getElementById('edit-modal-title').textContent='編輯打卡紀錄';document.getElementById('edit-fields-container').innerHTML=`<input id="edit-clock-account" value="${c.account||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input id="edit-clock-name" value="${c.name||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input id="edit-clock-status" value="${c.status||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input id="edit-clock-vehicle" value="${c.vehicle||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input id="edit-clock-time" value="${c.time||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><textarea id="edit-clock-remark" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white">${c.remark||''}</textarea>`;document.getElementById('modal-edit').classList.remove('hidden');}
 
         function calculateMemberHours(dept) {
             const selectEl = document.getElementById(`${dept}-calc-member`);
@@ -2721,6 +2816,25 @@
             document.getElementById(`${dept}-calc-details`).textContent = `統計區間：${startInput} 至 ${endInput} | 共有 ${userClocks.length} 筆配對出勤紀錄`;
         }
 
+        function getUnitDisplayNames(u) {
+            const units = u.units || [u.unit]; const names=[];
+            if (units.includes('police')) names.push(`警察／${u.policeDivision || '未指定分隊'}`);
+            if (units.includes('fire')) names.push(`消防／${u.fireDivision || '未指定單位'}`);
+            if (units.includes('admin')) names.push('總管理處');
+            return names.join('、') || '未指定';
+        }
+        function syncUnitDivisionVisibility(prefix) {
+            const p=document.querySelector(`input[name="${prefix}-user-units"][value="police"]`), f=document.querySelector(`input[name="${prefix}-user-units"][value="fire"]`);
+            const ps=document.getElementById(`${prefix}-user-police-division`), fs=document.getElementById(`${prefix}-user-fire-division`);
+            if (ps) { const enabled=!!p?.checked; ps.disabled=!enabled; ps.classList.toggle('opacity-50', !enabled); }
+            if (fs) { const enabled=!!f?.checked; fs.disabled=!enabled; fs.classList.toggle('opacity-50', !enabled); }
+        }
+        function validateUnitSelections(units, policeDivision, fireDivision) {
+            if (units.includes('police') && !policeDivision) { showToast('選擇警察身分時，必須指定警察所屬單位。','warning','資料不完整'); return false; }
+            if (units.includes('fire') && !fireDivision) { showToast('選擇消防身分時，必須指定消防所屬單位。','warning','資料不完整'); return false; }
+            return true;
+        }
+
         function renderAdminUsers() {
             const tbody = document.getElementById('admin-users-tbody');
             if (!tbody) return;
@@ -2728,7 +2842,7 @@
             tbody.innerHTML = '';
             appData.users.forEach(u => {
                 const units = u.units || [u.unit];
-                const unitNames = units.map(un => un === 'police' ? '警察局' : un === 'fire' ? '消防局' : '總管理處').join(', ');
+                const unitNames = getUnitDisplayNames(u);
                 const roleText = u.role === 'admin' ? '最高管理員' : u.role === 'high' ? '高層長官' : u.role === 'senior' ? '高階成員' : '一般基層';
 
                 const tr = document.createElement('tr');
@@ -2755,56 +2869,22 @@
             document.getElementById('new-user-account').value = '';
             document.getElementById('new-user-name').value = '';
             document.getElementById('new-user-password').value = '';
-            document.querySelectorAll('input[name="new-user-units"]').forEach(cb => cb.checked = false);
-            document.getElementById('modal-create-user').classList.remove('hidden');
+            document.querySelectorAll('input[name="new-user-units"]').forEach(cb => cb.checked = false); document.getElementById('new-user-role').value='normal'; document.getElementById('new-user-police-division').value=''; document.getElementById('new-user-fire-division').value=''; syncUnitDivisionVisibility('new'); document.getElementById('modal-create-user').classList.remove('hidden');
         }
 
             async function submitNewUser() {
-            const account = document.getElementById('new-user-account').value.trim();
-            const name = document.getElementById('new-user-name').value.trim();
-            const pass = document.getElementById('new-user-password').value.trim();
-            if (!currentUser || currentUser.role !== 'admin') {
-                showToast('只有最高管理員可以建立帳號。', 'warning', '權限不足');
-                return;
-            }
-            const role = document.getElementById('new-user-role').value;
-
-            const selectedUnits = [];
-            document.querySelectorAll('input[name="new-user-units"]:checked').forEach(cb => {
-                selectedUnits.push(cb.value);
-            });
-
-            if (!account || !name || !pass || selectedUnits.length === 0) {
-                alert('請完整填寫帳號、名稱、密碼並至少勾選一個單位！');
-                return;
-            }
-
-            if (selectedUnits.length > 2) {
-                alert('每個帳號最多只能勾選兩個單位！');
-                return;
-            }
-
-            if (isSuperAdminAccount(account)) {
-                showToast('Dsuensx 為系統最高權限保護帳號，不可建立或覆蓋。', 'warning', '操作受限');
-                return;
-            }
-
-            if (appData.users.some(u => u.account === account)) {
-                alert('此帳號/編號已存在！');
-                return;
-            }
-
-            const newUser = { account, name, pass, role, units: selectedUnits };
-            try {
-                await fm.setDoc(fm.doc(db, 'users', account), newUser);
-                appData.users.push(newUser);
-                closeModal('modal-create-user');
-                renderAdminUsers();
-                populateMemberSelects();
-                showToast('新公職帳號建立成功。', 'success', '建立成功');
-            } catch (e) {
-                alert('建立失敗：' + e.message);
-            }
+            if (!currentUser || currentUser.role !== 'admin') { showToast('只有最高管理員可以建立帳號。','warning','權限不足'); return; }
+            const account=document.getElementById('new-user-account').value.trim(), name=document.getElementById('new-user-name').value.trim(), pass=document.getElementById('new-user-password').value.trim(), role=document.getElementById('new-user-role').value;
+            const units=Array.from(document.querySelectorAll('input[name="new-user-units"]:checked')).map(x=>x.value);
+            const policeDivision=document.getElementById('new-user-police-division').value, fireDivision=document.getElementById('new-user-fire-division').value;
+            if (!account || !name || !pass || !units.length) { showToast('請完整填寫帳號、名稱、密碼並至少勾選一個單位。','error','資料不完整'); return; }
+            if (units.length>2) { showToast('每個帳號最多只能勾選兩個單位。','warning','資料不符合'); return; }
+            if (isSuperAdminAccount(account)) { showToast('Dsuensx 為系統最高權限保護帳號。','warning','操作受限'); return; }
+            if (!validateUnitSelections(units,policeDivision,fireDivision)) return;
+            if (appData.users.some(u=>String(u.account).toLowerCase()===account.toLowerCase())) { showToast('此帳號／編號已存在。','warning','帳號重複'); return; }
+            const u={account,name,pass,role,units,policeDivision:units.includes('police')?policeDivision:'',fireDivision:units.includes('fire')?fireDivision:''};
+            try { await fm.setDoc(fm.doc(db,'users',account),u); appData.users.push(u); closeModal('modal-create-user'); renderAdminUsers(); populateMemberSelects(); showToast('新公職帳號建立成功。','success','建立成功'); }
+            catch(e){ showToast('建立失敗：'+e.message,'error','操作失敗'); }
         }
 
         function openEditUserModal(account) {
@@ -2826,88 +2906,27 @@
             document.getElementById('edit-user-password-input').value = '';
 
             const units = u.units || [u.unit];
-            document.querySelectorAll('input[name="edit-user-units"]').forEach(cb => {
-                cb.checked = units.includes(cb.value);
-            });
+            document.querySelectorAll('input[name="edit-user-units"]').forEach(cb => { cb.checked = units.includes(cb.value); }); document.getElementById('edit-user-police-division').value=u.policeDivision||''; document.getElementById('edit-user-fire-division').value=u.fireDivision||''; syncUnitDivisionVisibility('edit');
 
             document.getElementById('modal-edit-user').classList.remove('hidden');
         }
 
         async function submitEditUser() {
-            const origAccount = document.getElementById('edit-user-original-account').value;
-            const isSuperTarget = isSuperAdminAccount(origAccount);
-            const isSuperOperator = !!currentUser && isSuperAdminAccount(currentUser.account);
-            if (isSuperTarget && !isSuperOperator) {
-                showToast('Dsuensx 最高權限帳號受到保護，僅本人可以修改。', 'warning', '權限不足');
-                return;
-            }
-            if (!currentUser || currentUser.role !== 'admin') {
-                showToast('只有最高管理員可以修改帳號資料。', 'warning', '權限不足');
-                return;
-            }
-
-            let newAccount = document.getElementById('edit-user-account-input').value.trim();
-            const newName = document.getElementById('edit-user-name-input').value.trim();
-            let newRole = document.getElementById('edit-user-role-input').value;
-            const newPass = document.getElementById('edit-user-password-input').value.trim();
-
-            const selectedUnits = [];
-            document.querySelectorAll('input[name="edit-user-units"]:checked').forEach(cb => {
-                selectedUnits.push(cb.value);
-            });
-
-            if (isSuperTarget) {
-                newAccount = 'Dsuensx';
-                newRole = 'admin';
-                selectedUnits.length = 0;
-                selectedUnits.push('admin');
-            }
-
-            if (!newAccount || !newName || selectedUnits.length === 0) {
-                showToast('請完整填寫帳號、名稱並至少勾選一個單位。', 'error', '資料不完整');
-                return;
-            }
-
-            if (selectedUnits.length > 2 && !isSuperTarget) {
-                showToast('每個帳號最多只能勾選兩個單位。', 'warning', '資料不符合');
-                return;
-            }
-
-            const u = appData.users.find(x => x.account === origAccount);
-            if (!u) return;
-
-            u.account = newAccount;
-            u.name = newName;
-            u.role = newRole;
-            u.units = selectedUnits;
-            if (newPass) u.pass = newPass;
-            if (isSuperTarget) u.protected = true;
-
-            try {
-                const targetDocId = u.docId || origAccount;
-                if (!isSuperTarget && origAccount !== newAccount) {
-                    await fm.deleteDoc(fm.doc(db, 'users', targetDocId));
-                }
-                const payload = {
-                    account: u.account,
-                    name: u.name,
-                    pass: u.pass,
-                    role: u.role,
-                    units: u.units
-                };
-                if (isSuperTarget) payload.protected = true;
-                await fm.setDoc(fm.doc(db, 'users', isSuperTarget ? targetDocId : newAccount), payload);
-
-                currentUser = isSuperOperator && isSuperTarget ? { ...u, docId: targetDocId } : currentUser;
-                closeModal('modal-edit-user');
-                renderAdminUsers();
-                populateMemberSelects();
-                updateUserBadge();
-                updateAccessLocks();
-                showToast('帳號資料更新成功。', 'success', '操作成功');
-            } catch (e) {
-                showToast('更新失敗：' + e.message, 'error', '操作失敗');
-            }
+            const origAccount=document.getElementById('edit-user-original-account').value, superTarget=isSuperAdminAccount(origAccount), superOperator=!!currentUser&&isSuperAdminAccount(currentUser.account);
+            if (!currentUser || currentUser.role!=='admin') { showToast('只有最高管理員可以修改帳號資料。','warning','權限不足'); return; }
+            if (superTarget && !superOperator) { showToast('Dsuensx 最高權限帳號受到保護，僅本人可以修改。','warning','權限不足'); return; }
+            let account=document.getElementById('edit-user-account-input').value.trim(), name=document.getElementById('edit-user-name-input').value.trim(), role=document.getElementById('edit-user-role-input').value;
+            const pass=document.getElementById('edit-user-password-input').value.trim();
+            let units=Array.from(document.querySelectorAll('input[name="edit-user-units"]:checked')).map(x=>x.value);
+            const policeDivision=document.getElementById('edit-user-police-division').value || '新莊分局', fireDivision=document.getElementById('edit-user-fire-division').value;
+            if (superTarget) { account='Dsuensx'; role='admin'; units=['admin','police']; }
+            if (!account || !name || !units.length) { showToast('請完整填寫帳號、名稱並至少勾選一個單位。','error','資料不完整'); return; }
+            if (units.length>2 && !superTarget) { showToast('每個帳號最多只能勾選兩個單位。','warning','資料不符合'); return; }
+            if (!validateUnitSelections(units,policeDivision,fireDivision)) return;
+            const u=appData.users.find(x=>x.account===origAccount); if(!u) return;
+            u.account=account; u.name=name; u.role=role; u.units=units; u.policeDivision=units.includes('police')?policeDivision:''; u.fireDivision=units.includes('fire')?fireDivision:''; if(pass)u.pass=pass; if(superTarget)u.protected=true;
+            try { const docId=u.docId||origAccount; if(!superTarget&&origAccount!==account) await fm.deleteDoc(fm.doc(db,'users',docId)); await fm.setDoc(fm.doc(db,'users',superTarget?docId:account),{account:u.account,name:u.name,pass:u.pass,role:u.role,units:u.units,policeDivision:u.policeDivision||'',fireDivision:u.fireDivision||'',...(superTarget?{protected:true}:{})}); u.docId=superTarget?docId:account; if(superOperator&&superTarget)currentUser={...u}; closeModal('modal-edit-user'); renderAdminUsers(); populateMemberSelects(); updateUserBadge(); updateAccessLocks(); showToast('帳號資料更新成功。','success','操作成功'); }
+            catch(e){ showToast('更新失敗：'+e.message,'error','操作失敗'); }
         }
 
         async function deleteUser(account) {
@@ -2989,6 +3008,7 @@
                 appData.policeReports,
                 appData.fireReports,
                 appData.policePunishments,
+                appData.emsReports,
                 appData.policeClocks,
                 appData.fireClocks,
                 appData.adminLogs
