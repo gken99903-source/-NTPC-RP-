@@ -3311,8 +3311,10 @@
         }
 
         async function sendDiscordReviewNotification(args) {
-            // 不直接引用可能不存在的 const，避免舊版 GitHub Pages 快取出現：
-            //「DISCORD_REVIEW_WEBHOOK_URL is not defined」
+            // 依傳入案件的 department 選擇對應 Discord Webhook。
+            // 注意：這裡不能直接使用未宣告的 department，否則瀏覽器會拋出
+            //「ReferenceError: department is not defined」，導致整筆案件提交失敗。
+            const department = String(args?.department || '').trim().toLowerCase();
             const webhookUrl = department === 'police'
                 ? (typeof window.NTPC_RP_DISCORD_POLICE_WEBHOOK_URL === 'string' ? window.NTPC_RP_DISCORD_POLICE_WEBHOOK_URL.trim() : '')
                 : (typeof window.NTPC_RP_DISCORD_FIRE_WEBHOOK_URL === 'string' ? window.NTPC_RP_DISCORD_FIRE_WEBHOOK_URL.trim() : '');
