@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- NTPC-RP Discord webhook fix: 2026-10-06-v3 -->
     <title>新北市 RP 3.0 公職服務系統 V1.6</title>
     <!-- 網站圖標與連結分享資訊 -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/image.png53.png">
@@ -304,7 +305,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        const DISCORD_REVIEW_WEBHOOK_URL = "https://discord.com/api/webhooks/1556813074176933938/m8-oi0s9rD0MDb3X5Xy3rEjUrdQ0ZYA6v2z6UTiDILFGQMSliGltIjbegmzNTtsEtQJQ";
+        // Discord 審核通知 Webhook：警察與消防／EMS 分流
+        window.NTPC_RP_DISCORD_POLICE_WEBHOOK_URL = "https://discord.com/api/webhooks/1556813074176933938/m8-oi0s9rD0MDb3X5Xy3rEjUrdQ0ZYA6v2z6UTiDILFGQMSliGltIjbegmzNTtsEtQJQ";
+        window.NTPC_RP_DISCORD_FIRE_WEBHOOK_URL = "https://discord.com/api/webhooks/1556959309265371155/xXOkB8yRJUn-mka2PP3GUKzsPoddI43aOit9SStBEU6zIAcGExiWOd-4lVgLtIWoHMns";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBJi9v-oDJ54-Z61T5JKy44Mg22vZCPiw",
@@ -3308,21 +3311,35 @@
         }
 
         async function sendDiscordReviewNotification(args) {
-            if (!DISCORD_REVIEW_WEBHOOK_URL) return false;
+            // 不直接引用可能不存在的 const，避免舊版 GitHub Pages 快取出現：
+            //「DISCORD_REVIEW_WEBHOOK_URL is not defined」
+            const webhookUrl = department === 'police'
+                ? (typeof window.NTPC_RP_DISCORD_POLICE_WEBHOOK_URL === 'string' ? window.NTPC_RP_DISCORD_POLICE_WEBHOOK_URL.trim() : '')
+                : (typeof window.NTPC_RP_DISCORD_FIRE_WEBHOOK_URL === 'string' ? window.NTPC_RP_DISCORD_FIRE_WEBHOOK_URL.trim() : '');
+
+            if (!webhookUrl) {
+                console.warn('Discord 審核通知：尚未設定 Webhook URL');
+                return false;
+            }
+
             const payload = buildDiscordReviewPayload(args);
-            // GitHub Pages 無後端，直接 fetch application/json 會受到 Discord CORS 限制。
-            // 改用隱藏 iframe + form POST，避免瀏覽器對 JSON POST 的 CORS preflight。
+
+            // GitHub Pages 沒有後端，Discord Webhook 的 JSON fetch 可能觸發 CORS preflight。
+            // 使用 Discord 支援的 payload_json 表單欄位，以隱藏 iframe 接收回應，
+            // 不要求目前頁面讀取 Discord 的跨來源回應。
             try {
+                const targetName = `discord_webhook_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                const iframe = document.createElement('iframe');
+                iframe.name = targetName;
+                iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;';
+                document.body.appendChild(iframe);
+
                 const form = document.createElement('form');
                 form.method = 'POST';
-                form.action = DISCORD_REVIEW_WEBHOOK_URL;
-                form.target = `discord_webhook_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                form.action = webhookUrl + (webhookUrl.includes('?') ? '&' : '?') + 'wait=false';
+                form.target = targetName;
+                form.enctype = 'application/x-www-form-urlencoded';
                 form.style.display = 'none';
-
-                const iframe = document.createElement('iframe');
-                iframe.name = form.target;
-                iframe.style.display = 'none';
-                document.body.appendChild(iframe);
 
                 const input = document.createElement('input');
                 input.type = 'hidden';
@@ -3330,11 +3347,13 @@
                 input.value = JSON.stringify(payload);
                 form.appendChild(input);
                 document.body.appendChild(form);
+
                 form.submit();
 
                 setTimeout(() => {
                     try { form.remove(); iframe.remove(); } catch (e) {}
-                }, 5000);
+                }, 8000);
+
                 return true;
             } catch (error) {
                 console.warn('Discord 審核通知發送失敗：', error);
