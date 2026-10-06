@@ -1786,6 +1786,17 @@
             const handleLoginBtn = document.getElementById('handle-login-btn');
             if (handleLoginBtn) handleLoginBtn.addEventListener('click', handleLogin);
 
+            // 登入視窗支援鍵盤 Enter：在密碼欄位按 Enter 等同點擊「立即登入」
+            const loginUsernameInput = document.getElementById('login-username');
+            const loginPasswordInput = document.getElementById('login-password');
+            const submitLoginByEnter = (event) => {
+                if (event.key !== 'Enter' || event.isComposing) return;
+                event.preventDefault();
+                if (handleLoginBtn) handleLoginBtn.click();
+            };
+            if (loginUsernameInput) loginUsernameInput.addEventListener('keydown', submitLoginByEnter);
+            if (loginPasswordInput) loginPasswordInput.addEventListener('keydown', submitLoginByEnter);
+
             const profileRefreshBtn = document.getElementById('profile-refresh-btn');
             if (profileRefreshBtn) profileRefreshBtn.addEventListener('click', renderMyProfile);
             const academyCodeLoginBtn = document.getElementById('academy-code-login-btn');
