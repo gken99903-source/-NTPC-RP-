@@ -3951,8 +3951,8 @@
         }
 
         function openEditReportModal(dept, caseId) {
-            const isPending=dept==='police-pending-report';
-            const actualDept=isPending?'police':dept;
+            const isPending=String(dept||'').endsWith('-pending-report');
+            const actualDept=isPending?String(dept).replace(/-pending-report$/,''):dept;
             const list=isPending?appData.policePendingReports:(actualDept==='police'?appData.policeReports:appData.fireReports);
             const r=list.find(x=>x.caseId===caseId);
             if(!r)return;
