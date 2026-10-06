@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- NTPC-RP Discord webhook fix: 2026-10-06-v3 -->
+    <!-- NTPC-RP Discord webhook fix + management LOG: 2026-10-06-v4 -->
     <title>新北市 RP 3.0 公職服務系統 V1.7</title>
     <!-- 網站圖標與連結分享資訊 -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/image.png53.png">
@@ -3325,6 +3325,9 @@
         // 使用隱藏表單 POST，避免 GitHub Pages 前端因跨來源 CORS 預檢而導致通知無法送出。
         const NTPC_RP_DISCORD_POLICE_WEBHOOK_URL = "https://discord.com/api/webhooks/1556813074176933938/m8-oi0s9rD0MDb3X5Xy3rEjUrdQ0ZYA6v2z6UTiDILFGQMSliGltIjbegmzNTtsEtQJQ";
         const NTPC_RP_DISCORD_FIRE_WEBHOOK_URL = "https://discord.com/api/webhooks/1556959309265371155/xXOkB8yRJUn-mka2PP3GUKzsPoddI43aOit9SStBEU6zIAcGExiWOd-4lVgLtIWoHMns";
+        // 管理中心 LOG 專用 Webhook：編輯／退件／刪除與裝置自動封鎖事件。
+        const NTPC_RP_DISCORD_ADMIN_LOG_WEBHOOK_URL = "https://discord.com/api/webhooks/1556969901409964052/iFj6S2juQ6Fas9ms0Lc_R4Ak9ExtmaM-gbkc_SZbqpxYJTWzY393wCOXa0PdQdlQRcgi";
+        const NTPC_RP_DISCORD_ADMIN_LOG_ROLE_ID = '1434850635894755409';
         const NTPC_RP_SITE_URL = 'https://gken99903-source.github.io/-NTPC-RP-/';
 
         function escapeDiscordText(value) {
@@ -3402,6 +3405,54 @@
                 setTimeout(() => { try { form.remove(); iframe.remove(); } catch (_) {} }, 8000);
             } catch (e) {
                 console.warn('Discord 案件通知發送失敗：', e);
+            }
+        }
+
+        function sendManagementDiscordLog(action, target, detail='', options={}) {
+            const webhookUrl = NTPC_RP_DISCORD_ADMIN_LOG_WEBHOOK_URL;
+            if (!webhookUrl) return;
+            try {
+                const mentionRole = !!options.mentionRole;
+                const operator = currentUser ? `${currentUser.name || '未知'} (${currentUser.account || '--'})` : '系統自動處理';
+                const payload = {
+                    username: '新北市 RP 3.0 管理中心 LOG',
+                    ...(mentionRole ? {content:`<@&${NTPC_RP_DISCORD_ADMIN_LOG_ROLE_ID}>`} : {}),
+                    allowed_mentions: mentionRole ? {roles:[NTPC_RP_DISCORD_ADMIN_LOG_ROLE_ID]} : {parse:[]},
+                    embeds: [{
+                        title: `🛡️ 管理中心操作紀錄｜${action}`,
+                        color: mentionRole ? 0xf59e0b : 0x6366f1,
+                        fields: [
+                            {name:'操作人員', value:escapeDiscordText(operator).slice(0,1024), inline:true},
+                            {name:'操作類型', value:escapeDiscordText(action).slice(0,1024), inline:true},
+                            {name:'目標', value:escapeDiscordText(target).slice(0,1024), inline:false},
+                            ...(detail ? [{name:'詳細資訊', value:escapeDiscordText(detail).slice(0,1024), inline:false}] : [])
+                        ],
+                        timestamp:new Date().toISOString(),
+                        footer:{text:'新北市 RP 3.0 公職服務整合系統 V1.7'},
+                        url:NTPC_RP_SITE_URL
+                    }]
+                };
+                const targetName = `ntpc_admin_log_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                const iframe = document.createElement('iframe');
+                iframe.name = targetName;
+                iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;';
+                document.body.appendChild(iframe);
+                const form = document.createElement('form');
+                form.method='POST';
+                form.action=webhookUrl + (webhookUrl.includes('?')?'&':'?') + 'wait=false';
+                form.target=targetName;
+                form.enctype='application/x-www-form-urlencoded';
+                form.style.display='none';
+                const input=document.createElement('input');
+                input.type='hidden';
+                input.name='payload_json';
+                input.value=JSON.stringify(payload);
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+                setTimeout(()=>{try{form.remove();iframe.remove();}catch(_){ }},8000);
+            } catch(e) {
+                console.warn('管理中心 Discord LOG 發送失敗：',e);
             }
         }
 
@@ -3612,7 +3663,7 @@
             try{ const shared={...r,reviewStatus:'approved',reviewedAt:Date.now(),reviewedBy:currentUser.account}; delete shared.rejectionReason; await fm.setDoc(fm.doc(db,'policeReports',caseId),shared); await fm.deleteDoc(fm.doc(db,'policePendingReports',r.docId||caseId)); appData.policeReports.unshift({docId:caseId,...shared}); appData.policePendingReports=appData.policePendingReports.filter(x=>x.caseId!==caseId); await removePendingReportNotifications(caseId,r.registeredByAccount);const n={type:'report',caseId,recipientAccount:r.registeredByAccount,status:'approved',title:'案件已審核完畢',message:`案件 ${caseId} 已經高層審核完畢並正式送出。`,timestamp:Date.now(),read:false}; const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); appData.reportNotifications.unshift({docId:nr.id,...n}); await logAdminAction('審核案件完畢並送出',caseId); renderPoliceReview(); renderPoliceReports(); renderMyProfile(); showSubmitSuccessAnimation('審核完成','案件已審核完畢並同步至共享案件報告庫。'); }catch(e){showToast('審核送出失敗：'+e.message,'error','操作失敗');}
         }
         function openRejectPolicePending(caseId){ if(!canReviewPoliceReports()){showToast('只有警察高層與管理中心可以退件。','warning','權限不足');return;} document.getElementById('review-reject-case-id').value=caseId; document.getElementById('review-reject-dept').value='police'; document.getElementById('review-reject-reason').value=''; document.getElementById('modal-review-reject').classList.remove('hidden'); }
-        async function rejectPolicePendingReport(){const caseId=document.getElementById('review-reject-case-id').value;const dept=document.getElementById('review-reject-dept').value||'police';const reason=document.getElementById('review-reject-reason').value.trim();const canReview=dept==='fire'||dept==='ems'?canReviewFireReports():canReviewPoliceReports();if(!canReview){showToast('權限不足。','warning','權限不足');return;}if(!reason){showToast('請填寫退件原因。','warning','退件原因必填');return;}const source=dept==='fire'?appData.firePendingReports:dept==='ems'?appData.emsPendingReports:appData.policePendingReports;const r=(source||[]).find(x=>String(x.caseId||x.id||x.docId)===String(caseId));if(!r)return;try{const col=dept==='fire'?'firePendingReports':dept==='ems'?'emsPendingReports':'policePendingReports';const patch={reviewStatus:'rejected',rejectionReason:reason,reviewedAt:Date.now(),reviewedBy:currentUser.account,updatedAt:Date.now()};await fm.updateDoc(fm.doc(db,col,r.docId||r.caseId||r.id),patch);Object.assign(r,patch);await removePendingReportNotifications(caseId,r.registeredByAccount||r.authorId);const title=dept==='ems'?'EMS報告遭退件':dept==='fire'?'消防案件遭退件':'案件遭退件';const n={type:'report',department:dept==='police'?'police':'fire',caseId,recipientAccount:r.registeredByAccount||r.authorId,status:'rejected',title,message:`${dept==='ems'?'EMS報告':`案件 ${caseId}`} 已退件：${reason}`,timestamp:Date.now(),read:false};const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);appData.reportNotifications.unshift({docId:nr.id,...n});await logAdminAction((dept==='ems'?'EMS':dept==='fire'?'消防':'警用')+'退件案件報告',caseId);closeModal('modal-review-reject');if(dept==='ems'||dept==='fire')renderFireReview();else renderPoliceReview();renderPersonalNotifications();showToast('案件已退件，寄件人可重新編輯送件。','success','退件完成');}catch(e){showToast('退件失敗：'+e.message,'error','操作失敗');}}
+        async function rejectPolicePendingReport(){const caseId=document.getElementById('review-reject-case-id').value;const dept=document.getElementById('review-reject-dept').value||'police';const reason=document.getElementById('review-reject-reason').value.trim();const canReview=dept==='fire'||dept==='ems'?canReviewFireReports():canReviewPoliceReports();if(!canReview){showToast('權限不足。','warning','權限不足');return;}if(!reason){showToast('請填寫退件原因。','warning','退件原因必填');return;}const source=dept==='fire'?appData.firePendingReports:dept==='ems'?appData.emsPendingReports:appData.policePendingReports;const r=(source||[]).find(x=>String(x.caseId||x.id||x.docId)===String(caseId));if(!r)return;try{const col=dept==='fire'?'firePendingReports':dept==='ems'?'emsPendingReports':'policePendingReports';const patch={reviewStatus:'rejected',rejectionReason:reason,reviewedAt:Date.now(),reviewedBy:currentUser.account,updatedAt:Date.now()};await fm.updateDoc(fm.doc(db,col,r.docId||r.caseId||r.id),patch);Object.assign(r,patch);await removePendingReportNotifications(caseId,r.registeredByAccount||r.authorId);const title=dept==='ems'?'EMS報告遭退件':dept==='fire'?'消防案件遭退件':'案件遭退件';const n={type:'report',department:dept==='police'?'police':'fire',caseId,recipientAccount:r.registeredByAccount||r.authorId,status:'rejected',title,message:`${dept==='ems'?'EMS報告':`案件 ${caseId}`} 已退件：${reason}`,timestamp:Date.now(),read:false};const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);appData.reportNotifications.unshift({docId:nr.id,...n});await logAdminAction((dept==='ems'?'EMS':dept==='fire'?'消防':'警用')+'退件案件報告',caseId,reason);closeModal('modal-review-reject');if(dept==='ems'||dept==='fire')renderFireReview();else renderPoliceReview();renderPersonalNotifications();showToast('案件已退件，寄件人可重新編輯送件。','success','退件完成');}catch(e){showToast('退件失敗：'+e.message,'error','操作失敗');}}
         
         function renderPoliceReports() {
             const container = document.getElementById('police-reports-list');
@@ -3879,7 +3930,7 @@
                 else appData.fireReports = appData.fireReports.filter(x => x.caseId !== caseId);
 
                 // 刪除後自動壓縮該日流水號：001 刪除後 002→001、003→002……
-                const dateMatch = String(caseId).match(/^REP-(\d{8})\d+$/);
+                const dateMatch = String(caseId).match(/^(?:NTPD|NTFD)-(\d{8})\d+$/) || String(caseId).match(/^REP-(\d{8})\d+$/);
                 if (dateMatch) await renumberDailyCaseReports(dateMatch[1], dept);
                 await logAdminAction('刪除案件報告', caseId);
                 if (dept === 'police') renderPoliceReports();
@@ -4029,7 +4080,9 @@
                 const nextCaseId=canChangeReportCaseId(dept)?requestedCaseId:r.caseId;
                 if(!nextCaseId){showToast('案件編號不可為空白。','warning','案件編號錯誤');return;}
                 const casePrefix=dept==='police'?'NTPD-':'NTFD-';
-                if(!new RegExp('^'+casePrefix+'\\d{11,}$').test(nextCaseId)){showToast('案件編號格式錯誤，請使用 '+casePrefix+'西元年月日＋當日流水號。','warning','案件編號錯誤');return;}
+                // 案件編號只驗證前綴與數字長度：警察 NTPD-＋至少 10 碼數字；消防 NTFD-＋至少 10 碼數字。
+                const caseIdPattern=dept==='police'?/^NTPD-\d{10,}$/:/^NTFD-\d{10,}$/;
+                if(!caseIdPattern.test(nextCaseId)){showToast('案件編號格式錯誤，警察請使用 NTPD- 加至少 10 碼數字。','warning','案件編號錯誤');return;}
                 if(nextCaseId!==r.caseId){
                     const duplicate=[...(appData.policeReports||[]),...(appData.fireReports||[])].some(x=>x.caseId===nextCaseId&&x.caseId!==r.caseId);
                     if(duplicate){showToast('新的案件編號已存在，請重新輸入。','warning','案件編號重複');return;}
@@ -4256,7 +4309,8 @@
                         await fm.setDoc(fm.doc(db,'blockedDevices',fingerprint),obj,{merge:true});
                         const bi=(appData.blockedDevices||[]).findIndex(x=>String(x.docId||x.fingerprint)===String(fingerprint));
                         if(bi>=0)appData.blockedDevices[bi]={docId:fingerprint,...obj};else appData.blockedDevices.push({docId:fingerprint,...obj});
-                        await logAdminAction('自動封鎖登入裝置','5分鐘內錯誤密碼8次／'+deviceKey);
+                        await logAdminAction('自動封鎖登入裝置','5分鐘內錯誤密碼8次／'+deviceKey,`裝置已因 5 分鐘內連續輸入錯誤帳號／密碼達 8 次而自動上鎖。裝置：${getDeviceLabel(device)}；螢幕：${device?.screen||'--'}。`);
+                        sendManagementDiscordLog('裝置自動上鎖','5分鐘內錯誤帳號／密碼達 8 次',`裝置識別：${deviceKey}；裝置：${getDeviceLabel(device)}；螢幕：${device?.screen||'--'}；系統已自動建立封鎖紀錄。`,{mentionRole:true});
                     }
                     return true;
                 }
@@ -4445,13 +4499,14 @@
             }
         }
 
-        async function logAdminAction(action, target) {
+        async function logAdminAction(action, target, detail='') {
             const now = new Date();
             const logObj = {
                 id: 'LOG-' + Date.now(),
                 action,
                 operator: currentUser ? `${currentUser.name} (${currentUser.account})` : '未知',
                 target,
+                detail: detail || '',
                 time: now.toLocaleString('zh-TW', { hour12: false }),
                 timestamp: now.getTime()
             };
@@ -4460,6 +4515,11 @@
                 appData.adminLogs.unshift(logObj);
             } catch (e) {
                 console.error("Log error", e);
+            }
+            // 個人通知中心的移除／一鍵刪除不會呼叫此函式，因此不會出現在管理中心 Discord LOG。
+            const actionText=String(action||'');
+            if(/編輯|退件|刪除|移除/.test(actionText)){
+                sendManagementDiscordLog(actionText,target,detail);
             }
         }
 
