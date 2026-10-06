@@ -4473,8 +4473,21 @@
             if (units.length>2 && !superTarget) { showToast('每個帳號最多只能勾選兩個單位。','warning','資料不符合'); return; }
             if (!validateUnitSelections(units,policeDivision,fireDivision)) return;
             const u=appData.users.find(x=>x.account===origAccount); if(!u) return;
+            // 修改前先記錄需要稽核的欄位；密碼只記錄「已變更」，絕不寫入舊／新密碼。
+            const oldAccount=String(u.account||origAccount);
+            const oldStaffNumber=String(u.staffNumber||'');
+            const oldPass=String(u.pass||'');
+            const changedFields=[];
+            if(oldAccount!==String(account)) changedFields.push(`帳號：${oldAccount} → ${account}`);
+            if(oldStaffNumber!==String(staffNumber)) changedFields.push(`編號：${oldStaffNumber||'未設定'} → ${staffNumber||'未設定'}`);
+            if(pass && pass!==oldPass) changedFields.push('密碼：已變更（不顯示密碼內容）');
             u.account=account; u.name=name; u.role=role; u.units=units; u.staffNumber=staffNumber; u.policeDivision=units.includes('police')?policeDivision:''; u.fireDivision=units.includes('fire')?fireDivision:''; if(pass)u.pass=pass; if(superTarget)u.protected=true;
-            try { const docId=u.docId||origAccount; if(!superTarget&&origAccount!==account) await fm.deleteDoc(fm.doc(db,'users',docId)); await fm.setDoc(fm.doc(db,'users',superTarget?docId:account),{account:u.account,name:u.name,pass:u.pass,role:u.role,units:u.units,staffNumber:u.staffNumber||'',policeDivision:u.policeDivision||'',fireDivision:u.fireDivision||'',online:u.online||false,lastSeen:u.lastSeen||0,lastLoginAt:u.lastLoginAt||0,lastDevice:u.lastDevice||null,...(superTarget?{protected:true}:{})}); u.docId=superTarget?docId:account; if(superOperator&&superTarget)currentUser={...u}; closeModal('modal-edit-user'); renderAdminUsers(); populateMemberSelects(); updateUserBadge(); updateAccessLocks(); showToast('帳號資料更新成功。','success','操作成功'); }
+            try { const docId=u.docId||origAccount; if(!superTarget&&origAccount!==account) await fm.deleteDoc(fm.doc(db,'users',docId)); await fm.setDoc(fm.doc(db,'users',superTarget?docId:account),{account:u.account,name:u.name,pass:u.pass,role:u.role,units:u.units,staffNumber:u.staffNumber||'',policeDivision:u.policeDivision||'',fireDivision:u.fireDivision||'',online:u.online||false,lastSeen:u.lastSeen||0,lastLoginAt:u.lastLoginAt||0,lastDevice:u.lastDevice||null,...(superTarget?{protected:true}:{})}); u.docId=superTarget?docId:account; if(superOperator&&superTarget)currentUser={...u};
+                if(changedFields.length){
+                    const logTarget=oldAccount!==String(account)?`${oldAccount} → ${account}`:oldAccount;
+                    await logAdminAction('編輯帳號資訊',logTarget,`管理員帳號：${currentUser?.account||'未知'}；${changedFields.join('；')}`);
+                }
+                closeModal('modal-edit-user'); renderAdminUsers(); populateMemberSelects(); updateUserBadge(); updateAccessLocks(); showToast('帳號資料更新成功。','success','操作成功'); }
             catch(e){ showToast('更新失敗：'+e.message,'error','操作失敗'); }
         }
 
