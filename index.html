@@ -3951,13 +3951,19 @@
         }
 
         function openEditReportModal(dept, caseId) {
-            const isPending=String(dept||'').endsWith('-pending-report');
-            const actualDept=isPending?String(dept).replace(/-pending-report$/,''):dept;
-            const list=isPending?appData.policePendingReports:(actualDept==='police'?appData.policeReports:appData.fireReports);
-            const r=list.find(x=>x.caseId===caseId);
-            if(!r)return;
-            if(isPending){if(!currentUser||String(r.registeredByAccount||'').toLowerCase()!==String(currentUser.account||'').toLowerCase()){showToast('只有案件寄件人可以編輯。','warning','權限不足');return;} if(r.reviewStatus==='pending'){showToast('案件目前正在等待審核，暫時無法修改。','warning','等待審核');return;}} else if(!canModifyReport(r,actualDept)){showToast('權限不足：只有高層、管理處或案件發布者可以編輯。','warning','權限不足');return;}
-            document.getElementById('edit-type').value=isPending?'police-pending-report':`${actualDept}-report`;
+            // 退件後重新編輯：警察與消防都必須從各自的 Pending 集合讀取資料
+            const isPending=dept==='police-pending-report' || dept==='fire-pending-report';
+            const actualDept=isPending ? (dept==='fire-pending-report' ? 'fire' : 'police') : dept;
+            const list=isPending ? (actualDept==='police' ? appData.policePendingReports : appData.firePendingReports) : (actualDept==='police' ? appData.policeReports : appData.fireReports);
+            const r=list.find(x=>String(x.caseId)===String(caseId));
+            if(!r){showToast('找不到這筆退件案件資料，請重新整理通知中心。','warning','案件不存在');return;}
+            if(isPending){
+                const owner=String(r.registeredByAccount||r.authorId||r.createdByAccount||'').toLowerCase();
+                const me=String(currentUser?.account||'').toLowerCase();
+                if(!currentUser || !owner || owner!==me){showToast('只有案件寄件人可以重新編輯送件。','warning','權限不足');return;}
+                if(r.reviewStatus==='pending'){showToast('案件目前正在等待審核，暫時無法修改。','warning','等待審核');return;}
+            } else if(!canModifyReport(r,actualDept)){showToast('權限不足：只有高層、管理處或案件發布者可以編輯。','warning','權限不足');return;}
+            document.getElementById('edit-type').value=isPending?`${actualDept}-pending-report`:`${actualDept}-report`;
             document.getElementById('edit-id-key').value=caseId;
             document.getElementById('edit-modal-title').textContent=`編輯${actualDept==='police'?'警察':'消防'}案件報告 (${caseId})`;
             const canChangeId=!isPending && canChangeReportCaseId(actualDept);
@@ -4090,7 +4096,7 @@
                 const casePrefix=dept==='police'?'NTPD-':'NTFD-';
                 // 案件編號只驗證前綴與數字長度：警察 NTPD-＋至少 10 碼數字；消防 NTFD-＋至少 10 碼數字。
                 const caseIdPattern=dept==='police'?/^NTPD-\d{10,}$/:/^NTFD-\d{10,}$/;
-                if(!caseIdPattern.test(nextCaseId)){showToast('案件編號格式錯誤，警察請使用 NTPD- 加至少 10 碼數字。','warning','案件編號錯誤');return;}
+                if(!caseIdPattern.test(nextCaseId)){showToast(`案件編號格式錯誤，${dept==='police'?'警察請使用 NTPD-':'消防請使用 NTFD-'} 加至少 10 碼數字。`,'warning','案件編號錯誤');return;}
                 if(nextCaseId!==r.caseId){
                     const duplicate=[...(appData.policeReports||[]),...(appData.fireReports||[])].some(x=>x.caseId===nextCaseId&&x.caseId!==r.caseId);
                     if(duplicate){showToast('新的案件編號已存在，請重新輸入。','warning','案件編號重複');return;}
