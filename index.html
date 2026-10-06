@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- NTPC-RP Discord webhook fix: 2026-10-06-v3 -->
-    <title>新北市 RP 3.0 公職服務系統 V1.6</title>
+    <title>新北市 RP 3.0 公職服務系統 V1.7</title>
     <!-- 網站圖標與連結分享資訊 -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/image.png53.png">
     <link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/image.png53.png">
@@ -305,10 +305,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Discord 審核通知 Webhook：警察與消防／EMS 分流
-        window.NTPC_RP_DISCORD_POLICE_WEBHOOK_URL = "https://discord.com/api/webhooks/1556813074176933938/m8-oi0s9rD0MDb3X5Xy3rEjUrdQ0ZYA6v2z6UTiDILFGQMSliGltIjbegmzNTtsEtQJQ";
-        window.NTPC_RP_DISCORD_FIRE_WEBHOOK_URL = "https://discord.com/api/webhooks/1556959309265371155/xXOkB8yRJUn-mka2PP3GUKzsPoddI43aOit9SStBEU6zIAcGExiWOd-4lVgLtIWoHMns";
-
         const firebaseConfig = {
             apiKey: "AIzaSyBJi9v-oDJ54-Z61T5JKy44Mg22vZCPiw",
             authDomain: "ntpcrp-cb0725.firebaseapp.com",
@@ -415,8 +411,8 @@
                 <div class="relative z-10 px-8 py-20 sm:py-28 max-w-3xl space-y-6">
                     <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">New Taipei Roleplay 3.0</span>
                     <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">新北市公職人員<br><span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">勤務與案件管制系統</span></h1>
-                    <div><span class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.6</span></div>
-                    <p class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。本系統支援獨立單位權限隔離、補打卡自訂日期時分、報告權限控管與完整的年月日區間執勤時數統計。</p>
+                    <div><span class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.7</span></div>
+                    <p class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口，整合警務、消防救護、案件審核、個人通知、考核與管理中心等勤務功能，提供統一且便利的公職勤務管理。</p>
                     <div class="flex flex-wrap justify-center gap-4 pt-2">
                         <button data-tab="police" class="tab-shortcut-btn bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
                             <i class="fa-solid fa-shield"></i><span>進入警務系統</span>
@@ -429,27 +425,36 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
-                    <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-xl font-bold">
-                        <i class="fa-solid fa-shield-halved"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-white">警務勤務與獎懲專區</h3>
-                    <p class="text-slate-400 text-sm">提供員警線上打卡、補打卡、執勤時數統計、案件報告與警用獎懲專區。</p>
+                    <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-xl font-bold"><i class="fa-solid fa-shield-halved"></i></div>
+                    <h3 class="text-lg font-bold text-white">警務勤務系統</h3>
+                    <p class="text-slate-400 text-sm">員警打卡、補打卡、執勤時數、治安案件報告與警用獎懲管理。</p>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
-                    <div class="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 text-xl font-bold">
-                        <i class="fa-solid fa-truck-medical"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-white">消防救護中心</h3>
-                    <p class="text-slate-400 text-sm">消防隊員專屬出勤回報與災害搶救記錄，可支援日期、填寫人查詢報告。</p>
+                    <div class="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 text-xl font-bold"><i class="fa-solid fa-truck-medical"></i></div>
+                    <h3 class="text-lg font-bold text-white">消防救護與 EMS</h3>
+                    <p class="text-slate-400 text-sm">消防勤務、救災案件、EMS 救護報告、車輛與出勤資料管理。</p>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
-                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl font-bold">
-                        <i class="fa-solid fa-user-shield"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-white">高層與管理員編輯權限</h3>
-                    <p class="text-slate-400 text-sm">一般人員僅能編輯自己的報告，高層長官與管理員可檢視並編輯各自單位的報告、獎懲紀錄。</p>
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-xl font-bold"><i class="fa-solid fa-stamp"></i></div>
+                    <h3 class="text-lg font-bold text-white">案件審核與通知</h3>
+                    <p class="text-slate-400 text-sm">案件送審、通過、退件、重新送件與個人通知，掌握最新審核狀況。</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
+                    <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 text-xl font-bold"><i class="fa-solid fa-bullhorn"></i></div>
+                    <h3 class="text-lg font-bold text-white">網站公告與資訊</h3>
+                    <p class="text-slate-400 text-sm">首頁公告輪播、系統資訊與異常／意見回報，方便即時傳達重要消息。</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-xl font-bold"><i class="fa-solid fa-graduation-cap"></i></div>
+                    <h3 class="text-lg font-bold text-white">專生考核系統</h3>
+                    <p class="text-slate-400 text-sm">提供專生考核相關功能與考核代碼管理，支援管理層進行維護。</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
+                    <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-xl font-bold"><i class="fa-solid fa-user-gear"></i></div>
+                    <h3 class="text-lg font-bold text-white">管理中心與安全控管</h3>
+                    <p class="text-slate-400 text-sm">帳號、公告、回報、值勤、案件與裝置安全等管理功能，依權限提供操作。</p>
                 </div>
             </div>
         </section>
@@ -1513,6 +1518,19 @@
         </div>
     </div>
 
+    <!-- Edit Review Status Modal -->
+    <div id="modal-edit-review-status" class="fixed inset-0 z-[75] bg-slate-950/85 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-blue-500/20 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-5 shadow-2xl">
+            <div class="flex justify-between items-center"><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-pen-to-square text-blue-400 mr-2"></i>編輯審核狀況</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-edit-review-status"><i class="fa-solid fa-xmark"></i></button></div>
+            <input type="hidden" id="edit-review-status-case-id">
+            <input type="hidden" id="edit-review-status-dept">
+            <div class="rounded-xl bg-slate-950 border border-slate-800 p-3 text-xs text-slate-400">案件：<span id="edit-review-status-case-label" class="font-mono text-cyan-400">--</span></div>
+            <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">審核狀況</label><select id="edit-review-status-value" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500"><option value="pending">待審核</option><option value="approved">通過</option><option value="rejected">退件</option></select></div>
+            <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">退件／修改說明（選擇退件時必填）</label><textarea id="edit-review-status-reason" rows="4" placeholder="若改為退件，請輸入退件原因；其他狀況可留空。" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-blue-500"></textarea></div>
+            <button id="save-edit-review-status-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl">儲存審核狀況</button>
+        </div>
+    </div>
+
     <!-- Create User Modal -->
     <div id="modal-create-user" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
@@ -1797,7 +1815,7 @@
 
             const submitRemarkBtn = document.getElementById('submit-remark-btn');
             if (submitRemarkBtn) submitRemarkBtn.addEventListener('click', submitRemark);
-            const rejectReviewBtn=document.getElementById('submit-review-reject-btn'); if(rejectReviewBtn) rejectReviewBtn.addEventListener('click', rejectPolicePendingReport);
+            const rejectReviewBtn=document.getElementById('submit-review-reject-btn'); if(rejectReviewBtn) rejectReviewBtn.addEventListener('click', rejectPolicePendingReport); const saveReviewStatusBtn=document.getElementById('save-edit-review-status-btn'); if(saveReviewStatusBtn) saveReviewStatusBtn.addEventListener('click', saveEditedReviewStatus);
 
             const submitNewUserBtn = document.getElementById('submit-new-user-btn');
             if (submitNewUserBtn) submitNewUserBtn.addEventListener('click', submitNewUser);
@@ -3275,93 +3293,6 @@
         function updateViolationJailTotal(prefix='report'){const violations=Array.from(document.querySelectorAll(`input[name="${prefix}-violation"]:checked`)).map(x=>x.value),organized=!!document.getElementById(`${prefix}-organized-crime`)?.checked,total=calculatePoliceJailTime(violations,organized),out=document.getElementById(`${prefix}-jail-total`);if(out)out.textContent=`總計 ${formatJailMinutes(total)}`;return {violations,organizedCrime:organized,jailMinutes:total};}
         function getViolationSelection(prefix='report'){return updateViolationJailTotal(prefix);}
 
-        function buildDiscordReviewPayload({department, caseId, title, authorName, authorId, content, suspectName, suspectId, suspectVehicle, violations, jailMinutes, organizedCrime, submittedAt, resubmitted=false}) {
-            const deptName = department === 'police' ? '警察局' : department === 'fire' ? '消防局' : 'EMS 救護';
-            const fields = [
-                { name: '案件編號', value: String(caseId || '--'), inline: true },
-                { name: '案件類別', value: deptName, inline: true },
-                { name: resubmitted ? '送件狀態' : '審核狀態', value: resubmitted ? '退件後重新送審' : '等待高層審核', inline: true },
-                { name: '填寫人', value: `${authorName || '--'} (${authorId || '--'})`, inline: false }
-            ];
-            if (department === 'police') {
-                fields.push(
-                    { name: '嫌犯', value: `${suspectName || '無'}${suspectId ? ` / ${suspectId}` : ''}`, inline: true },
-                    { name: '嫌犯車輛', value: suspectVehicle || '無', inline: true },
-                    { name: '所犯罪名／違反條例', value: Array.isArray(violations) && violations.length ? violations.join('、') : '未選擇', inline: false },
-                    { name: '總監獄時間', value: `${formatJailMinutes(Number(jailMinutes) || 0)}${organizedCrime ? '（組織犯罪加重⅓）' : ''}`, inline: true }
-                );
-            }
-            const safeContent = String(content || '').trim();
-            if (safeContent) fields.push({ name: '案件內容', value: safeContent.length > 900 ? safeContent.slice(0, 900) + '…' : safeContent, inline: false });
-            return {
-                username: '新北市 RP 公職服務系統',
-                avatar_url: 'https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/image.png53.png',
-                allowed_mentions: { parse: [] },
-                embeds: [{
-                    title: resubmitted ? `🔄 ${deptName}案件重新送審` : `📋 ${deptName}案件送入審核區`,
-                    description: title ? `**${String(title).slice(0, 200)}**` : '案件報告',
-                    color: department === 'police' ? 3447003 : department === 'fire' ? 15158332 : 15844367,
-                    fields: [...fields, { name: '勤務網站', value: '[點我前往勤務網站](https://gken99903-source.github.io/-NTPC-RP-/)', inline: false }],
-                    footer: { text: '新北市 RP 公職服務系統｜高層審核通知' },
-                    url: 'https://gken99903-source.github.io/-NTPC-RP-/',
-                    timestamp: new Date(submittedAt || Date.now()).toISOString()
-                }],
-                components: []
-            };
-        }
-
-        async function sendDiscordReviewNotification(args) {
-            // 依傳入案件的 department 選擇對應 Discord Webhook。
-            // 注意：這裡不能直接使用未宣告的 department，否則瀏覽器會拋出
-            //「ReferenceError: department is not defined」，導致整筆案件提交失敗。
-            const department = String(args?.department || '').trim().toLowerCase();
-            const webhookUrl = department === 'police'
-                ? (typeof window.NTPC_RP_DISCORD_POLICE_WEBHOOK_URL === 'string' ? window.NTPC_RP_DISCORD_POLICE_WEBHOOK_URL.trim() : '')
-                : (typeof window.NTPC_RP_DISCORD_FIRE_WEBHOOK_URL === 'string' ? window.NTPC_RP_DISCORD_FIRE_WEBHOOK_URL.trim() : '');
-
-            if (!webhookUrl) {
-                console.warn('Discord 審核通知：尚未設定 Webhook URL');
-                return false;
-            }
-
-            const payload = buildDiscordReviewPayload(args);
-
-            // GitHub Pages 沒有後端，Discord Webhook 的 JSON fetch 可能觸發 CORS preflight。
-            // 使用 Discord 支援的 payload_json 表單欄位，以隱藏 iframe 接收回應，
-            // 不要求目前頁面讀取 Discord 的跨來源回應。
-            try {
-                const targetName = `discord_webhook_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-                const iframe = document.createElement('iframe');
-                iframe.name = targetName;
-                iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;';
-                document.body.appendChild(iframe);
-
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = webhookUrl + (webhookUrl.includes('?') ? '&' : '?') + 'wait=false';
-                form.target = targetName;
-                form.enctype = 'application/x-www-form-urlencoded';
-                form.style.display = 'none';
-
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'payload_json';
-                input.value = JSON.stringify(payload);
-                form.appendChild(input);
-                document.body.appendChild(form);
-
-                form.submit();
-
-                setTimeout(() => {
-                    try { form.remove(); iframe.remove(); } catch (e) {}
-                }, 8000);
-
-                return true;
-            } catch (error) {
-                console.warn('Discord 審核通知發送失敗：', error);
-                return false;
-            }
-        }
 
         async function submitReport() {
             const academyMode = !!academyExamSession && academyExamSession.type === currentActiveDepartmentForReport;
@@ -3445,12 +3376,6 @@
                     const nref = fm.doc(fm.collection(db,'reportNotifications'));
                     await fm.setDoc(nref, notification);
                     appData.reportNotifications.unshift({docId:nref.id,...notification});
-                    await sendDiscordReviewNotification({
-                        department: dept, caseId, title, authorName, authorId, content,
-                        suspectName: reportObj.suspectName, suspectId: reportObj.suspectId, suspectVehicle: reportObj.suspectVehicle,
-                        violations: reportObj.violations, jailMinutes: reportObj.jailMinutes, organizedCrime: reportObj.organizedCrime,
-                        submittedAt: reportObj.submittedAt
-                    });
                     closeModal('modal-report');
                     if(dept==='police'){ renderPoliceReports(); renderPoliceReview(); } else { renderFireReports(); renderFireReview(); }
                     renderMyProfile();
@@ -3510,13 +3435,60 @@
         async function approveFirePendingReport(caseId){ if(!canReviewFireReports()){showToast('只有消防高層、高階成員與管理中心可以審核案件。','warning','權限不足');return;} const r=(appData.firePendingReports||[]).find(x=>x.caseId===caseId); if(!r)return; try{const shared={...r,reviewStatus:'approved',reviewedAt:Date.now(),reviewedBy:currentUser.account};delete shared.rejectionReason;await fm.setDoc(fm.doc(db,'fireReports',caseId),shared);await fm.deleteDoc(fm.doc(db,'firePendingReports',r.docId||caseId));appData.fireReports.unshift({docId:caseId,...shared});appData.firePendingReports=appData.firePendingReports.filter(x=>x.caseId!==caseId);await removePendingReportNotifications(caseId,r.registeredByAccount);const n={type:'report',department:'fire',caseId,recipientAccount:r.registeredByAccount,status:'approved',title:'消防案件已審核完畢',message:`消防案件 ${caseId} 已經高層審核完畢並正式送出。`,timestamp:Date.now(),read:false};const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);appData.reportNotifications.unshift({docId:nr.id,...n});await logAdminAction('消防案件審核完畢並送出',caseId);renderFireReview();renderFireReports();renderMyProfile();showSubmitSuccessAnimation('審核完成','消防案件已審核完畢並同步至共享消防案件報告庫。');}catch(e){showToast('審核送出失敗：'+e.message,'error','操作失敗');}}
         function openRejectFirePending(caseId){if(!canReviewFireReports()){showToast('只有消防高層與管理中心可以退件。','warning','權限不足');return;}document.getElementById('review-reject-case-id').value=caseId;document.getElementById('review-reject-dept').value='fire';document.getElementById('review-reject-reason').value='';document.getElementById('modal-review-reject').classList.remove('hidden');}
                 function canReviewPoliceReports(){ return !!currentUser && (currentUser.role==='admin' || ((currentUser.role==='high' || currentUser.role==='senior') && userHasUnit('police'))); }
+        function canEditReviewStatus(dept){
+            if(!currentUser)return false;
+            if(currentUser.role==='admin')return true;
+            return currentUser.role==='high' && userHasUnit(dept==='police'?'police':'fire');
+        }
+        function openEditReviewStatus(dept, caseId, currentStatus='pending'){
+            if(!canEditReviewStatus(dept)){showToast('只有該單位高層與管理中心可以編輯審核狀況。','warning','權限不足');return;}
+            const id=String(caseId||'');
+            const lists=dept==='police'?[appData.policeReports,appData.policePendingReports]:dept==='fire'?[appData.fireReports,appData.firePendingReports]:[appData.emsReports,appData.emsPendingReports];
+            const r=[...(lists[0]||[]),...(lists[1]||[])].find(x=>String(x.caseId||x.id||x.docId)===id);
+            if(!r){showToast('找不到案件資料。','error','資料不存在');return;}
+            document.getElementById('edit-review-status-case-id').value=id; document.getElementById('edit-review-status-dept').value=dept; document.getElementById('edit-review-status-case-label').textContent=id;
+            document.getElementById('edit-review-status-value').value=r.reviewStatus||currentStatus||'pending'; document.getElementById('edit-review-status-reason').value=r.rejectionReason||'';
+            document.getElementById('modal-edit-review-status').classList.remove('hidden');
+        }
+        async function saveEditedReviewStatus(){
+            const id=String(document.getElementById('edit-review-status-case-id').value||''), dept=document.getElementById('edit-review-status-dept').value||'police', status=document.getElementById('edit-review-status-value').value||'pending', reason=document.getElementById('edit-review-status-reason').value.trim();
+            if(!canEditReviewStatus(dept)){showToast('權限不足。','warning','權限不足');return;}
+            if(!id){showToast('找不到案件編號。','error','資料錯誤');return;}
+            if(status==='rejected'&&!reason){showToast('改為退件時必須填寫退件原因。','warning','退件原因必填');return;}
+            const pendingCol=dept==='police'?'policePendingReports':dept==='fire'?'firePendingReports':'emsPendingReports', reportCol=dept==='police'?'policeReports':dept==='fire'?'fireReports':'emsReports';
+            const pendingList=appData[pendingCol]||[], reportList=appData[reportCol]||[];
+            const p=pendingList.find(x=>String(x.caseId||x.id||x.docId)===id), a=reportList.find(x=>String(x.caseId||x.id||x.docId)===id), r=p||a;
+            if(!r){showToast('找不到案件資料。','error','資料不存在');return;}
+            try{
+                const now=Date.now(), base={...r,reviewStatus:status,reviewedAt:now,reviewedBy:currentUser.account,updatedAt:now};
+                if(status==='rejected')base.rejectionReason=reason; else delete base.rejectionReason;
+                if(status==='approved'){
+                    await fm.setDoc(fm.doc(db,reportCol,id),base); if(p)await fm.deleteDoc(fm.doc(db,pendingCol,p.docId||p.caseId||p.id));
+                    appData[reportCol]=[{docId:id,...base},...reportList.filter(x=>String(x.caseId||x.id||x.docId)!==id)]; appData[pendingCol]=pendingList.filter(x=>String(x.caseId||x.id||x.docId)!==id);
+                }else{
+                    await fm.setDoc(fm.doc(db,pendingCol,id),base); if(a)await fm.deleteDoc(fm.doc(db,reportCol,a.docId||a.caseId||a.id));
+                    appData[pendingCol]=[{docId:id,...base},...pendingList.filter(x=>String(x.caseId||x.id||x.docId)!==id)]; appData[reportCol]=reportList.filter(x=>String(x.caseId||x.id||x.docId)!==id);
+                }
+                await removePendingReportNotifications(id,base.registeredByAccount||base.authorId);
+                const recipient=base.registeredByAccount||base.authorId, label=dept==='ems'?'EMS報告':'案件';
+                const n={type:'report',department:dept==='police'?'police':'fire',caseId:id,recipientAccount:recipient,status,title:status==='approved'?`${label}審核完成`:status==='rejected'?`${label}遭退件`:`${label}重新進入審核`,message:status==='approved'?`${label} ${id} 已由高層重新確認為「通過」。`:status==='rejected'?`${label} ${id} 已由高層重新確認為「退件」：${reason}`:`${label} ${id} 已重新調整為「待審核」，等待高層審核。`,timestamp:now,read:false};
+                const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); appData.reportNotifications.unshift({docId:nr.id,...n});
+                await logAdminAction((dept==='ems'?'EMS':dept==='fire'?'消防':'警用')+'編輯案件審核狀況',id);
+                closeModal('modal-edit-review-status'); renderPersonalNotifications(); renderMyProfile(); renderPoliceReview(); renderFireReview(); renderPoliceReports(); renderFireReports(); renderEMSReports();
+                showSubmitSuccessAnimation('審核狀況已更新',`案件 ${id} 已改為「${status==='approved'?'通過':status==='rejected'?'退件':'待審核'}」。`);
+            }catch(e){showToast('更新審核狀況失敗：'+e.message,'error','操作失敗');}
+        }
+
         function renderPoliceReview(){
             const host=document.getElementById('police-review-list'), count=document.getElementById('police-review-count'); if(!host)return;
-            if(!canReviewPoliceReports()){host.innerHTML=''; if(count)count.textContent='待審 0 件'; return;}
-            const rows=getUniquePendingRows((appData.policePendingReports||[]).filter(r=>r.reviewStatus==='pending'),r=>r.caseId||r.docId).sort((a,b)=>(b.submittedAt||b.timestamp||0)-(a.submittedAt||a.timestamp||0));
-            if(count)count.textContent=`待審 ${rows.length} 件`;
-            if(!rows.length){host.innerHTML='<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">目前沒有待審核的警用案件。</div>';return;}
-            host.innerHTML=rows.map(r=>`<div class="bg-slate-900 border border-blue-500/20 rounded-2xl p-6 shadow-xl space-y-4"><div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">${r.caseId||'--'}</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">待審核</span><h4 class="text-base font-bold text-white">${r.title||'未命名案件'}</h4></div><span class="text-xs text-slate-400">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">寄件人</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div><div><span class="text-slate-500 block">寄件帳號</span><span class="font-mono text-cyan-400">${r.registeredByAccount||'--'}</span></div></div><p class="text-sm text-slate-300 line-clamp-4">${r.content||''}</p><div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800"><button type="button" onclick="viewPendingPoliceReportDetail('${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-eye mr-1"></i>檢視完整案件</button><button type="button" onclick="approvePolicePendingReport('${r.caseId}')" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-check mr-1"></i>審核完畢並送出</button><button type="button" onclick="openRejectPolicePending('${r.caseId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-rotate-left mr-1"></i>退件</button></div></div>`).join('');
+            if(!canReviewPoliceReports()){host.innerHTML='';if(count)count.textContent='待審 0 件';return;}
+            const pending=getUniquePendingRows((appData.policePendingReports||[]).filter(r=>r.reviewStatus==='pending'),r=>r.caseId||r.docId).sort((a,b)=>(b.submittedAt||b.timestamp||0)-(a.submittedAt||a.timestamp||0));
+            const rejected=getUniquePendingRows((appData.policePendingReports||[]).filter(r=>r.reviewStatus==='rejected'),r=>r.caseId||r.docId).sort((a,b)=>(b.reviewedAt||b.updatedAt||0)-(a.reviewedAt||a.updatedAt||0));
+            if(count)count.textContent=`待審 ${pending.length} 件`;
+            if(!pending.length&&!rejected.length){host.innerHTML='<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">目前沒有待審核或退件中的警用案件。</div>';return;}
+            const pendingHtml=pending.map(r=>`<div class="bg-slate-900 border border-blue-500/20 rounded-2xl p-6 shadow-xl space-y-4"><div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">${r.caseId||'--'}</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">待審核</span><h4 class="text-base font-bold text-white">${r.title||'未命名案件'}</h4></div><span class="text-xs text-slate-400">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">寄件人</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div><div><span class="text-slate-500 block">寄件帳號</span><span class="font-mono text-cyan-400">${r.registeredByAccount||'--'}</span></div></div><p class="text-sm text-slate-300 line-clamp-4">${r.content||''}</p><div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800"><button type="button" onclick="viewPendingPoliceReportDetail('${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-eye mr-1"></i>檢視完整案件</button><button type="button" onclick="approvePolicePendingReport('${r.caseId}')" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-check mr-1"></i>審核完畢並送出</button><button type="button" onclick="openRejectPolicePending('${r.caseId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-rotate-left mr-1"></i>退件</button></div></div>`).join('');
+            const rejectedHtml=rejected.map(r=>`<div class="bg-slate-900 border border-red-500/20 rounded-2xl p-5 shadow-xl space-y-3"><div class="flex flex-wrap items-center justify-between gap-2"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-mono bg-blue-500/10 text-blue-400">${r.caseId||'--'}</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-300">已退件</span><span class="text-sm font-bold text-white">${r.title||'未命名案件'}</span></div><span class="text-xs text-slate-500">${formatDateTime(r.reviewedAt||r.updatedAt)}</span></div><div class="text-sm text-red-200 whitespace-pre-wrap">退件原因：${r.rejectionReason||'未提供退件原因'}</div><button type="button" onclick="openEditReviewStatus('police','${r.caseId}','rejected')" class="px-3 py-2 bg-blue-600/20 text-blue-300 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-pen-to-square mr-1"></i>編輯審核狀況</button></div>`).join('');
+            host.innerHTML=(pendingHtml?`<div>${pendingHtml}</div>`:'')+(rejectedHtml?`<div class="pt-5"><div class="text-sm font-bold text-red-300 mb-3">已退件案件（可重新調整審核狀況）</div>${rejectedHtml}</div>`:'');
         }
         function viewPendingPoliceReportDetail(caseId){ const r=(appData.policePendingReports||[]).find(x=>x.caseId===caseId); if(!r)return; viewReportDetailFromObject('police',r,true); }
         function viewReportDetailFromObject(dept,r,isPending=false){
@@ -3574,7 +3546,7 @@
                         <div class="mobile-report-actions flex flex-wrap items-center gap-2">
                             ${canModifyReport(r,'police')?`<button type="button" onclick="openEditReportModal('police','${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-pen mr-1"></i>編輯</button>`:''}
                             ${canModifyReport(r,'police')?`<button type="button" onclick="deleteReport('police','${r.caseId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-trash mr-1"></i>刪除</button>`:''}
-                            ${canRemarkReport('police')?`<button type="button" onclick="openRemarkModal('policeReports','${r.caseId}')" class="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-pen-nib mr-1"></i>批示備註</button>`:''}
+                            ${canRemarkReport('police')?`<button type="button" onclick="openRemarkModal('policeReports','${r.caseId}')" class="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-pen-nib mr-1"></i>批示備註</button>`:''}${canEditReviewStatus('police')?`<button type="button" onclick="openEditReviewStatus('police','${r.caseId}','approved')" class="px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-stamp mr-1"></i>編輯審核狀況</button>`:''}
                         </div>
                     </div>`;
                 container.appendChild(card);
@@ -3697,11 +3669,6 @@
                 await removePendingReportNotifications(id,pendingObj.registeredByAccount);
                 const n={type:'report',department:'fire',caseId:id,recipientAccount:pendingObj.registeredByAccount,status:'pending',title:old?'EMS報告已重新送件':'EMS報告已送出，等待消防高層審核',message:old?`EMS報告 ${id} 已重新送入消防高層審核。`:`EMS報告 ${id} 已送入消防高層審核系統。`,timestamp:now,read:false};
                 const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); appData.reportNotifications.unshift({docId:nr.id,...n});
-                await sendDiscordReviewNotification({
-                    department:'ems', caseId:id, title:'EMS救護出勤報告', authorName:pendingObj.authorName, authorId:pendingObj.authorId,
-                    content:`主訴：${pendingObj.chiefComplaint || '--'}\n傷患：${pendingObj.patient || '--'}\n出勤單位／車輛：${pendingObj.unitVehicle || '--'}\n治療：${pendingObj.treatment || '--'}`,
-                    submittedAt:now, resubmitted:!!old
-                });
                 await logAdminAction(old?'EMS報告退件後重新送件':'提交EMS報告等待消防高層審核',id);
                 closeModal('modal-ems-report');renderEMSReports();renderFireReview();renderPersonalNotifications();renderMyProfile();showSubmitSuccessAnimation(old?'EMS重新送審成功':'EMS報告送審成功',old?`${id} 已重新送入消防高層審核。`:`${id} 已送入消防高層審核系統。`);
             }catch(e){showToast('EMS報告送審失敗：'+e.message,'error','操作失敗');}
@@ -3709,7 +3676,7 @@
         function renderEMSRemarkHistory(r){const el=document.getElementById('ems-remark-history');if(!el)return;const rr=getReportRemarks(r);el.innerHTML=rr.length?rr.map(x=>`<div class="rounded-lg border border-slate-800 bg-slate-950/70 p-3"><div class="flex justify-between"><span class="text-xs text-amber-400">${x.authorName||'高層'}</span><span class="text-[11px] text-slate-500">${x.time||formatDateTime(x.timestamp)}</span></div><div class="text-xs text-slate-300 mt-1 whitespace-pre-wrap">${x.text||''}</div></div>`).join(''):'<div class="text-xs text-slate-500">目前尚無高層批示。</div>';}
         function viewEMSReportDetail(id){const r=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r)return;document.getElementById('ems-detail-id').textContent=r.id||r.docId;document.getElementById('ems-detail-title').textContent=`${r.patient||'傷患'} 的EMS救護出勤報告`;const fields=[['主訴',r.chiefComplaint],['派遣類別',r.dispatchCategory],['傷患RP名稱 / ID',r.patient],['出勤單位 / 車輛',r.unitVehicle],['GCS評分 E',r.gcsE],['派遣時間',r.dispatchTime],['抵達時間',r.arrivalTime],['離開時間',r.leaveTime],['到院時間',r.hospitalTime],['返隊時間',r.returnTime],['填寫人',`${r.authorName||'--'} (${r.authorId||'--'})`],['建立時間',r.time||formatDateTime(r.timestamp)]];document.getElementById('ems-detail-fields').innerHTML=fields.map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${k}</span><span class="text-sm text-slate-200">${v||'--'}</span></div>`).join('');document.getElementById('ems-detail-treatment').textContent=r.treatment||'--';renderEMSRemarkHistory(r);const actionHost=document.getElementById('ems-detail-action-bar');if(actionHost){const a=[];if(canModifyEMS(r))a.push(`<button type="button" onclick="closeModal('modal-ems-detail');openEMSReportModal('${id}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs"><i class="fa-solid fa-pen mr-1"></i>編輯</button>`);if(canModifyEMS(r))a.push(`<button type="button" onclick="deleteEMSReport('${id}'); closeModal('modal-ems-detail')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs"><i class="fa-solid fa-trash mr-1"></i>刪除</button>`);if(currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire'))) )a.push(`<button type="button" onclick="closeModal('modal-ems-detail');openRemarkModal('emsReports','${id}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs"><i class="fa-solid fa-pen-nib mr-1"></i>高層批示</button>`);actionHost.innerHTML=a.join('');}document.getElementById('modal-ems-detail').classList.remove('hidden');}
         async function deleteEMSReport(id){const r=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r||!canModifyEMS(r)){showToast('你無權限刪除這筆EMS報告。','warning','權限不足');return;}if(!(await showConfirm('確定要刪除這筆 EMS 救護出勤報告嗎？','刪除 EMS 報告','確定刪除')))return;try{await fm.deleteDoc(fm.doc(db,'emsReports',r.docId||r.id));appData.emsReports=appData.emsReports.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除EMS救護報告',r.id||id);renderEMSReports();renderMyProfile();showToast('EMS救護出勤報告已刪除。','success','刪除成功');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
-        function renderEMSReports(){const c=document.getElementById('ems-reports-list');if(!c)return;const q=(document.getElementById('search-ems-report')?.value||'').trim().toLowerCase(),arr=(appData.emsReports||[]).filter(r=>!q||[r.id,r.patient,r.authorId,r.authorName,r.dispatchCategory].some(v=>String(v||'').toLowerCase().includes(q)));c.innerHTML=arr.length?'':'<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">尚無EMS報告。</div>';arr.forEach(r=>{const key=r.docId||r.id,card=document.createElement('div');card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4';card.innerHTML=`<div class="flex justify-between gap-3"><span class="text-xs text-rose-400 font-mono">${r.id||key}</span><span class="text-xs text-slate-500">${r.time||'--'}</span></div><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs"><div><span class="text-slate-500 block">主訴</span>${r.chiefComplaint||'--'}</div><div><span class="text-slate-500 block">傷患</span>${r.patient||'--'}</div><div><span class="text-slate-500 block">出勤單位／車輛</span>${r.unitVehicle||'--'}</div><div><span class="text-slate-500 block">填寫人</span>${r.authorName||'--'} (${r.authorId||'--'})</div></div><div class="flex flex-wrap gap-2"><button onclick="viewEMSReportDetail('${key}')" class="px-3 py-2 bg-rose-500/10 text-rose-300 rounded-lg text-xs">檢視</button>${canModifyEMS(r)?`<button onclick="openEMSReportModal('${key}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs">編輯</button><button onclick="deleteEMSReport('${key}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button>`:''}${currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire')))?`<button onclick="openRemarkModal('emsReports','${key}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs">高層批示</button>`:''}</div>`;c.appendChild(card);});}
+        function renderEMSReports(){const c=document.getElementById('ems-reports-list');if(!c)return;const q=(document.getElementById('search-ems-report')?.value||'').trim().toLowerCase(),arr=(appData.emsReports||[]).filter(r=>!q||[r.id,r.patient,r.authorId,r.authorName,r.dispatchCategory].some(v=>String(v||'').toLowerCase().includes(q)));c.innerHTML=arr.length?'':'<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">尚無EMS報告。</div>';arr.forEach(r=>{const key=r.docId||r.id,card=document.createElement('div');card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4';card.innerHTML=`<div class="flex justify-between gap-3"><span class="text-xs text-rose-400 font-mono">${r.id||key}</span><span class="text-xs text-slate-500">${r.time||'--'}</span></div><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs"><div><span class="text-slate-500 block">主訴</span>${r.chiefComplaint||'--'}</div><div><span class="text-slate-500 block">傷患</span>${r.patient||'--'}</div><div><span class="text-slate-500 block">出勤單位／車輛</span>${r.unitVehicle||'--'}</div><div><span class="text-slate-500 block">填寫人</span>${r.authorName||'--'} (${r.authorId||'--'})</div></div><div class="flex flex-wrap gap-2"><button onclick="viewEMSReportDetail('${key}')" class="px-3 py-2 bg-rose-500/10 text-rose-300 rounded-lg text-xs">檢視</button>${canModifyEMS(r)?`<button onclick="openEMSReportModal('${key}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs">編輯</button><button onclick="deleteEMSReport('${key}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button>`:''}${currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire')))?`<button onclick="openRemarkModal('emsReports','${key}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs">高層批示</button>`:''}${canEditReviewStatus('ems')?`<button onclick="openEditReviewStatus('ems','${key}','approved')" class="px-3 py-2 bg-blue-600/20 text-blue-300 rounded-lg text-xs"><i class="fa-solid fa-stamp mr-1"></i>編輯審核狀況</button>`:''}</div>`;c.appendChild(card);});}
 
         function renderFireReports() {
             const container=document.getElementById('fire-reports-list');
@@ -3721,7 +3688,7 @@
             filtered.forEach(r=>{
                 const card=document.createElement('div');
                 card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hover:border-slate-700 transition';
-                card.innerHTML=`<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex items-center space-x-3 min-w-0"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 font-mono shrink-0">${r.caseId||'--'}</span><h4 class="text-base font-bold text-white truncate">${r.title||'未命名案件'}</h4></div><span class="text-xs text-slate-400 shrink-0">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">填寫隊員</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div><div><span class="text-slate-500 block">發布登記帳號</span><span class="font-mono text-cyan-400">${getRegisteredAccount(r)}</span></div><div class="sm:col-span-2"><span class="text-slate-500 block">長官批示</span><span class="font-medium text-slate-300">${getLatestRemarkText(r)}</span></div></div><p class="text-sm text-slate-300 line-clamp-2">${r.content||''}</p><div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-slate-800/80"><button type="button" onclick="viewReportDetail('fire','${r.caseId}')" class="text-xs text-red-400 hover:text-red-300 font-semibold flex items-center justify-center px-3 py-2 rounded-lg hover:bg-red-500/10 transition min-h-[44px]"><i class="fa-solid fa-eye mr-1"></i><span>檢視詳細內容與影片</span></button><div class="mobile-report-actions flex flex-wrap gap-2">${canModifyReport(r,'fire')?`<button type="button" onclick="openEditReportModal('fire','${r.caseId}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px]">編輯</button>`:''}${canModifyReport(r,'fire')?`<button type="button" onclick="deleteReport('fire','${r.caseId}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px]">刪除</button>`:''}${canRemarkReport('fire')?`<button type="button" onclick="openRemarkModal('fireReports','${r.caseId}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs min-h-[44px]">批示備註</button>`:''}</div></div>`;
+                card.innerHTML=`<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex items-center space-x-3 min-w-0"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 font-mono shrink-0">${r.caseId||'--'}</span><h4 class="text-base font-bold text-white truncate">${r.title||'未命名案件'}</h4></div><span class="text-xs text-slate-400 shrink-0">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">填寫隊員</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div><div><span class="text-slate-500 block">發布登記帳號</span><span class="font-mono text-cyan-400">${getRegisteredAccount(r)}</span></div><div class="sm:col-span-2"><span class="text-slate-500 block">長官批示</span><span class="font-medium text-slate-300">${getLatestRemarkText(r)}</span></div></div><p class="text-sm text-slate-300 line-clamp-2">${r.content||''}</p><div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-slate-800/80"><button type="button" onclick="viewReportDetail('fire','${r.caseId}')" class="text-xs text-red-400 hover:text-red-300 font-semibold flex items-center justify-center px-3 py-2 rounded-lg hover:bg-red-500/10 transition min-h-[44px]"><i class="fa-solid fa-eye mr-1"></i><span>檢視詳細內容與影片</span></button><div class="mobile-report-actions flex flex-wrap gap-2">${canModifyReport(r,'fire')?`<button type="button" onclick="openEditReportModal('fire','${r.caseId}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px]">編輯</button>`:''}${canModifyReport(r,'fire')?`<button type="button" onclick="deleteReport('fire','${r.caseId}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px]">刪除</button>`:''}${canRemarkReport('fire')?`<button type="button" onclick="openRemarkModal('fireReports','${r.caseId}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs min-h-[44px]">批示備註</button>`:''}${canEditReviewStatus('fire')?`<button type="button" onclick="openEditReviewStatus('fire','${r.caseId}','approved')" class="px-3 py-2 bg-blue-600/20 text-blue-300 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-stamp mr-1"></i>編輯審核狀況</button>`:''}</div></div>`;
                 container.appendChild(card);
             });
         }
