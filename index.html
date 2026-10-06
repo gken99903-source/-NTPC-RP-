@@ -3272,8 +3272,7 @@
         function updateViolationJailTotal(prefix='report'){const violations=Array.from(document.querySelectorAll(`input[name="${prefix}-violation"]:checked`)).map(x=>x.value),organized=!!document.getElementById(`${prefix}-organized-crime`)?.checked,total=calculatePoliceJailTime(violations,organized),out=document.getElementById(`${prefix}-jail-total`);if(out)out.textContent=`總計 ${formatJailMinutes(total)}`;return {violations,organizedCrime:organized,jailMinutes:total};}
         function getViolationSelection(prefix='report'){return updateViolationJailTotal(prefix);}
 
-        async function sendDiscordReviewNotification({department, caseId, title, authorName, authorId, content, suspectName, suspectId, suspectVehicle, violations, jailMinutes, organizedCrime, submittedAt, resubmitted=false}) {
-            if (!DISCORD_REVIEW_WEBHOOK_URL) return false;
+        function buildDiscordReviewPayload({department, caseId, title, authorName, authorId, content, suspectName, suspectId, suspectVehicle, violations, jailMinutes, organizedCrime, submittedAt, resubmitted=false}) {
             const deptName = department === 'police' ? '警察局' : department === 'fire' ? '消防局' : 'EMS 救護';
             const fields = [
                 { name: '案件編號', value: String(caseId || '--'), inline: true },
@@ -3291,7 +3290,7 @@
             }
             const safeContent = String(content || '').trim();
             if (safeContent) fields.push({ name: '案件內容', value: safeContent.length > 900 ? safeContent.slice(0, 900) + '…' : safeContent, inline: false });
-            const payload = {
+            return {
                 username: '新北市 RP 公職服務系統',
                 avatar_url: 'https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/image.png53.png',
                 allowed_mentions: { parse: [] },
@@ -3299,21 +3298,43 @@
                     title: resubmitted ? `🔄 ${deptName}案件重新送審` : `📋 ${deptName}案件送入審核區`,
                     description: title ? `**${String(title).slice(0, 200)}**` : '案件報告',
                     color: department === 'police' ? 3447003 : department === 'fire' ? 15158332 : 15844367,
-                    fields,
+                    fields: [...fields, { name: '勤務網站', value: '[點我前往勤務網站](https://gken99903-source.github.io/-NTPC-RP-/)', inline: false }],
                     footer: { text: '新北市 RP 公職服務系統｜高層審核通知' },
+                    url: 'https://gken99903-source.github.io/-NTPC-RP-/',
                     timestamp: new Date(submittedAt || Date.now()).toISOString()
-                }]
+                }],
+                components: []
             };
+        }
+
+        async function sendDiscordReviewNotification(args) {
+            if (!DISCORD_REVIEW_WEBHOOK_URL) return false;
+            const payload = buildDiscordReviewPayload(args);
+            // GitHub Pages 無後端，直接 fetch application/json 會受到 Discord CORS 限制。
+            // 改用隱藏 iframe + form POST，避免瀏覽器對 JSON POST 的 CORS preflight。
             try {
-                const response = await fetch(DISCORD_REVIEW_WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!response.ok) {
-                    console.warn('Discord 審核通知發送失敗：', response.status, response.statusText);
-                    return false;
-                }
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = DISCORD_REVIEW_WEBHOOK_URL;
+                form.target = `discord_webhook_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                form.style.display = 'none';
+
+                const iframe = document.createElement('iframe');
+                iframe.name = form.target;
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'payload_json';
+                input.value = JSON.stringify(payload);
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+
+                setTimeout(() => {
+                    try { form.remove(); iframe.remove(); } catch (e) {}
+                }, 5000);
                 return true;
             } catch (error) {
                 console.warn('Discord 審核通知發送失敗：', error);
