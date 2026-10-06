@@ -752,7 +752,12 @@
             <div class="bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                     <div><h2 class="text-2xl font-bold text-white"><i class="fa-solid fa-bell text-cyan-400 mr-2"></i>個人通知</h2><p class="text-sm text-slate-500 mt-1">案件報告審核狀況、退件原因與重新送件狀態。</p></div>
-                    <span id="notification-tab-count" class="px-3 py-1.5 rounded-full bg-slate-950 border border-slate-800 text-xs text-slate-400">0 則通知</span>
+                    <div class="flex items-center gap-2">
+                        <span id="notification-tab-count" class="px-3 py-1.5 rounded-full bg-slate-950 border border-slate-800 text-xs text-slate-400">0 則通知</span>
+                        <button type="button" onclick="deleteAllPersonalNotifications()" class="px-3 py-2 rounded-xl bg-red-600/10 hover:bg-red-600/20 border border-red-500/25 text-red-300 hover:text-red-200 text-xs font-semibold transition whitespace-nowrap" title="刪除目前帳號的所有個人通知">
+                            <i class="fa-solid fa-trash-can mr-1"></i>一鍵刪除所有通知
+                        </button>
+                    </div>
                 </div>
                 <div id="notification-tab-list" class="space-y-4"></div>
             </div>
@@ -2565,6 +2570,28 @@
             if(!n || String(n.recipientAccount||'').toLowerCase()!==String(currentUser.account||'').toLowerCase()){showToast('只能移除自己的通知。','warning','權限不足');return;}
             if(!(await showConfirm('確定要移除這則個人通知嗎？','移除通知','確定移除'))) return;
             try{ await fm.deleteDoc(fm.doc(db,'reportNotifications',docId)); appData.reportNotifications=appData.reportNotifications.filter(x=>String(x.docId)!==String(docId)); renderPersonalNotifications(); showToast('通知已移除。','success','移除成功'); }catch(e){showToast('移除通知失敗：'+e.message,'error','操作失敗');}
+        }
+
+        async function deleteAllPersonalNotifications(){
+            if(!currentUser || !currentUser.account){showToast('請先登入系統。','warning','需要登入');return;}
+            const account=String(currentUser.account).trim().toLowerCase();
+            const localNotes=(appData.reportNotifications||[]).filter(n=>String(n.recipientAccount||'').trim().toLowerCase()===account);
+            if(!localNotes.length){showToast('目前沒有可刪除的個人通知。','info','沒有通知');return;}
+            if(!(await showConfirm(`確定要一鍵刪除目前帳號的全部 ${localNotes.length} 則個人通知嗎？\n\n此操作只會刪除通知，不會刪除案件資料或退回歷史案件。`,'一鍵刪除所有通知','全部刪除'))) return;
+            try{
+                let deleted=0;
+                for(const n of localNotes){
+                    if(!n.docId) continue;
+                    await fm.deleteDoc(fm.doc(db,'reportNotifications',n.docId));
+                    deleted++;
+                }
+                appData.reportNotifications=(appData.reportNotifications||[]).filter(n=>String(n.recipientAccount||'').trim().toLowerCase()!==account);
+                renderPersonalNotifications();
+                showToast(`已刪除 ${deleted} 則個人通知。`,'success','刪除完成');
+            }catch(e){
+                showToast('一鍵刪除通知失敗：'+e.message,'error','操作失敗');
+                try{ await loadUserData(); renderPersonalNotifications(); }catch(_){}
+            }
         }
 
         async function removeRejectedReport(dept,caseId){
