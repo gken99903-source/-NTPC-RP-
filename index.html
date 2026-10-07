@@ -2625,6 +2625,7 @@
         /* ===== 網站公告系統（修復版） ===== */
         let announcementIndex = 0;
         let announcementTimer = null;
+        let announcementRenderToken = 0;
 
         function announcementExpiry(duration, now) {
             if (duration === '7d') return now + 7 * 24 * 60 * 60 * 1000;
@@ -2632,47 +2633,110 @@
             return now + 24 * 60 * 60 * 1000;
         }
 
+        function announcementTimeValue(value) {
+            if (value == null || value === '' || value === 0 || value === '0') return 0;
+            if (typeof value === 'number' && Number.isFinite(value)) return value;
+            if (typeof value === 'string') {
+                const n = Number(value);
+                if (Number.isFinite(n)) return n;
+                const t = Date.parse(value);
+                return Number.isFinite(t) ? t : 0;
+            }
+            // Firestore Timestamp / Timestamp-like object
+            if (typeof value === 'object') {
+                if (typeof value.toMillis === 'function') { try { return value.toMillis(); } catch(e) {} }
+                if (Number.isFinite(Number(value.seconds))) return Number(value.seconds) * 1000 + Math.floor(Number(value.nanoseconds || 0) / 1000000);
+                if (Number.isFinite(Number(value._seconds))) return Number(value._seconds) * 1000 + Math.floor(Number(value._nanoseconds || 0) / 1000000);
+            }
+            return 0;
+        }
+
         function getActiveAnnouncements() {
             const now = Date.now();
-            return (appData.announcements || [])
-                .filter(a => a && a.active !== false && (!a.expiresAt || Number(a.expiresAt) > now))
-                .sort((a,b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
+            return (Array.isArray(appData.announcements) ? appData.announcements : [])
+                .filter(a => {
+                    if (!a || a.active === false) return false;
+                    const expiresAt = announcementTimeValue(a.expiresAt);
+                    // expiresAt = 0 means manually managed / no expiry.
+                    return expiresAt === 0 || expiresAt > now;
+                })
+                .sort((a,b) => announcementTimeValue(a.createdAt) - announcementTimeValue(b.createdAt));
+        }
+
+        function buildAnnouncementItem(a, state='active') {
+            const item = document.createElement('div');
+            item.className = `announcement-item ${state}`;
+            item.dataset.announcementId = a.id || '';
+            item.innerHTML = `
+                <div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0"><i class="fa-solid fa-bullhorn"></i></div>
+                <div class="announcement-content">
+                    <div class="announcement-text text-sm sm:text-base text-slate-200 font-semibold">${escapeHtml(a.text || '')}</div>
+                </div>
+                <div class="announcement-publisher text-xs text-slate-500">${escapeHtml(a.publisher || '')}</div>`;
+            return item;
         }
 
         function renderSiteAnnouncements() {
             const bar = document.getElementById('site-announcement-bar');
             const track = document.getElementById('announcement-track');
             if (!bar || !track) return;
+
+            // 每次重新渲染都讓舊計時器失效，避免閒置/回到分頁後舊 callback 與新 callback 疊加。
+            const renderToken = ++announcementRenderToken;
+            if (announcementTimer) {
+                clearInterval(announcementTimer);
+                announcementTimer = null;
+            }
+
             const rows = getActiveAnnouncements();
             if (!rows.length) {
                 bar.classList.add('hidden');
-                track.innerHTML = '';
-                if (announcementTimer) { clearInterval(announcementTimer); announcementTimer = null; }
+                track.replaceChildren();
                 announcementIndex = 0;
                 return;
             }
+
             bar.classList.remove('hidden');
             if (announcementIndex >= rows.length) announcementIndex = 0;
-            track.innerHTML = rows.map((a,i) => `
-                <div class="announcement-item ${i===announcementIndex?'active':''}" data-announcement-index="${i}">
-                    <div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0"><i class="fa-solid fa-bullhorn"></i></div>
-                    <div class="announcement-content">
-                        <div class="announcement-text text-sm sm:text-base text-slate-200 font-semibold">${escapeHtml(a.text || '')}</div>
-                    </div>
-                    <div class="announcement-publisher text-xs text-slate-500">${escapeHtml(a.publisher || '')}</div>
-                </div>`).join('');
-            if (announcementTimer) clearInterval(announcementTimer);
+            track.replaceChildren(buildAnnouncementItem(rows[announcementIndex], 'active'));
+
             if (rows.length > 1) {
                 announcementTimer = setInterval(() => {
-                    const items = [...track.querySelectorAll('.announcement-item')];
-                    if (!items.length) return;
-                    const oldIndex = announcementIndex;
-                    announcementIndex = (announcementIndex + 1) % rows.length;
-                    const oldItem = items[oldIndex];
-                    const newItem = items[announcementIndex];
-                    if (oldItem) oldItem.classList.remove('active'), oldItem.classList.add('exit-up');
-                    if (newItem) { newItem.classList.remove('exit-up'); requestAnimationFrame(() => newItem.classList.add('active')); }
-                    setTimeout(() => oldItem?.classList.remove('exit-up'), 500);
+                    if (renderToken !== announcementRenderToken) return;
+
+                    // 重新取得最新公告，避免刪除/過期後仍使用舊陣列。
+                    const currentRows = getActiveAnnouncements();
+                    if (currentRows.length <= 1) {
+                        clearInterval(announcementTimer);
+                        announcementTimer = null;
+                        announcementIndex = 0;
+                        track.replaceChildren();
+                        if (currentRows.length) track.appendChild(buildAnnouncementItem(currentRows[0], 'active'));
+                        if (!currentRows.length) bar.classList.add('hidden');
+                        return;
+                    }
+
+                    if (announcementIndex >= currentRows.length) announcementIndex = 0;
+                    const oldItem = track.querySelector('.announcement-item');
+                    const nextIndex = (announcementIndex + 1) % currentRows.length;
+                    const nextItem = buildAnnouncementItem(currentRows[nextIndex], '');
+
+                    if (oldItem) {
+                        oldItem.classList.remove('active');
+                        oldItem.classList.add('exit-up');
+                    }
+                    track.appendChild(nextItem);
+                    requestAnimationFrame(() => {
+                        if (renderToken !== announcementRenderToken) return;
+                        nextItem.classList.add('active');
+                    });
+
+                    setTimeout(() => {
+                        if (renderToken !== announcementRenderToken) return;
+                        if (oldItem && oldItem.parentNode === track) oldItem.remove();
+                    }, 500);
+
+                    announcementIndex = nextIndex;
                 }, 5000);
             }
         }
