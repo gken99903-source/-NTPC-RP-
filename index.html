@@ -2126,8 +2126,6 @@
             if (fireCalcBtn) fireCalcBtn.addEventListener('click', () => calculateMemberHours('fire'));
             const academyCodeInput = document.getElementById('academy-code-input');
             if (academyCodeInput) academyCodeInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleAcademyCodeLogin(); });
-            const loginPasswordInput = document.getElementById('login-password');
-            if (loginPasswordInput) loginPasswordInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); handleLogin(); } });
             clearInterval(window.__academyCodeTimer);
             window.__academyCodeTimer = setInterval(() => {
                 renderAdminAcademyCodes();
@@ -2505,7 +2503,6 @@ async function republishAnnouncement(id) {
                 renderSiteAnnouncements();
                 const ap=document.getElementById('announcement-publisher-input'); if(ap && !ap.value) ap.value=currentUser?.name||'';
                 populateMemberSelects();
-                restoreBrowserSession();
                 restoreAcademySession();
                 renderAdminAcademyCodes();
             } catch (e) {
@@ -2875,9 +2872,18 @@ async function republishAnnouncement(id) {
         }
 
 
-        function safeSessionGet(key) { try { return sessionStorage.getItem(key); } catch (e) { return null; } }
-        function safeSessionSet(key, value) { try { sessionStorage.setItem(key, value); } catch (e) {} }
-        function safeSessionRemove(key) { try { sessionStorage.removeItem(key); } catch (e) {} }
+        function safeSessionGet(key) {
+            try { const v=sessionStorage.getItem(key); if(v!==null) return v; } catch (e) {}
+            try { return localStorage.getItem(key); } catch (e) { return null; }
+        }
+        function safeSessionSet(key, value) {
+            try { sessionStorage.setItem(key, value); return; } catch (e) {}
+            try { localStorage.setItem(key, value); } catch (e) {}
+        }
+        function safeSessionRemove(key) {
+            try { sessionStorage.removeItem(key); } catch (e) {}
+            try { localStorage.removeItem(key); } catch (e) {}
+        }
 
         function saveBrowserSession() {
             if (!currentUser) return;
@@ -3094,7 +3100,7 @@ async function republishAnnouncement(id) {
             const r=(list||[]).find(x=>String(x.caseId||x.id||x.docId)===String(caseId));
             if(!r || r.reviewStatus!=='rejected' || String(r.registeredByAccount||r.authorId||'').toLowerCase()!==String(currentUser.account||'').toLowerCase()){showToast('只能移除自己被退件的案件。','warning','權限不足');return;}
             if(!(await showConfirm(`確定要移除退件案件「${caseId}」嗎？移除後將無法再重新送件。`,'移除退件案件','確定移除'))) return;
-            try{const col=isEMS?'emsPendingReports':(dept==='police'?'policePendingReports':'firePendingReports');await fm.deleteDoc(fm.doc(db,col,r.docId||r.caseId||r.id));if(isEMS)appData.emsPendingReports=appData.emsPendingReports.filter(x=>String(x.docId||x.id)!==String(caseId));else if(dept==='police')appData.policePendingReports=appData.policePendingReports.filter(x=>x.caseId!==caseId);else appData.firePendingReports=appData.firePendingReports.filter(x=>x.caseId!==caseId);renderPersonalNotifications();showToast('退件案件已移除。','success','移除成功');}catch(e){showToast('退件案件移除失敗：'+e.message,'error','操作失敗');}
+            try{const col=isEMS?'emsPendingReports':(dept==='police'?'policePendingReports':'firePendingReports');const removeDocId=await resolveReportDocId(col,r,caseId);if(!removeDocId)throw new Error('找不到退件案件的 Firestore 文件 ID');await fm.deleteDoc(fm.doc(db,col,removeDocId));if(isEMS)appData.emsPendingReports=appData.emsPendingReports.filter(x=>String(x.docId||x.id)!==String(caseId));else if(dept==='police')appData.policePendingReports=appData.policePendingReports.filter(x=>x.caseId!==caseId);else appData.firePendingReports=appData.firePendingReports.filter(x=>x.caseId!==caseId);renderPersonalNotifications();showToast('退件案件已移除。','success','移除成功');}catch(e){showToast('退件案件移除失敗：'+e.message,'error','操作失敗');}
         }
 
         function renderMyProfile() {
@@ -4583,7 +4589,7 @@ async function republishAnnouncement(id) {
             document.getElementById('review-reject-case-id').value=id; document.getElementById('review-reject-dept').value='wanted'; document.getElementById('review-reject-reason').value=''; document.getElementById('modal-review-reject').classList.remove('hidden');
         }
 
-        async function rejectPolicePendingReport(){const caseId=document.getElementById('review-reject-case-id').value;const dept=document.getElementById('review-reject-dept').value||'police';const reason=document.getElementById('review-reject-reason').value.trim();const canReview=dept==='fire'||dept==='ems'?canReviewFireReports():canReviewPoliceReports();if(!canReview){showToast('權限不足。','warning','權限不足');return;}if(!reason){showToast('請填寫退件原因。','warning','退件原因必填');return;}const source=dept==='fire'?appData.firePendingReports:dept==='ems'?appData.emsPendingReports:dept==='wanted'?appData.wantedPendingRecords:appData.policePendingReports;const r=(source||[]).find(x=>String(x.caseId||x.id||x.docId)===String(caseId));if(!r)return;try{const col=dept==='fire'?'firePendingReports':dept==='ems'?'emsPendingReports':dept==='wanted'?'wantedPendingRecords':'policePendingReports';const patch={reviewStatus:'rejected',rejectionReason:reason,reviewedAt:Date.now(),reviewedBy:currentUser.account,updatedAt:Date.now()};await fm.updateDoc(fm.doc(db,col,r.docId||r.caseId||r.id),patch);Object.assign(r,patch);await removePendingReportNotifications(caseId,r.registeredByAccount||r.authorId);const title=dept==='wanted'?'通緝申請遭退件':dept==='ems'?'EMS報告遭退件':dept==='fire'?'消防案件遭退件':'案件遭退件';const recipient=r.registeredByAccount||r.authorId||r.createdByAccount;const n={type:dept==='wanted'?'wanted':'report',department:'police',caseId,recipientAccount:recipient,recipientAccountNormalized:String(recipient||'').trim().toLowerCase(),status:'rejected',title,message:`${dept==='wanted'?'通緝申請':dept==='ems'?'EMS報告':`案件 ${caseId}`} 已退件：${reason}`,timestamp:Date.now(),read:false};const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);appData.reportNotifications.unshift({docId:nr.id,...n});await logAdminAction((dept==='ems'?'EMS':dept==='fire'?'消防':'警用')+'退件案件報告',caseId,reason);closeModal('modal-review-reject');if(dept==='ems'||dept==='fire')renderFireReview();else renderPoliceReview();if(dept==='wanted'){renderLookupSystems();}renderPersonalNotifications();showToast('案件已退件，寄件人可重新編輯送件。','success','退件完成');}catch(e){showToast('退件失敗：'+e.message,'error','操作失敗');}}
+        async function rejectPolicePendingReport(){const caseId=document.getElementById('review-reject-case-id').value;const dept=document.getElementById('review-reject-dept').value||'police';const reason=document.getElementById('review-reject-reason').value.trim();const canReview=dept==='fire'||dept==='ems'?canReviewFireReports():canReviewPoliceReports();if(!canReview){showToast('權限不足。','warning','權限不足');return;}if(!reason){showToast('請填寫退件原因。','warning','退件原因必填');return;}const source=dept==='fire'?appData.firePendingReports:dept==='ems'?appData.emsPendingReports:dept==='wanted'?appData.wantedPendingRecords:appData.policePendingReports;const r=(source||[]).find(x=>String(x.caseId||x.id||x.docId)===String(caseId));if(!r)return;try{const col=dept==='fire'?'firePendingReports':dept==='ems'?'emsPendingReports':dept==='wanted'?'wantedPendingRecords':'policePendingReports';const patch={reviewStatus:'rejected',rejectionReason:reason,reviewedAt:Date.now(),reviewedBy:currentUser.account,updatedAt:Date.now()};const rejectDocId=await resolveReportDocId(col,r,caseId);if(!rejectDocId)throw new Error('找不到案件的 Firestore 文件 ID');await fm.setDoc(fm.doc(db,col,rejectDocId),patch,{merge:true});r.docId=rejectDocId;Object.assign(r,patch);await removePendingReportNotifications(caseId,r.registeredByAccount||r.authorId);const title=dept==='wanted'?'通緝申請遭退件':dept==='ems'?'EMS報告遭退件':dept==='fire'?'消防案件遭退件':'案件遭退件';const recipient=r.registeredByAccount||r.authorId||r.createdByAccount;const n={type:dept==='wanted'?'wanted':'report',department:'police',caseId,recipientAccount:recipient,recipientAccountNormalized:String(recipient||'').trim().toLowerCase(),status:'rejected',title,message:`${dept==='wanted'?'通緝申請':dept==='ems'?'EMS報告':`案件 ${caseId}`} 已退件：${reason}`,timestamp:Date.now(),read:false};const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);appData.reportNotifications.unshift({docId:nr.id,...n});await logAdminAction((dept==='ems'?'EMS':dept==='fire'?'消防':'警用')+'退件案件報告',caseId,reason);closeModal('modal-review-reject');if(dept==='ems'||dept==='fire')renderFireReview();else renderPoliceReview();if(dept==='wanted'){renderLookupSystems();}renderPersonalNotifications();showToast('案件已退件，寄件人可重新編輯送件。','success','退件完成');}catch(e){showToast('退件失敗：'+e.message,'error','操作失敗');}}
         
         function renderPoliceReports() {
             const container = document.getElementById('police-reports-list');
@@ -5038,7 +5044,11 @@ async function republishAnnouncement(id) {
                     const payload={caseId:nextCaseId,title:r.title,content:r.content,authorId:originalAuthorId,authorName:originalAuthorName,suspectName:r.suspectName,suspectId:r.suspectId,suspectVehicle:r.suspectVehicle||'',postalCode:r.postalCode||'',command:r.command||'',supportUnits:r.supportUnits||[],...(dept==='police'?{violations:r.violations||[],organizedCrime:!!r.organizedCrime,jailMinutes:Number(r.jailMinutes||0)}:{}),videoLinks:r.videoLinks||[],videoLink:r.videoLink||'',createdByAccount:r.createdByAccount||r.registeredByAccount||originalAuthorId,createdByName:r.createdByName||r.registeredByName||originalAuthorName,registeredByAccount:r.registeredByAccount||r.createdByAccount||originalAuthorId,registeredByName:r.registeredByName||r.createdByName||originalAuthorName,lastEditedByAccount:currentUser.account,lastEditedByName:currentUser.name,lastEditedAt:Date.now()};
                     if(isPending){
                         const pendingPayload={...payload,reviewStatus:'pending',rejectionReason:'',reviewedAt:0,reviewedBy:'',submittedAt:Date.now(),updatedAt:Date.now()};
-                        await fm.updateDoc(fm.doc(db,dept==='police'?'policePendingReports':'firePendingReports',r.docId||r.caseId),pendingPayload);
+                        const pendingCollection = dept==='police'?'policePendingReports':'firePendingReports';
+                        const pendingDocId = await resolveReportDocId(pendingCollection, r, r.caseId);
+                        if(!pendingDocId) throw new Error('找不到退件案件的 Firestore 文件 ID');
+                        await fm.setDoc(fm.doc(db,pendingCollection,pendingDocId),pendingPayload,{merge:true});
+                        r.docId=pendingDocId;
                         Object.assign(r,pendingPayload);
                         await removePendingReportNotifications(nextCaseId,currentUser.account);const notification={type:'report',caseId:nextCaseId,recipientAccount:currentUser.account,recipientAccountNormalized:String(currentUser.account||'').trim().toLowerCase(),status:'pending',title:'案件已重新送件',message:`案件 ${nextCaseId} 已重新送入高層審核。`,timestamp:Date.now(),read:false};
                         const nref=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nref,notification); appData.reportNotifications.unshift({docId:nref.id,...notification});
