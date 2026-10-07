@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://discord.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://placehold.co; connect-src 'self' https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; upgrade-insecure-requests">
     <!-- NTPC-RP Discord webhook fix + management LOG: 2026-10-06-v4 -->
     <title>新北市 RP 3.0 公職服務系統 V1.7</title>
     <!-- 網站圖標與連結分享資訊 -->
@@ -238,6 +240,15 @@
             }
         }
 
+        /* 效能優化：低效能裝置／使用者偏好減少動畫時，降低昂貴模糊與動畫成本 */
+        html.performance-lite .backdrop-blur-sm,
+        html.performance-lite #app-confirm-overlay { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+        html.performance-lite .announcement-item { transition-duration: .16s !important; }
+        html.performance-lite .notification-bell-active { animation-duration: 2.8s !important; }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+        }
+
         /* 全站二次確認：置中動畫彈窗，取代瀏覽器原生 confirm */
         #app-confirm-overlay {
             position: fixed; inset: 0; z-index: 180; display: flex; align-items: center; justify-content: center;
@@ -322,13 +333,24 @@
             .submit-success-card { transition: none; }
             #submit-success-animation.show .submit-success-check path { animation: none; stroke-dashoffset: 0; }
         }
+
+        /* 全站效能保護：減少低效能裝置上的高成本模糊與動畫 */
+        @media (max-width: 767px) {
+            #app-confirm-overlay, #submit-success-animation, .app-toast { backdrop-filter: none !important; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+        }
+        .is-busy-action { pointer-events: none !important; opacity: .65 !important; }
                 }
     </style>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+        // 安全提醒：Firebase Web 設定本身不是祕密；真正的防護必須靠 Firebase Authentication／Security Rules。
+        // Discord Webhook 等祕密值不應長期放在前端，建議後續移至 Cloud Functions / Secret Manager。
         const firebaseConfig = {
             apiKey: "AIzaSyBJi9v-oDJ54-Z61T5JKy44Mg22vZCPiw",
             authDomain: "ntpcrp-cb0725.firebaseapp.com",
@@ -343,7 +365,7 @@
         const db = getFirestore(app);
 
         window.db = db;
-        window.firebaseModules = { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, query, where };
+        window.firebaseModules = { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, query, where };
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
 </head>
@@ -444,7 +466,7 @@
                         <button data-tab="fire" class="tab-shortcut-btn bg-red-600 hover:bg-red-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-red-600/20 transition flex items-center space-x-2">
                             <i class="fa-solid fa-fire-extinguisher"></i><span>進入消防系統</span>
                         </button>
-                        <button id="home-feedback-btn" class="bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-white font-medium px-6 py-3 rounded-xl transition flex items-center space-x-2"><i class="fa-solid fa-message-exclamation"></i><span>異常／意見回報</span></button>
+                        <button id="home-feedback-btn" class="bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-white font-medium px-6 py-3 rounded-xl transition flex items-center space-x-2"><i class="fa-solid fa-envelope mr-2"></i><span>異常／意見回報</span></button>
                     </div>
                 </div>
             </div>
@@ -514,6 +536,9 @@
                         <button id="police-report-modal-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
                             <i class="fa-solid fa-file-pen"></i><span>填寫案件報告</span>
                         </button>
+                        <button id="police-page-refresh-btn" type="button" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2" title="重新整理網站頁面">
+                            <i class="fa-solid fa-rotate"></i><span>刷新頁面</span>
+                        </button>
                     </div>
                 </div>
 
@@ -563,12 +588,41 @@
                 </div>
 
                 <div id="police-sub-clocks" class="hidden space-y-4">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <h3 class="text-lg font-bold text-slate-200">員警出勤打卡歷史與狀態</h3>
-                        <div class="flex items-center space-x-2">
-                            <label class="text-xs text-slate-400">依日期篩選：</label>
-                            <input type="date" id="police-clocks-date-filter" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-                            <button id="police-clocks-date-clear" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl text-xs transition">清除</button>
+                    <div class="bg-slate-900 border border-blue-500/20 rounded-2xl p-4 sm:p-5 shadow-xl">
+                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                                    <i class="fa-solid fa-user-shield"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-200">員警出勤打卡歷史與狀態</h3>
+                                    <p class="text-xs text-slate-500 mt-1">即時統計目前最後一次打卡狀態為「上班」的員警。</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                                    <span class="text-xs text-slate-400 mr-2">目前值勤員警</span>
+                                    <strong id="police-current-duty-count" class="text-xl text-emerald-400">0</strong><span class="text-xs text-emerald-300 ml-1">人</span>
+                                </div>
+                                <button type="button" id="police-clocks-refresh-btn" class="min-h-[42px] px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition touch-manipulation"><i class="fa-solid fa-rotate mr-1"></i>刷新</button>
+                            </div>
+                        </div>
+                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1.5">日期</label>
+                                <input type="date" id="police-clocks-date-filter" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1.5">打卡類型</label>
+                                <select id="police-clocks-status-filter" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
+                                    <option value="all">全部打卡</option>
+                                    <option value="上班">只看上班卡</option>
+                                    <option value="下班">只看下班卡</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button type="button" id="police-clocks-date-clear" class="w-full min-h-[42px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2.5 rounded-xl text-xs transition">清除篩選</button>
+                            </div>
                         </div>
                     </div>
                     <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
@@ -894,7 +948,7 @@
                     <i class="fa-solid fa-lock"></i>
                 </div>
                 <h3 class="text-2xl font-bold text-white">管理員中心權限受限</h3>
-                <p class="text-slate-400 text-sm max-w-md mx-auto">此區域僅限最高管理員進入，高層長官無法使用管理處面板。</p>
+                <p class="text-slate-400 text-sm max-w-md mx-auto">此區域依權限開放；警專教官僅可進入「專生考核系統」分頁。</p>
                 <button onclick="document.getElementById('modal-login').classList.remove('hidden')" class="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-purple-600/30 transition">立即登入系統</button>
             </div>
 
@@ -925,6 +979,12 @@
                     <button id="btn-admin-feedback" data-sub="feedback" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-message-exclamation mr-2"></i>異常／意見回報</button>
                     <button id="btn-admin-academy" data-sub="academy" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-graduation-cap mr-2"></i>專生考核系統</button>
                     <button id="btn-admin-jail-rules" data-sub="jail-rules" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-scale-balanced mr-2"></i>警用刑期表</button>
+                </div>
+
+                <div id="admin-sub-permission-denied" class="hidden bg-slate-900/80 border border-amber-500/20 p-10 rounded-2xl text-center space-y-3">
+                    <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 mx-auto flex items-center justify-center text-xl"><i class="fa-solid fa-lock"></i></div>
+                    <h3 id="admin-permission-denied-title" class="text-xl font-bold text-white">權限不足</h3>
+                    <p id="admin-permission-denied-message" class="text-sm text-slate-400">目前帳號沒有使用此管理中心分頁的權限。</p>
                 </div>
 
                 <div id="admin-sub-users" class="space-y-4">
@@ -1500,13 +1560,14 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">權限身份級別</label>
-                    <select id="edit-user-role-input" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-purple-500">
-                        <option value="normal">一般基層人員</option>
-                        <option value="high">高層長官 (分局長/大隊長)</option>
-                        <option value="senior">高階成員（可新增長官批示）</option>
-                        <option value="admin">最高管理員</option>
-                    </select>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">權限身份級別（可複選）</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 rounded-lg hover:bg-slate-900 cursor-pointer text-sm text-slate-200"><input type="checkbox" name="edit-user-permissions" value="normal" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-emerald-600"><span>一般基層人員</span></label>
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 rounded-lg hover:bg-slate-900 cursor-pointer text-sm text-slate-200"><input type="checkbox" name="edit-user-permissions" value="high" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-amber-600"><span>高層長官</span></label>
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 rounded-lg hover:bg-slate-900 cursor-pointer text-sm text-slate-200"><input type="checkbox" name="edit-user-permissions" value="senior" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-cyan-600"><span>高階成員</span></label>
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 rounded-lg hover:bg-slate-900 cursor-pointer text-sm text-slate-200"><input type="checkbox" name="edit-user-permissions" value="admin" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-purple-600"><span>最高管理員</span></label>
+                        <label class="sm:col-span-2 flex items-center gap-2 min-h-[44px] p-2 rounded-lg bg-indigo-500/5 border border-indigo-500/10 hover:bg-indigo-500/10 cursor-pointer text-sm text-indigo-200"><input type="checkbox" name="edit-user-permissions" value="academyInstructor" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600"><i class="fa-solid fa-graduation-cap text-indigo-400"></i><span>警專教官</span><span class="text-[11px] text-slate-500 ml-auto">僅可進入專生代碼生成分頁</span></label>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">新密碼 (若不更改請留空)</label>
@@ -1613,13 +1674,14 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">權限身份級別</label>
-                    <select id="new-user-role" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-purple-500">
-                        <option value="normal">一般基層人員</option>
-                        <option value="high">高層長官 (分局長/大隊長)</option>
-                        <option value="senior">高階成員（可新增長官批示）</option>
-                        <option value="admin">最高管理員</option>
-                    </select>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">權限身份級別（可複選）</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 rounded-lg hover:bg-slate-900 cursor-pointer text-sm text-slate-200"><input type="checkbox" name="new-user-permissions" value="normal" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-emerald-600"><span>一般基層人員</span></label>
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 rounded-lg hover:bg-slate-900 cursor-pointer text-sm text-slate-200"><input type="checkbox" name="new-user-permissions" value="high" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-amber-600"><span>高層長官</span></label>
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 rounded-lg hover:bg-slate-900 cursor-pointer text-sm text-slate-200"><input type="checkbox" name="new-user-permissions" value="senior" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-cyan-600"><span>高階成員</span></label>
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 rounded-lg hover:bg-slate-900 cursor-pointer text-sm text-slate-200"><input type="checkbox" name="new-user-permissions" value="admin" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-purple-600"><span>最高管理員</span></label>
+                        <label class="sm:col-span-2 flex items-center gap-2 min-h-[44px] p-2 rounded-lg bg-indigo-500/5 border border-indigo-500/10 hover:bg-indigo-500/10 cursor-pointer text-sm text-indigo-200"><input type="checkbox" name="new-user-permissions" value="academyInstructor" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600"><i class="fa-solid fa-graduation-cap text-indigo-400"></i><span>警專教官</span><span class="text-[11px] text-slate-500 ml-auto">僅可進入專生代碼生成分頁</span></label>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">密碼</label>
@@ -1663,6 +1725,20 @@
             adminMemo: ''
         };
 
+        // 輕量效能模式：低核心數裝置或使用者偏好減少動畫時，自動降低昂貴特效。
+        (() => {
+            try {
+                const lowPower = Number(navigator.hardwareConcurrency || 8) <= 4;
+                const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+                if (lowPower || reduced) document.documentElement.classList.add('performance-lite');
+            } catch (_) {}
+        })();
+
+        // 基本前端防護：避免網站被惡意 iframe 嵌入；真正的資料權限仍必須由 Firebase Security Rules 負責。
+        try {
+            if (window.top !== window.self) window.top.location = window.self.location.href;
+        } catch (_) {}
+
         window.addEventListener('firebase-ready', () => {
             db = window.db;
             fm = window.firebaseModules;
@@ -1678,6 +1754,8 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
+            const inputLimitsForSecurity={'login-username':80,'login-password':128,'clock-id':40,'clock-name':60,'clock-vehicle':80,'announcement-text-input':2000,'announcement-publisher-input':80};
+            Object.entries(inputLimitsForSecurity).forEach(([id,max])=>{const el=document.getElementById(id);if(el)el.maxLength=max;});
             const handleTabClick = (e) => {
                 const btn = e.currentTarget.closest('[data-tab]');
                 if (!btn) return;
@@ -1721,8 +1799,8 @@
                 }
 
                 if (tabId === 'admin') {
-                    if (!currentUser || currentUser.role !== 'admin') {
-                        showToast('管理員中心僅限最高管理員進入。', 'warning', '權限不足');
+                    if (!canAccessManagementCenter()) {
+                        showToast('目前帳號沒有管理中心權限。', 'warning', '權限不足');
                         return;
                     }
                 }
@@ -1809,6 +1887,46 @@
 
             const handleLoginBtn = document.getElementById('handle-login-btn');
             if (handleLoginBtn) handleLoginBtn.addEventListener('click', handleLogin);
+            const loginPassword = document.getElementById('login-password');
+            if (loginPassword) loginPassword.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); handleLogin(); } });
+
+            const policeClockDateFilter = document.getElementById('police-clocks-date-filter');
+            if (policeClockDateFilter) policeClockDateFilter.addEventListener('change', renderPoliceClocks);
+            const policeClockStatusFilter = document.getElementById('police-clocks-status-filter');
+            if (policeClockStatusFilter) policeClockStatusFilter.addEventListener('change', renderPoliceClocks);
+            const policeClockClear = document.getElementById('police-clocks-date-clear');
+            if (policeClockClear) policeClockClear.addEventListener('click', () => {
+                if (policeClockDateFilter) policeClockDateFilter.value = '';
+                if (policeClockStatusFilter) policeClockStatusFilter.value = 'all';
+                renderPoliceClocks();
+            });
+            const policeClockRefresh = document.getElementById('police-clocks-refresh-btn');
+            if (policeClockRefresh) policeClockRefresh.addEventListener('click', async () => {
+                policeClockRefresh.disabled = true;
+                policeClockRefresh.innerHTML = '<i class=\"fa-solid fa-spinner fa-spin mr-1\"></i>更新中';
+                try {
+                    const snap = await safeCollectionDocs('policeClocks');
+                    if (snap.ok) {
+                        appData.policeClocks = snap.docs.map(d => ({ docId: d.id, ...d.data() }));
+                        renderPoliceClocks();
+                        renderAdminOverview();
+                        showToast('警務打卡資料已更新。', 'info', '刷新完成');
+                    } else throw new Error(snap.error || '無法讀取打卡資料');
+                } catch (e) {
+                    showToast('刷新打卡資料失敗：' + e.message, 'error', '刷新失敗');
+                } finally {
+                    policeClockRefresh.disabled = false;
+                    policeClockRefresh.innerHTML = '<i class=\"fa-solid fa-rotate mr-1\"></i>刷新';
+                }
+            });
+
+            const policePageRefresh = document.getElementById('police-page-refresh-btn');
+            if (policePageRefresh) policePageRefresh.addEventListener('click', () => {
+                try { saveBrowserSession(); } catch (e) {}
+                policePageRefresh.disabled = true;
+                policePageRefresh.classList.add('is-busy-action');
+                window.location.reload();
+            });
 
             const profileRefreshBtn = document.getElementById('profile-refresh-btn');
             if (profileRefreshBtn) profileRefreshBtn.addEventListener('click', renderMyProfile);
@@ -1991,7 +2109,7 @@
                     appData.users = usersSnap.docs.map(d => {
                         const data = d.data();
                         let units = data.units || (data.unit ? [data.unit] : ['admin']);
-                        return { docId: d.id, ...data, units };
+                        return { docId: d.id, ...data, units, permissions: Array.isArray(data.permissions) && data.permissions.length ? data.permissions : (data.role ? [data.role] : []) };
                     });
                 } else {
                     const defaultUsers = [
@@ -2004,7 +2122,7 @@
                     for (const u of defaultUsers) {
                         await fm.setDoc(fm.doc(db, 'users', u.account), u);
                     }
-                    appData.users = defaultUsers.map(u => ({ docId: u.account, ...u }));
+                    appData.users = defaultUsers.map(u => ({ docId: u.account, ...u, permissions: u.permissions || [u.role] }));
                 }
 
                 await ensureSuperAdminAccount();
@@ -2219,8 +2337,8 @@
         }
 
         function switchTab(tabId) {
-            if (tabId === 'admin' && (!currentUser || currentUser.role !== 'admin')) {
-                showToast('管理員中心僅限最高管理員進入。', 'warning', '權限不足');
+            if (tabId === 'admin' && !canAccessManagementCenter()) {
+                showToast('目前帳號沒有管理中心權限。', 'warning', '權限不足');
                 tabId = 'home';
             }
             ['home', 'police', 'fire', 'notifications', 'profile', 'academy', 'admin'].forEach(t => {
@@ -2250,16 +2368,21 @@
                 renderAcademyCache();
             }
             if (tabId === 'admin') {
-                renderAdminUsers();
-                renderAdminLogs();
-                renderAdminStorage();
-                renderAdminOverview();
-                refreshAdminOnlineUsers();
-                renderAdminDevices();
-                renderAdminFeedback();
-                renderAdminAcademyCodes();
-                const memoInput = document.getElementById('admin-memo-textarea');
-                if (memoInput) memoInput.value = appData.adminMemo || '';
+                if (isAcademyInstructor() && getEffectiveRole(currentUser) !== 'admin') {
+                    switchAdminSubTab('academy');
+                } else {
+                    switchAdminSubTab('users');
+                    renderAdminUsers();
+                    renderAdminLogs();
+                    renderAdminStorage();
+                    renderAdminOverview();
+                    refreshAdminOnlineUsers();
+                    renderAdminDevices();
+                    renderAdminFeedback();
+                    renderAdminAcademyCodes();
+                    const memoInput = document.getElementById('admin-memo-textarea');
+                    if (memoInput) memoInput.value = appData.adminMemo || '';
+                }
             }
         }
 
@@ -2324,7 +2447,36 @@
             if(sub==='review') renderFireReview();
         }
 
-        function switchAdminSubTab(sub){['users','announcements','clock','logs','storage','memo','overview','online','devices','feedback','academy','jail-rules'].forEach(x=>{document.getElementById(`admin-sub-${x}`)?.classList.add('hidden');document.getElementById(`btn-admin-${x}`)?.classList.remove('bg-purple-600','text-white');});document.getElementById(`admin-sub-${sub}`)?.classList.remove('hidden');document.getElementById(`btn-admin-${sub}`)?.classList.add('bg-purple-600','text-white');if(sub==='online')refreshAdminOnlineUsers();if(sub==='devices')renderAdminDevices();if(sub==='feedback')renderAdminFeedback();if(sub==='storage')renderAdminStorage();if(sub==='users')renderAdminUsers();if(sub==='logs')renderAdminLogs();if(sub==='academy')renderAdminAcademyCodes();if(sub==='jail-rules')renderAdminJailRules();if(sub==='announcements')renderAdminAnnouncements();if(sub==='clock')renderAdminClocks();}
+        function switchAdminSubTab(sub){
+            const tabs=['users','announcements','clock','logs','storage','memo','overview','online','devices','feedback','academy','jail-rules'];
+            const academyOnly = !!currentUser && getEffectiveRole(currentUser) !== 'admin' && hasUserPermission(currentUser,'academyInstructor');
+            const allowed = !academyOnly || sub === 'academy';
+            tabs.forEach(x=>{
+                document.getElementById(`admin-sub-${x}`)?.classList.add('hidden');
+                document.getElementById(`btn-admin-${x}`)?.classList.remove('bg-purple-600','text-white');
+            });
+            const denied=document.getElementById('admin-sub-permission-denied');
+            if(denied) denied.classList.toggle('hidden',allowed);
+            if(!allowed){
+                const title=document.getElementById('admin-permission-denied-title');
+                const msg=document.getElementById('admin-permission-denied-message');
+                if(title) title.textContent='權限不足';
+                if(msg) msg.textContent='警專教官帳號僅可使用「專生考核系統」分頁，其他管理中心功能無權限。';
+                return;
+            }
+            document.getElementById(`admin-sub-${sub}`)?.classList.remove('hidden');
+            document.getElementById(`btn-admin-${sub}`)?.classList.add('bg-purple-600','text-white');
+            if(sub==='online' && getEffectiveRole(currentUser)==='admin') refreshAdminOnlineUsers();
+            if(sub==='devices' && getEffectiveRole(currentUser)==='admin') renderAdminDevices();
+            if(sub==='feedback' && getEffectiveRole(currentUser)==='admin') renderAdminFeedback();
+            if(sub==='storage' && getEffectiveRole(currentUser)==='admin') renderAdminStorage();
+            if(sub==='users' && getEffectiveRole(currentUser)==='admin') renderAdminUsers();
+            if(sub==='logs' && getEffectiveRole(currentUser)==='admin') renderAdminLogs();
+            if(sub==='academy' && canAccessManagementCenter()) renderAdminAcademyCodes();
+            if(sub==='jail-rules' && getEffectiveRole(currentUser)==='admin') renderAdminJailRules();
+            if(sub==='announcements' && getEffectiveRole(currentUser)==='admin') renderAdminAnnouncements();
+            if(sub==='clock' && getEffectiveRole(currentUser)==='admin') renderAdminClocks();
+        }
 
         function closeModal(modalId) {
             const m = document.getElementById(modalId);
@@ -2461,6 +2613,9 @@
                     }
                 }, 30000);
                 if (currentUser.role === 'admin') startAdminPresenceRefresh();
+                if (isAcademyInstructor(currentUser) && getEffectiveRole(currentUser) !== 'admin') {
+                    setTimeout(() => switchTab('admin'), 0);
+                }
                 return true;
             } catch (e) {
                 console.warn('瀏覽器登入工作階段恢復失敗：', e);
@@ -2969,7 +3124,9 @@
             window.__submitSuccessTimer = setTimeout(() => overlay.classList.remove('show'), 1450);
         }
 
-        async function handleLogin(){await cloudDataReadyPromise;const device=getDeviceInfo();if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}const found=appData.users.find(u=>isSuperAdminAccount(acc)?isSuperAdminAccount(u.account)&&u.pass===pass:u.account===acc&&u.pass===pass);if(!found){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));currentUser=found;saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);await pruneOldLoginSessions();if(currentUser.role==='admin')startAdminPresenceRefresh();clearInterval(window.__presenceTimer);window.__presenceTimer=setInterval(()=>updateCurrentUserPresence(true),30000);showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();switchTab('home');}
+        const SECURITY_ACTION_COOLDOWN=new Map();
+        function securityActionAllowed(key,cooldownMs=700){const now=Date.now(),last=SECURITY_ACTION_COOLDOWN.get(key)||0;if(now-last<cooldownMs)return false;SECURITY_ACTION_COOLDOWN.set(key,now);return true;}
+        async function handleLogin(){if(!securityActionAllowed('login',900))return;await cloudDataReadyPromise;const device=getDeviceInfo();if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}const found=appData.users.find(u=>isSuperAdminAccount(acc)?isSuperAdminAccount(u.account)&&u.pass===pass:u.account===acc&&u.pass===pass);if(!found){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));currentUser=found;saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);await pruneOldLoginSessions();if(currentUser.role==='admin')startAdminPresenceRefresh();clearInterval(window.__presenceTimer);window.__presenceTimer=setInterval(()=>updateCurrentUserPresence(true),30000);showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();if(isAcademyInstructor(currentUser)&&getEffectiveRole(currentUser)!=='admin')switchTab('admin');else switchTab('home');}
         async function logout(){await updateCurrentUserPresence(false);clearInterval(window.__presenceTimer);window.__presenceTimer=null;clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();sessionStorage.removeItem('ntpcrp_session');updateUserBadge();updateAccessLocks();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
@@ -3031,12 +3188,19 @@
             }
 
             const isAdmin = !!currentUser && currentUser.role === 'admin';
+            const canManage = canAccessManagementCenter();
             if (adminLock && adminContent) {
-                adminLock.classList.toggle('hidden', isAdmin);
-                adminContent.classList.toggle('hidden', !isAdmin);
+                adminLock.classList.toggle('hidden', canManage);
+                adminContent.classList.toggle('hidden', !canManage);
+                const lockTitle = adminLock.querySelector('h3');
+                const lockMsg = adminLock.querySelector('p');
+                if (lockTitle) lockTitle.textContent = '管理中心權限受限';
+                if (lockMsg) lockMsg.textContent = '需要管理中心權限；警專教官僅可使用「專生考核系統」分頁。';
             }
-            if (adminNav) adminNav.classList.toggle('hidden', !isAdmin);
-            if (adminMobileNav) adminMobileNav.classList.toggle('hidden', !isAdmin);
+            if (adminNav) adminNav.classList.toggle('hidden', !canManage);
+            if (adminMobileNav) adminMobileNav.classList.toggle('hidden', !canManage);
+            const createUserBtn = document.getElementById('open-create-user-modal-btn');
+            if (createUserBtn) createUserBtn.classList.toggle('hidden', !isAdmin);
 
             if (punishmentPublishBtn) punishmentPublishBtn.classList.toggle('hidden', !canUsePolicePunishment());
             // 所有已進入警務系統的員警都可以預覽獎懲；發布按鈕另行限制。
@@ -3050,6 +3214,7 @@
             if (!canReviewFire && document.getElementById('fire-sub-review') && !document.getElementById('fire-sub-review').classList.contains('hidden')) switchFireSubTab('reports');
         }
 
+        function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
         function openClockModal(dept, isRetro) {
             if (!currentUser) {
                 showToast('請先登入系統後再進行打卡。', 'warning', '需要登入');
@@ -3066,6 +3231,16 @@
             document.getElementById('clock-is-retro').value = isRetro ? 'true' : 'false';
             document.getElementById('clock-id').value = currentUser.account;
             document.getElementById('clock-name').value = currentUser.name;
+            document.getElementById('clock-id').readOnly = true;
+            document.getElementById('clock-name').readOnly = true;
+
+            // 自動判斷下一次打卡：最後一次為上班 → 預設下班；最後一次為下班／尚無紀錄 → 預設上班。
+            const clockList = dept === 'police' ? (appData.policeClocks || []) : (appData.fireClocks || []);
+            const myLatestClock = [...clockList]
+                .filter(c => String(c.account || '').trim() === String(currentUser.account || '').trim())
+                .sort((a,b) => Number(b.timestamp || 0) - Number(a.timestamp || 0))[0];
+            const statusEl = document.getElementById('clock-status');
+            if (statusEl) statusEl.value = myLatestClock?.status === '上班' ? '下班' : '上班';
 
             const dateWrapper = document.getElementById('clock-date-field-wrapper');
             const titleEl = document.getElementById('clock-modal-title');
@@ -3204,65 +3379,40 @@
         }
 
         async function submitClock() {
-            const dept = document.getElementById('clock-dept-type').value;
-            const isRetro = document.getElementById('clock-is-retro').value === 'true';
-            const idVal = document.getElementById('clock-id').value.trim();
-            const nameVal = document.getElementById('clock-name').value.trim();
-            const statusVal = document.getElementById('clock-status').value;
-            const vehicleVal = document.getElementById('clock-vehicle').value.trim();
-
-            if (isSuspendedUser(currentUser && currentUser.account)) {
-                showToast('你目前於停職調查階段，無法使用值班打卡功能，直到該獎懲被更改或移除。', 'warning', '停職調查限制');
-                return;
-            }
-
-            if (!idVal || !nameVal) {
-                alert('請填寫編號與RP名稱！');
-                return;
-            }
-
-            let timeStr = '';
-            let ts = 0;
-            if (isRetro) {
-                const dateVal = document.getElementById('clock-retro-date').value;
-                const timeVal = document.getElementById('clock-retro-time').value;
-                if (!dateVal || !timeVal) {
-                    alert('請完整選擇補打卡的日期與時分！');
-                    return;
-                }
-                timeStr = `${dateVal} ${timeVal}:00 (補打卡)`;
-                ts = new Date(`${dateVal}T${timeVal}:00`).getTime();
-            } else {
-                const now = new Date();
-                timeStr = now.toLocaleString('zh-TW', { hour12: false });
-                ts = now.getTime();
-            }
-
-            const clockObj = {
-                id: 'CLK-' + Date.now(),
-                account: idVal,
-                name: nameVal,
-                status: statusVal,
-                vehicle: vehicleVal || '無',
-                time: timeStr,
-                timestamp: ts,
-                remark: '無'
-            };
-
-            const collectionName = dept === 'police' ? 'policeClocks' : 'fireClocks';
-            try {
-                await fm.setDoc(fm.doc(db, collectionName, clockObj.id), clockObj);
-                if (dept === 'police') appData.policeClocks.unshift(clockObj);
-                else appData.fireClocks.unshift(clockObj);
-
+            if (window.__clockSubmitting) return;
+            window.__clockSubmitting = true;
+            const btn=document.getElementById('submit-clock-btn');
+            if(btn){btn.disabled=true;btn.classList.add('is-busy-action');}
+            try{
+                if(!currentUser){showToast('請先登入系統後再進行打卡。','warning','需要登入');return;}
+                const dept=document.getElementById('clock-dept-type').value;
+                const isRetro=document.getElementById('clock-is-retro').value==='true';
+                if(dept==='police'&&!userHasUnit('police')){showToast('只有警察身分可以建立警務打卡。','warning','權限不足');return;}
+                if(dept==='fire'&&!userHasUnit('fire')){showToast('只有消防身分可以建立消防打卡。','warning','權限不足');return;}
+                if(isSuspendedUser(currentUser.account)){showToast('你目前於停職調查階段，無法使用值班打卡功能，直到該獎懲被更改或移除。','warning','停職調查限制');return;}
+                const idVal=String(currentUser.account||'').trim();
+                const nameVal=String(currentUser.name||'').trim();
+                const statusVal=document.getElementById('clock-status').value==='下班'?'下班':'上班';
+                const vehicleVal=String(document.getElementById('clock-vehicle').value||'').trim().slice(0,80);
+                if(!idVal||!nameVal){showToast('目前登入帳號資料不完整，請重新登入。','error','資料錯誤');return;}
+                let timeStr='',ts=0;
+                if(isRetro){
+                    const dateVal=document.getElementById('clock-retro-date').value,timeVal=document.getElementById('clock-retro-time').value;
+                    if(!dateVal||!timeVal){showToast('請完整選擇補打卡的日期與時分。','warning','資料不完整');return;}
+                    ts=new Date(`${dateVal}T${timeVal}:00`).getTime();
+                    if(!Number.isFinite(ts)){showToast('補打卡日期或時間格式無效。','warning','資料錯誤');return;}
+                    timeStr=`${dateVal} ${timeVal}:00 (補打卡)`;
+                }else{const now=new Date();ts=now.getTime();timeStr=now.toLocaleString('zh-TW',{hour12:false});}
+                const clockObj={id:'CLK-'+Date.now(),account:idVal,name:nameVal,status:statusVal,vehicle:vehicleVal||'無',time:timeStr,timestamp:ts,remark:'無'};
+                const collectionName=dept==='police'?'policeClocks':'fireClocks';
+                await fm.setDoc(fm.doc(db,collectionName,clockObj.id),clockObj);
+                if(dept==='police')appData.policeClocks.unshift({docId:clockObj.id,...clockObj});else appData.fireClocks.unshift({docId:clockObj.id,...clockObj});
                 closeModal('modal-clock');
-                if (dept === 'police') renderPoliceClocks();
-                else renderFireClocks();
-                renderMyProfile();
-                showToast('打卡登記成功。', 'success', '打卡成功');
-            } catch (e) {
-                showToast('打卡寫入失敗：' + e.message, 'error', '操作失敗');
-            }
+                if(dept==='police')renderPoliceClocks();else renderFireClocks();
+                renderAdminOverview();renderMyProfile();
+                showSubmitSuccessAnimation('打卡成功',`${statusVal}打卡已完成。`);
+            }catch(e){showToast('打卡寫入失敗：'+e.message,'error','操作失敗');}
+            finally{window.__clockSubmitting=false;if(btn){btn.disabled=false;btn.classList.remove('is-busy-action');}}
         }
 
         function generateNextCaseId(dept = currentActiveDepartmentForReport) {
@@ -4180,19 +4330,26 @@
             }
         }
 
+        function localDateKey(timestamp){const d=new Date(Number(timestamp||0));if(!Number.isFinite(d.getTime()))return '';return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
         function renderPoliceClocks() {
             const tbody = document.getElementById('police-clocks-tbody');
-            const dateFilter = document.getElementById('police-clocks-date-filter').value;
+            const dateFilter = document.getElementById('police-clocks-date-filter')?.value || '';
+            const statusFilter = document.getElementById('police-clocks-status-filter')?.value || 'all';
+            const countEl = document.getElementById('police-current-duty-count');
             if (!tbody) return;
 
-            tbody.innerHTML = '';
-            const filtered = appData.policeClocks.filter(c => {
-                if (!dateFilter) return true;
-                return c.time.startsWith(dateFilter);
-            });
+            const dutyCount = latestDutyCount(appData.policeClocks || []);
+            if (countEl) countEl.textContent = String(dutyCount);
 
+            const filtered = (appData.policeClocks || []).filter(c => {
+                if (dateFilter && localDateKey(c.timestamp) !== dateFilter) return false;
+                if (statusFilter !== 'all' && String(c.status || '') !== statusFilter) return false;
+                return true;
+            }).sort((a,b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
+
+            tbody.innerHTML = '';
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">尚無符合條件的警察出勤打卡紀錄。</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">尚無符合目前篩選條件的警察出勤打卡紀錄。</td></tr>`;
                 return;
             }
 
@@ -4200,13 +4357,13 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/40 transition";
                 tr.innerHTML = `
-                    <td class="p-4 font-medium text-white">${c.name} (${c.account})</td>
-                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${c.status === '上班' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">${c.status}</span></td>
-                    <td class="p-4 text-slate-300 font-mono">${c.vehicle}</td>
-                    <td class="p-4 text-slate-300 text-xs">${c.time}</td>
-                    <td class="p-4 text-slate-400 text-xs">${c.remark}</td>
+                    <td class="p-4 font-medium text-white">${escapeHtml(c.name || '--')} (${escapeHtml(c.account || '--')})</td>
+                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${c.status === '上班' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">${escapeHtml(c.status || '--')}</span></td>
+                    <td class="p-4 text-slate-300 font-mono">${escapeHtml(c.vehicle || '無')}</td>
+                    <td class="p-4 text-slate-300 text-xs">${escapeHtml(c.time || formatDateTime(c.timestamp))}</td>
+                    <td class="p-4 text-slate-400 text-xs">${escapeHtml(c.remark || '無')}</td>
                     <td class="p-4 text-right">
-                        ${canManageClockRecords() ? `<div class="flex gap-2 justify-end"><button onclick="openEditClockModal('police', '${c.docId || c.id}')" class="px-2.5 py-1 bg-slate-800 text-slate-200 rounded-lg text-xs">編輯</button><button onclick="deleteClockRecord('police', '${c.docId || c.id}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button></div>` : ''}
+                        ${canManageClockRecords() ? `<div class="flex gap-2 justify-end"><button type="button" onclick="openEditClockModal('police', '${String(c.docId || c.id || '').replace(/'/g, "\\'")}')" class="min-h-[40px] px-2.5 py-1 bg-slate-800 text-slate-200 rounded-lg text-xs">編輯</button><button type="button" onclick="deleteClockRecord('police', '${String(c.docId || c.id || '').replace(/'/g, "\\'")}')" class="min-h-[40px] px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button></div>` : ''}
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -4311,6 +4468,31 @@
             document.getElementById(`${dept}-calc-details`).textContent = `統計區間：${startInput} 至 ${endInput} | 共有 ${userClocks.length} 筆配對出勤紀錄`;
         }
 
+        const USER_PERMISSION_DEFINITIONS = {
+            normal: '一般基層人員',
+            high: '高層長官',
+            senior: '高階成員',
+            admin: '最高管理員',
+            academyInstructor: '警專教官'
+        };
+        const USER_ROLE_PRIORITY = ['admin','high','senior','normal'];
+        function getUserPermissions(u) {
+            if (!u) return [];
+            const raw = Array.isArray(u.permissions) && u.permissions.length ? u.permissions : (u.role ? [u.role] : []);
+            const perms = [...new Set(raw.filter(x => USER_PERMISSION_DEFINITIONS[x]))];
+            if (u.role && USER_PERMISSION_DEFINITIONS[u.role] && !perms.includes(u.role)) perms.push(u.role);
+            return perms;
+        }
+        function getEffectiveRole(u) {
+            const perms = getUserPermissions(u);
+            return USER_ROLE_PRIORITY.find(x => perms.includes(x)) || 'normal';
+        }
+        function hasUserPermission(u, permission) { return getUserPermissions(u).includes(permission); }
+        function isAcademyInstructor(u=currentUser) { return !!u && (hasUserPermission(u,'academyInstructor') || getEffectiveRole(u)==='admin'); }
+        function canAccessManagementCenter(u=currentUser) { return !!u && (getEffectiveRole(u)==='admin' || hasUserPermission(u,'academyInstructor')); }
+        function permissionDisplayText(u) {
+            return getUserPermissions(u).map(p => USER_PERMISSION_DEFINITIONS[p]).join('、') || '未設定';
+        }
         function getUnitDisplayNames(u) {
             const units = u.units || [u.unit]; const names=[];
             if (units.includes('police')) names.push(`警察／${u.policeDivision || '未指定分隊'}`);
@@ -4355,9 +4537,8 @@
                 const local=(appData.loginFailures||[]).find(x=>String(x.docId||x.deviceKey)===String(deviceKey));
                 let attempts=Array.isArray(local?.attempts)?local.attempts.filter(t=>Number(t)>windowStart):[];
                 // 以雲端最新資料為準，避免重新整理頁面後遺失失敗次數。
-                const failureSnap=await fm.getDocs(fm.collection(db,'loginFailures'));
-                const failureDoc=failureSnap.docs.find(d=>String(d.id)===String(deviceKey));
-                if(failureDoc){
+                const failureDoc=await fm.getDoc(fm.doc(db,'loginFailures',deviceKey));
+                if(failureDoc.exists()){
                     const cloud=failureDoc.data()||{};
                     attempts=Array.isArray(cloud.attempts)?cloud.attempts.filter(t=>Number(t)>windowStart):attempts;
                 }
@@ -4395,7 +4576,7 @@
 
         async function updateCurrentUserPresence(online){if(!currentUser||!fm||!db)return;const now=Date.now();currentUser.online=!!online;currentUser.lastSeen=online?now:0;const localUser=appData.users.find(u=>String(u.account)===String(currentUser.account));if(localUser){localUser.online=currentUser.online;localUser.lastSeen=currentUser.lastSeen;}try{await fm.updateDoc(fm.doc(db,'users',currentUser.docId||currentUser.account),{online:!!online,lastSeen:online?now:0});}catch(e){}}
         function isUserOnline(u){return !!u?.online&&Number(u.lastSeen||0)>0&&(Date.now()-Number(u.lastSeen))<90000;}
-        async function refreshAdminOnlineUsers(){if(!currentUser||currentUser.role!=='admin'||!fm||!db)return;try{const snap=await fm.getDocs(fm.collection(db,'users'));appData.users=snap.docs.map(d=>{const data=d.data();return {docId:d.id,...data,units:data.units||(data.unit?[data.unit]:['admin'])};});if(currentUser){const fresh=appData.users.find(u=>String(u.account)===String(currentUser.account));if(fresh)currentUser=fresh;}renderAdminOnlineUsers();}catch(e){renderAdminOnlineUsers();}}
+        async function refreshAdminOnlineUsers(){if(!currentUser||currentUser.role!=='admin'||!fm||!db)return;try{const snap=await fm.getDocs(fm.collection(db,'users'));appData.users=snap.docs.map(d=>{const data=d.data();return {docId:d.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};});if(currentUser){const fresh=appData.users.find(u=>String(u.account)===String(currentUser.account));if(fresh)currentUser=fresh;}renderAdminOnlineUsers();}catch(e){renderAdminOnlineUsers();}}
         function startAdminPresenceRefresh(){clearInterval(window.__adminPresenceTimer);window.__adminPresenceTimer=setInterval(()=>{if(currentUser&&currentUser.role==='admin'&&!document.getElementById('tab-admin')?.classList.contains('hidden'))refreshAdminOnlineUsers();},15000);}
         function stopAdminPresenceRefresh(){clearInterval(window.__adminPresenceTimer);window.__adminPresenceTimer=null;}
         function renderAdminOnlineUsers(){const c=document.getElementById('admin-online-list');if(!c)return;c.innerHTML=(appData.users||[]).map(u=>{const on=isUserOnline(u);return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between"><div><b class="text-white">${u.name||'--'}</b><div class="text-xs text-slate-500 font-mono">${u.account}${u.staffNumber?`／${u.staffNumber}`:''}</div></div><span class="px-3 py-1 rounded-full text-xs ${on?'bg-emerald-500/10 text-emerald-400':'bg-slate-800 text-slate-400'}">● ${on?'在線':'離線'}</span></div>`;}).join('');}
@@ -4454,7 +4635,7 @@
             users.forEach(u => {
                 const units = u.units || [u.unit];
                 const unitNames = getUnitDisplayNames(u);
-                const roleText = u.role === 'admin' ? '最高管理員' : u.role === 'high' ? '高層長官' : u.role === 'senior' ? '高階成員' : '一般基層';
+                const roleText = permissionDisplayText(u);
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/40 transition";
@@ -4463,7 +4644,7 @@
                     <td class="p-4 font-mono text-cyan-400">${u.staffNumber||'--'}</td>
                     <td class="p-4 text-slate-200">${u.name}</td>
                     <td class="p-4 text-slate-300">${unitNames}</td>
-                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : u.role === 'high' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : u.role === 'senior' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${roleText}</span></td>
+                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${getEffectiveRole(u) === 'admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : getEffectiveRole(u) === 'high' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : getEffectiveRole(u) === 'senior' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${roleText}</span></td>
                     <td class="p-4 text-right space-x-2">
                         ${(!isSuperAdminAccount(u.account) || (currentUser && isSuperAdminAccount(currentUser.account))) ? `<button type="button" onclick="openEditUserModal('${u.account}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition">編輯</button>` : ''}
                         ${!isSuperAdminAccount(u.account) ? `<button type="button" onclick="deleteUser('${u.account}')" class="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs transition">刪除</button>` : ''}
@@ -4481,20 +4662,22 @@
             document.getElementById('new-user-account').value = '';
             document.getElementById('new-user-name').value = '';
             document.getElementById('new-user-password').value = ''; document.getElementById('new-user-staff-number').value = '';
-            document.querySelectorAll('input[name="new-user-units"]').forEach(cb => cb.checked = false); document.getElementById('new-user-role').value='normal'; document.getElementById('new-user-police-division').value=''; document.getElementById('new-user-fire-division').value=''; syncUnitDivisionVisibility('new'); document.getElementById('modal-create-user').classList.remove('hidden');
+            document.querySelectorAll('input[name="new-user-units"]').forEach(cb => cb.checked = false); document.querySelectorAll('input[name="new-user-permissions"]').forEach(cb => cb.checked = cb.value==='normal'); document.getElementById('new-user-police-division').value=''; document.getElementById('new-user-fire-division').value=''; syncUnitDivisionVisibility('new'); document.getElementById('modal-create-user').classList.remove('hidden');
         }
 
             async function submitNewUser() {
             if (!currentUser || currentUser.role !== 'admin') { showToast('只有最高管理員可以建立帳號。','warning','權限不足'); return; }
-            const account=document.getElementById('new-user-account').value.trim(), name=document.getElementById('new-user-name').value.trim(), pass=document.getElementById('new-user-password').value.trim(), role=document.getElementById('new-user-role').value, staffNumber=document.getElementById('new-user-staff-number')?.value.trim()||'';
+            const account=document.getElementById('new-user-account').value.trim(), name=document.getElementById('new-user-name').value.trim(), pass=document.getElementById('new-user-password').value.trim(), staffNumber=document.getElementById('new-user-staff-number')?.value.trim()||'';
+            const permissions=[...new Set(Array.from(document.querySelectorAll('input[name="new-user-permissions"]:checked')).map(x=>x.value))];
+            const role=USER_ROLE_PRIORITY.find(x=>permissions.includes(x))||'normal';
             const units=Array.from(document.querySelectorAll('input[name="new-user-units"]:checked')).map(x=>x.value);
             const policeDivision=document.getElementById('new-user-police-division').value, fireDivision=document.getElementById('new-user-fire-division').value;
-            if (!account || !name || !pass || !units.length) { showToast('請完整填寫帳號、名稱、密碼並至少勾選一個單位。','error','資料不完整'); return; }
+            if (!account || !name || !pass || !units.length || !permissions.length) { showToast('請完整填寫帳號、名稱、密碼並至少勾選一個單位。','error','資料不完整'); return; }
             if (units.length>2) { showToast('每個帳號最多只能勾選兩個單位。','warning','資料不符合'); return; }
             if (isSuperAdminAccount(account)) { showToast('Dsuensx 為系統最高權限保護帳號。','warning','操作受限'); return; }
             if (!validateUnitSelections(units,policeDivision,fireDivision)) return;
             if (appData.users.some(u=>String(u.account).toLowerCase()===account.toLowerCase())) { showToast('此帳號／編號已存在。','warning','帳號重複'); return; }
-            const u={account,name,pass,role,units,staffNumber,policeDivision:units.includes('police')?policeDivision:'',fireDivision:units.includes('fire')?fireDivision:''};
+            const u={account,name,pass,role,permissions,units,staffNumber,policeDivision:units.includes('police')?policeDivision:'',fireDivision:units.includes('fire')?fireDivision:''};
             try { await fm.setDoc(fm.doc(db,'users',account),u); appData.users.push(u); closeModal('modal-create-user'); renderAdminUsers(); populateMemberSelects(); showToast('新公職帳號建立成功。','success','建立成功'); }
             catch(e){ showToast('建立失敗：'+e.message,'error','操作失敗'); }
         }
@@ -4514,7 +4697,7 @@
             document.getElementById('edit-user-original-account').value = u.account;
             document.getElementById('edit-user-account-input').value = u.account;
             document.getElementById('edit-user-name-input').value = u.name;
-            document.getElementById('edit-user-role-input').value = u.role;
+            const editPermissions=getUserPermissions(u); document.querySelectorAll('input[name="edit-user-permissions"]').forEach(cb=>cb.checked=editPermissions.includes(cb.value));
             document.getElementById('edit-user-password-input').value = ''; document.getElementById('edit-user-staff-number-input').value = u.staffNumber || ''; const ea=document.getElementById('edit-user-account-input'); if(ea){ea.readOnly=u.role==='admin';ea.classList.toggle('opacity-60',u.role==='admin');}
 
             const units = u.units || [u.unit];
@@ -4527,13 +4710,15 @@
             const origAccount=document.getElementById('edit-user-original-account').value, superTarget=isSuperAdminAccount(origAccount), superOperator=!!currentUser&&isSuperAdminAccount(currentUser.account);
             if (!currentUser || currentUser.role!=='admin') { showToast('只有最高管理員可以修改帳號資料。','warning','權限不足'); return; }
             if (superTarget && !superOperator) { showToast('Dsuensx 最高權限帳號受到保護，僅本人可以修改。','warning','權限不足'); return; }
-            let account=document.getElementById('edit-user-account-input').value.trim(), name=document.getElementById('edit-user-name-input').value.trim(), role=document.getElementById('edit-user-role-input').value;
+            let account=document.getElementById('edit-user-account-input').value.trim(), name=document.getElementById('edit-user-name-input').value.trim();
+            let permissions=[...new Set(Array.from(document.querySelectorAll('input[name="edit-user-permissions"]:checked')).map(x=>x.value))];
+            let role=USER_ROLE_PRIORITY.find(x=>permissions.includes(x))||'normal';
             const pass=document.getElementById('edit-user-password-input').value.trim(); const staffNumber=document.getElementById('edit-user-staff-number-input')?.value.trim()||'';
             let units=Array.from(document.querySelectorAll('input[name="edit-user-units"]:checked')).map(x=>x.value);
             const policeDivision=document.getElementById('edit-user-police-division').value || '新莊分局', fireDivision=document.getElementById('edit-user-fire-division').value;
-            if (superTarget) { account='Dsuensx'; role='admin'; units=['admin','police']; }
+            if (superTarget) { account='Dsuensx'; role='admin'; permissions=['admin']; units=['admin','police']; }
             if (appData.users.find(x=>x.account===origAccount)?.role==='admin' || role==='admin') account=origAccount;
-            if (!account || !name || !units.length) { showToast('請完整填寫帳號、名稱並至少勾選一個單位。','error','資料不完整'); return; }
+            if (!account || !name || !units.length || !permissions.length) { showToast('請完整填寫帳號、名稱並至少勾選一個單位。','error','資料不完整'); return; }
             if (units.length>2 && !superTarget) { showToast('每個帳號最多只能勾選兩個單位。','warning','資料不符合'); return; }
             if (!validateUnitSelections(units,policeDivision,fireDivision)) return;
             const u=appData.users.find(x=>x.account===origAccount); if(!u) return;
@@ -4545,8 +4730,8 @@
             if(oldAccount!==String(account)) changedFields.push(`帳號：${oldAccount} → ${account}`);
             if(oldStaffNumber!==String(staffNumber)) changedFields.push(`編號：${oldStaffNumber||'未設定'} → ${staffNumber||'未設定'}`);
             if(pass && pass!==oldPass) changedFields.push('密碼：已變更（不顯示密碼內容）');
-            u.account=account; u.name=name; u.role=role; u.units=units; u.staffNumber=staffNumber; u.policeDivision=units.includes('police')?policeDivision:''; u.fireDivision=units.includes('fire')?fireDivision:''; if(pass)u.pass=pass; if(superTarget)u.protected=true;
-            try { const docId=u.docId||origAccount; if(!superTarget&&origAccount!==account) await fm.deleteDoc(fm.doc(db,'users',docId)); await fm.setDoc(fm.doc(db,'users',superTarget?docId:account),{account:u.account,name:u.name,pass:u.pass,role:u.role,units:u.units,staffNumber:u.staffNumber||'',policeDivision:u.policeDivision||'',fireDivision:u.fireDivision||'',online:u.online||false,lastSeen:u.lastSeen||0,lastLoginAt:u.lastLoginAt||0,lastDevice:u.lastDevice||null,...(superTarget?{protected:true}:{})}); u.docId=superTarget?docId:account; if(superOperator&&superTarget)currentUser={...u};
+            u.account=account; u.name=name; u.role=role; u.permissions=permissions; u.units=units; u.staffNumber=staffNumber; u.policeDivision=units.includes('police')?policeDivision:''; u.fireDivision=units.includes('fire')?fireDivision:''; if(pass)u.pass=pass; if(superTarget)u.protected=true;
+            try { const docId=u.docId||origAccount; if(!superTarget&&origAccount!==account) await fm.deleteDoc(fm.doc(db,'users',docId)); await fm.setDoc(fm.doc(db,'users',superTarget?docId:account),{account:u.account,name:u.name,pass:u.pass,role:u.role,permissions:u.permissions,units:u.units,staffNumber:u.staffNumber||'',policeDivision:u.policeDivision||'',fireDivision:u.fireDivision||'',online:u.online||false,lastSeen:u.lastSeen||0,lastLoginAt:u.lastLoginAt||0,lastDevice:u.lastDevice||null,...(superTarget?{protected:true}:{})}); u.docId=superTarget?docId:account; if(superOperator&&superTarget)currentUser={...u};
                 if(changedFields.length){
                     const logTarget=oldAccount!==String(account)?`${oldAccount} → ${account}`:oldAccount;
                     await logAdminAction('編輯帳號資訊',logTarget,`管理員帳號：${currentUser?.account||'未知'}；${changedFields.join('；')}`);
@@ -4710,10 +4895,10 @@
         function announcementExpiry(duration,now){return duration==='1d'?now+86400000:duration==='7d'?now+7*86400000:0;}
         function activeAnnouncements(){const now=Date.now();return (appData.announcements||[]).filter(a=>a.active!==false&&(Number(a.expiresAt||0)===0||Number(a.expiresAt)>now)).sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0));}
         let announcementTimer=null,announcementIndex=0;
-        function renderSiteAnnouncements(){const bar=document.getElementById('site-announcement-bar'),track=document.getElementById('announcement-track');if(!bar||!track)return;const rows=activeAnnouncements();if(!rows.length){bar.classList.add('hidden');track.innerHTML='';clearInterval(announcementTimer);announcementTimer=null;return;}bar.classList.remove('hidden');track.innerHTML=rows.map((a,i)=>`<div class="announcement-item ${i===0?'active':''}" data-announcement-index="${i}"><div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center"><i class="fa-solid fa-bullhorn"></i></div><div class="announcement-content"><div class="announcement-text text-sm font-semibold text-slate-100">${a.text||''}</div><div class="text-[11px] text-slate-500 mt-0.5">發布時間：${formatDateTime(a.createdAt,a.time)}</div></div><div class="announcement-publisher text-xs text-slate-400">發布人：<span class="text-amber-300 font-semibold">${a.publisher||'未填寫'}</span></div></div>`).join('');announcementIndex=0;clearInterval(announcementTimer);if(rows.length>1)announcementTimer=setInterval(()=>rotateAnnouncements(),5000);}
+        function renderSiteAnnouncements(){const bar=document.getElementById('site-announcement-bar'),track=document.getElementById('announcement-track');if(!bar||!track)return;const rows=activeAnnouncements();if(!rows.length){bar.classList.add('hidden');track.innerHTML='';clearInterval(announcementTimer);announcementTimer=null;return;}bar.classList.remove('hidden');track.innerHTML=rows.map((a,i)=>`<div class="announcement-item ${i===0?'active':''}" data-announcement-index="${i}"><div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center"><i class="fa-solid fa-bullhorn"></i></div><div class="announcement-content"><div class="announcement-text text-sm font-semibold text-slate-100">${escapeHtml(a.text||'')}</div><div class="text-[11px] text-slate-500 mt-0.5">發布時間：${escapeHtml(formatDateTime(a.createdAt,a.time))}</div></div><div class="announcement-publisher text-xs text-slate-400">發布人：<span class="text-amber-300 font-semibold">${escapeHtml(a.publisher||'未填寫')}</span></div></div>`).join('');announcementIndex=0;clearInterval(announcementTimer);if(rows.length>1)announcementTimer=setInterval(()=>rotateAnnouncements(),5000);}
         function rotateAnnouncements(){const items=[...document.querySelectorAll('.announcement-item')];if(items.length<2)return;const old=items[announcementIndex%items.length],next=items[(announcementIndex+1)%items.length];old.classList.remove('active');old.classList.add('exit-up');next.classList.remove('exit-up');next.classList.add('active');setTimeout(()=>old.classList.remove('exit-up'),650);announcementIndex=(announcementIndex+1)%items.length;}
         async function publishAnnouncement(){if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以發布公告。','warning','權限不足');return;}const text=document.getElementById('announcement-text-input')?.value.trim()||'',publisher=document.getElementById('announcement-publisher-input')?.value.trim()||'',duration=document.getElementById('announcement-duration-input')?.value||'1d';if(!text||!publisher){showToast('請填寫公告內容與發布人。','warning','資料不完整');return;}const now=Date.now(),id=`ANN-${now}`,obj={id,text,publisher,duration,createdAt:now,time:formatDateTime(now),expiresAt:announcementExpiry(duration,now),active:true,createdBy:currentUser.account};try{await fm.setDoc(fm.doc(db,'announcements',id),obj);appData.announcements.push({docId:id,...obj});document.getElementById('announcement-text-input').value='';renderAdminAnnouncements();renderSiteAnnouncements();showToast('公告已發布至首頁。','success','發布成功');}catch(e){showToast('公告發布失敗：'+e.message,'error','操作失敗');}}
-        function renderAdminAnnouncements(){const c=document.getElementById('admin-announcements-list');if(!c)return;const rows=[...(appData.announcements||[])].sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0));c.innerHTML=rows.length?rows.map(a=>{const expired=a.expiresAt&&Number(a.expiresAt)<=Date.now();const active=a.active!==false&&!expired;const key=String(a.docId||a.id||'').replace(/'/g,"\\'");return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col lg:flex-row lg:items-center gap-4"><div class="flex-1 min-w-0"><div class="text-sm font-semibold text-white whitespace-pre-wrap break-words">${a.text||''}</div><div class="text-xs text-slate-500 mt-1">發布人：${a.publisher||'--'}　／　${a.duration==='manual'?'手動下架':a.duration==='7d'?'7 天':'1 天'}　／　${formatDateTime(a.createdAt,a.time)}</div></div><div class="announcement-admin-actions"><span class="px-2.5 py-1 rounded-full text-xs ${active?'bg-emerald-500/10 text-emerald-400':'bg-slate-800 text-slate-500'}">${active?'發布中':'已下架'}</span>${active?`<button type="button" onclick="unpublishAnnouncement('${key}')" class="px-3 py-1.5 bg-slate-800 text-slate-200 rounded-lg text-xs">手動下架</button>`:`<button type="button" onclick="republishAnnouncement('${key}')" class="px-3 py-1.5 bg-amber-600/20 text-amber-300 rounded-lg text-xs">重新發布</button>`}<button type="button" onclick="deleteAnnouncement('${key}')" class="px-3 py-1.5 bg-red-600/15 text-red-300 hover:bg-red-600/25 rounded-lg text-xs">移除</button></div></div>`}).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">尚未建立公告。</div>';}
+        function renderAdminAnnouncements(){const c=document.getElementById('admin-announcements-list');if(!c)return;const rows=[...(appData.announcements||[])].sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0));c.innerHTML=rows.length?rows.map(a=>{const expired=a.expiresAt&&Number(a.expiresAt)<=Date.now();const active=a.active!==false&&!expired;const key=String(a.docId||a.id||'').replace(/'/g,"\\'");return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col lg:flex-row lg:items-center gap-4"><div class="flex-1 min-w-0"><div class="text-sm font-semibold text-white whitespace-pre-wrap break-words">${escapeHtml(a.text||'')}</div><div class="text-xs text-slate-500 mt-1">發布人：${escapeHtml(a.publisher||'--')}　／　${a.duration==='manual'?'手動下架':a.duration==='7d'?'7 天':'1 天'}　／　${escapeHtml(formatDateTime(a.createdAt,a.time))}</div></div><div class="announcement-admin-actions"><span class="px-2.5 py-1 rounded-full text-xs ${active?'bg-emerald-500/10 text-emerald-400':'bg-slate-800 text-slate-500'}">${active?'發布中':'已下架'}</span>${active?`<button type="button" onclick="unpublishAnnouncement('${key}')" class="px-3 py-1.5 bg-slate-800 text-slate-200 rounded-lg text-xs">手動下架</button>`:`<button type="button" onclick="republishAnnouncement('${key}')" class="px-3 py-1.5 bg-amber-600/20 text-amber-300 rounded-lg text-xs">重新發布</button>`}<button type="button" onclick="deleteAnnouncement('${key}')" class="px-3 py-1.5 bg-red-600/15 text-red-300 hover:bg-red-600/25 rounded-lg text-xs">移除</button></div></div>`}).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">尚未建立公告。</div>';}
         async function deleteAnnouncement(id){if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以移除網站公告。','warning','權限不足');return;}const a=appData.announcements.find(x=>String(x.docId||x.id)===String(id));if(!a)return;if(!(await showConfirm(`確定要永久移除這則網站公告嗎？\n\n${a.text||''}\n\n移除後將無法恢復。`,'移除網站公告','確定移除')))return;try{const docId=a.docId||a.id;await fm.deleteDoc(fm.doc(db,'announcements',docId));appData.announcements=appData.announcements.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('移除網站公告',id);renderAdminAnnouncements();renderSiteAnnouncements();showToast('公告已永久移除。','success','移除成功');}catch(e){showToast('公告移除失敗：'+e.message,'error','操作失敗');}}
         async function unpublishAnnouncement(id){const a=appData.announcements.find(x=>String(x.docId||x.id)===String(id));if(!a)return;try{await fm.updateDoc(fm.doc(db,'announcements',a.docId||a.id),{active:false,unpublishedAt:Date.now(),unpublishedBy:currentUser.account});a.active=false;await logAdminAction('手動下架網站公告',id);renderAdminAnnouncements();renderSiteAnnouncements();showToast('公告已下架。','success','操作完成');}catch(e){showToast('下架失敗：'+e.message,'error','操作失敗');}}
         async function republishAnnouncement(id){const a=appData.announcements.find(x=>String(x.docId||x.id)===String(id));if(!a)return;const now=Date.now(),expires=announcementExpiry(a.duration,now);try{await fm.updateDoc(fm.doc(db,'announcements',a.docId||a.id),{active:true,createdAt:now,time:formatDateTime(now),expiresAt:expires});a.active=true;a.createdAt=now;a.time=formatDateTime(now);a.expiresAt=expires;await logAdminAction('重新發布網站公告',id);renderAdminAnnouncements();renderSiteAnnouncements();}catch(e){showToast('重新發布失敗：'+e.message,'error','操作失敗');}}
