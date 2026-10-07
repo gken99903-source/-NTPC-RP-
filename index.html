@@ -199,6 +199,14 @@
         }
 
         /* 行動裝置：案件表單使用獨立滾動面板，避免手機無法滑到最下方 */
+        .modal-panel, .mobile-modal-scroll {
+            max-height: min(92dvh, 760px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-gutter: stable;
+        }
+
         .mobile-modal-scroll {
             max-height: min(90vh, calc(100dvh - 1rem));
             overflow-y: auto !important;
@@ -1894,6 +1902,8 @@
             if (fireCalcBtn) fireCalcBtn.addEventListener('click', () => calculateMemberHours('fire'));
             const academyCodeInput = document.getElementById('academy-code-input');
             if (academyCodeInput) academyCodeInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleAcademyCodeLogin(); });
+            const loginPasswordInput = document.getElementById('login-password');
+            if (loginPasswordInput) loginPasswordInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); handleLogin(); } });
             clearInterval(window.__academyCodeTimer);
             window.__academyCodeTimer = setInterval(() => {
                 renderAdminAcademyCodes();
@@ -3558,7 +3568,7 @@
                     const pendingTarget = dept === 'police' ? appData.policePendingReports : appData.firePendingReports;
                     pendingTarget.splice(0, pendingTarget.length, ...getUniquePendingRows([{docId: caseId, ...reportObj}, ...pendingTarget], r => r.caseId || r.docId));
                     const deptName = dept === 'police' ? '警局' : '消防局';
-                    const notification = { type:'report', department:dept, caseId, recipientAccount:currentUser.account, status:'pending', title:'案件已送出，等待高層審核', message:`案件 ${caseId} 已送入${deptName}高層審核系統。`, timestamp:Date.now(), read:false };
+                    const notification = { type:'report', department:dept, caseId, recipientAccount:currentUser.account, recipientAccountNormalized:String(currentUser.account||'').trim().toLowerCase(), status:'pending', title:'案件已送出，等待高層審核', message:`案件 ${caseId} 已送入${deptName}高層審核系統。`, timestamp:Date.now(), read:false };
                     const nref = fm.doc(fm.collection(db,'reportNotifications'));
                     await fm.setDoc(nref, notification);
                     appData.reportNotifications.unshift({docId:nref.id,...notification});
@@ -3617,10 +3627,10 @@
             : `<div class="bg-slate-900 border border-red-500/20 rounded-2xl p-6 shadow-xl space-y-4"><div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 font-mono">${r.caseId||'--'}</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">消防待審核</span><h4 class="text-base font-bold text-white">${r.title||'未命名案件'}</h4></div><span class="text-xs text-slate-400">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">寄件人</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div><div><span class="text-slate-500 block">寄件帳號</span><span class="font-mono text-cyan-400">${r.registeredByAccount||'--'}</span></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">所犯罪名／違反條例</span><span class="font-semibold text-rose-300">${(r.violations||[]).join('、')||'未選擇'}</span></div><div><span class="text-slate-500 block">總監獄時間</span><span class="font-semibold text-amber-300">${formatJailMinutes(r.jailMinutes)}${r.organizedCrime?'（組織犯罪 +⅓）':''}</span></div></div><p class="text-sm text-slate-300 line-clamp-4">${r.content||''}</p><div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800"><button type="button" onclick="viewPendingFireReportDetail('${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]">檢視完整案件</button><button type="button" onclick="approveFirePendingReport('${r.caseId}')" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs min-h-[44px]">審核完畢並送出</button><button type="button" onclick="openRejectFirePending('${r.caseId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]">退件</button></div></div>`;}).join('');
         }
         function viewPendingEMSReportDetail(id){const r=(appData.emsPendingReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r)return;const fields=[['主訴',r.chiefComplaint],['派遣類別',r.dispatchCategory],['傷患RP名稱 / ID',r.patient],['出勤單位 / 車輛',r.unitVehicle],['GCS評分 E',r.gcsE],['派遣時間',r.dispatchTime],['抵達時間',r.arrivalTime],['離開時間',r.leaveTime],['到院時間',r.hospitalTime],['返隊時間',r.returnTime],['填寫人',`${r.authorName||'--'} (${r.authorId||'--'})`],['建立時間',r.time||formatDateTime(r.timestamp)]];document.getElementById('ems-detail-id').textContent=r.id||r.docId;document.getElementById('ems-detail-title').textContent=`${r.patient||'傷患'} 的 EMS 待審報告`;document.getElementById('ems-detail-fields').innerHTML=fields.map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${k}</span><span class="text-sm text-slate-200">${v||'--'}</span></div>`).join('');document.getElementById('ems-detail-treatment').textContent=r.treatment||'--';renderEMSRemarkHistory(r);const actionHost=document.getElementById('ems-detail-action-bar');if(actionHost)actionHost.innerHTML=`<button type="button" onclick="closeModal('modal-ems-detail');approveEMSPendingReport('${r.id||r.docId}')" class="px-3 py-2 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">審核完畢並送出</button><button type="button" onclick="closeModal('modal-ems-detail');openRejectEMSPending('${r.id||r.docId}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">退件</button>`;document.getElementById('modal-ems-detail').classList.remove('hidden');}
-        async function approveEMSPendingReport(id){if(!canReviewFireReports()){showToast('只有消防高層、高階成員與管理中心可以審核 EMS 報告。','warning','權限不足');return;}const r=(appData.emsPendingReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r)return;try{const shared={...r,reviewStatus:'approved',reviewedAt:Date.now(),reviewedBy:currentUser.account};delete shared.rejectionReason;await fm.setDoc(fm.doc(db,'emsReports',id),shared);await fm.deleteDoc(fm.doc(db,'emsPendingReports',r.docId||r.id));appData.emsReports.unshift({docId:id,...shared});appData.emsPendingReports=appData.emsPendingReports.filter(x=>String(x.docId||x.id)!==String(id));await removePendingReportNotifications(id,r.registeredByAccount||r.authorId);const n={type:'report',department:'fire',caseId:id,recipientAccount:r.registeredByAccount||r.authorId,status:'approved',title:'EMS報告審核完成',message:`EMS報告 ${id} 已經消防高層審核完畢並正式送出。`,timestamp:Date.now(),read:false};const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);appData.reportNotifications.unshift({docId:nr.id,...n});await logAdminAction('EMS報告消防高層審核完畢並送出',id);renderFireReview();renderEMSReports();renderPersonalNotifications();renderMyProfile();showSubmitSuccessAnimation('EMS審核完成','EMS報告已審核完畢並同步至共享 EMS 報告庫。');}catch(e){showToast('EMS審核送出失敗：'+e.message,'error','操作失敗');}}
+        async function approveEMSPendingReport(id){if(!canReviewFireReports()){showToast('只有消防高層、高階成員與管理中心可以審核 EMS 報告。','warning','權限不足');return;}const r=(appData.emsPendingReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r)return;try{const shared={...r,reviewStatus:'approved',reviewedAt:Date.now(),reviewedBy:currentUser.account};delete shared.rejectionReason;const finalDocId=await resolveReportDocId('emsReports',r,id);const pendingDocId=await resolveReportDocId('emsPendingReports',r,id);await fm.setDoc(fm.doc(db,'emsReports',finalDocId),shared);await fm.deleteDoc(fm.doc(db,'emsPendingReports',pendingDocId));appData.emsReports.unshift({docId:finalDocId,...shared});appData.emsPendingReports=appData.emsPendingReports.filter(x=>String(x.docId||x.id)!==String(id));await removePendingReportNotifications(id,r.registeredByAccount||r.authorId);const n={type:'report',department:'fire',caseId:id,recipientAccount:r.registeredByAccount||r.authorId,status:'approved',title:'EMS報告審核完成',message:`EMS報告 ${id} 已經消防高層審核完畢並正式送出。`,timestamp:Date.now(),read:false};const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);appData.reportNotifications.unshift({docId:nr.id,...n});await logAdminAction('EMS報告消防高層審核完畢並送出',id);renderFireReview();renderEMSReports();renderPersonalNotifications();renderMyProfile();showSubmitSuccessAnimation('EMS審核完成','EMS報告已審核完畢並同步至共享 EMS 報告庫。');}catch(e){showToast('EMS審核送出失敗：'+e.message,'error','操作失敗');}}
         function openRejectEMSPending(id){if(!canReviewFireReports()){showToast('只有消防高層、高階成員與管理中心可以退件 EMS 報告。','warning','權限不足');return;}document.getElementById('review-reject-case-id').value=id;document.getElementById('review-reject-dept').value='ems';document.getElementById('review-reject-reason').value='';document.getElementById('modal-review-reject').classList.remove('hidden');}
         function viewPendingFireReportDetail(caseId){ const r=(appData.firePendingReports||[]).find(x=>x.caseId===caseId); if(!r)return; viewReportDetailFromObject('fire',r,true,'fire'); }
-        async function approveFirePendingReport(caseId){ if(!canReviewFireReports()){showToast('只有消防高層、高階成員與管理中心可以審核案件。','warning','權限不足');return;} const r=(appData.firePendingReports||[]).find(x=>x.caseId===caseId); if(!r)return; try{const shared={...r,reviewStatus:'approved',reviewedAt:Date.now(),reviewedBy:currentUser.account};delete shared.rejectionReason;await fm.setDoc(fm.doc(db,'fireReports',caseId),shared);await fm.deleteDoc(fm.doc(db,'firePendingReports',r.docId||caseId));appData.fireReports.unshift({docId:caseId,...shared});appData.firePendingReports=appData.firePendingReports.filter(x=>x.caseId!==caseId);await removePendingReportNotifications(caseId,r.registeredByAccount);const n={type:'report',department:'fire',caseId,recipientAccount:r.registeredByAccount,status:'approved',title:'消防案件已審核完畢',message:`消防案件 ${caseId} 已經高層審核完畢並正式送出。`,timestamp:Date.now(),read:false};const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);appData.reportNotifications.unshift({docId:nr.id,...n});await logAdminAction('消防案件審核完畢並送出',caseId);renderFireReview();renderFireReports();renderMyProfile();showSubmitSuccessAnimation('審核完成','消防案件已審核完畢並同步至共享消防案件報告庫。');}catch(e){showToast('審核送出失敗：'+e.message,'error','操作失敗');}}
+        async function approveFirePendingReport(caseId){ if(!canReviewFireReports()){showToast('只有消防高層、高階成員與管理中心可以審核案件。','warning','權限不足');return;} const r=(appData.firePendingReports||[]).find(x=>x.caseId===caseId); if(!r)return; try{const shared={...r,reviewStatus:'approved',reviewedAt:Date.now(),reviewedBy:currentUser.account};delete shared.rejectionReason;const finalDocId=await resolveReportDocId('fireReports',r,caseId);const pendingDocId=await resolveReportDocId('firePendingReports',r,caseId);await fm.setDoc(fm.doc(db,'fireReports',finalDocId),shared);await fm.deleteDoc(fm.doc(db,'firePendingReports',pendingDocId));appData.fireReports.unshift({docId:finalDocId,...shared});appData.firePendingReports=appData.firePendingReports.filter(x=>x.caseId!==caseId);await removePendingReportNotifications(caseId,r.registeredByAccount);const n={type:'report',department:'fire',caseId,recipientAccount:r.registeredByAccount,recipientAccountNormalized:String(r.registeredByAccount||'').trim().toLowerCase(),status:'approved',title:'消防案件已審核完畢',message:`消防案件 ${caseId} 已經高層審核完畢並正式送出。`,timestamp:Date.now(),read:false};const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);appData.reportNotifications.unshift({docId:nr.id,...n});await logAdminAction('消防案件審核完畢並送出',caseId);renderFireReview();renderFireReports();renderMyProfile();showSubmitSuccessAnimation('審核完成','消防案件已審核完畢並同步至共享消防案件報告庫。');}catch(e){showToast('審核送出失敗：'+e.message,'error','操作失敗');}}
         function openRejectFirePending(caseId){if(!canReviewFireReports()){showToast('只有消防高層與管理中心可以退件。','warning','權限不足');return;}document.getElementById('review-reject-case-id').value=caseId;document.getElementById('review-reject-dept').value='fire';document.getElementById('review-reject-reason').value='';document.getElementById('modal-review-reject').classList.remove('hidden');}
                 function canReviewPoliceReports(){ return !!currentUser && (currentUser.role==='admin' || ((currentUser.role==='high' || currentUser.role==='senior') && userHasUnit('police'))); }
         function canEditReviewStatus(dept){
@@ -3638,6 +3648,18 @@
             document.getElementById('edit-review-status-value').value=r.reviewStatus||currentStatus||'pending'; document.getElementById('edit-review-status-reason').value=r.rejectionReason||'';
             document.getElementById('modal-edit-review-status').classList.remove('hidden');
         }
+        async function resolveReportDocId(collectionName, record, key){
+            const direct = String(record?.docId || '').trim();
+            if (direct) return direct;
+            const fallback = String(key || record?.caseId || record?.id || '').trim();
+            if (!fallback) return '';
+            try {
+                const snap = await fm.getDocs(fm.query(fm.collection(db, collectionName), fm.where('caseId','==',fallback)));
+                if (!snap.empty) return snap.docs[0].id;
+            } catch (e) { console.warn('resolveReportDocId failed', collectionName, fallback, e); }
+            return fallback;
+        }
+
         async function saveEditedReviewStatus(){
             const id=String(document.getElementById('edit-review-status-case-id').value||''), dept=document.getElementById('edit-review-status-dept').value||'police', status=document.getElementById('edit-review-status-value').value||'pending', reason=document.getElementById('edit-review-status-reason').value.trim();
             if(!canEditReviewStatus(dept)){showToast('權限不足。','warning','權限不足');return;}
@@ -3651,15 +3673,23 @@
                 const now=Date.now(), base={...r,reviewStatus:status,reviewedAt:now,reviewedBy:currentUser.account,updatedAt:now};
                 if(status==='rejected')base.rejectionReason=reason; else delete base.rejectionReason;
                 if(status==='approved'){
-                    await fm.setDoc(fm.doc(db,reportCol,id),base); if(p)await fm.deleteDoc(fm.doc(db,pendingCol,p.docId||p.caseId||p.id));
-                    appData[reportCol]=[{docId:id,...base},...reportList.filter(x=>String(x.caseId||x.id||x.docId)!==id)]; appData[pendingCol]=pendingList.filter(x=>String(x.caseId||x.id||x.docId)!==id);
+                    const sourcePendingDocId = p ? await resolveReportDocId(pendingCol,p,id) : '';
+                    const targetReportDocId = a ? await resolveReportDocId(reportCol,a,id) : (p ? (await resolveReportDocId(pendingCol,p,id)) : id);
+                    await fm.setDoc(fm.doc(db,reportCol,targetReportDocId),base);
+                    if(p && sourcePendingDocId) await fm.deleteDoc(fm.doc(db,pendingCol,sourcePendingDocId));
+                    appData[reportCol]=[{docId:targetReportDocId,...base},...reportList.filter(x=>String(x.caseId||x.id||x.docId)!==id)];
+                    appData[pendingCol]=pendingList.filter(x=>String(x.caseId||x.id||x.docId)!==id);
                 }else{
-                    await fm.setDoc(fm.doc(db,pendingCol,id),base); if(a)await fm.deleteDoc(fm.doc(db,reportCol,a.docId||a.caseId||a.id));
-                    appData[pendingCol]=[{docId:id,...base},...pendingList.filter(x=>String(x.caseId||x.id||x.docId)!==id)]; appData[reportCol]=reportList.filter(x=>String(x.caseId||x.id||x.docId)!==id);
+                    const targetPendingDocId = p ? await resolveReportDocId(pendingCol,p,id) : id;
+                    const sourceReportDocId = a ? await resolveReportDocId(reportCol,a,id) : '';
+                    await fm.setDoc(fm.doc(db,pendingCol,targetPendingDocId),base);
+                    if(a && sourceReportDocId) await fm.deleteDoc(fm.doc(db,reportCol,sourceReportDocId));
+                    appData[pendingCol]=[{docId:targetPendingDocId,...base},...pendingList.filter(x=>String(x.caseId||x.id||x.docId)!==id)];
+                    appData[reportCol]=reportList.filter(x=>String(x.caseId||x.id||x.docId)!==id);
                 }
                 await removePendingReportNotifications(id,base.registeredByAccount||base.authorId);
                 const recipient=base.registeredByAccount||base.authorId, label=dept==='ems'?'EMS報告':'案件';
-                const n={type:'report',department:dept==='police'?'police':'fire',caseId:id,recipientAccount:recipient,status,title:status==='approved'?`${label}審核完成`:status==='rejected'?`${label}遭退件`:`${label}重新進入審核`,message:status==='approved'?`${label} ${id} 已由高層重新確認為「通過」。`:status==='rejected'?`${label} ${id} 已由高層重新確認為「退件」：${reason}`:`${label} ${id} 已重新調整為「待審核」，等待高層審核。`,timestamp:now,read:false};
+                const n={type:'report',department:dept==='police'?'police':'fire',caseId:id,recipientAccount:recipient,recipientAccountNormalized:String(recipient||'').trim().toLowerCase(),status,title:status==='approved'?`${label}審核完成`:status==='rejected'?`${label}遭退件`:`${label}重新進入審核`,message:status==='approved'?`${label} ${id} 已由高層重新確認為「通過」。`:status==='rejected'?`${label} ${id} 已由高層重新確認為「退件」：${reason}`:`${label} ${id} 已重新調整為「待審核」，等待高層審核。`,timestamp:now,read:false};
                 const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); appData.reportNotifications.unshift({docId:nr.id,...n});
                 await logAdminAction((dept==='ems'?'EMS':dept==='fire'?'消防':'警用')+'編輯案件審核狀況',id);
                 closeModal('modal-edit-review-status'); renderPersonalNotifications(); renderMyProfile(); renderPoliceReview(); renderFireReview(); renderPoliceReports(); renderFireReports(); renderEMSReports();
@@ -3684,7 +3714,7 @@
         }
         async function approvePolicePendingReport(caseId){
             if(!canReviewPoliceReports()){showToast('只有警察高層、高階成員與管理中心可以審核案件。','warning','權限不足');return;} const r=(appData.policePendingReports||[]).find(x=>x.caseId===caseId); if(!r)return;
-            try{ const shared={...r,reviewStatus:'approved',reviewedAt:Date.now(),reviewedBy:currentUser.account}; delete shared.rejectionReason; await fm.setDoc(fm.doc(db,'policeReports',caseId),shared); await fm.deleteDoc(fm.doc(db,'policePendingReports',r.docId||caseId)); appData.policeReports.unshift({docId:caseId,...shared}); appData.policePendingReports=appData.policePendingReports.filter(x=>x.caseId!==caseId); await removePendingReportNotifications(caseId,r.registeredByAccount);const n={type:'report',caseId,recipientAccount:r.registeredByAccount,status:'approved',title:'案件已審核完畢',message:`案件 ${caseId} 已經高層審核完畢並正式送出。`,timestamp:Date.now(),read:false}; const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); appData.reportNotifications.unshift({docId:nr.id,...n}); await logAdminAction('審核案件完畢並送出',caseId); renderPoliceReview(); renderPoliceReports(); renderMyProfile(); showSubmitSuccessAnimation('審核完成','案件已審核完畢並同步至共享案件報告庫。'); }catch(e){showToast('審核送出失敗：'+e.message,'error','操作失敗');}
+            try{ const shared={...r,reviewStatus:'approved',reviewedAt:Date.now(),reviewedBy:currentUser.account}; delete shared.rejectionReason; const finalDocId=await resolveReportDocId('policeReports',r,caseId); const pendingDocId=await resolveReportDocId('policePendingReports',r,caseId); await fm.setDoc(fm.doc(db,'policeReports',finalDocId),shared); await fm.deleteDoc(fm.doc(db,'policePendingReports',pendingDocId)); appData.policeReports.unshift({docId:finalDocId,...shared}); appData.policePendingReports=appData.policePendingReports.filter(x=>x.caseId!==caseId); await removePendingReportNotifications(caseId,r.registeredByAccount);const n={type:'report',caseId,recipientAccount:r.registeredByAccount,recipientAccountNormalized:String(r.registeredByAccount||'').trim().toLowerCase(),status:'approved',title:'案件已審核完畢',message:`案件 ${caseId} 已經高層審核完畢並正式送出。`,timestamp:Date.now(),read:false}; const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); appData.reportNotifications.unshift({docId:nr.id,...n}); await logAdminAction('審核案件完畢並送出',caseId); renderPoliceReview(); renderPoliceReports(); renderMyProfile(); showSubmitSuccessAnimation('審核完成','案件已審核完畢並同步至共享案件報告庫。'); }catch(e){showToast('審核送出失敗：'+e.message,'error','操作失敗');}
         }
         function openRejectPolicePending(caseId){ if(!canReviewPoliceReports()){showToast('只有警察高層與管理中心可以退件。','warning','權限不足');return;} document.getElementById('review-reject-case-id').value=caseId; document.getElementById('review-reject-dept').value='police'; document.getElementById('review-reject-reason').value=''; document.getElementById('modal-review-reject').classList.remove('hidden'); }
         async function rejectPolicePendingReport(){const caseId=document.getElementById('review-reject-case-id').value;const dept=document.getElementById('review-reject-dept').value||'police';const reason=document.getElementById('review-reject-reason').value.trim();const canReview=dept==='fire'||dept==='ems'?canReviewFireReports():canReviewPoliceReports();if(!canReview){showToast('權限不足。','warning','權限不足');return;}if(!reason){showToast('請填寫退件原因。','warning','退件原因必填');return;}const source=dept==='fire'?appData.firePendingReports:dept==='ems'?appData.emsPendingReports:appData.policePendingReports;const r=(source||[]).find(x=>String(x.caseId||x.id||x.docId)===String(caseId));if(!r)return;try{const col=dept==='fire'?'firePendingReports':dept==='ems'?'emsPendingReports':'policePendingReports';const patch={reviewStatus:'rejected',rejectionReason:reason,reviewedAt:Date.now(),reviewedBy:currentUser.account,updatedAt:Date.now()};await fm.updateDoc(fm.doc(db,col,r.docId||r.caseId||r.id),patch);Object.assign(r,patch);await removePendingReportNotifications(caseId,r.registeredByAccount||r.authorId);const title=dept==='ems'?'EMS報告遭退件':dept==='fire'?'消防案件遭退件':'案件遭退件';const n={type:'report',department:dept==='police'?'police':'fire',caseId,recipientAccount:r.registeredByAccount||r.authorId,status:'rejected',title,message:`${dept==='ems'?'EMS報告':`案件 ${caseId}`} 已退件：${reason}`,timestamp:Date.now(),read:false};const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);appData.reportNotifications.unshift({docId:nr.id,...n});await logAdminAction((dept==='ems'?'EMS':dept==='fire'?'消防':'警用')+'退件案件報告',caseId,reason);closeModal('modal-review-reject');if(dept==='ems'||dept==='fire')renderFireReview();else renderPoliceReview();renderPersonalNotifications();showToast('案件已退件，寄件人可重新編輯送件。','success','退件完成');}catch(e){showToast('退件失敗：'+e.message,'error','操作失敗');}}
@@ -3855,7 +3885,7 @@
                 appData.emsPendingReports.unshift({docId:id,...pendingObj});
                 if(old) appData.emsReports=appData.emsReports.filter(x=>String(x.docId||x.id)!==String(editId));
                 await removePendingReportNotifications(id,pendingObj.registeredByAccount);
-                const n={type:'report',department:'fire',caseId:id,recipientAccount:pendingObj.registeredByAccount,status:'pending',title:old?'EMS報告已重新送件':'EMS報告已送出，等待消防高層審核',message:old?`EMS報告 ${id} 已重新送入消防高層審核。`:`EMS報告 ${id} 已送入消防高層審核系統。`,timestamp:now,read:false};
+                const n={type:'report',department:'fire',caseId:id,recipientAccount:pendingObj.registeredByAccount,recipientAccountNormalized:String(pendingObj.registeredByAccount||'').trim().toLowerCase(),status:'pending',title:old?'EMS報告已重新送件':'EMS報告已送出，等待消防高層審核',message:old?`EMS報告 ${id} 已重新送入消防高層審核。`:`EMS報告 ${id} 已送入消防高層審核系統。`,timestamp:now,read:false};
                 const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); appData.reportNotifications.unshift({docId:nr.id,...n});
                 // EMS 與消防共用消防／EMS Discord Webhook。
                 sendDiscordCaseNotification('ems', pendingObj);
@@ -4043,7 +4073,7 @@
                 const targetEMS=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(docId)); if(!targetEMS)return;
                 if(!currentUser || !(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire')))){showToast('只有消防高層與管理處可以批示EMS報告。','warning','權限不足');return;}
                 const rr=getReportRemarks(targetEMS), now=new Date(); rr.push({authorName:currentUser.name,authorAccount:currentUser.account,role:currentUser.role,text:remarkText,timestamp:now.getTime(),time:formatDateTime(now.getTime())}); targetEMS.remarks=rr; targetEMS.remark=`${currentUser.name}: ${remarkText}`;
-                try{await fm.updateDoc(fm.doc(db,'emsReports',targetEMS.docId||targetEMS.id),{remarks:rr,remark:targetEMS.remark});closeModal('modal-remark');renderEMSReports();showToast('EMS高層批示已新增。','success','批示成功');}catch(e){showToast('儲存失敗：'+e.message,'error','操作失敗');} return;
+                try{const targetDocId=await resolveReportDocId('emsReports',targetEMS,docId); await fm.updateDoc(fm.doc(db,'emsReports',targetDocId),{remarks:rr,remark:targetEMS.remark}); targetEMS.docId=targetDocId;closeModal('modal-remark');renderEMSReports();showToast('EMS高層批示已新增。','success','批示成功');}catch(e){showToast('儲存失敗：'+e.message,'error','操作失敗');} return;
             }
 
             const targetList = collectionKey === 'policeReports' ? appData.policeReports : appData.fireReports;
@@ -4065,7 +4095,7 @@
             target.remark = `${newRemark.authorName}: ${newRemark.text}`;
 
             try {
-                await fm.updateDoc(fm.doc(db, collectionKey, docId), { remarks: target.remarks, remark: target.remark });
+                const targetDocId=await resolveReportDocId(collectionKey,target,docId); await fm.updateDoc(fm.doc(db, collectionKey, targetDocId), { remarks: target.remarks, remark: target.remark }); target.docId=targetDocId;
                 closeModal('modal-remark');
                 if (collectionKey === 'policeReports') renderPoliceReports();
                 else renderFireReports();
@@ -4130,16 +4160,20 @@
                         const pendingPayload={...payload,reviewStatus:'pending',rejectionReason:'',reviewedAt:0,reviewedBy:'',submittedAt:Date.now(),updatedAt:Date.now()};
                         await fm.updateDoc(fm.doc(db,dept==='police'?'policePendingReports':'firePendingReports',r.docId||r.caseId),pendingPayload);
                         Object.assign(r,pendingPayload);
-                        await removePendingReportNotifications(nextCaseId,currentUser.account);const notification={type:'report',caseId:nextCaseId,recipientAccount:currentUser.account,status:'pending',title:'案件已重新送件',message:`案件 ${nextCaseId} 已重新送入高層審核。`,timestamp:Date.now(),read:false};
+                        await removePendingReportNotifications(nextCaseId,currentUser.account);const notification={type:'report',caseId:nextCaseId,recipientAccount:currentUser.account,recipientAccountNormalized:String(currentUser.account||'').trim().toLowerCase(),status:'pending',title:'案件已重新送件',message:`案件 ${nextCaseId} 已重新送入高層審核。`,timestamp:Date.now(),read:false};
                         const nref=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nref,notification); appData.reportNotifications.unshift({docId:nref.id,...notification});
                         await logAdminAction('案件退件後重新送件',nextCaseId); closeModal('modal-edit'); renderMyProfile(); dept==='police'?renderPoliceReview():renderFireReview(); showSubmitSuccessAnimation('重新送件成功',`案件 ${nextCaseId} 已重新送出，等待高層審核。`);
                     } else if(nextCaseId!==r.caseId){
+                        const oldDocId=await resolveReportDocId(collectionName,r,r.caseId);
                         await fm.setDoc(fm.doc(db,collectionName,nextCaseId),{...r,...payload});
-                        await fm.deleteDoc(fm.doc(db,collectionName,r.docId||r.caseId));
+                        if(oldDocId && oldDocId!==nextCaseId) await fm.deleteDoc(fm.doc(db,collectionName,oldDocId));
                         r.caseId=nextCaseId;r.docId=nextCaseId;
                         await logAdminAction('編輯案件報告',nextCaseId);closeModal('modal-edit');dept==='police'?renderPoliceReports():renderFireReports();renderMyProfile();showToast('案件修改已成功儲存。','success','修改成功');
                     }else{
-                        await fm.updateDoc(fm.doc(db,collectionName,r.docId||r.caseId),payload);
+                        const actualDocId=await resolveReportDocId(collectionName,r,r.caseId);
+                        if(!actualDocId) throw new Error('找不到案件的 Firestore 文件 ID');
+                        await fm.updateDoc(fm.doc(db,collectionName,actualDocId),payload);
+                        r.docId=actualDocId;
                         await logAdminAction('編輯案件報告',nextCaseId);closeModal('modal-edit');dept==='police'?renderPoliceReports():renderFireReports();renderMyProfile();showToast('案件修改已成功儲存。','success','修改成功');
                     }
                 }catch(e){showToast('更新失敗：'+e.message,'error','修改失敗');}
@@ -4542,7 +4576,7 @@
             }
         }
 
-        async function logAdminAction(action, target, detail='') {
+        async function logAdminAction(action, target, detail='', options={}) {
             const now = new Date();
             const logObj = {
                 id: 'LOG-' + Date.now(),
@@ -4561,9 +4595,8 @@
             }
             // 個人通知中心的移除／一鍵刪除不會呼叫此函式，因此不會出現在管理中心 Discord LOG。
             const actionText=String(action||'');
-            if(/編輯|退件|刪除|移除/.test(actionText)){
-                sendManagementDiscordLog(actionText,target,detail);
-            }
+            const shouldDiscord = typeof options?.discord === 'boolean' ? options.discord : /編輯|退件|刪除|移除/.test(actionText);
+            if(shouldDiscord){ sendManagementDiscordLog(actionText,target,detail); }
         }
 
         async function deleteAllAdminLogs(){
