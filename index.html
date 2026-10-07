@@ -4159,6 +4159,16 @@ async function republishAnnouncement(id) {
             return String(value ?? '--').replace(/\\/g, '\\\\').replace(/`/g, '\\`');
         }
 
+        // Discord Embed 單一欄位 value 最多 1024 字元；案件內容可能由使用者自由輸入，
+        // 因此所有動態欄位都先截斷，避免整個 webhook payload 因單一欄位過長而被 Discord 拒絕。
+        function discordFieldValue(value, max=1024) {
+            const text = escapeDiscordText(value);
+            return text.length > max ? text.slice(0, Math.max(0, max - 1)) + '…' : (text || '--');
+        }
+        function discordField(name, value, inline=false) {
+            return {name: String(name).slice(0,256), value: discordFieldValue(value,1024), inline: !!inline};
+        }
+
         function buildDiscordCasePayload(department, report) {
             const isPolice = department === 'police';
             const isEMS = department === 'ems';
@@ -4166,43 +4176,94 @@ async function republishAnnouncement(id) {
             const fields = [];
             if (isEMS) {
                 fields.push(
-                    { name: '案件編號', value: escapeDiscordText(report.id || report.caseId || report.docId), inline: true },
-                    { name: '填寫人', value: escapeDiscordText(`${report.authorName || '--'} (${report.authorId || '--'})`), inline: true },
-                    { name: '主訴', value: escapeDiscordText(report.chiefComplaint), inline: false },
-                    { name: '傷患', value: escapeDiscordText(report.patient), inline: true },
-                    { name: '出勤單位／車輛', value: escapeDiscordText(report.unitVehicle), inline: true },
-                    { name: '治療／處置', value: escapeDiscordText(report.treatment), inline: false }
+                    discordField('案件編號', report.id || report.caseId || report.docId, true),
+                    discordField('填寫人', `${report.authorName || '--'} (${report.authorId || '--'})`, true),
+                    discordField('主訴', report.chiefComplaint, false),
+                    discordField('傷患', report.patient, true),
+                    discordField('出勤單位／車輛', report.unitVehicle, true),
+                    discordField('治療／處置', report.treatment, false)
                 );
             } else {
                 fields.push(
-                    { name: '案件編號', value: escapeDiscordText(report.caseId), inline: true },
-                    { name: '填寫人', value: escapeDiscordText(`${report.authorName || '--'} (${report.authorId || '--'})`), inline: true },
-                    { name: '案件標題', value: escapeDiscordText(report.title), inline: false }
+                    discordField('案件編號', report.caseId, true),
+                    discordField('填寫人', `${report.authorName || '--'} (${report.authorId || '--'})`, true),
+                    discordField('案件標題', report.title, false)
                 );
                 if (isPolice) {
                     const crimes = Array.isArray(report.violations) && report.violations.length ? report.violations.join('、') : '未填寫';
                     fields.push(
-                        { name: '嫌疑人', value: escapeDiscordText(`${report.suspectName || '無'} / ${report.suspectId || '無'}`), inline: true },
-                        { name: '違反條例', value: escapeDiscordText(crimes), inline: false },
-                        { name: '總監獄時間', value: escapeDiscordText(formatJailMinutes(Number(report.jailMinutes || 0))), inline: true },
-                        { name: '組織犯罪加重⅓', value: report.organizedCrime ? '是' : '否', inline: true }
+                        discordField('嫌疑人', `${report.suspectName || '無'} / ${report.suspectId || '無'}`, true),
+                        discordField('違反條例', crimes, false),
+                        discordField('總監獄時間', formatJailMinutes(Number(report.jailMinutes || 0)), true),
+                        discordField('組織犯罪加重⅓', report.organizedCrime ? '是' : '否', true)
                     );
                 }
-                fields.push({ name: '案件內容', value: escapeDiscordText(report.content).slice(0, 1024) || '--', inline: false });
+                fields.push(discordField('案件內容', report.content, false));
             }
-            fields.push({ name: '勤務網站', value: `[點我前往勤務網站](${NTPC_RP_SITE_URL})`, inline: false });
+            fields.push(discordField('勤務網站', `[點我前往勤務網站](${NTPC_RP_SITE_URL})`, false));
             return {
                 username: '新北市 RP 3.0 案件通知',
+                allowed_mentions: {parse: []},
                 embeds: [{
-                    title,
+                    title: String(title).slice(0,256),
                     description: '案件已成功寫入雲端資料庫，等待高層審核。',
                     color: isPolice ? 0x2563eb : isEMS ? 0xf43f5e : 0xdc2626,
-                    fields,
+                    fields: fields.slice(0,25),
                     timestamp: new Date().toISOString(),
                     footer: { text: '新北市 RP 3.0 公職服務整合系統 V1.8' },
                     url: NTPC_RP_SITE_URL
                 }]
             };
+        }
+
+        // Discord 案件通知採雙通道：先嘗試 JSON POST；若瀏覽器因 CORS 阻擋，
+        // 再自動改用原生 multipart/form-data 隱藏表單。兩者只會成功一次。
+        async function sendDiscordCaseNotification(department, report) {
+            const webhookUrl = department === 'police' ? NTPC_RP_DISCORD_POLICE_WEBHOOK_URL : NTPC_RP_DISCORD_FIRE_WEBHOOK_URL;
+            if (!webhookUrl || !report) return false;
+            const payload = buildDiscordCasePayload(department, report);
+            let directSucceeded = false;
+
+            try {
+                const response = await fetch(webhookUrl + (webhookUrl.includes('?') ? '&' : '?') + 'wait=true', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload),
+                    mode: 'cors',
+                    credentials: 'omit'
+                });
+                if (response.ok) directSucceeded = true;
+            } catch (e) {
+                console.warn('Discord JSON POST 被瀏覽器阻擋，改用表單備援：', e);
+            }
+            if (directSucceeded) return true;
+
+            try {
+                const targetName = `ntpc_discord_case_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                const iframe = document.createElement('iframe');
+                iframe.name = targetName;
+                iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;';
+                document.body.appendChild(iframe);
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = webhookUrl + (webhookUrl.includes('?') ? '&' : '?') + 'wait=false';
+                form.target = targetName;
+                form.enctype = 'multipart/form-data';
+                form.encoding = 'multipart/form-data';
+                form.style.display = 'none';
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'payload_json';
+                input.value = JSON.stringify(payload);
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+                setTimeout(() => { try { form.remove(); iframe.remove(); } catch (_) {} }, 10000);
+                return true;
+            } catch (e) {
+                console.warn('Discord 案件通知備援發送失敗：', e);
+                return false;
+            }
         }
 
         function sendDiscordWantedNotification(wanted){
@@ -4225,42 +4286,6 @@ async function republishAnnouncement(id) {
             }catch(e){console.warn('Discord 通緝申請通知發送失敗：',e);}
         }
 
-        function sendDiscordCaseNotification(department, report) {
-            // 警察使用警察頻道；消防與 EMS 共用消防頻道。
-            const webhookUrl = department === 'police' ? NTPC_RP_DISCORD_POLICE_WEBHOOK_URL : NTPC_RP_DISCORD_FIRE_WEBHOOK_URL;
-            if (!webhookUrl || !report) return;
-            try {
-                const targetName = `ntpc_discord_case_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-                const iframe = document.createElement('iframe');
-                iframe.name = targetName;
-                iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;';
-                document.body.appendChild(iframe);
-
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = webhookUrl + (webhookUrl.includes('?') ? '&' : '?') + 'wait=false';
-                form.target = targetName;
-                // Discord Webhook 的 payload_json 必須以 multipart/form-data 送出。
-                // 使用原生表單＋隱藏 iframe，避免 GitHub Pages 前端受到跨來源 CORS 預檢阻擋。
-                form.enctype = 'multipart/form-data';
-                form.encoding = 'multipart/form-data';
-                form.style.display = 'none';
-
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'payload_json';
-                input.value = JSON.stringify(buildDiscordCasePayload(department, report));
-                form.appendChild(input);
-                document.body.appendChild(form);
-                form.submit();
-
-                setTimeout(() => {
-                    try { form.remove(); iframe.remove(); } catch (_) {}
-                }, 10000);
-            } catch (e) {
-                console.warn('Discord 案件通知發送失敗：', e);
-            }
-        }
 
         function sendManagementDiscordLog(action, target, detail='', options={}) {
             const webhookUrl = NTPC_RP_DISCORD_ADMIN_LOG_WEBHOOK_URL;
