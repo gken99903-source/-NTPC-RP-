@@ -1124,6 +1124,16 @@
                             <div>文件總數：<span id="storage-docs-count" class="text-white font-mono font-bold">0</span> 筆</div>
                             <div>剩餘可用空間：<span id="storage-free-text" class="text-emerald-400 font-mono font-bold">--</span></div>
                         </div>
+                        <div class="pt-4 border-t border-slate-800">
+                            <div class="flex items-center justify-between gap-3 mb-3">
+                                <div><h4 class="text-sm font-bold text-slate-200">資料庫分類使用狀況</h4><p class="text-[11px] text-slate-500 mt-1">依目前已同步到網站的資料估算，各分類文件數與資料大小。</p></div>
+                                <span class="text-[10px] text-slate-500 whitespace-nowrap">即時同步</span>
+                            </div>
+                            <div id="storage-category-list" class="space-y-2"></div>
+                        </div>
+                        <div class="text-[10px] leading-relaxed text-slate-500 bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+                            ※「資料大小」為前端依目前同步資料 JSON 大小及每份文件最低 1 KB 估算，並非 Firebase Console 的實際帳單儲存量；Firestore 索引、文件名稱及其他服務開銷未計入。
+                        </div>
                     </div>
                 </div>
 
@@ -2382,14 +2392,14 @@
 
             // 正式案件：只監聽目前帳號有權瀏覽的單位。
             if (currentUser.role === 'admin' || userHasUnit('police')) {
-                subscribe('policeReports', d => ({docId:d.id, ...d.data()}), rows => { appData.policeReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); });
+                subscribe('policeReports', d => ({docId:d.id, ...d.data()}), rows => { appData.policeReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); renderAdminStorage(); });
             }
             if (currentUser.role === 'admin' || userHasUnit('fire')) {
-                subscribe('fireReports', d => ({docId:d.id, ...d.data()}), rows => { appData.fireReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); });
+                subscribe('fireReports', d => ({docId:d.id, ...d.data()}), rows => { appData.fireReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); renderAdminStorage(); });
             }
             if (currentUser.role === 'admin' || userHasUnit('police')) {
-                subscribe('citizenRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.citizenRecords = rows; renderLookupSystems(); });
-                subscribe('vehicleRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.vehicleRecords = rows; renderLookupSystems(); });
+                subscribe('citizenRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.citizenRecords = rows; renderLookupSystems(); renderAdminStorage(); });
+                subscribe('vehicleRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.vehicleRecords = rows; renderLookupSystems(); renderAdminStorage(); });
                 subscribe('wantedRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.wantedRecords = rows; renderLookupSystems(); });
             }
             if (currentUser.role === 'admin') {
@@ -5123,82 +5133,29 @@
         }
 
         function renderAdminStorage() {
-            const collections = [
-                appData.users,
-                appData.policeReports,
-                appData.fireReports,
-                appData.policePunishments,
-                appData.emsReports,
-                appData.policeClocks,
-                appData.fireClocks,
-                appData.adminLogs,
-                appData.announcements,
-                appData.blockedDevices,
-                appData.adminClocks,
-                appData.feedbackReports
+            const groups = [
+                { label:'警務文件', icon:'fa-shield', lists:[appData.policeReports, appData.policePendingReports, appData.policePunishments] },
+                { label:'消防文件', icon:'fa-fire-extinguisher', lists:[appData.fireReports, appData.firePendingReports, appData.emsReports, appData.emsPendingReports] },
+                { label:'市民資訊', icon:'fa-id-card', lists:[appData.citizenRecords] },
+                { label:'車輛資訊', icon:'fa-car-side', lists:[appData.vehicleRecords] }
             ];
-            const totalDocs = collections.reduce((sum, list) => sum + (list || []).length, 0);
-            const payloadBytes = collections.reduce((sum, list) => {
-                return sum + (list || []).reduce((inner, item) => inner + estimateJsonBytes(item), 0);
-            }, 0);
-            const approxBytes = collections.reduce((sum, list) => {
-                return sum + (list || []).reduce((inner, item) => inner + Math.max(1024, estimateJsonBytes(item)), 0);
-            }, 0);
-            const maxBytes = 1024 * 1024 * 1024; // 1GB
-            const usedKb = approxBytes / 1024;
-            const percentNumber = Math.min(100, Math.max(0, (approxBytes / maxBytes) * 100));
-            let percentText = percentNumber >= 0.01 ? percentNumber.toFixed(2) : percentNumber >= 0.0001 ? percentNumber.toFixed(4) : (totalDocs > 0 ? percentNumber.toFixed(6) : '0.0000');
-            const freeMb = Math.max(0, (maxBytes - approxBytes) / (1024 * 1024));
-
-            const usedTextEl = document.getElementById('storage-used-text');
-            const percentTextEl = document.getElementById('storage-percent-text');
-            const progressEl = document.getElementById('storage-progress-bar');
-            const docsEl = document.getElementById('storage-docs-count');
-            const freeEl = document.getElementById('storage-free-text');
-
-            if (usedTextEl) usedTextEl.textContent = `當前已使用：約 ${usedKb.toFixed(1)} KB`;
-            if (percentTextEl) percentTextEl.textContent = `${percentText}%`;
-            if (percentTextEl) percentTextEl.title = `依目前載入資料估算：${payloadBytes.toLocaleString()} bytes 文件內容`;
-            if (progressEl) progressEl.style.width = `${Math.max(percentNumber, totalDocs > 0 ? 0.5 : 0)}%`;
-            if (docsEl) docsEl.textContent = totalDocs;
-            if (freeEl) freeEl.textContent = `${freeMb.toFixed(1)} MB`;
-        }
-
-        function latestDutyCount(rows){const latest=new Map();(rows||[]).forEach(r=>{const key=String(r.account||r.name||r.id||'');if(!key)return;const old=latest.get(key);if(!old||Number(r.timestamp||0)>Number(old.timestamp||0))latest.set(key,r);});return [...latest.values()].filter(r=>r.status==='上班').length;}
-        function renderAdminOverview() {
-            document.getElementById('stat-total-users').textContent = appData.users.length;
-            document.getElementById('stat-police-reports').textContent = appData.policeReports.length;
-            document.getElementById('stat-fire-reports').textContent = appData.fireReports.length;
-            const pd=document.getElementById('stat-police-duty'),fd=document.getElementById('stat-fire-duty'),ad=document.getElementById('stat-admin-duty');
-            if(pd)pd.textContent=latestDutyCount(appData.policeClocks);
-            if(fd)fd.textContent=latestDutyCount(appData.fireClocks);
-            if(ad)ad.textContent=latestDutyCount(appData.adminClocks);
-        }
-
-        function announcementExpiry(duration,now){return duration==='1d'?now+86400000:duration==='7d'?now+7*86400000:0;}
-        function activeAnnouncements(){const now=Date.now();return (appData.announcements||[]).filter(a=>a.active!==false&&(Number(a.expiresAt||0)===0||Number(a.expiresAt)>now)).sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0));}
-        let announcementTimer=null,announcementIndex=0;
-        function renderSiteAnnouncements(){const bar=document.getElementById('site-announcement-bar'),track=document.getElementById('announcement-track');if(!bar||!track)return;const rows=activeAnnouncements();if(!rows.length){bar.classList.add('hidden');track.innerHTML='';clearInterval(announcementTimer);announcementTimer=null;return;}bar.classList.remove('hidden');track.innerHTML=rows.map((a,i)=>`<div class="announcement-item ${i===0?'active':''}" data-announcement-index="${i}"><div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center"><i class="fa-solid fa-bullhorn"></i></div><div class="announcement-content"><div class="announcement-text text-sm font-semibold text-slate-100">${escapeHtml(a.text||'')}</div><div class="text-[11px] text-slate-500 mt-0.5">發布時間：${escapeHtml(formatDateTime(a.createdAt,a.time))}</div></div><div class="announcement-publisher text-xs text-slate-400">發布人：<span class="text-amber-300 font-semibold">${escapeHtml(a.publisher||'未填寫')}</span></div></div>`).join('');announcementIndex=0;clearInterval(announcementTimer);if(rows.length>1)announcementTimer=setInterval(()=>rotateAnnouncements(),5000);}
-        function rotateAnnouncements(){const items=[...document.querySelectorAll('.announcement-item')];if(items.length<2)return;const old=items[announcementIndex%items.length],next=items[(announcementIndex+1)%items.length];old.classList.remove('active');old.classList.add('exit-up');next.classList.remove('exit-up');next.classList.add('active');setTimeout(()=>old.classList.remove('exit-up'),650);announcementIndex=(announcementIndex+1)%items.length;}
-        async function publishAnnouncement(){if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以發布公告。','warning','權限不足');return;}const text=document.getElementById('announcement-text-input')?.value.trim()||'',publisher=document.getElementById('announcement-publisher-input')?.value.trim()||'',duration=document.getElementById('announcement-duration-input')?.value||'1d';if(!text||!publisher){showToast('請填寫公告內容與發布人。','warning','資料不完整');return;}const now=Date.now(),id=`ANN-${now}`,obj={id,text,publisher,duration,createdAt:now,time:formatDateTime(now),expiresAt:announcementExpiry(duration,now),active:true,createdBy:currentUser.account};try{await fm.setDoc(fm.doc(db,'announcements',id),obj);appData.announcements.push({docId:id,...obj});document.getElementById('announcement-text-input').value='';renderAdminAnnouncements();renderSiteAnnouncements();showToast('公告已發布至首頁。','success','發布成功');}catch(e){showToast('公告發布失敗：'+e.message,'error','操作失敗');}}
-        function renderAdminAnnouncements(){const c=document.getElementById('admin-announcements-list');if(!c)return;const rows=[...(appData.announcements||[])].sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0));c.innerHTML=rows.length?rows.map(a=>{const expired=a.expiresAt&&Number(a.expiresAt)<=Date.now();const active=a.active!==false&&!expired;const key=String(a.docId||a.id||'').replace(/'/g,"\\'");return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col lg:flex-row lg:items-center gap-4"><div class="flex-1 min-w-0"><div class="text-sm font-semibold text-white whitespace-pre-wrap break-words">${escapeHtml(a.text||'')}</div><div class="text-xs text-slate-500 mt-1">發布人：${escapeHtml(a.publisher||'--')}　／　${a.duration==='manual'?'手動下架':a.duration==='7d'?'7 天':'1 天'}　／　${escapeHtml(formatDateTime(a.createdAt,a.time))}</div></div><div class="announcement-admin-actions"><span class="px-2.5 py-1 rounded-full text-xs ${active?'bg-emerald-500/10 text-emerald-400':'bg-slate-800 text-slate-500'}">${active?'發布中':'已下架'}</span>${active?`<button type="button" onclick="unpublishAnnouncement('${key}')" class="px-3 py-1.5 bg-slate-800 text-slate-200 rounded-lg text-xs">手動下架</button>`:`<button type="button" onclick="republishAnnouncement('${key}')" class="px-3 py-1.5 bg-amber-600/20 text-amber-300 rounded-lg text-xs">重新發布</button>`}<button type="button" onclick="deleteAnnouncement('${key}')" class="px-3 py-1.5 bg-red-600/15 text-red-300 hover:bg-red-600/25 rounded-lg text-xs">移除</button></div></div>`}).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">尚未建立公告。</div>';}
-        async function deleteAnnouncement(id){if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以移除網站公告。','warning','權限不足');return;}const a=appData.announcements.find(x=>String(x.docId||x.id)===String(id));if(!a)return;if(!(await showConfirm(`確定要永久移除這則網站公告嗎？\n\n${a.text||''}\n\n移除後將無法恢復。`,'移除網站公告','確定移除')))return;try{const docId=a.docId||a.id;await fm.deleteDoc(fm.doc(db,'announcements',docId));appData.announcements=appData.announcements.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('移除網站公告',id);renderAdminAnnouncements();renderSiteAnnouncements();showToast('公告已永久移除。','success','移除成功');}catch(e){showToast('公告移除失敗：'+e.message,'error','操作失敗');}}
-        async function unpublishAnnouncement(id){const a=appData.announcements.find(x=>String(x.docId||x.id)===String(id));if(!a)return;try{await fm.updateDoc(fm.doc(db,'announcements',a.docId||a.id),{active:false,unpublishedAt:Date.now(),unpublishedBy:currentUser.account});a.active=false;await logAdminAction('手動下架網站公告',id);renderAdminAnnouncements();renderSiteAnnouncements();showToast('公告已下架。','success','操作完成');}catch(e){showToast('下架失敗：'+e.message,'error','操作失敗');}}
-        async function republishAnnouncement(id){const a=appData.announcements.find(x=>String(x.docId||x.id)===String(id));if(!a)return;const now=Date.now(),expires=announcementExpiry(a.duration,now);try{await fm.updateDoc(fm.doc(db,'announcements',a.docId||a.id),{active:true,createdAt:now,time:formatDateTime(now),expiresAt:expires});a.active=true;a.createdAt=now;a.time=formatDateTime(now);a.expiresAt=expires;await logAdminAction('重新發布網站公告',id);renderAdminAnnouncements();renderSiteAnnouncements();}catch(e){showToast('重新發布失敗：'+e.message,'error','操作失敗');}}
-        function openAdminClockModal(status){if(!currentUser||currentUser.role!=='admin'){showToast('管理中心打卡僅限最高管理員。','warning','權限不足');return;}document.getElementById('admin-clock-status').value=status;document.getElementById('admin-clock-remark').value='';document.getElementById('admin-clock-user-preview').textContent=`${currentUser.name} (${currentUser.account})`;document.getElementById('modal-admin-clock').classList.remove('hidden');}
-        async function submitAdminClock(){if(!currentUser||currentUser.role!=='admin')return;const status=document.getElementById('admin-clock-status').value,remark=document.getElementById('admin-clock-remark').value.trim()||'無',now=Date.now(),id=`ADMCLK-${now}`,obj={id,account:currentUser.account,name:currentUser.name,status,remark,time:formatDateTime(now),timestamp:now};try{await fm.setDoc(fm.doc(db,'adminClocks',id),obj);appData.adminClocks.unshift({docId:id,...obj});closeModal('modal-admin-clock');renderAdminClocks();renderAdminOverview();showToast('管理中心打卡成功。','success','打卡成功');}catch(e){showToast('管理中心打卡失敗：'+e.message,'error','操作失敗');}}
-        function renderAdminClocks(){const t=document.getElementById('admin-clocks-tbody');if(!t)return;const rows=[...(appData.adminClocks||[])].sort((a,b)=>b.timestamp-a.timestamp);t.innerHTML=rows.length?rows.map(c=>{const id=String(c.docId||c.id||'').replace(/'/g,"\'");return `<tr><td class="p-4 font-medium text-white">${escapeHtml(c.name||'--')} (${escapeHtml(c.account||'--')})</td><td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs ${c.status==='上班'?'bg-emerald-500/10 text-emerald-400':'bg-rose-500/10 text-rose-400'}">${escapeHtml(c.status||'--')}</span></td><td class="p-4 text-slate-300 text-xs">${escapeHtml(c.time||formatDateTime(c.timestamp))}</td><td class="p-4 text-slate-400 text-xs">${escapeHtml(c.remark||'無')}</td><td class="p-4 text-right"><button type="button" onclick="deleteAdminClock('${id}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button></td></tr>`}).join(''):'<tr><td colspan="5" class="p-6 text-center text-slate-500">尚無管理中心打卡紀錄。</td></tr>';}
-        async function deleteAdminClock(id){if(!currentUser||currentUser.role!=='admin')return;if(!(await showConfirm('確定刪除此筆管理中心打卡紀錄嗎？','刪除管理中心打卡紀錄','確定刪除')))return;try{await fm.deleteDoc(fm.doc(db,'adminClocks',id));appData.adminClocks=appData.adminClocks.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除管理中心打卡紀錄',id);renderAdminClocks();renderAdminOverview();showSubmitSuccessAnimation('移除成功','管理中心打卡紀錄已成功移除。');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
-
-        async function saveMemo() {
-            const text = document.getElementById('admin-memo-textarea').value.trim();
-            appData.adminMemo = text;
-            try {
-                await fm.setDoc(fm.doc(db, 'systemSettings', 'adminMemo'), { content: text });
-                showToast('管理員共同備忘錄已成功儲存。', 'success', '儲存成功');
-            } catch (e) {
-                showToast('儲存失敗：' + e.message, 'error', '操作失敗');
-            }
+            const allCollections = [appData.users,appData.policeReports,appData.policePendingReports,appData.fireReports,appData.firePendingReports,appData.emsReports,appData.emsPendingReports,appData.policePunishments,appData.policeClocks,appData.fireClocks,appData.adminLogs,appData.announcements,appData.blockedDevices,appData.adminClocks,appData.feedbackReports,appData.loginSessions,appData.reportNotifications,appData.citizenRecords,appData.vehicleRecords,appData.wantedRecords];
+            const totalDocs = allCollections.reduce((sum,list)=>sum+(list||[]).length,0);
+            const approxBytes = allCollections.reduce((sum,list)=>sum+(list||[]).reduce((inner,item)=>inner+Math.max(1024,estimateJsonBytes(item)),0),0);
+            const payloadBytes = allCollections.reduce((sum,list)=>sum+(list||[]).reduce((inner,item)=>inner+estimateJsonBytes(item),0),0);
+            const maxBytes=1024*1024*1024;
+            const percentNumber=Math.min(100,Math.max(0,(approxBytes/maxBytes)*100));
+            const percentText=percentNumber>=0.01?percentNumber.toFixed(2):percentNumber>=0.0001?percentNumber.toFixed(4):(totalDocs>0?percentNumber.toFixed(6):'0.0000');
+            const freeMb=Math.max(0,(maxBytes-approxBytes)/(1024*1024));
+            const formatBytes=bytes=>bytes<1024?`${bytes.toFixed(0)} B`:bytes<1024*1024?`${(bytes/1024).toFixed(1)} KB`:bytes<1024*1024*1024?`${(bytes/(1024*1024)).toFixed(2)} MB`:`${(bytes/(1024*1024*1024)).toFixed(2)} GB`;
+            const categoryList=document.getElementById('storage-category-list');
+            if(categoryList){categoryList.innerHTML=groups.map(g=>{const rows=g.lists.flatMap(list=>list||[]);const bytes=rows.reduce((sum,item)=>sum+Math.max(1024,estimateJsonBytes(item)),0);const percent=approxBytes>0?(bytes/approxBytes)*100:0;return `<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><div class="flex items-center justify-between gap-3"><div class="flex items-center gap-2"><i class="fa-solid ${g.icon} text-purple-400"></i><span class="font-semibold text-slate-200">${g.label}</span></div><span class="text-xs text-slate-400">${rows.length.toLocaleString()} 筆</span></div><div class="flex items-center justify-between mt-2 text-[11px]"><span class="text-slate-500">估算占用 ${formatBytes(bytes)}</span><span class="text-purple-400 font-mono">${percent.toFixed(2)}%</span></div><div class="w-full bg-slate-900 rounded-full h-1.5 mt-2 overflow-hidden"><div class="bg-purple-500 h-full rounded-full" style="width:${Math.min(100,percent)}%"></div></div></div>`;}).join('');}
+            const usedTextEl=document.getElementById('storage-used-text'),percentTextEl=document.getElementById('storage-percent-text'),progressEl=document.getElementById('storage-progress-bar'),docsEl=document.getElementById('storage-docs-count'),freeEl=document.getElementById('storage-free-text');
+            if(usedTextEl)usedTextEl.textContent=`當前已使用：約 ${formatBytes(approxBytes)}`;
+            if(percentTextEl){percentTextEl.textContent=`${percentText}%`;percentTextEl.title=`依目前載入資料估算：${payloadBytes.toLocaleString()} bytes 文件內容`;}
+            if(progressEl)progressEl.style.width=`${Math.max(percentNumber,totalDocs>0?0.5:0)}%`;
+            if(docsEl)docsEl.textContent=totalDocs;
+            if(freeEl)freeEl.textContent=`${freeMb.toFixed(1)} MB`;
         }
     </script>
 
