@@ -3433,6 +3433,7 @@
             try{await fm.setDoc(fm.doc(db,'systemSettings','lookupLocks'),{...next,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});appData.lookupLocks=next;await logAdminAction('編輯查詢頻道鎖定設定','lookupLocks',`市民:${next.citizen?'上鎖':'解鎖'}；車輛:${next.vehicles?'上鎖':'解鎖'}；通緝:${next.wanted?'上鎖':'解鎖'}`,{discord:true});renderLookupSystems();showToast('查詢頻道鎖定設定已儲存。','success','儲存成功');}catch(e){showToast('儲存失敗：'+e.message,'error','操作失敗');}
         }
         function lookupInput(label,id,placeholder='',extra=''){return `<div><label class="block text-xs font-semibold text-slate-400 mb-2">${label}</label><input id="${id}" ${extra} placeholder="${placeholder}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500"></div>`;}
+        function lookupTextarea(label,id,placeholder='',rows=4){return `<div><label class="block text-xs font-semibold text-slate-400 mb-2">${label}</label><textarea id="${id}" rows="${rows}" placeholder="${placeholder}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 resize-y"></textarea></div>`;}
         function openLookupPost(type, id=''){
             if(!lookupAccessible(type)){showToast('此查詢系統目前已上鎖，顯示開發階段。','warning','功能尚未開放');return;}
             const canCreate=(type==='citizen'||type==='vehicles')?isTotalManagementUser():isPoliceUser(); if(!canCreate){showToast('目前帳號沒有建立此類資料的權限。','warning','權限不足');return;}
@@ -3445,11 +3446,11 @@
                 html+=lookupInput('證件末五碼','lookup-id5','請輸入5碼數字','maxlength="5" inputmode="numeric"');
                 html+='<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">'+lookupInput('性別','lookup-gender','例如：男／女／其他')+lookupInput('生日','lookup-birthday','請輸入生日，例如：2000-01-01','type="text" maxlength="10" inputmode="numeric" autocomplete="bday"')+'</div>';
                 html+='<div><label class="block text-xs font-semibold text-slate-400 mb-2">駕照狀況（非必填）</label><div class="grid grid-cols-1 sm:grid-cols-3 gap-2"><label class="p-3 rounded-xl border border-slate-800 bg-slate-950 text-sm"><input type="checkbox" id="license-car" class="mr-2">小客車駕照</label><label class="p-3 rounded-xl border border-slate-800 bg-slate-950 text-sm"><input type="checkbox" id="license-heavy" class="mr-2">大客車/大貨車駕照</label><label class="p-3 rounded-xl border border-slate-800 bg-slate-950 text-sm"><input type="checkbox" id="license-boat" class="mr-2">船隻駕照</label></div><p class="text-[11px] text-slate-500 mt-2">未勾選任何項目時顯示「無」。</p></div>';
-                html+=lookupInput('備注','lookup-note','可填寫其他補充資訊');
+                html+=lookupTextarea('備注','lookup-note','可填寫其他補充資訊，多行內容可直接換行',4);
             }else if(type==='vehicles'){
                 html+=lookupInput('車輛型號','lookup-model','例如：Toyota Crown');
                 html+='<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">'+lookupInput('車輛所有人','lookup-owner','RP名稱')+lookupInput('證件末五碼','lookup-id5','請輸入5碼數字','maxlength="5" inputmode="numeric"')+'</div>';
-                html+=lookupInput('車牌','lookup-plate','例如：ABC-1234');html+=lookupInput('車色','lookup-color','例如：黑色');html+=lookupInput('備注','lookup-note','可填寫車輛備注或其他補充資訊');
+                html+=lookupInput('車牌','lookup-plate','例如：ABC-1234');html+=lookupInput('車色','lookup-color','例如：黑色');html+=lookupTextarea('備注','lookup-note','可填寫車輛備注或其他補充資訊，多行內容可直接換行',4);
             }else{
                 html+=lookupInput('被通緝人RP名稱','lookup-name','例如：王小明');html+=lookupInput('證件末五碼','lookup-id5','請輸入5碼數字','maxlength="5" inputmode="numeric"');html+=lookupInput('通緝原因','lookup-reason','請輸入通緝原因');html+=lookupInput('所違反條例','lookup-law','例如：妨害公務、搶劫');
             }
