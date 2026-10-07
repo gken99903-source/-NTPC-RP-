@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://discord.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://placehold.co; connect-src 'self' https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; upgrade-insecure-requests">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self' https://discord.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://placehold.co; connect-src 'self' https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; upgrade-insecure-requests">
     <!-- NTPC-RP Discord webhook fix + management LOG: 2026-10-06-v4 -->
     <!-- Security audit: 2026-10-07. Front-end hardening only; Firestore Rules/Firebase Auth/Discord secrets still require backend configuration. -->
     <title>新北市 RP 3.0 公職服務系統 V1.8</title>
@@ -680,8 +680,8 @@
                         </h3>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">選擇或輸入員警</label>
-                                <select id="police-calc-member" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-blue-500"></select>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">員警編號 / 登入帳號</label>
+                                <input type="text" id="police-calc-member" placeholder="例如：P-2421" autocomplete="off" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 font-mono">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">起始年月日 (含)</label>
@@ -1996,7 +1996,7 @@
                     if (snap.ok) {
                         appData.policeClocks = snap.docs.map(d => ({ docId: d.id, ...d.data() }));
                         renderPoliceClocks();
-                        renderAdminOverview();
+                        if (typeof window.renderAdminOverview === 'function') window.renderAdminOverview();
                         showToast('警務打卡資料已更新。', 'info', '刷新完成');
                     } else throw new Error(snap.error || '無法讀取打卡資料');
                 } catch (e) {
@@ -2200,6 +2200,150 @@
             return fallback || '--';
         }
 
+
+        // ===== 修復：補回遺失的管理中心／公告函式 =====
+        let announcementTimer=null,announcementIndex=0;
+function latestDutyCount(rows){const latest=new Map();(rows||[]).forEach(r=>{const key=String(r.account||r.name||r.id||'');if(!key)return;const old=latest.get(key);if(!old||Number(r.timestamp||0)>Number(old.timestamp||0))latest.set(key,r);});return [...latest.values()].filter(r=>r.status==='上班').length;}
+
+window.renderAdminOverview = function renderAdminOverview() {
+            const users = appData?.users || [];
+            const policeReports = appData?.policeReports || [];
+            const fireReports = appData?.fireReports || [];
+            const pd=document.getElementById('stat-police-duty'),fd=document.getElementById('stat-fire-duty'),ad=document.getElementById('stat-admin-duty');
+            const total=document.getElementById('stat-total-users'),pr=document.getElementById('stat-police-reports'),fr=document.getElementById('stat-fire-reports');
+            if(total) total.textContent = users.length;
+            if(pr) pr.textContent = policeReports.length;
+            if(fr) fr.textContent = fireReports.length;
+            if(pd) pd.textContent=latestDutyCount(appData?.policeClocks || []);
+            if(fd) fd.textContent=latestDutyCount(appData?.fireClocks || []);
+            if(ad) ad.textContent=latestDutyCount(appData?.adminClocks || []);
+        };
+
+function renderAdminClocks(){const t=document.getElementById('admin-clocks-tbody');if(!t)return;const rows=[...(appData.adminClocks||[])].sort((a,b)=>b.timestamp-a.timestamp);t.innerHTML=rows.length?rows.map(c=>`<tr><td class="p-4 font-medium text-white">${c.name||'--'} (${c.account||'--'})</td><td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs ${c.status==='上班'?'bg-emerald-500/10 text-emerald-400':'bg-rose-500/10 text-rose-400'}">${c.status}</span></td><td class="p-4 text-slate-300 text-xs">${c.time||formatDateTime(c.timestamp)}</td><td class="p-4 text-slate-400 text-xs">${c.remark||'無'}</td><td class="p-4 text-right"><button onclick="deleteAdminClock('${c.docId||c.id}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button></td></tr>`).join(''):'<tr><td colspan="5" class="p-6 text-center text-slate-500">尚無管理中心打卡紀錄。</td></tr>';}
+
+function openAdminClockModal(status){if(!currentUser||currentUser.role!=='admin'){showToast('管理中心打卡僅限最高管理員。','warning','權限不足');return;}document.getElementById('admin-clock-status').value=status;document.getElementById('admin-clock-remark').value='';document.getElementById('admin-clock-user-preview').textContent=`${currentUser.name} (${currentUser.account})`;document.getElementById('modal-admin-clock').classList.remove('hidden');}
+
+async function submitAdminClock(){if(!currentUser||currentUser.role!=='admin')return;const status=document.getElementById('admin-clock-status').value,remark=document.getElementById('admin-clock-remark').value.trim()||'無',now=Date.now(),id=`ADMCLK-${now}`,obj={id,account:currentUser.account,name:currentUser.name,status,remark,time:formatDateTime(now),timestamp:now};try{await fm.setDoc(fm.doc(db,'adminClocks',id),obj);appData.adminClocks.unshift({docId:id,...obj});closeModal('modal-admin-clock');renderAdminClocks();renderAdminOverview();showToast('管理中心打卡成功。','success','打卡成功');}catch(e){showToast('管理中心打卡失敗：'+e.message,'error','操作失敗');}}
+
+async function deleteAdminClock(id){if(!currentUser||currentUser.role!=='admin')return;if(!(await showConfirm('確定刪除此筆管理中心打卡紀錄嗎？','刪除管理中心打卡紀錄','確定刪除')))return;try{await fm.deleteDoc(fm.doc(db,'adminClocks',id));appData.adminClocks=appData.adminClocks.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除管理中心打卡紀錄',id);renderAdminClocks();renderAdminOverview();showSubmitSuccessAnimation('移除成功','管理中心打卡紀錄已成功移除。');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
+
+async function saveMemo() {
+            const text = document.getElementById('admin-memo-textarea').value.trim();
+            appData.adminMemo = text;
+            try {
+                await fm.setDoc(fm.doc(db, 'systemSettings', 'adminMemo'), { content: text });
+                showToast('管理員共同備忘錄已成功儲存。', 'success', '儲存成功');
+            } catch (e) {
+                showToast('儲存失敗：' + e.message, 'error', '操作失敗');
+            }
+        }
+
+function announcementExpiry(duration, now) {
+            if (duration === '7d') return now + 7 * 24 * 60 * 60 * 1000;
+            if (duration === 'manual') return 0;
+            return now + 24 * 60 * 60 * 1000;
+        }
+
+function getActiveAnnouncements() {
+            const now = Date.now();
+            return (appData.announcements || [])
+                .filter(a => a && a.active !== false && (!a.expiresAt || Number(a.expiresAt) > now))
+                .sort((a,b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
+        }
+
+function renderSiteAnnouncements() {
+            const bar = document.getElementById('site-announcement-bar');
+            const track = document.getElementById('announcement-track');
+            if (!bar || !track) return;
+            const rows = getActiveAnnouncements();
+            if (!rows.length) {
+                bar.classList.add('hidden');
+                track.innerHTML = '';
+                if (announcementTimer) { clearInterval(announcementTimer); announcementTimer = null; }
+                announcementIndex = 0;
+                return;
+            }
+            bar.classList.remove('hidden');
+            if (announcementIndex >= rows.length) announcementIndex = 0;
+            track.innerHTML = rows.map((a,i) => `
+                <div class="announcement-item ${i===announcementIndex?'active':''}" data-announcement-index="${i}">
+                    <div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0"><i class="fa-solid fa-bullhorn"></i></div>
+                    <div class="announcement-content">
+                        <div class="announcement-text text-sm sm:text-base text-slate-200 font-semibold">${escapeHtml(a.text || '')}</div>
+                    </div>
+                    <div class="announcement-publisher text-xs text-slate-500">${escapeHtml(a.publisher || '')}</div>
+                </div>`).join('');
+            if (announcementTimer) clearInterval(announcementTimer);
+            if (rows.length > 1) {
+                announcementTimer = setInterval(() => {
+                    const items = [...track.querySelectorAll('.announcement-item')];
+                    if (!items.length) return;
+                    const oldIndex = announcementIndex;
+                    announcementIndex = (announcementIndex + 1) % rows.length;
+                    const oldItem = items[oldIndex];
+                    const newItem = items[announcementIndex];
+                    if (oldItem) oldItem.classList.remove('active'), oldItem.classList.add('exit-up');
+                    if (newItem) { newItem.classList.remove('exit-up'); requestAnimationFrame(() => newItem.classList.add('active')); }
+                    setTimeout(() => oldItem?.classList.remove('exit-up'), 500);
+                }, 5000);
+            }
+        }
+
+function renderAdminAnnouncements() {
+            const c = document.getElementById('admin-announcements-list');
+            if (!c) return;
+            const rows = [...(appData.announcements || [])].sort((a,b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+            c.innerHTML = rows.length ? rows.map(a => {
+                const expired = a.expiresAt && Number(a.expiresAt) <= Date.now();
+                const active = a.active !== false && !expired;
+                const key = String(a.docId || a.id || '').replace(/'/g, "\\'");
+                return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col lg:flex-row lg:items-center gap-4">
+                    <div class="flex-1 min-w-0"><div class="text-sm font-semibold text-white whitespace-pre-wrap break-words">${escapeHtml(a.text || '')}</div>
+                    <div class="text-xs text-slate-500 mt-1">發布人：${escapeHtml(a.publisher || '--')} ／ ${a.duration==='manual'?'手動下架':a.duration==='7d'?'7 天':'1 天'} ／ ${formatDateTime(a.createdAt,a.time)}</div></div>
+                    <div class="announcement-admin-actions"><span class="px-2.5 py-1 rounded-full text-xs ${active?'bg-emerald-500/10 text-emerald-400':'bg-slate-800 text-slate-500'}">${active?'發布中':'已下架'}</span>
+                    ${active ? `<button type="button" onclick="unpublishAnnouncement('${key}')" class="px-3 py-1.5 bg-slate-800 text-slate-200 rounded-lg text-xs">手動下架</button>` : `<button type="button" onclick="republishAnnouncement('${key}')" class="px-3 py-1.5 bg-amber-600/20 text-amber-300 rounded-lg text-xs">重新發布</button>`}
+                    <button type="button" onclick="deleteAnnouncement('${key}')" class="px-3 py-1.5 bg-red-600/15 text-red-300 hover:bg-red-600/25 rounded-lg text-xs">移除</button></div></div>`;
+            }).join('') : '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">尚未建立公告。</div>';
+        }
+
+async function publishAnnouncement() {
+            if (!currentUser || currentUser.role !== 'admin') { showToast('只有最高管理員可以發布公告。','warning','權限不足'); return; }
+            const text = document.getElementById('announcement-text-input')?.value.trim() || '';
+            const publisher = document.getElementById('announcement-publisher-input')?.value.trim() || '';
+            const duration = document.getElementById('announcement-duration-input')?.value || '1d';
+            if (!text || !publisher) { showToast('請填寫公告內容與發布人。','warning','資料不完整'); return; }
+            const now = Date.now(), id = `ANN-${now}`;
+            const obj = { id, text, publisher, duration, createdAt:now, time:formatDateTime(now), expiresAt:announcementExpiry(duration,now), active:true, createdBy:currentUser.account };
+            try {
+                await fm.setDoc(fm.doc(db,'announcements',id),obj);
+                appData.announcements.push({docId:id,...obj});
+                const input = document.getElementById('announcement-text-input'); if (input) input.value='';
+                renderAdminAnnouncements(); renderSiteAnnouncements();
+                showToast('公告已發布至首頁。','success','發布成功');
+            } catch(e) { showToast('公告發布失敗：'+e.message,'error','操作失敗'); }
+        }
+
+async function deleteAnnouncement(id) {
+            if (!currentUser || currentUser.role !== 'admin') { showToast('只有最高管理員可以移除網站公告。','warning','權限不足'); return; }
+            const a=(appData.announcements||[]).find(x=>String(x.docId||x.id)===String(id)); if(!a)return;
+            if (!(await showConfirm(`確定要永久移除這則網站公告嗎？\\n\\n${a.text||''}\\n\\n移除後將無法恢復。`,'移除網站公告','確定移除'))) return;
+            try { await fm.deleteDoc(fm.doc(db,'announcements',a.docId||a.id)); appData.announcements=appData.announcements.filter(x=>String(x.docId||x.id)!==String(id)); await logAdminAction('移除網站公告',id); renderAdminAnnouncements(); renderSiteAnnouncements(); showToast('公告已永久移除。','success','移除成功'); }
+            catch(e){ showToast('公告移除失敗：'+e.message,'error','操作失敗'); }
+        }
+
+async function unpublishAnnouncement(id) {
+            const a=(appData.announcements||[]).find(x=>String(x.docId||x.id)===String(id)); if(!a)return;
+            try { await fm.updateDoc(fm.doc(db,'announcements',a.docId||a.id),{active:false,unpublishedAt:Date.now(),unpublishedBy:currentUser.account}); a.active=false; await logAdminAction('手動下架網站公告',id); renderAdminAnnouncements(); renderSiteAnnouncements(); showToast('公告已下架。','success','操作完成'); }
+            catch(e){ showToast('下架失敗：'+e.message,'error','操作失敗'); }
+        }
+
+async function republishAnnouncement(id) {
+            const a=(appData.announcements||[]).find(x=>String(x.docId||x.id)===String(id)); if(!a)return;
+            const now=Date.now(), expires=announcementExpiry(a.duration,now);
+            try { await fm.updateDoc(fm.doc(db,'announcements',a.docId||a.id),{active:true,createdAt:now,time:formatDateTime(now),expiresAt:expires}); a.active=true;a.createdAt=now;a.time=formatDateTime(now);a.expiresAt=expires; await logAdminAction('重新發布網站公告',id); renderAdminAnnouncements(); renderSiteAnnouncements(); showToast('公告已重新發布。','success','操作完成'); }
+            catch(e){ showToast('重新發布失敗：'+e.message,'error','操作失敗'); }
+        }
+
         async function loadAllDataFromCloud() {
             try {
                 const usersSnap = await fm.getDocs(fm.collection(db, 'users'));
@@ -2337,7 +2481,7 @@
                 renderAdminUsers();
                 renderAdminLogs();
                 renderAdminStorage();
-                renderAdminOverview();
+                if (typeof window.renderAdminOverview === 'function') window.renderAdminOverview();
                 renderAdminAnnouncements();
                 renderAdminClocks();
                 renderSiteAnnouncements();
@@ -2381,9 +2525,6 @@
                     realtimeUnsubscribers.push(unsub);
                 } catch(e) { console.warn(`建立 ${collectionName} 即時監聽失敗：`, e); }
             };
-            subscribe('announcements', d => ({docId:d.id, ...d.data()}), rows => { appData.announcements = rows; renderAdminAnnouncements(); renderSiteAnnouncements(); });
-
-
 
             const subscribeNotifications = () => {
                 try {
@@ -2431,14 +2572,22 @@
 
             // 個人通知只查目前登入者，避免每次都把整個通知集合下載。
             subscribeNotifications();
+
+            // 網站公告即時同步：只在公告新增／修改／刪除時更新，避免每 5~10 秒整批讀取。
+            try {
+                const unsubAnnouncements = fm.onSnapshot(fm.collection(db, 'announcements'), snap => {
+                    appData.announcements = snap.docs.map(d => ({docId:d.id, ...d.data()}));
+                    renderAdminAnnouncements();
+                    renderSiteAnnouncements();
+                }, err => console.warn('網站公告即時監聽失敗：', err));
+                realtimeUnsubscribers.push(unsubAnnouncements);
+            } catch(e) { console.warn('建立網站公告即時監聽失敗：', e); }
         }
 
         function populateMemberSelects() {
-            const policeSelect = document.getElementById('police-calc-member');
             const fireSelect = document.getElementById('fire-calc-member');
             const punishMemberSelect = document.getElementById('punish-member-select');
 
-            if (policeSelect) policeSelect.innerHTML = '<option value="">-- 請選擇警員 --</option>';
             if (fireSelect) fireSelect.innerHTML = '<option value="">-- 請選擇消防隊員 --</option>';
             if (punishMemberSelect) punishMemberSelect.innerHTML = '<option value="">-- 請選擇被獎懲員警 --</option>';
 
@@ -2448,7 +2597,6 @@
                 opt.textContent = `${u.name} (${u.account})`;
                 const units = u.units || [u.unit];
                 
-                if (policeSelect && units.includes('police')) policeSelect.appendChild(opt.cloneNode(true));
                 if (fireSelect && units.includes('fire')) fireSelect.appendChild(opt.cloneNode(true));
                 if (punishMemberSelect && units.includes('police')) {
                     const punishOpt = opt.cloneNode(true);
@@ -2508,7 +2656,7 @@
                     renderAdminUsers();
                     renderAdminLogs();
                     renderAdminStorage();
-                    renderAdminOverview();
+                    if (typeof window.renderAdminOverview === 'function') window.renderAdminOverview();
                     refreshAdminOnlineUsers();
                     renderAdminDevices();
                     renderAdminFeedback();
@@ -2580,181 +2728,6 @@
             if (activeBtn) activeBtn.className = "fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white whitespace-nowrap";
             if(sub==='review') renderFireReview();
         }
-
-        /* ===== 網站公告系統（修復版） ===== */
-        let announcementIndex = 0;
-        let announcementTimer = null;
-        let announcementRenderToken = 0;
-
-        function announcementExpiry(duration, now) {
-            if (duration === '7d') return now + 7 * 24 * 60 * 60 * 1000;
-            if (duration === 'manual') return 0;
-            return now + 24 * 60 * 60 * 1000;
-        }
-
-        function announcementTimeValue(value) {
-            if (value == null || value === '' || value === 0 || value === '0') return 0;
-            if (typeof value === 'number' && Number.isFinite(value)) return value;
-            if (typeof value === 'string') {
-                const n = Number(value);
-                if (Number.isFinite(n)) return n;
-                const t = Date.parse(value);
-                return Number.isFinite(t) ? t : 0;
-            }
-            // Firestore Timestamp / Timestamp-like object
-            if (typeof value === 'object') {
-                if (typeof value.toMillis === 'function') { try { return value.toMillis(); } catch(e) {} }
-                if (Number.isFinite(Number(value.seconds))) return Number(value.seconds) * 1000 + Math.floor(Number(value.nanoseconds || 0) / 1000000);
-                if (Number.isFinite(Number(value._seconds))) return Number(value._seconds) * 1000 + Math.floor(Number(value._nanoseconds || 0) / 1000000);
-            }
-            return 0;
-        }
-
-        function getActiveAnnouncements() {
-            const now = Date.now();
-            return (Array.isArray(appData.announcements) ? appData.announcements : [])
-                .filter(a => {
-                    if (!a || a.active === false) return false;
-                    const expiresAt = announcementTimeValue(a.expiresAt);
-                    // expiresAt = 0 means manually managed / no expiry.
-                    return expiresAt === 0 || expiresAt > now;
-                })
-                .sort((a,b) => announcementTimeValue(a.createdAt) - announcementTimeValue(b.createdAt));
-        }
-
-        function buildAnnouncementItem(a, state='active') {
-            const item = document.createElement('div');
-            item.className = `announcement-item ${state}`;
-            item.dataset.announcementId = a.id || '';
-            item.innerHTML = `
-                <div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0"><i class="fa-solid fa-bullhorn"></i></div>
-                <div class="announcement-content">
-                    <div class="announcement-text text-sm sm:text-base text-slate-200 font-semibold">${escapeHtml(a.text || '')}</div>
-                </div>
-                <div class="announcement-publisher text-xs text-slate-500">${escapeHtml(a.publisher || '')}</div>`;
-            return item;
-        }
-
-        function renderSiteAnnouncements() {
-            const bar = document.getElementById('site-announcement-bar');
-            const track = document.getElementById('announcement-track');
-            if (!bar || !track) return;
-
-            // 每次重新渲染都讓舊計時器失效，避免閒置/回到分頁後舊 callback 與新 callback 疊加。
-            const renderToken = ++announcementRenderToken;
-            if (announcementTimer) {
-                clearInterval(announcementTimer);
-                announcementTimer = null;
-            }
-
-            const rows = getActiveAnnouncements();
-            if (!rows.length) {
-                bar.classList.add('hidden');
-                track.replaceChildren();
-                announcementIndex = 0;
-                return;
-            }
-
-            bar.classList.remove('hidden');
-            if (announcementIndex >= rows.length) announcementIndex = 0;
-            track.replaceChildren(buildAnnouncementItem(rows[announcementIndex], 'active'));
-
-            if (rows.length > 1) {
-                announcementTimer = setInterval(() => {
-                    if (renderToken !== announcementRenderToken) return;
-
-                    // 重新取得最新公告，避免刪除/過期後仍使用舊陣列。
-                    const currentRows = getActiveAnnouncements();
-                    if (currentRows.length <= 1) {
-                        clearInterval(announcementTimer);
-                        announcementTimer = null;
-                        announcementIndex = 0;
-                        track.replaceChildren();
-                        if (currentRows.length) track.appendChild(buildAnnouncementItem(currentRows[0], 'active'));
-                        if (!currentRows.length) bar.classList.add('hidden');
-                        return;
-                    }
-
-                    if (announcementIndex >= currentRows.length) announcementIndex = 0;
-                    const oldItem = track.querySelector('.announcement-item');
-                    const nextIndex = (announcementIndex + 1) % currentRows.length;
-                    const nextItem = buildAnnouncementItem(currentRows[nextIndex], '');
-
-                    if (oldItem) {
-                        oldItem.classList.remove('active');
-                        oldItem.classList.add('exit-up');
-                    }
-                    track.appendChild(nextItem);
-                    requestAnimationFrame(() => {
-                        if (renderToken !== announcementRenderToken) return;
-                        nextItem.classList.add('active');
-                    });
-
-                    setTimeout(() => {
-                        if (renderToken !== announcementRenderToken) return;
-                        if (oldItem && oldItem.parentNode === track) oldItem.remove();
-                    }, 500);
-
-                    announcementIndex = nextIndex;
-                }, 5000);
-            }
-        }
-
-        function renderAdminAnnouncements() {
-            const c = document.getElementById('admin-announcements-list');
-            if (!c) return;
-            const rows = [...(appData.announcements || [])].sort((a,b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
-            c.innerHTML = rows.length ? rows.map(a => {
-                const expired = a.expiresAt && Number(a.expiresAt) <= Date.now();
-                const active = a.active !== false && !expired;
-                const key = String(a.docId || a.id || '').replace(/'/g, "\\'");
-                return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col lg:flex-row lg:items-center gap-4">
-                    <div class="flex-1 min-w-0"><div class="text-sm font-semibold text-white whitespace-pre-wrap break-words">${escapeHtml(a.text || '')}</div>
-                    <div class="text-xs text-slate-500 mt-1">發布人：${escapeHtml(a.publisher || '--')} ／ ${a.duration==='manual'?'手動下架':a.duration==='7d'?'7 天':'1 天'} ／ ${formatDateTime(a.createdAt,a.time)}</div></div>
-                    <div class="announcement-admin-actions"><span class="px-2.5 py-1 rounded-full text-xs ${active?'bg-emerald-500/10 text-emerald-400':'bg-slate-800 text-slate-500'}">${active?'發布中':'已下架'}</span>
-                    ${active ? `<button type="button" onclick="unpublishAnnouncement('${key}')" class="px-3 py-1.5 bg-slate-800 text-slate-200 rounded-lg text-xs">手動下架</button>` : `<button type="button" onclick="republishAnnouncement('${key}')" class="px-3 py-1.5 bg-amber-600/20 text-amber-300 rounded-lg text-xs">重新發布</button>`}
-                    <button type="button" onclick="deleteAnnouncement('${key}')" class="px-3 py-1.5 bg-red-600/15 text-red-300 hover:bg-red-600/25 rounded-lg text-xs">移除</button></div></div>`;
-            }).join('') : '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">尚未建立公告。</div>';
-        }
-
-        async function publishAnnouncement() {
-            if (!currentUser || currentUser.role !== 'admin') { showToast('只有最高管理員可以發布公告。','warning','權限不足'); return; }
-            const text = document.getElementById('announcement-text-input')?.value.trim() || '';
-            const publisher = document.getElementById('announcement-publisher-input')?.value.trim() || '';
-            const duration = document.getElementById('announcement-duration-input')?.value || '1d';
-            if (!text || !publisher) { showToast('請填寫公告內容與發布人。','warning','資料不完整'); return; }
-            const now = Date.now(), id = `ANN-${now}`;
-            const obj = { id, text, publisher, duration, createdAt:now, time:formatDateTime(now), expiresAt:announcementExpiry(duration,now), active:true, createdBy:currentUser.account };
-            try {
-                await fm.setDoc(fm.doc(db,'announcements',id),obj);
-                appData.announcements.push({docId:id,...obj});
-                const input = document.getElementById('announcement-text-input'); if (input) input.value='';
-                renderAdminAnnouncements(); renderSiteAnnouncements();
-                showToast('公告已發布至首頁。','success','發布成功');
-            } catch(e) { showToast('公告發布失敗：'+e.message,'error','操作失敗'); }
-        }
-
-        async function deleteAnnouncement(id) {
-            if (!currentUser || currentUser.role !== 'admin') { showToast('只有最高管理員可以移除網站公告。','warning','權限不足'); return; }
-            const a=(appData.announcements||[]).find(x=>String(x.docId||x.id)===String(id)); if(!a)return;
-            if (!(await showConfirm(`確定要永久移除這則網站公告嗎？\\n\\n${a.text||''}\\n\\n移除後將無法恢復。`,'移除網站公告','確定移除'))) return;
-            try { await fm.deleteDoc(fm.doc(db,'announcements',a.docId||a.id)); appData.announcements=appData.announcements.filter(x=>String(x.docId||x.id)!==String(id)); await logAdminAction('移除網站公告',id); renderAdminAnnouncements(); renderSiteAnnouncements(); showToast('公告已永久移除。','success','移除成功'); }
-            catch(e){ showToast('公告移除失敗：'+e.message,'error','操作失敗'); }
-        }
-
-        async function unpublishAnnouncement(id) {
-            const a=(appData.announcements||[]).find(x=>String(x.docId||x.id)===String(id)); if(!a)return;
-            try { await fm.updateDoc(fm.doc(db,'announcements',a.docId||a.id),{active:false,unpublishedAt:Date.now(),unpublishedBy:currentUser.account}); a.active=false; await logAdminAction('手動下架網站公告',id); renderAdminAnnouncements(); renderSiteAnnouncements(); showToast('公告已下架。','success','操作完成'); }
-            catch(e){ showToast('下架失敗：'+e.message,'error','操作失敗'); }
-        }
-
-        async function republishAnnouncement(id) {
-            const a=(appData.announcements||[]).find(x=>String(x.docId||x.id)===String(id)); if(!a)return;
-            const now=Date.now(), expires=announcementExpiry(a.duration,now);
-            try { await fm.updateDoc(fm.doc(db,'announcements',a.docId||a.id),{active:true,createdAt:now,time:formatDateTime(now),expiresAt:expires}); a.active=true;a.createdAt=now;a.time=formatDateTime(now);a.expiresAt=expires; await logAdminAction('重新發布網站公告',id); renderAdminAnnouncements(); renderSiteAnnouncements(); showToast('公告已重新發布。','success','操作完成'); }
-            catch(e){ showToast('重新發布失敗：'+e.message,'error','操作失敗'); }
-        }
-
 
         function switchAdminSubTab(sub){
             const tabs=['users','announcements','clock','logs','storage','memo','overview','online','devices','feedback','academy','jail-rules','lookup-locks'];
@@ -4953,26 +4926,6 @@
         }
 
         function localDateKey(timestamp){const d=new Date(Number(timestamp||0));if(!Number.isFinite(d.getTime()))return '';return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-
-        function latestDutyCount(records){
-            const latestByPerson = new Map();
-            (records || []).forEach(c => {
-                const key = String(c.account || c.staffNumber || c.id || c.name || '').trim().toLowerCase();
-                if (!key) return;
-                let ts = Number(c.timestamp || c.createdAt || 0);
-                if (!Number.isFinite(ts) || ts <= 0) {
-                    const raw = c.time || c.datetime || c.dateTime || '';
-                    const parsed = raw ? Date.parse(raw) : NaN;
-                    ts = Number.isFinite(parsed) ? parsed : 0;
-                }
-                const prev = latestByPerson.get(key);
-                if (!prev || ts >= Number(prev.__sortTs || 0)) {
-                    latestByPerson.set(key, {...c, __sortTs: ts});
-                }
-            });
-            return Array.from(latestByPerson.values()).filter(c => String(c.status || '').trim() === '上班').length;
-        }
-
         function renderPoliceClocks() {
             const tbody = document.getElementById('police-clocks-tbody');
             const dateFilter = document.getElementById('police-clocks-date-filter')?.value || '';
@@ -5065,14 +5018,14 @@
         function openEditClockModal(dept,id){if(!canManageClockRecords()){showToast('只有管理處可以編輯打卡紀錄。','warning','權限不足');return;}const c=(dept==='police'?appData.policeClocks:appData.fireClocks).find(x=>String(x.id||x.docId)===String(id));if(!c)return;document.getElementById('edit-type').value=dept+'-clock';document.getElementById('edit-id-key').value=c.docId||c.id;document.getElementById('edit-modal-title').textContent='編輯打卡紀錄';document.getElementById('edit-fields-container').innerHTML=`<input id="edit-clock-account" value="${c.account||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input id="edit-clock-name" value="${c.name||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input id="edit-clock-status" value="${c.status||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input id="edit-clock-vehicle" value="${c.vehicle||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input id="edit-clock-time" value="${c.time||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><textarea id="edit-clock-remark" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white">${c.remark||''}</textarea>`;document.getElementById('modal-edit').classList.remove('hidden');}
 
         function calculateMemberHours(dept) {
-            const selectEl = document.getElementById(`${dept}-calc-member`);
+            const memberEl = document.getElementById(`${dept}-calc-member`);
             const startInput = document.getElementById(`${dept}-calc-start`).value;
             const endInput = document.getElementById(`${dept}-calc-end`).value;
             const resultBox = document.getElementById(`${dept}-calc-result`);
 
-            const memberAcc = selectEl.value;
-            if (!memberAcc || !startInput || !endInput) {
-                alert('請完整選擇人員並輸入起始與結束年月日區間！');
+            const query = String(memberEl?.value || '').trim();
+            if (!query || !startInput || !endInput) {
+                alert(dept === 'police' ? '請輸入員警編號／登入帳號並輸入起始與結束年月日區間！' : '請完整選擇人員並輸入起始與結束年月日區間！');
                 return;
             }
 
@@ -5084,30 +5037,63 @@
                 return;
             }
 
-            const clocks = dept === 'police' ? appData.policeClocks : appData.fireClocks;
-            const userClocks = clocks.filter(c => c.account === memberAcc && c.timestamp >= startDate.getTime() && c.timestamp <= endDate.getTime());
-            userClocks.sort((a, b) => a.timestamp - b.timestamp);
+            const clocks = dept === 'police' ? (appData.policeClocks || []) : (appData.fireClocks || []);
+            const q = query.toLowerCase();
+
+            // 警察查詢改為手動輸入：可比對員警編號 staffNumber、登入帳號 account，
+            // 同時支援舊打卡資料直接使用的 account 欄位。
+            let matchedAccounts = new Set([query]);
+            let foundU = null;
+            if (dept === 'police') {
+                foundU = (appData.users || []).find(u =>
+                    String(u.staffNumber || '').trim().toLowerCase() === q ||
+                    String(u.account || '').trim().toLowerCase() === q
+                );
+                if (foundU) {
+                    if (foundU.account) matchedAccounts.add(String(foundU.account).trim());
+                    if (foundU.staffNumber) matchedAccounts.add(String(foundU.staffNumber).trim());
+                }
+            } else {
+                foundU = (appData.users || []).find(u => String(u.account || '').trim().toLowerCase() === q);
+                if (foundU?.account) matchedAccounts.add(String(foundU.account).trim());
+            }
+
+            const userClocks = clocks.filter(c => {
+                const account = String(c.account || '').trim();
+                const staffNumber = String(c.staffNumber || '').trim();
+                const matchesPerson = matchedAccounts.has(account) ||
+                    matchedAccounts.has(staffNumber) ||
+                    account.toLowerCase() === q ||
+                    staffNumber.toLowerCase() === q ||
+                    (foundU && (
+                        account.toLowerCase() === String(foundU.account || '').trim().toLowerCase() ||
+                        staffNumber.toLowerCase() === String(foundU.staffNumber || '').trim().toLowerCase()
+                    ));
+                return matchesPerson && Number(c.timestamp || 0) >= startDate.getTime() && Number(c.timestamp || 0) <= endDate.getTime();
+            });
+            userClocks.sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
 
             let totalMinutes = 0;
             let lastOnDutyTime = null;
 
             userClocks.forEach(c => {
                 if (c.status === '上班') {
-                    lastOnDutyTime = c.timestamp;
+                    lastOnDutyTime = Number(c.timestamp || 0);
                 } else if (c.status === '下班' && lastOnDutyTime !== null) {
-                    const diff = c.timestamp - lastOnDutyTime;
+                    const diff = Number(c.timestamp || 0) - lastOnDutyTime;
                     if (diff > 0) totalMinutes += diff / (1000 * 60);
                     lastOnDutyTime = null;
                 }
             });
 
             const totalHours = (totalMinutes / 60).toFixed(1);
-            const foundU = appData.users.find(u => u.account === memberAcc);
+            const displayId = foundU?.staffNumber || foundU?.account || query;
+            const displayName = foundU?.name || userClocks[0]?.name || query;
 
             resultBox.classList.remove('hidden');
-            document.getElementById(`${dept}-calc-member-name`).textContent = `${foundU ? foundU.name : memberAcc} (${memberAcc})`;
+            document.getElementById(`${dept}-calc-member-name`).textContent = `${displayName} (${displayId})`;
             document.getElementById(`${dept}-calc-total-hours`).textContent = `${totalHours} 小時`;
-            document.getElementById(`${dept}-calc-details`).textContent = `統計區間：${startInput} 至 ${endInput} | 共有 ${userClocks.length} 筆配對出勤紀錄`;
+            document.getElementById(`${dept}-calc-details`).textContent = `統計區間：${startInput} 至 ${endInput} | 共 ${userClocks.length} 筆打卡紀錄`;
         }
 
         const USER_PERMISSION_DEFINITIONS = {
