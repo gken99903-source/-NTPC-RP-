@@ -4455,14 +4455,23 @@ async function republishAnnouncement(id) {
         }
         async function resolveReportDocId(collectionName, record, key){
             const direct = String(record?.docId || '').trim();
-            if (direct) return direct;
             const fallback = String(key || record?.caseId || record?.id || '').trim();
-            if (!fallback) return '';
-            try {
-                const snap = await fm.getDocs(fm.query(fm.collection(db, collectionName), fm.where('caseId','==',fallback)));
-                if (!snap.empty) return snap.docs[0].id;
-            } catch (e) { console.warn('resolveReportDocId failed', collectionName, fallback, e); }
-            return fallback;
+            if (!direct && !fallback) return '';
+            // 先確認記憶中的 docId 是否仍存在，避免案件文件被移動／重建後繼續使用舊 ID。
+            if (direct) {
+                try {
+                    const directSnap = await fm.getDoc(fm.doc(db, collectionName, direct));
+                    if (directSnap.exists()) return direct;
+                } catch (e) { console.warn('resolveReportDocId direct lookup failed', collectionName, direct, e); }
+            }
+            if (fallback) {
+                try {
+                    const snap = await fm.getDocs(fm.query(fm.collection(db, collectionName), fm.where('caseId','==',fallback)));
+                    if (!snap.empty) return snap.docs[0].id;
+                } catch (e) { console.warn('resolveReportDocId caseId lookup failed', collectionName, fallback, e); }
+            }
+            // 找不到舊文件時回傳原 docId（若有）或案件編號，讓後續 setDoc({merge:true}) 可以安全補回文件。
+            return direct || fallback;
         }
 
         async function saveEditedReviewStatus(){
@@ -5034,7 +5043,7 @@ async function republishAnnouncement(id) {
                     }else{
                         const actualDocId=await resolveReportDocId(collectionName,r,r.caseId);
                         if(!actualDocId) throw new Error('找不到案件的 Firestore 文件 ID');
-                        await fm.updateDoc(fm.doc(db,collectionName,actualDocId),payload);
+                        await fm.setDoc(fm.doc(db,collectionName,actualDocId),payload,{merge:true});
                         r.docId=actualDocId;
                         await logAdminAction('編輯案件報告',nextCaseId);closeModal('modal-edit');dept==='police'?renderPoliceReports():renderFireReports();renderMyProfile();showToast('案件修改已成功儲存。','success','修改成功');
                     }
