@@ -4220,20 +4220,26 @@ async function republishAnnouncement(id) {
         }
 
         function sendDiscordCaseNotification(department, report) {
+            // 警察使用警察頻道；消防與 EMS 共用消防頻道。
             const webhookUrl = department === 'police' ? NTPC_RP_DISCORD_POLICE_WEBHOOK_URL : NTPC_RP_DISCORD_FIRE_WEBHOOK_URL;
-            if (!webhookUrl) return;
+            if (!webhookUrl || !report) return;
             try {
-                const targetName = `ntpc_discord_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                const targetName = `ntpc_discord_case_${Date.now()}_${Math.random().toString(36).slice(2)}`;
                 const iframe = document.createElement('iframe');
                 iframe.name = targetName;
                 iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;';
                 document.body.appendChild(iframe);
+
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = webhookUrl + (webhookUrl.includes('?') ? '&' : '?') + 'wait=false';
                 form.target = targetName;
-                form.enctype = 'application/x-www-form-urlencoded';
+                // Discord Webhook 的 payload_json 必須以 multipart/form-data 送出。
+                // 使用原生表單＋隱藏 iframe，避免 GitHub Pages 前端受到跨來源 CORS 預檢阻擋。
+                form.enctype = 'multipart/form-data';
+                form.encoding = 'multipart/form-data';
                 form.style.display = 'none';
+
                 const input = document.createElement('input');
                 input.type = 'hidden';
                 input.name = 'payload_json';
@@ -4241,7 +4247,10 @@ async function republishAnnouncement(id) {
                 form.appendChild(input);
                 document.body.appendChild(form);
                 form.submit();
-                setTimeout(() => { try { form.remove(); iframe.remove(); } catch (_) {} }, 8000);
+
+                setTimeout(() => {
+                    try { form.remove(); iframe.remove(); } catch (_) {}
+                }, 10000);
             } catch (e) {
                 console.warn('Discord 案件通知發送失敗：', e);
             }
