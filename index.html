@@ -235,8 +235,30 @@
             }
             /* 讓案件表單底部按鈕永遠留出可滑動空間 */
             #modal-report .mobile-modal-scroll,
-            #modal-edit .mobile-modal-scroll {
+            #modal-edit .mobile-modal-scroll,
+            #modal-edit-user .mobile-modal-scroll,
+            #modal-create-user .mobile-modal-scroll {
                 padding-bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+            }
+        }
+
+
+        @media (max-width: 767px) {
+            #modal-edit-user, #modal-create-user {
+                align-items: flex-start !important;
+                overflow: hidden !important;
+                overscroll-behavior: contain;
+                touch-action: none;
+            }
+            #modal-edit-user .mobile-modal-scroll, #modal-create-user .mobile-modal-scroll {
+                max-height: calc(100dvh - 1rem) !important;
+                height: auto !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                touch-action: pan-y !important;
+                overscroll-behavior: contain;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: max(1.5rem, env(safe-area-inset-bottom)) !important;
             }
         }
 
@@ -1515,8 +1537,8 @@
     </div>
 
     <!-- Edit User Account Modal -->
-    <div id="modal-edit-user" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
+    <div id="modal-edit-user" class="mobile-modal-overlay fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="mobile-modal-scroll bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
                 <h3 class="text-xl font-bold text-white flex items-center space-x-2">
                     <i class="fa-solid fa-user-pen text-purple-500"></i>
@@ -1630,8 +1652,8 @@
     </div>
 
     <!-- Create User Modal -->
-    <div id="modal-create-user" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
+    <div id="modal-create-user" class="mobile-modal-overlay fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="mobile-modal-scroll bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
                 <h3 class="text-xl font-bold text-white flex items-center space-x-2">
                     <i class="fa-solid fa-user-plus text-purple-500"></i>
