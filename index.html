@@ -2210,7 +2210,7 @@
 
 
         // ===== 修復：補回遺失的管理中心／公告函式 =====
-        let announcementTimer=null,announcementIndex=0;
+        let announcementTimer=null,announcementTransitionTimer=null,announcementIndex=0,announcementRenderToken=0;
 function latestDutyCount(rows){const latest=new Map();(rows||[]).forEach(r=>{const key=String(r.account||r.name||r.id||'');if(!key)return;const old=latest.get(key);if(!old||Number(r.timestamp||0)>Number(old.timestamp||0))latest.set(key,r);});return [...latest.values()].filter(r=>r.status==='上班').length;}
 
 window.renderAdminOverview = function renderAdminOverview() {
@@ -2259,43 +2259,84 @@ function getActiveAnnouncements() {
                 .sort((a,b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
         }
 
-function renderSiteAnnouncements() {
-            const bar = document.getElementById('site-announcement-bar');
-            const track = document.getElementById('announcement-track');
-            if (!bar || !track) return;
-            const rows = getActiveAnnouncements();
-            if (!rows.length) {
+function stopAnnouncementRotation(){
+            if(announcementTimer){clearTimeout(announcementTimer);announcementTimer=null;}
+            if(announcementTransitionTimer){clearTimeout(announcementTransitionTimer);announcementTransitionTimer=null;}
+        }
+
+function renderSiteAnnouncements(){
+            const bar=document.getElementById('site-announcement-bar');
+            const track=document.getElementById('announcement-track');
+            if(!bar||!track)return;
+            const rows=getActiveAnnouncements();
+            const token=++announcementRenderToken;
+            stopAnnouncementRotation();
+
+            if(!rows.length){
                 bar.classList.add('hidden');
-                track.innerHTML = '';
-                if (announcementTimer) { clearInterval(announcementTimer); announcementTimer = null; }
-                announcementIndex = 0;
+                track.innerHTML='';
+                announcementIndex=0;
                 return;
             }
+
             bar.classList.remove('hidden');
-            if (announcementIndex >= rows.length) announcementIndex = 0;
-            track.innerHTML = rows.map((a,i) => `
+            if(announcementIndex>=rows.length)announcementIndex=0;
+
+            // 每次重新渲染前先完整清除舊 DOM，避免背景分頁／閒置後殘留舊動畫狀態。
+            track.innerHTML=rows.map((a,i)=>`
                 <div class="announcement-item ${i===announcementIndex?'active':''}" data-announcement-index="${i}">
                     <div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0"><i class="fa-solid fa-bullhorn"></i></div>
                     <div class="announcement-content">
-                        <div class="announcement-text text-sm sm:text-base text-slate-200 font-semibold">${escapeHtml(a.text || '')}</div>
+                        <div class="announcement-text text-sm sm:text-base text-slate-200 font-semibold">${escapeHtml(a.text||'')}</div>
                     </div>
-                    <div class="announcement-publisher text-xs text-slate-500">${escapeHtml(a.publisher || '')}</div>
+                    <div class="announcement-publisher text-xs text-slate-500">${escapeHtml(a.publisher||'')}</div>
                 </div>`).join('');
-            if (announcementTimer) clearInterval(announcementTimer);
-            if (rows.length > 1) {
-                announcementTimer = setInterval(() => {
-                    const items = [...track.querySelectorAll('.announcement-item')];
-                    if (!items.length) return;
-                    const oldIndex = announcementIndex;
-                    announcementIndex = (announcementIndex + 1) % rows.length;
-                    const oldItem = items[oldIndex];
-                    const newItem = items[announcementIndex];
-                    if (oldItem) oldItem.classList.remove('active'), oldItem.classList.add('exit-up');
-                    if (newItem) { newItem.classList.remove('exit-up'); requestAnimationFrame(() => newItem.classList.add('active')); }
-                    setTimeout(() => oldItem?.classList.remove('exit-up'), 500);
-                }, 5000);
-            }
+
+            if(rows.length<=1)return;
+
+            // 使用遞迴 setTimeout，不使用 setInterval，避免瀏覽器閒置後計時器與動畫累積。
+            const scheduleNext=()=>{
+                if(token!==announcementRenderToken||document.hidden)return;
+                announcementTimer=setTimeout(()=>{
+                    if(token!==announcementRenderToken||document.hidden)return;
+                    const items=[...track.querySelectorAll('.announcement-item')];
+                    if(items.length!==rows.length){renderSiteAnnouncements();return;}
+                    const oldIndex=announcementIndex;
+                    const nextIndex=(announcementIndex+1)%rows.length;
+                    const oldItem=items[oldIndex];
+                    const newItem=items[nextIndex];
+                    if(!oldItem||!newItem){renderSiteAnnouncements();return;}
+
+                    // 先保證只有目前項目可見，避免閒置恢復時兩則同時停留。
+                    items.forEach(item=>item.classList.remove('active','exit-up'));
+                    oldItem.classList.add('active');
+                    announcementIndex=nextIndex;
+
+                    requestAnimationFrame(()=>{
+                        if(token!==announcementRenderToken||document.hidden)return;
+                        oldItem.classList.remove('active');
+                        oldItem.classList.add('exit-up');
+                        newItem.classList.add('active');
+                        announcementTransitionTimer=setTimeout(()=>{
+                            if(token!==announcementRenderToken)return;
+                            oldItem.classList.remove('exit-up');
+                            announcementTransitionTimer=null;
+                            scheduleNext();
+                        },500);
+                    });
+                },5000);
+            };
+            scheduleNext();
         }
+
+// 分頁從背景／閒置狀態恢復時，重新建立公告動畫，避免瀏覽器計時器節流造成重疊。
+document.addEventListener('visibilitychange',()=>{
+            if(document.hidden){
+                stopAnnouncementRotation();
+                return;
+            }
+            if(document.getElementById('announcement-track'))renderSiteAnnouncements();
+        });
 
 function renderAdminAnnouncements() {
             const c = document.getElementById('admin-announcements-list');
