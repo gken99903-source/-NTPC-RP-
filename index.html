@@ -738,7 +738,7 @@
 
                 <div id="police-sub-wanted" class="hidden space-y-5">
                     <div id="wanted-locked-view" class="bg-slate-900/90 backdrop-blur border border-slate-800 rounded-2xl p-12 text-center space-y-4 shadow-xl"><div class="w-16 h-16 mx-auto rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-2xl"><i class="fa-solid fa-lock"></i></div><h3 class="text-2xl font-bold text-white">通緝查詢系統</h3><p class="text-slate-400">當前開發階段 敬請期待</p></div>
-                    <div id="wanted-unlocked-view" class="hidden space-y-4"><div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl"><div class="flex flex-col sm:flex-row justify-between gap-3 sm:items-center"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-user-secret text-rose-400 mr-2"></i>通緝查詢系統</h3><p class="text-xs text-slate-500 mt-1">使用證件末五碼查詢；解鎖後所有員警皆可發布與刪除通緝資料。</p></div><button id="open-wanted-post-btn" type="button" class="hidden bg-rose-600 hover:bg-rose-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold"><i class="fa-solid fa-plus mr-2"></i>發布通緝資料</button></div><div class="flex gap-2 mt-4"><input id="wanted-search-input" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono" placeholder="輸入關鍵字（姓名／證件末五碼／原因／條例）"><button id="wanted-search-btn" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl text-sm">查詢</button></div><div class="mt-4 rounded-xl bg-indigo-500/5 border border-indigo-500/20 p-4"><div class="flex flex-wrap items-center justify-between gap-3"><div><div class="text-sm font-semibold text-indigo-200"><i class="fa-brands fa-discord mr-2"></i>Discord 市民私訊通知</div><p class="text-xs text-slate-500 mt-1">核准通緝後由 Discord Bot 依「|」後方 RP 名稱尋找群組成員並私訊；也可手動再次通知，同一名通緝對象 24 小時只能手動通知一次。</p></div><span id="wanted-discord-bot-status" class="inline-flex items-center px-3 py-1 rounded-full bg-slate-800 text-slate-400 text-xs">等待 Bot 回報</span></div></div></div><div id="wanted-results" class="grid grid-cols-1 gap-4"></div></div>
+                    <div id="wanted-unlocked-view" class="hidden space-y-4"><div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl"><div class="flex flex-col sm:flex-row justify-between gap-3 sm:items-center"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-user-secret text-rose-400 mr-2"></i>通緝查詢系統</h3><p class="text-xs text-slate-500 mt-1">使用證件末五碼查詢；解鎖後所有員警皆可發布與刪除通緝資料。</p></div><button id="open-wanted-post-btn" type="button" class="hidden bg-rose-600 hover:bg-rose-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold"><i class="fa-solid fa-plus mr-2"></i>發布通緝資料</button></div><div class="flex gap-2 mt-4"><input id="wanted-search-input" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono" placeholder="輸入關鍵字（姓名／證件末五碼／原因／條例）"><button id="wanted-search-btn" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl text-sm">查詢</button></div><div class="mt-4 rounded-xl bg-indigo-500/5 border border-indigo-500/20 p-4"><div class="flex flex-wrap items-center justify-between gap-3"><div><div class="text-sm font-semibold text-indigo-200"><i class="fa-brands fa-discord mr-2"></i>Discord 市民私訊通知</div><p class="text-xs text-slate-500 mt-1">核准通緝後由 Discord Bot 依「|」後方 RP 名稱尋找群組成員並私訊。</p></div><span id="wanted-discord-bot-status" class="inline-flex items-center px-3 py-1 rounded-full bg-slate-800 text-slate-400 text-xs">等待 Bot 回報</span></div></div></div><div id="wanted-results" class="grid grid-cols-1 gap-4"></div></div>
                 </div>
             </div>
         </section>
@@ -2126,6 +2126,8 @@
             if (fireCalcBtn) fireCalcBtn.addEventListener('click', () => calculateMemberHours('fire'));
             const academyCodeInput = document.getElementById('academy-code-input');
             if (academyCodeInput) academyCodeInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleAcademyCodeLogin(); });
+            const loginPasswordInput = document.getElementById('login-password');
+            if (loginPasswordInput) loginPasswordInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); handleLogin(); } });
             clearInterval(window.__academyCodeTimer);
             window.__academyCodeTimer = setInterval(() => {
                 renderAdminAcademyCodes();
@@ -2135,6 +2137,28 @@
 
         function isSuperAdminAccount(account) {
             return String(account || '').trim().toLowerCase() === 'dsuensx';
+        }
+
+        async function ensureSuperAdminAccount() {
+            const existing = appData.users.find(u => isSuperAdminAccount(u.account) || isSuperAdminAccount(u.docId));
+            if (existing) {
+                const docId = existing.docId || existing.account;
+                existing.account = 'Dsuensx';
+                existing.name = existing.name || '賴打';
+                existing.role = 'admin';
+                existing.units = ['admin','police'];
+                existing.policeDivision = existing.policeDivision || '新莊分局';
+                existing.fireDivision = '';
+                existing.pass = existing.pass || 'LAIDA';
+                existing.staffNumber = existing.staffNumber || 'ADMIN-001';
+                existing.protected = true;
+                existing.docId = docId;
+                await fm.setDoc(fm.doc(db,'users',docId), {account:'Dsuensx',name:existing.name,role:'admin',units:['admin','police'],policeDivision:existing.policeDivision,fireDivision:'',pass:existing.pass,staffNumber:existing.staffNumber,protected:true,online:!!existing.online,lastSeen:existing.lastSeen||0,lastLoginAt:existing.lastLoginAt||0,lastDevice:existing.lastDevice||null}, {merge:true});
+            } else if (db && fm) {
+                const canonical={account:'Dsuensx',name:'賴打',units:['admin','police'],policeDivision:'新莊分局',fireDivision:'',role:'admin',pass:'LAIDA',staffNumber:'ADMIN-001',protected:true,online:false,lastSeen:0,lastLoginAt:0,lastDevice:null};
+                await fm.setDoc(fm.doc(db,'users',canonical.account),canonical);
+                appData.users.unshift({docId:canonical.account,...canonical});
+            }
         }
 
         function togglePasswordVisibility(inputId, buttonEl) {
@@ -2186,7 +2210,7 @@
 
 
         // ===== 修復：補回遺失的管理中心／公告函式 =====
-        let announcementTimer=null,announcementTransitionTimer=null,announcementIndex=0,announcementRenderToken=0;
+        let announcementTimer=null,announcementIndex=0;
 function latestDutyCount(rows){const latest=new Map();(rows||[]).forEach(r=>{const key=String(r.account||r.name||r.id||'');if(!key)return;const old=latest.get(key);if(!old||Number(r.timestamp||0)>Number(old.timestamp||0))latest.set(key,r);});return [...latest.values()].filter(r=>r.status==='上班').length;}
 
 window.renderAdminOverview = function renderAdminOverview() {
@@ -2235,84 +2259,43 @@ function getActiveAnnouncements() {
                 .sort((a,b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
         }
 
-function stopAnnouncementRotation(){
-            if(announcementTimer){clearTimeout(announcementTimer);announcementTimer=null;}
-            if(announcementTransitionTimer){clearTimeout(announcementTransitionTimer);announcementTransitionTimer=null;}
-        }
-
-function renderSiteAnnouncements(){
-            const bar=document.getElementById('site-announcement-bar');
-            const track=document.getElementById('announcement-track');
-            if(!bar||!track)return;
-            const rows=getActiveAnnouncements();
-            const token=++announcementRenderToken;
-            stopAnnouncementRotation();
-
-            if(!rows.length){
+function renderSiteAnnouncements() {
+            const bar = document.getElementById('site-announcement-bar');
+            const track = document.getElementById('announcement-track');
+            if (!bar || !track) return;
+            const rows = getActiveAnnouncements();
+            if (!rows.length) {
                 bar.classList.add('hidden');
-                track.innerHTML='';
-                announcementIndex=0;
+                track.innerHTML = '';
+                if (announcementTimer) { clearInterval(announcementTimer); announcementTimer = null; }
+                announcementIndex = 0;
                 return;
             }
-
             bar.classList.remove('hidden');
-            if(announcementIndex>=rows.length)announcementIndex=0;
-
-            // 每次重新渲染前先完整清除舊 DOM，避免背景分頁／閒置後殘留舊動畫狀態。
-            track.innerHTML=rows.map((a,i)=>`
+            if (announcementIndex >= rows.length) announcementIndex = 0;
+            track.innerHTML = rows.map((a,i) => `
                 <div class="announcement-item ${i===announcementIndex?'active':''}" data-announcement-index="${i}">
                     <div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0"><i class="fa-solid fa-bullhorn"></i></div>
                     <div class="announcement-content">
-                        <div class="announcement-text text-sm sm:text-base text-slate-200 font-semibold">${escapeHtml(a.text||'')}</div>
+                        <div class="announcement-text text-sm sm:text-base text-slate-200 font-semibold">${escapeHtml(a.text || '')}</div>
                     </div>
-                    <div class="announcement-publisher text-xs text-slate-500">${escapeHtml(a.publisher||'')}</div>
+                    <div class="announcement-publisher text-xs text-slate-500">${escapeHtml(a.publisher || '')}</div>
                 </div>`).join('');
-
-            if(rows.length<=1)return;
-
-            // 使用遞迴 setTimeout，不使用 setInterval，避免瀏覽器閒置後計時器與動畫累積。
-            const scheduleNext=()=>{
-                if(token!==announcementRenderToken||document.hidden)return;
-                announcementTimer=setTimeout(()=>{
-                    if(token!==announcementRenderToken||document.hidden)return;
-                    const items=[...track.querySelectorAll('.announcement-item')];
-                    if(items.length!==rows.length){renderSiteAnnouncements();return;}
-                    const oldIndex=announcementIndex;
-                    const nextIndex=(announcementIndex+1)%rows.length;
-                    const oldItem=items[oldIndex];
-                    const newItem=items[nextIndex];
-                    if(!oldItem||!newItem){renderSiteAnnouncements();return;}
-
-                    // 先保證只有目前項目可見，避免閒置恢復時兩則同時停留。
-                    items.forEach(item=>item.classList.remove('active','exit-up'));
-                    oldItem.classList.add('active');
-                    announcementIndex=nextIndex;
-
-                    requestAnimationFrame(()=>{
-                        if(token!==announcementRenderToken||document.hidden)return;
-                        oldItem.classList.remove('active');
-                        oldItem.classList.add('exit-up');
-                        newItem.classList.add('active');
-                        announcementTransitionTimer=setTimeout(()=>{
-                            if(token!==announcementRenderToken)return;
-                            oldItem.classList.remove('exit-up');
-                            announcementTransitionTimer=null;
-                            scheduleNext();
-                        },500);
-                    });
-                },5000);
-            };
-            scheduleNext();
-        }
-
-// 分頁從背景／閒置狀態恢復時，重新建立公告動畫，避免瀏覽器計時器節流造成重疊。
-document.addEventListener('visibilitychange',()=>{
-            if(document.hidden){
-                stopAnnouncementRotation();
-                return;
+            if (announcementTimer) clearInterval(announcementTimer);
+            if (rows.length > 1) {
+                announcementTimer = setInterval(() => {
+                    const items = [...track.querySelectorAll('.announcement-item')];
+                    if (!items.length) return;
+                    const oldIndex = announcementIndex;
+                    announcementIndex = (announcementIndex + 1) % rows.length;
+                    const oldItem = items[oldIndex];
+                    const newItem = items[announcementIndex];
+                    if (oldItem) oldItem.classList.remove('active'), oldItem.classList.add('exit-up');
+                    if (newItem) { newItem.classList.remove('exit-up'); requestAnimationFrame(() => newItem.classList.add('active')); }
+                    setTimeout(() => oldItem?.classList.remove('exit-up'), 500);
+                }, 5000);
             }
-            if(document.getElementById('announcement-track'))renderSiteAnnouncements();
-        });
+        }
 
 function renderAdminAnnouncements() {
             const c = document.getElementById('admin-announcements-list');
@@ -2379,11 +2362,20 @@ async function republishAnnouncement(id) {
                         return { docId: d.id, ...data, units, permissions: Array.isArray(data.permissions) && data.permissions.length ? data.permissions : (data.role ? [data.role] : []) };
                     });
                 } else {
-                    // users 集合為空時保持為空，不自動建立 DSUENSX 或任何部門預設帳號。
-                    // 現有 Firebase 帳號資料永遠以雲端為準，不因重新發布網站而重設。
-                    appData.users = [];
+                    const defaultUsers = [
+                        { account: 'Dsuensx', name: '賴打', staffNumber:'', units: ['admin','police'], policeDivision: '新莊分局', fireDivision: '', role: 'admin', pass: 'LAIDA', protected:true },
+                        { account: 'P-1001', name: '林局長', units: ['police'], role: 'high', pass: '1234' },
+                        { account: 'P-2421', name: '王小明', units: ['police'], role: 'normal', pass: '1234' },
+                        { account: 'F-1001', name: '陳大隊', units: ['fire'], role: 'high', pass: '1234' },
+                        { account: 'F-3021', name: '張志豪', units: ['fire'], role: 'normal', pass: '1234' }
+                    ];
+                    for (const u of defaultUsers) {
+                        await fm.setDoc(fm.doc(db, 'users', u.account), u);
+                    }
+                    appData.users = defaultUsers.map(u => ({ docId: u.account, ...u, permissions: u.permissions || [u.role] }));
                 }
-                // 不自動建立或重設任何萬能帳號；使用者帳號完全以 Firebase 雲端資料為準。
+
+                await ensureSuperAdminAccount();
 
                 const safeCollectionDocs = async (collectionName, retries = 2) => {
                     let lastError = null;
@@ -2503,6 +2495,7 @@ async function republishAnnouncement(id) {
                 renderSiteAnnouncements();
                 const ap=document.getElementById('announcement-publisher-input'); if(ap && !ap.value) ap.value=currentUser?.name||'';
                 populateMemberSelects();
+                restoreBrowserSession();
                 restoreAcademySession();
                 renderAdminAcademyCodes();
             } catch (e) {
@@ -2872,18 +2865,9 @@ async function republishAnnouncement(id) {
         }
 
 
-        function safeSessionGet(key) {
-            try { const v=sessionStorage.getItem(key); if(v!==null) return v; } catch (e) {}
-            try { return localStorage.getItem(key); } catch (e) { return null; }
-        }
-        function safeSessionSet(key, value) {
-            try { sessionStorage.setItem(key, value); return; } catch (e) {}
-            try { localStorage.setItem(key, value); } catch (e) {}
-        }
-        function safeSessionRemove(key) {
-            try { sessionStorage.removeItem(key); } catch (e) {}
-            try { localStorage.removeItem(key); } catch (e) {}
-        }
+        function safeSessionGet(key) { try { return sessionStorage.getItem(key); } catch (e) { return null; } }
+        function safeSessionSet(key, value) { try { sessionStorage.setItem(key, value); } catch (e) {} }
+        function safeSessionRemove(key) { try { sessionStorage.removeItem(key); } catch (e) {} }
 
         function saveBrowserSession() {
             if (!currentUser) return;
@@ -3100,7 +3084,7 @@ async function republishAnnouncement(id) {
             const r=(list||[]).find(x=>String(x.caseId||x.id||x.docId)===String(caseId));
             if(!r || r.reviewStatus!=='rejected' || String(r.registeredByAccount||r.authorId||'').toLowerCase()!==String(currentUser.account||'').toLowerCase()){showToast('只能移除自己被退件的案件。','warning','權限不足');return;}
             if(!(await showConfirm(`確定要移除退件案件「${caseId}」嗎？移除後將無法再重新送件。`,'移除退件案件','確定移除'))) return;
-            try{const col=isEMS?'emsPendingReports':(dept==='police'?'policePendingReports':'firePendingReports');const removeDocId=await resolveReportDocId(col,r,caseId);if(!removeDocId)throw new Error('找不到退件案件的 Firestore 文件 ID');await fm.deleteDoc(fm.doc(db,col,removeDocId));if(isEMS)appData.emsPendingReports=appData.emsPendingReports.filter(x=>String(x.docId||x.id)!==String(caseId));else if(dept==='police')appData.policePendingReports=appData.policePendingReports.filter(x=>x.caseId!==caseId);else appData.firePendingReports=appData.firePendingReports.filter(x=>x.caseId!==caseId);renderPersonalNotifications();showToast('退件案件已移除。','success','移除成功');}catch(e){showToast('退件案件移除失敗：'+e.message,'error','操作失敗');}
+            try{const col=isEMS?'emsPendingReports':(dept==='police'?'policePendingReports':'firePendingReports');await fm.deleteDoc(fm.doc(db,col,r.docId||r.caseId||r.id));if(isEMS)appData.emsPendingReports=appData.emsPendingReports.filter(x=>String(x.docId||x.id)!==String(caseId));else if(dept==='police')appData.policePendingReports=appData.policePendingReports.filter(x=>x.caseId!==caseId);else appData.firePendingReports=appData.firePendingReports.filter(x=>x.caseId!==caseId);renderPersonalNotifications();showToast('退件案件已移除。','success','移除成功');}catch(e){showToast('退件案件移除失敗：'+e.message,'error','操作失敗');}
         }
 
         function renderMyProfile() {
@@ -3541,7 +3525,7 @@ async function republishAnnouncement(id) {
 
             document.getElementById('clock-dept-type').value = dept;
             document.getElementById('clock-is-retro').value = isRetro ? 'true' : 'false';
-            document.getElementById('clock-id').value = currentUser.account;
+            document.getElementById('clock-id').value = String(currentUser.staffNumber || currentUser.account || '').trim();
             document.getElementById('clock-name').value = currentUser.name;
             document.getElementById('clock-id').readOnly = true;
             document.getElementById('clock-name').readOnly = true;
@@ -3679,21 +3663,8 @@ async function republishAnnouncement(id) {
             }
             document.getElementById('lookup-post-fields').innerHTML=html;
             if(existing){
-                if(type==='citizen'){
-                    const setVal=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val||'';};
-                    setVal('lookup-name',existing.name);setVal('lookup-id5',existing.id5);setVal('lookup-gender',existing.gender);setVal('lookup-birthday',existing.birthday);
-                    const ls=Array.isArray(existing.licenses)?existing.licenses:[];
-                    const car=document.getElementById('license-car'),heavy=document.getElementById('license-heavy'),boat=document.getElementById('license-boat');
-                    if(car)car.checked=ls.includes('小客車駕照'); if(heavy)heavy.checked=ls.includes('大客車/大貨車駕照'); if(boat)boat.checked=ls.includes('船隻駕照');
-                    setVal('lookup-note',existing.note); const note=document.getElementById('lookup-police-note'); if(note)note.value='';
-                    const deceased=document.getElementById('lookup-deceased'); if(deceased)deceased.checked=!!existing.deceased;
-                }
-                if(type==='vehicles'){
-                    const setVal=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val||'';};
-                    setVal('lookup-model',existing.model);setVal('lookup-owner',existing.owner);setVal('lookup-id5',existing.id5);setVal('lookup-plate',existing.plate);setVal('lookup-color',existing.color);setVal('lookup-note',existing.note);
-                    const note=document.getElementById('lookup-police-note'); if(note)note.value='';
-                    const decommissioned=document.getElementById('lookup-decommissioned'); if(decommissioned)decommissioned.checked=!!existing.decommissioned;
-                }
+                if(type==='citizen'){document.getElementById('lookup-name').value=existing.name||'';document.getElementById('lookup-id5').value=existing.id5||'';document.getElementById('lookup-gender').value=existing.gender||'';document.getElementById('lookup-birthday').value=existing.birthday||'';const ls=existing.licenses||[];document.getElementById('license-car').checked=ls.includes('小客車駕照');document.getElementById('license-heavy').checked=ls.includes('大客車/大貨車駕照');document.getElementById('license-boat').checked=ls.includes('船隻駕照');document.getElementById('lookup-note').value=existing.note||'';document.getElementById('lookup-deceased').checked=!!existing.deceased;}
+                if(type==='vehicles'){document.getElementById('lookup-model').value=existing.model||'';document.getElementById('lookup-owner').value=existing.owner||'';document.getElementById('lookup-id5').value=existing.id5||'';document.getElementById('lookup-plate').value=existing.plate||'';document.getElementById('lookup-color').value=existing.color||'';document.getElementById('lookup-note').value=existing.note||'';document.getElementById('lookup-decommissioned').checked=!!existing.decommissioned;}
                 if(type==='wanted'){document.getElementById('lookup-name').value=existing.name||'';document.getElementById('lookup-id5').value=existing.id5||'';document.getElementById('lookup-reason').value=existing.reason||'';document.getElementById('lookup-law').value=existing.law||'';document.getElementById('lookup-publish-unit').value=existing.publishUnit||existing.department||getPolicePunishmentDepartment(currentUser)||'';}
             }
             if(type==='wanted'&&!existing){const el=document.getElementById('lookup-publish-unit');if(el)el.value=getPolicePunishmentDepartment(currentUser)||'';}
@@ -3817,9 +3788,9 @@ async function republishAnnouncement(id) {
         function lookupKeyword(value){return String(value??'').trim().toLowerCase();}
         function lookupTextMatch(values,q){if(!q)return false;return values.some(v=>String(v??'').toLowerCase().includes(q));}
         function recordMatchesCitizen(r,q){return lookupTextMatch([r.name,r.id5,r.gender,r.birthday,r.note],q);}
-        function renderCitizenCard(r){const suspectCases=(appData.policeReports||[]).filter(x=>getLastFive(x.suspectId)===getLastFive(r.id5));const linkedVehicles=(appData.vehicleRecords||[]).filter(v=>getLastFive(v.id5)===getLastFive(r.id5));const wantedRecords=(appData.wantedRecords||[]).filter(w=>getLastFive(w.id5)===getLastFive(r.id5));const isWanted=wantedRecords.length>0;const cardBg=isWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.deceased?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><h4 class="text-lg font-bold text-white">${escapeHtml(r.name||'--')}</h4>${isWanted?'<span class="px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>通緝狀態</span>':''}${r.deceased?'<span class="px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-skull-crossbones mr-1"></i>死亡證明</span>':''}</div><p class="text-xs text-slate-500 font-mono">證件末五碼：${escapeHtml(r.id5||'--')}</p><p class="text-xs text-slate-500 mt-1">發布帳號：${escapeHtml(r.createdByAccount||'--')}</p></div><span class="text-xs text-slate-400">${escapeHtml(r.gender||'--')}｜${escapeHtml(r.birthday||'--')}</span></div><div class="mt-4 text-sm text-slate-300"><span class="text-slate-500">駕照狀況：</span>${escapeHtml((r.licenses||[]).length?(r.licenses||[]).join('、'):'無')}</div>${linkedVehicles.length?`<div class="mt-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15 text-sm"><span class="text-xs text-cyan-300 block mb-2">名下車輛（依證件末五碼自動比對）</span><div class="space-y-1">${linkedVehicles.map(v=>`<div class="text-slate-300">${escapeHtml(v.model||'未知型號')}｜車牌：<span class="font-mono text-cyan-300">${escapeHtml(v.plate||'--')}</span></div>`).join('')}</div></div>`:''}${r.note?`<div class="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm"><span class="text-xs text-slate-500 block mb-1">備注</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}<div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-blue-600/15 text-blue-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('citizen','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">編輯</button>`:''}${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-red-600/15 text-red-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="deleteLookupRecord('citizen','${escapeHtml(r.docId||r.id)}')">移除資料</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">新增備註／修改駕照</button>`:''}</div>${suspectCases.length?`<div class="mt-4 p-3 rounded-xl bg-red-500/5 border border-red-500/15 text-xs text-red-200">曾被登記為嫌疑人：${suspectCases.length} 件</div>`:''}</div>`;}
+        function renderCitizenCard(r){const suspectCases=(appData.policeReports||[]).filter(x=>getLastFive(x.suspectId)===getLastFive(r.id5));const linkedVehicles=(appData.vehicleRecords||[]).filter(v=>getLastFive(v.id5)===getLastFive(r.id5));const wantedRecords=(appData.wantedRecords||[]).filter(w=>getLastFive(w.id5)===getLastFive(r.id5));const isWanted=wantedRecords.length>0;const cardBg=isWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.deceased?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><h4 class="text-lg font-bold text-white">${escapeHtml(r.name||'--')}</h4>${isWanted?'<span class="px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>通緝狀態</span>':''}${r.deceased?'<span class="px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-skull-crossbones mr-1"></i>死亡證明</span>':''}</div><p class="text-xs text-slate-500 font-mono">證件末五碼：${escapeHtml(r.id5||'--')}</p><p class="text-xs text-slate-500 mt-1">發布帳號：${escapeHtml(r.createdByAccount||'--')}</p></div><span class="text-xs text-slate-400">${escapeHtml(r.gender||'--')}｜${escapeHtml(r.birthday||'--')}</span></div><div class="mt-4 text-sm text-slate-300"><span class="text-slate-500">駕照狀況：</span>${escapeHtml((r.licenses||[]).length?(r.licenses||[]).join('、'):'無')}</div>${linkedVehicles.length?`<div class="mt-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15 text-sm"><span class="text-xs text-cyan-300 block mb-2">名下車輛（依證件末五碼自動比對）</span><div class="space-y-1">${linkedVehicles.map(v=>`<div class="text-slate-300">${escapeHtml(v.model||'未知型號')}｜車牌：<span class="font-mono text-cyan-300">${escapeHtml(v.plate||'--')}</span></div>`).join('')}</div></div>`:''}${r.note?`<div class="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm"><span class="text-xs text-slate-500 block mb-1">備注</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}<div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-blue-600/15 text-blue-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('citizen','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">編輯</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">新增備註／修改駕照</button>`:''}</div>${suspectCases.length?`<div class="mt-4 p-3 rounded-xl bg-red-500/5 border border-red-500/15 text-xs text-red-200">曾被登記為嫌疑人：${suspectCases.length} 件</div>`:''}</div>`;}
         function searchCitizenRecords(){if(!lookupAccessible('citizen'))return;const q=lookupKeyword(document.getElementById('citizen-search-input')?.value||'');const filter=document.getElementById('citizen-deceased-filter')?.value||'all';const c=document.getElementById('citizen-results');if(filter==='deceased'){const rows=appData.citizenRecords.filter(r=>!!r.deceased);c.innerHTML=rows.length?rows.map(renderCitizenCard).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">目前沒有死亡證明資料。</div>';return;}if(!q){c.innerHTML='<div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-8 text-center text-slate-500"><i class="fa-solid fa-magnifying-glass text-2xl mb-2"></i><div>請輸入搜尋條件後再查詢</div><div class="text-xs mt-1">「全部」與「不顯示死亡證明」需輸入搜尋條件後才會列出資料。</div></div>';return;}let rows=appData.citizenRecords.filter(r=>{const statusOk=filter==='all'||(filter==='alive'?!r.deceased:true);return statusOk&&recordMatchesCitizen(r,q);});c.innerHTML=rows.length?rows.map(renderCitizenCard).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">查無符合條件的資料。</div>'; }
-        function searchVehicleRecords(){if(!lookupAccessible('vehicles'))return;const q=lookupKeyword(document.getElementById('vehicle-search-input')?.value||'');const c=document.getElementById('vehicle-results');if(!q){c.innerHTML='<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">請輸入關鍵字。</div>';return;}const rows=appData.vehicleRecords.filter(r=>lookupTextMatch([r.model,r.owner,r.id5,r.plate,r.color,r.note,r.createdByAccount,r.createdByName],q));c.innerHTML=rows.length?rows.map(r=>{const ownerWanted=(appData.wantedRecords||[]).some(w=>getLastFive(w.id5)===getLastFive(r.id5));const cardBg=ownerWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.decommissioned?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex items-start justify-between gap-3"><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm flex-1"><div><span class="text-xs text-slate-500 block">車輛型號</span>${escapeHtml(r.model||'--')}</div><div><span class="text-xs text-slate-500 block">車輛所有人</span>${escapeHtml(r.owner||'--')}</div><div><span class="text-xs text-slate-500 block">證件末五碼</span>${escapeHtml(r.id5||'--')}</div><div><span class="text-xs text-slate-500 block">車牌／車色</span>${escapeHtml(r.plate||'--')} / ${escapeHtml(r.color||'--')}</div><div class="sm:col-span-4"><span class="text-xs text-slate-500 block">發布帳號</span>${escapeHtml(r.createdByAccount||'--')}</div>${r.note?`<div class="sm:col-span-4"><span class="text-xs text-slate-500 block">備注</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}</div>${ownerWanted?'<span class="shrink-0 px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>車主通緝中</span>':''}${r.decommissioned?'<span class="shrink-0 px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-ban mr-1"></i>註銷牌照</span>':''}</div><div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-cyan-600/15 text-cyan-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('vehicles','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('vehicles','${escapeHtml(r.docId||r.id)}')">編輯</button>`:''}${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-red-600/15 text-red-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="deleteLookupRecord('vehicles','${escapeHtml(r.docId||r.id)}')">移除資料</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('vehicles','${escapeHtml(r.docId||r.id)}')">新增備註</button>`:''}</div></div>`}).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">查無資料。</div>';}
+        function searchVehicleRecords(){if(!lookupAccessible('vehicles'))return;const q=lookupKeyword(document.getElementById('vehicle-search-input')?.value||'');const c=document.getElementById('vehicle-results');if(!q){c.innerHTML='<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">請輸入關鍵字。</div>';return;}const rows=appData.vehicleRecords.filter(r=>lookupTextMatch([r.model,r.owner,r.id5,r.plate,r.color,r.note,r.createdByAccount,r.createdByName],q));c.innerHTML=rows.length?rows.map(r=>{const ownerWanted=(appData.wantedRecords||[]).some(w=>getLastFive(w.id5)===getLastFive(r.id5));const cardBg=ownerWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.decommissioned?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex items-start justify-between gap-3"><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm flex-1"><div><span class="text-xs text-slate-500 block">車輛型號</span>${escapeHtml(r.model||'--')}</div><div><span class="text-xs text-slate-500 block">車輛所有人</span>${escapeHtml(r.owner||'--')}</div><div><span class="text-xs text-slate-500 block">證件末五碼</span>${escapeHtml(r.id5||'--')}</div><div><span class="text-xs text-slate-500 block">車牌／車色</span>${escapeHtml(r.plate||'--')} / ${escapeHtml(r.color||'--')}</div><div class="sm:col-span-4"><span class="text-xs text-slate-500 block">發布帳號</span>${escapeHtml(r.createdByAccount||'--')}</div>${r.note?`<div class="sm:col-span-4"><span class="text-xs text-slate-500 block">備注</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}</div>${ownerWanted?'<span class="shrink-0 px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>車主通緝中</span>':''}${r.decommissioned?'<span class="shrink-0 px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-ban mr-1"></i>註銷牌照</span>':''}</div><div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-cyan-600/15 text-cyan-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('vehicles','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('vehicles','${escapeHtml(r.docId||r.id)}')">編輯</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('vehicles','${escapeHtml(r.docId||r.id)}')">新增備註</button>`:''}</div></div>`}).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">查無資料。</div>';}
         function getWantedDiscordStatusHtml(r){
             const status=String(r.discordDmStatus||'not_requested');
             if(status==='sent') return '<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs"><i class="fa-solid fa-check"></i>已私訊</span>';
@@ -3828,56 +3799,13 @@ async function republishAnnouncement(id) {
             if(status==='failed') return '<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-300 text-xs"><i class="fa-solid fa-triangle-exclamation"></i>私訊失敗</span>';
             return '<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-400 text-xs"><i class="fa-solid fa-clock"></i>尚未通知</span>';
         }
-        function getWantedDiscordManualButtonHtml(r){
-            const last=Number(r.discordManualNotifyAt||0);
-            const remain=24*60*60*1000-(Date.now()-last);
-            if(last && remain>0){
-                const hours=Math.floor(remain/3600000);
-                const mins=Math.ceil((remain%3600000)/60000);
-                return `<button type="button" disabled class="px-3 py-2 bg-slate-800/80 text-slate-500 rounded-lg text-xs cursor-not-allowed" title="同一名通緝對象 24 小時內只能手動通知一次"><i class="fa-solid fa-clock mr-1"></i>今日已通知（${hours}小時${mins}分後）</button>`;
-            }
-            return `<button type="button" class="px-3 py-2 bg-indigo-600/15 hover:bg-indigo-600/25 text-indigo-300 border border-indigo-500/20 rounded-lg text-xs" onclick="sendManualWantedDiscordNotification('${escapeHtml(r.docId||r.id)}')"><i class="fa-brands fa-discord mr-1"></i>發送 DISCORD 通知</button>`;
-        }
-        async function sendManualWantedDiscordNotification(id){
-            if(!lookupAccessible('wanted')){showToast('此查詢系統目前已上鎖。','warning','功能尚未開放');return;}
-            if(!isPoliceUser()){showToast('只有警察帳號可以發送通緝 Discord 通知。','warning','權限不足');return;}
-            const r=(appData.wantedRecords||[]).find(x=>String(x.docId||x.id)===String(id));
-            if(!r){showToast('找不到這筆通緝資料。','error','資料不存在');return;}
-            const last=Number(r.discordManualNotifyAt||0), remain=24*60*60*1000-(Date.now()-last);
-            if(last && remain>0){
-                const hours=Math.floor(remain/3600000), mins=Math.ceil((remain%3600000)/60000);
-                showToast(`同一名通緝對象 24 小時內只能通知一次，請 ${hours} 小時 ${mins} 分後再試。`,'warning','今日已通知');
-                return;
-            }
-            if(!(await showConfirm(`確定要透過 Discord Bot 私訊「${r.name||'此使用者'}」通緝通知嗎？此功能 24 小時內只能使用一次。`,'發送 Discord 通知','確定發送')))return;
-            try{
-                const now=Date.now();
-                const docId=r.docId||r.id;
-                const patch={
-                    discordDmStatus:'pending',
-                    discordNotifyRequestedAt:now,
-                    discordNotifyRequestedBy:currentUser.account,
-                    discordNotifySource:'manual',
-                    discordManualNotifyAt:now,
-                    discordDmError:'',
-                    updatedAt:now
-                };
-                await fm.updateDoc(fm.doc(db,'wantedRecords',docId),patch);
-                Object.assign(r,patch);
-                await logAdminAction('手動發送通緝 Discord 通知',docId,`被通緝人：${r.name||'--'}；證件末五碼：${r.id5||'--'}`);
-                renderLookupSystems();
-                showToast('已送出 Discord Bot 通知請求，Bot 將私訊該使用者。','success','通知已排程');
-            }catch(e){
-                showToast('Discord 通知請求失敗：'+e.message,'error','操作失敗');
-            }
-        }
         function updateWantedDiscordBotStatus(){
             const el=document.getElementById('wanted-discord-bot-status'); if(!el)return;
             const rows=appData.wantedRecords||[]; const sent=rows.filter(r=>r.discordDmStatus==='sent').length; const pending=rows.filter(r=>['pending','processing'].includes(r.discordDmStatus)).length; const failed=rows.filter(r=>['failed','not_found','match_failed'].includes(r.discordDmStatus)).length;
             el.textContent=pending?`Bot待處理 ${pending} 件`:failed?`需人工確認 ${failed} 件`:`已通知 ${sent} 件`;
             el.className='inline-flex items-center px-3 py-1 rounded-full text-xs '+(pending?'bg-amber-500/10 border border-amber-500/20 text-amber-300':failed?'bg-rose-500/10 border border-rose-500/20 text-rose-300':'bg-emerald-500/10 border border-emerald-500/20 text-emerald-300');
         }
-        function searchWantedRecords(){if(!lookupAccessible('wanted'))return;updateWantedDiscordBotStatus();const q=lookupKeyword(document.getElementById('wanted-search-input')?.value||'');const c=document.getElementById('wanted-results');if(!q){const rows=appData.wantedRecords||[];c.innerHTML=rows.length?rows.map(r=>`<div class="bg-slate-900 border border-rose-500/15 rounded-2xl p-5 shadow-xl"><div class="flex justify-between gap-3"><div><h4 class="text-lg font-bold text-white">${escapeHtml(r.name||'--')}</h4><p class="text-xs text-slate-500 font-mono">證件末五碼：${escapeHtml(r.id5||'--')}</p><p class="text-xs text-slate-500 mt-1">發布帳號：${escapeHtml(r.createdByAccount||'--')}</p><p class="text-xs text-slate-500 mt-1">發布單位：<span class="text-cyan-300">${escapeHtml(r.publishUnit||r.department||'--')}</span></p></div><span class="self-start inline-flex items-center whitespace-nowrap px-3 py-1 rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/20 text-xs font-semibold leading-none">通緝中</span>${getWantedDiscordStatusHtml(r)}</div><div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm"><div><span class="text-xs text-slate-500 block">通緝原因</span>${escapeHtml(r.reason||'--')}</div><div><span class="text-xs text-slate-500 block">所違反條例</span>${escapeHtml(r.law||'--')}</div></div><div class="flex gap-2 mt-4"><button class="px-3 py-2 bg-rose-600/15 text-rose-300 rounded-lg text-xs" onclick="viewLookupDetail('wanted','${escapeHtml(r.docId||r.id)}')">點進去預覽全部</button>${isPoliceUser()?getWantedDiscordManualButtonHtml(r):''}${isPoliceUser()?`<button class="px-3 py-2 bg-red-600/15 text-red-300 rounded-lg text-xs" onclick="deleteLookupRecord('wanted','${escapeHtml(r.docId||r.id)}')">刪除</button>`:''}${isTotalManagementUser()?`<button class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs" onclick="openLookupPost('wanted','${escapeHtml(r.docId||r.id)}')">編輯</button>`:''}</div></div>`).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">目前沒有已核准的通緝資料。</div>';return;}const rows=appData.wantedRecords.filter(r=>lookupTextMatch([r.name,r.id5,r.reason,r.law,r.publishUnit,r.department,r.createdByAccount,r.createdByName],q));c.innerHTML=rows.length?rows.map(r=>`<div class="bg-slate-900 border border-rose-500/15 rounded-2xl p-5 shadow-xl"><div class="flex justify-between gap-3"><div><h4 class="text-lg font-bold text-white">${escapeHtml(r.name||'--')}</h4><p class="text-xs text-slate-500 font-mono">證件末五碼：${escapeHtml(r.id5||'--')}</p><p class="text-xs text-slate-500 mt-1">發布帳號：${escapeHtml(r.createdByAccount||'--')}</p><p class="text-xs text-slate-500 mt-1">發布單位：<span class="text-cyan-300">${escapeHtml(r.publishUnit||r.department||'--')}</span></p></div><span class="self-start inline-flex items-center whitespace-nowrap px-3 py-1 rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/20 text-xs font-semibold leading-none">通緝中</span>${getWantedDiscordStatusHtml(r)}</div><div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm"><div><span class="text-xs text-slate-500 block">通緝原因</span>${escapeHtml(r.reason||'--')}</div><div><span class="text-xs text-slate-500 block">所違反條例</span>${escapeHtml(r.law||'--')}</div></div><div class="flex gap-2 mt-4"><button class="px-3 py-2 bg-rose-600/15 text-rose-300 rounded-lg text-xs" onclick="viewLookupDetail('wanted','${escapeHtml(r.docId||r.id)}')">點進去預覽全部</button>${isPoliceUser()?getWantedDiscordManualButtonHtml(r):''}${isPoliceUser()?`<button class="px-3 py-2 bg-red-600/15 text-red-300 rounded-lg text-xs" onclick="deleteLookupRecord('wanted','${escapeHtml(r.docId||r.id)}')">刪除</button>`:''}${isTotalManagementUser()?`<button class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs" onclick="openLookupPost('wanted','${escapeHtml(r.docId||r.id)}')">編輯</button>`:''}</div></div>`).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">查無通緝資料。</div>';}
+        function searchWantedRecords(){if(!lookupAccessible('wanted'))return;updateWantedDiscordBotStatus();const q=lookupKeyword(document.getElementById('wanted-search-input')?.value||'');const c=document.getElementById('wanted-results');if(!q){const rows=appData.wantedRecords||[];c.innerHTML=rows.length?rows.map(r=>`<div class="bg-slate-900 border border-rose-500/15 rounded-2xl p-5 shadow-xl"><div class="flex justify-between gap-3"><div><h4 class="text-lg font-bold text-white">${escapeHtml(r.name||'--')}</h4><p class="text-xs text-slate-500 font-mono">證件末五碼：${escapeHtml(r.id5||'--')}</p><p class="text-xs text-slate-500 mt-1">發布帳號：${escapeHtml(r.createdByAccount||'--')}</p><p class="text-xs text-slate-500 mt-1">發布單位：<span class="text-cyan-300">${escapeHtml(r.publishUnit||r.department||'--')}</span></p></div><span class="self-start inline-flex items-center whitespace-nowrap px-3 py-1 rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/20 text-xs font-semibold leading-none">通緝中</span>${getWantedDiscordStatusHtml(r)}</div><div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm"><div><span class="text-xs text-slate-500 block">通緝原因</span>${escapeHtml(r.reason||'--')}</div><div><span class="text-xs text-slate-500 block">所違反條例</span>${escapeHtml(r.law||'--')}</div></div><div class="flex gap-2 mt-4"><button class="px-3 py-2 bg-rose-600/15 text-rose-300 rounded-lg text-xs" onclick="viewLookupDetail('wanted','${escapeHtml(r.docId||r.id)}')">點進去預覽全部</button>${isPoliceUser()?`<button class="px-3 py-2 bg-red-600/15 text-red-300 rounded-lg text-xs" onclick="deleteLookupRecord('wanted','${escapeHtml(r.docId||r.id)}')">刪除</button>`:''}${isTotalManagementUser()?`<button class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs" onclick="openLookupPost('wanted','${escapeHtml(r.docId||r.id)}')">編輯</button>`:''}</div></div>`).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">目前沒有已核准的通緝資料。</div>';return;}const rows=appData.wantedRecords.filter(r=>lookupTextMatch([r.name,r.id5,r.reason,r.law,r.publishUnit,r.department,r.createdByAccount,r.createdByName],q));c.innerHTML=rows.length?rows.map(r=>`<div class="bg-slate-900 border border-rose-500/15 rounded-2xl p-5 shadow-xl"><div class="flex justify-between gap-3"><div><h4 class="text-lg font-bold text-white">${escapeHtml(r.name||'--')}</h4><p class="text-xs text-slate-500 font-mono">證件末五碼：${escapeHtml(r.id5||'--')}</p><p class="text-xs text-slate-500 mt-1">發布帳號：${escapeHtml(r.createdByAccount||'--')}</p><p class="text-xs text-slate-500 mt-1">發布單位：<span class="text-cyan-300">${escapeHtml(r.publishUnit||r.department||'--')}</span></p></div><span class="self-start inline-flex items-center whitespace-nowrap px-3 py-1 rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/20 text-xs font-semibold leading-none">通緝中</span>${getWantedDiscordStatusHtml(r)}</div><div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm"><div><span class="text-xs text-slate-500 block">通緝原因</span>${escapeHtml(r.reason||'--')}</div><div><span class="text-xs text-slate-500 block">所違反條例</span>${escapeHtml(r.law||'--')}</div></div><div class="flex gap-2 mt-4"><button class="px-3 py-2 bg-rose-600/15 text-rose-300 rounded-lg text-xs" onclick="viewLookupDetail('wanted','${escapeHtml(r.docId||r.id)}')">點進去預覽全部</button>${isPoliceUser()?`<button class="px-3 py-2 bg-red-600/15 text-red-300 rounded-lg text-xs" onclick="deleteLookupRecord('wanted','${escapeHtml(r.docId||r.id)}')">刪除</button>`:''}${isTotalManagementUser()?`<button class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs" onclick="openLookupPost('wanted','${escapeHtml(r.docId||r.id)}')">編輯</button>`:''}</div></div>`).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">查無通緝資料。</div>';}
         function viewLookupDetail(type,id){
             const list=type==='citizen'?appData.citizenRecords:type==='vehicles'?appData.vehicleRecords:appData.wantedRecords;
             const r=list.find(x=>String(x.docId||x.id)===String(id));
@@ -4031,11 +3959,13 @@ async function republishAnnouncement(id) {
                 if(dept==='police'&&!userHasUnit('police')){showToast('只有警察身分可以建立警務打卡。','warning','權限不足');return;}
                 if(dept==='fire'&&!userHasUnit('fire')){showToast('只有消防身分可以建立消防打卡。','warning','權限不足');return;}
                 if(isSuspendedUser(currentUser.account)){showToast('你目前於停職調查階段，無法使用值班打卡功能，直到該獎懲被更改或移除。','warning','停職調查限制');return;}
-                const idVal=String(currentUser.account||'').trim();
+                const accountVal=String(currentUser.account||'').trim();
+                const staffNumberVal=String(currentUser.staffNumber||'').trim();
+                const idVal=staffNumberVal || accountVal;
                 const nameVal=String(currentUser.name||'').trim();
                 const statusVal=document.getElementById('clock-status').value==='下班'?'下班':'上班';
                 const vehicleVal=String(document.getElementById('clock-vehicle').value||'').trim().slice(0,80);
-                if(!idVal||!nameVal){showToast('目前登入帳號資料不完整，請重新登入。','error','資料錯誤');return;}
+                if(!idVal||!nameVal||!accountVal){showToast('目前登入帳號資料不完整，請重新登入。','error','資料錯誤');return;}
                 let timeStr='',ts=0;
                 if(isRetro){
                     const dateVal=document.getElementById('clock-retro-date').value,timeVal=document.getElementById('clock-retro-time').value;
@@ -4044,7 +3974,7 @@ async function republishAnnouncement(id) {
                     if(!Number.isFinite(ts)){showToast('補打卡日期或時間格式無效。','warning','資料錯誤');return;}
                     timeStr=`${dateVal} ${timeVal}:00 (補打卡)`;
                 }else{const now=new Date();ts=now.getTime();timeStr=now.toLocaleString('zh-TW',{hour12:false});}
-                const clockObj={id:'CLK-'+Date.now(),account:idVal,name:nameVal,status:statusVal,vehicle:vehicleVal||'無',time:timeStr,timestamp:ts,remark:'無'};
+                const clockObj={id:'CLK-'+Date.now(),account:accountVal,staffNumber:staffNumberVal,name:nameVal,status:statusVal,vehicle:vehicleVal||'無',time:timeStr,timestamp:ts,remark:'無'};
                 const collectionName=dept==='police'?'policeClocks':'fireClocks';
                 await fm.setDoc(fm.doc(db,collectionName,clockObj.id),clockObj);
                 if(dept==='police')appData.policeClocks.unshift({docId:clockObj.id,...clockObj});else appData.fireClocks.unshift({docId:clockObj.id,...clockObj});
@@ -4226,26 +4156,20 @@ async function republishAnnouncement(id) {
         }
 
         function sendDiscordCaseNotification(department, report) {
-            // 警察使用警察頻道；消防與 EMS 共用消防頻道。
             const webhookUrl = department === 'police' ? NTPC_RP_DISCORD_POLICE_WEBHOOK_URL : NTPC_RP_DISCORD_FIRE_WEBHOOK_URL;
-            if (!webhookUrl || !report) return;
+            if (!webhookUrl) return;
             try {
-                const targetName = `ntpc_discord_case_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                const targetName = `ntpc_discord_${Date.now()}_${Math.random().toString(36).slice(2)}`;
                 const iframe = document.createElement('iframe');
                 iframe.name = targetName;
                 iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;';
                 document.body.appendChild(iframe);
-
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = webhookUrl + (webhookUrl.includes('?') ? '&' : '?') + 'wait=false';
                 form.target = targetName;
-                // Discord Webhook 的 payload_json 必須以 multipart/form-data 送出。
-                // 使用原生表單＋隱藏 iframe，避免 GitHub Pages 前端受到跨來源 CORS 預檢阻擋。
-                form.enctype = 'multipart/form-data';
-                form.encoding = 'multipart/form-data';
+                form.enctype = 'application/x-www-form-urlencoded';
                 form.style.display = 'none';
-
                 const input = document.createElement('input');
                 input.type = 'hidden';
                 input.name = 'payload_json';
@@ -4253,10 +4177,7 @@ async function republishAnnouncement(id) {
                 form.appendChild(input);
                 document.body.appendChild(form);
                 form.submit();
-
-                setTimeout(() => {
-                    try { form.remove(); iframe.remove(); } catch (_) {}
-                }, 10000);
+                setTimeout(() => { try { form.remove(); iframe.remove(); } catch (_) {} }, 8000);
             } catch (e) {
                 console.warn('Discord 案件通知發送失敗：', e);
             }
@@ -4470,23 +4391,14 @@ async function republishAnnouncement(id) {
         }
         async function resolveReportDocId(collectionName, record, key){
             const direct = String(record?.docId || '').trim();
+            if (direct) return direct;
             const fallback = String(key || record?.caseId || record?.id || '').trim();
-            if (!direct && !fallback) return '';
-            // 先確認記憶中的 docId 是否仍存在，避免案件文件被移動／重建後繼續使用舊 ID。
-            if (direct) {
-                try {
-                    const directSnap = await fm.getDoc(fm.doc(db, collectionName, direct));
-                    if (directSnap.exists()) return direct;
-                } catch (e) { console.warn('resolveReportDocId direct lookup failed', collectionName, direct, e); }
-            }
-            if (fallback) {
-                try {
-                    const snap = await fm.getDocs(fm.query(fm.collection(db, collectionName), fm.where('caseId','==',fallback)));
-                    if (!snap.empty) return snap.docs[0].id;
-                } catch (e) { console.warn('resolveReportDocId caseId lookup failed', collectionName, fallback, e); }
-            }
-            // 找不到舊文件時回傳原 docId（若有）或案件編號，讓後續 setDoc({merge:true}) 可以安全補回文件。
-            return direct || fallback;
+            if (!fallback) return '';
+            try {
+                const snap = await fm.getDocs(fm.query(fm.collection(db, collectionName), fm.where('caseId','==',fallback)));
+                if (!snap.empty) return snap.docs[0].id;
+            } catch (e) { console.warn('resolveReportDocId failed', collectionName, fallback, e); }
+            return fallback;
         }
 
         async function saveEditedReviewStatus(){
@@ -4589,7 +4501,7 @@ async function republishAnnouncement(id) {
             document.getElementById('review-reject-case-id').value=id; document.getElementById('review-reject-dept').value='wanted'; document.getElementById('review-reject-reason').value=''; document.getElementById('modal-review-reject').classList.remove('hidden');
         }
 
-        async function rejectPolicePendingReport(){const caseId=document.getElementById('review-reject-case-id').value;const dept=document.getElementById('review-reject-dept').value||'police';const reason=document.getElementById('review-reject-reason').value.trim();const canReview=dept==='fire'||dept==='ems'?canReviewFireReports():canReviewPoliceReports();if(!canReview){showToast('權限不足。','warning','權限不足');return;}if(!reason){showToast('請填寫退件原因。','warning','退件原因必填');return;}const source=dept==='fire'?appData.firePendingReports:dept==='ems'?appData.emsPendingReports:dept==='wanted'?appData.wantedPendingRecords:appData.policePendingReports;const r=(source||[]).find(x=>String(x.caseId||x.id||x.docId)===String(caseId));if(!r)return;try{const col=dept==='fire'?'firePendingReports':dept==='ems'?'emsPendingReports':dept==='wanted'?'wantedPendingRecords':'policePendingReports';const patch={reviewStatus:'rejected',rejectionReason:reason,reviewedAt:Date.now(),reviewedBy:currentUser.account,updatedAt:Date.now()};const rejectDocId=await resolveReportDocId(col,r,caseId);if(!rejectDocId)throw new Error('找不到案件的 Firestore 文件 ID');await fm.setDoc(fm.doc(db,col,rejectDocId),patch,{merge:true});r.docId=rejectDocId;Object.assign(r,patch);await removePendingReportNotifications(caseId,r.registeredByAccount||r.authorId);const title=dept==='wanted'?'通緝申請遭退件':dept==='ems'?'EMS報告遭退件':dept==='fire'?'消防案件遭退件':'案件遭退件';const recipient=r.registeredByAccount||r.authorId||r.createdByAccount;const n={type:dept==='wanted'?'wanted':'report',department:'police',caseId,recipientAccount:recipient,recipientAccountNormalized:String(recipient||'').trim().toLowerCase(),status:'rejected',title,message:`${dept==='wanted'?'通緝申請':dept==='ems'?'EMS報告':`案件 ${caseId}`} 已退件：${reason}`,timestamp:Date.now(),read:false};const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);appData.reportNotifications.unshift({docId:nr.id,...n});await logAdminAction((dept==='ems'?'EMS':dept==='fire'?'消防':'警用')+'退件案件報告',caseId,reason);closeModal('modal-review-reject');if(dept==='ems'||dept==='fire')renderFireReview();else renderPoliceReview();if(dept==='wanted'){renderLookupSystems();}renderPersonalNotifications();showToast('案件已退件，寄件人可重新編輯送件。','success','退件完成');}catch(e){showToast('退件失敗：'+e.message,'error','操作失敗');}}
+        async function rejectPolicePendingReport(){const caseId=document.getElementById('review-reject-case-id').value;const dept=document.getElementById('review-reject-dept').value||'police';const reason=document.getElementById('review-reject-reason').value.trim();const canReview=dept==='fire'||dept==='ems'?canReviewFireReports():canReviewPoliceReports();if(!canReview){showToast('權限不足。','warning','權限不足');return;}if(!reason){showToast('請填寫退件原因。','warning','退件原因必填');return;}const source=dept==='fire'?appData.firePendingReports:dept==='ems'?appData.emsPendingReports:dept==='wanted'?appData.wantedPendingRecords:appData.policePendingReports;const r=(source||[]).find(x=>String(x.caseId||x.id||x.docId)===String(caseId));if(!r)return;try{const col=dept==='fire'?'firePendingReports':dept==='ems'?'emsPendingReports':dept==='wanted'?'wantedPendingRecords':'policePendingReports';const patch={reviewStatus:'rejected',rejectionReason:reason,reviewedAt:Date.now(),reviewedBy:currentUser.account,updatedAt:Date.now()};await fm.updateDoc(fm.doc(db,col,r.docId||r.caseId||r.id),patch);Object.assign(r,patch);await removePendingReportNotifications(caseId,r.registeredByAccount||r.authorId);const title=dept==='wanted'?'通緝申請遭退件':dept==='ems'?'EMS報告遭退件':dept==='fire'?'消防案件遭退件':'案件遭退件';const recipient=r.registeredByAccount||r.authorId||r.createdByAccount;const n={type:dept==='wanted'?'wanted':'report',department:'police',caseId,recipientAccount:recipient,recipientAccountNormalized:String(recipient||'').trim().toLowerCase(),status:'rejected',title,message:`${dept==='wanted'?'通緝申請':dept==='ems'?'EMS報告':`案件 ${caseId}`} 已退件：${reason}`,timestamp:Date.now(),read:false};const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);appData.reportNotifications.unshift({docId:nr.id,...n});await logAdminAction((dept==='ems'?'EMS':dept==='fire'?'消防':'警用')+'退件案件報告',caseId,reason);closeModal('modal-review-reject');if(dept==='ems'||dept==='fire')renderFireReview();else renderPoliceReview();if(dept==='wanted'){renderLookupSystems();}renderPersonalNotifications();showToast('案件已退件，寄件人可重新編輯送件。','success','退件完成');}catch(e){showToast('退件失敗：'+e.message,'error','操作失敗');}}
         
         function renderPoliceReports() {
             const container = document.getElementById('police-reports-list');
@@ -4997,8 +4909,8 @@ async function republishAnnouncement(id) {
             if(editType.endsWith('-clock')){
                 const dept=editType.split('-')[0],list=dept==='police'?appData.policeClocks:appData.fireClocks,c=list.find(x=>String(x.docId||x.id)===String(idKey));
                 if(!canManageClockRecords()||!c){showToast('管理處權限不足。','warning','權限不足');return;}
-                c.account=document.getElementById('edit-clock-account').value.trim();c.name=document.getElementById('edit-clock-name').value.trim();c.status=document.getElementById('edit-clock-status').value.trim();c.vehicle=document.getElementById('edit-clock-vehicle').value.trim();c.time=document.getElementById('edit-clock-time').value.trim();c.remark=document.getElementById('edit-clock-remark').value.trim();
-                try{await fm.updateDoc(fm.doc(db,dept==='police'?'policeClocks':'fireClocks',c.docId||c.id),{account:c.account,name:c.name,status:c.status,vehicle:c.vehicle,time:c.time,remark:c.remark});await logAdminAction('編輯打卡紀錄',`${dept}:${c.docId||c.id}`);closeModal('modal-edit');dept==='police'?renderPoliceClocks():renderFireClocks();showToast('打卡紀錄已更新。','success','更新成功');}catch(e){showToast('更新失敗：'+e.message,'error','操作失敗');}
+                c.account=document.getElementById('edit-clock-account').value.trim();c.staffNumber=c.staffNumber||'';c.name=document.getElementById('edit-clock-name').value.trim();c.status=document.getElementById('edit-clock-status').value.trim();c.vehicle=document.getElementById('edit-clock-vehicle').value.trim();c.time=document.getElementById('edit-clock-time').value.trim();c.remark=document.getElementById('edit-clock-remark').value.trim();
+                try{await fm.updateDoc(fm.doc(db,dept==='police'?'policeClocks':'fireClocks',c.docId||c.id),{account:c.account,staffNumber:c.staffNumber||'',name:c.name,status:c.status,vehicle:c.vehicle,time:c.time,remark:c.remark});await logAdminAction('編輯打卡紀錄',`${dept}:${c.docId||c.id}`);closeModal('modal-edit');dept==='police'?renderPoliceClocks():renderFireClocks();showToast('打卡紀錄已更新。','success','更新成功');}catch(e){showToast('更新失敗：'+e.message,'error','操作失敗');}
                 return;
             }
 
@@ -5044,11 +4956,7 @@ async function republishAnnouncement(id) {
                     const payload={caseId:nextCaseId,title:r.title,content:r.content,authorId:originalAuthorId,authorName:originalAuthorName,suspectName:r.suspectName,suspectId:r.suspectId,suspectVehicle:r.suspectVehicle||'',postalCode:r.postalCode||'',command:r.command||'',supportUnits:r.supportUnits||[],...(dept==='police'?{violations:r.violations||[],organizedCrime:!!r.organizedCrime,jailMinutes:Number(r.jailMinutes||0)}:{}),videoLinks:r.videoLinks||[],videoLink:r.videoLink||'',createdByAccount:r.createdByAccount||r.registeredByAccount||originalAuthorId,createdByName:r.createdByName||r.registeredByName||originalAuthorName,registeredByAccount:r.registeredByAccount||r.createdByAccount||originalAuthorId,registeredByName:r.registeredByName||r.createdByName||originalAuthorName,lastEditedByAccount:currentUser.account,lastEditedByName:currentUser.name,lastEditedAt:Date.now()};
                     if(isPending){
                         const pendingPayload={...payload,reviewStatus:'pending',rejectionReason:'',reviewedAt:0,reviewedBy:'',submittedAt:Date.now(),updatedAt:Date.now()};
-                        const pendingCollection = dept==='police'?'policePendingReports':'firePendingReports';
-                        const pendingDocId = await resolveReportDocId(pendingCollection, r, r.caseId);
-                        if(!pendingDocId) throw new Error('找不到退件案件的 Firestore 文件 ID');
-                        await fm.setDoc(fm.doc(db,pendingCollection,pendingDocId),pendingPayload,{merge:true});
-                        r.docId=pendingDocId;
+                        await fm.updateDoc(fm.doc(db,dept==='police'?'policePendingReports':'firePendingReports',r.docId||r.caseId),pendingPayload);
                         Object.assign(r,pendingPayload);
                         await removePendingReportNotifications(nextCaseId,currentUser.account);const notification={type:'report',caseId:nextCaseId,recipientAccount:currentUser.account,recipientAccountNormalized:String(currentUser.account||'').trim().toLowerCase(),status:'pending',title:'案件已重新送件',message:`案件 ${nextCaseId} 已重新送入高層審核。`,timestamp:Date.now(),read:false};
                         const nref=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nref,notification); appData.reportNotifications.unshift({docId:nref.id,...notification});
@@ -5062,7 +4970,7 @@ async function republishAnnouncement(id) {
                     }else{
                         const actualDocId=await resolveReportDocId(collectionName,r,r.caseId);
                         if(!actualDocId) throw new Error('找不到案件的 Firestore 文件 ID');
-                        await fm.setDoc(fm.doc(db,collectionName,actualDocId),payload,{merge:true});
+                        await fm.updateDoc(fm.doc(db,collectionName,actualDocId),payload);
                         r.docId=actualDocId;
                         await logAdminAction('編輯案件報告',nextCaseId);closeModal('modal-edit');dept==='police'?renderPoliceReports():renderFireReports();renderMyProfile();showToast('案件修改已成功儲存。','success','修改成功');
                     }
@@ -5097,7 +5005,7 @@ async function republishAnnouncement(id) {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/40 transition";
                 tr.innerHTML = `
-                    <td class="p-4 font-medium text-white">${escapeHtml(c.name || '--')} (${escapeHtml(c.account || '--')})</td>
+                    <td class="p-4 font-medium text-white">${escapeHtml(c.name || '--')} (${escapeHtml(c.staffNumber || c.account || '--')})</td>
                     <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${c.status === '上班' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">${escapeHtml(c.status || '--')}</span></td>
                     <td class="p-4 text-slate-300 font-mono">${escapeHtml(c.vehicle || '無')}</td>
                     <td class="p-4 text-slate-300 text-xs">${escapeHtml(c.time || formatDateTime(c.timestamp))}</td>
@@ -5130,7 +5038,7 @@ async function republishAnnouncement(id) {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/40 transition";
                 tr.innerHTML = `
-                    <td class="p-4 font-medium text-white">${escapeHtml(c.name||'--')} (${escapeHtml(c.account||'--')})</td>
+                    <td class="p-4 font-medium text-white">${escapeHtml(c.name||'--')} (${escapeHtml(c.staffNumber || c.account || '--')})</td>
                     <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${c.status === '上班' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">${c.status}</span></td>
                     <td class="p-4 text-slate-300 font-mono">${escapeHtml(c.vehicle||'無')}</td>
                     <td class="p-4 text-slate-300 text-xs">${escapeHtml(c.time||'--')}</td>
