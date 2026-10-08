@@ -1640,7 +1640,7 @@
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
                         <div class="flex items-start justify-between gap-4 flex-wrap">
                             <div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-gamepad text-red-400 mr-2"></i>ER:LC 即時整合</h3><p class="text-xs text-slate-500 mt-1">設定 ER:LC Private Server API；網站會用 Roblox ID 對應公職帳號與值勤狀態。</p></div>
-                            <span class="text-xs px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">Server Key 不會顯示在前端</span>
+                            <div class="flex flex-wrap items-center gap-2"><span id="erlc-api-health-badge" class="text-xs px-3 py-1.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">⚪ 尚未檢測 API</span><span class="text-xs px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">Server Key 不會顯示在前端</span></div>
                         </div>
                         <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div><label class="block text-xs text-slate-400 mb-2">ER:LC Server Key / API 代碼</label><input id="erlc-server-key-input" type="password" autocomplete="new-password" placeholder="貼上 ER:LC Server Key" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-red-500"></div>
@@ -1667,7 +1667,7 @@
                             <button type="button" onclick="clearERLCConfig()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-trash mr-2"></i>清除設定</button>
                             <button type="button" onclick="unlockERLCAlertAudio()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-volume-high mr-2"></i>啟用警報音效</button>
                         </div>
-                        <div id="erlc-config-status" class="mt-4 text-xs text-slate-500">尚未設定 ER:LC Server Key。</div>
+                        <div id="erlc-config-status" class="mt-4 text-xs text-slate-500">尚未設定 ER:LC Server Key。</div><div id="erlc-api-health-detail" class="mt-3 bg-slate-950/70 border border-slate-800 rounded-xl p-4 text-xs text-slate-400">API 連線狀態：等待後端 Worker 回報。</div>
                     </div>
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
                         <h3 class="font-bold text-white"><i class="fa-solid fa-bell text-red-400 mr-2"></i>即時死亡警報</h3>
@@ -5962,9 +5962,44 @@ async function republishAnnouncement(id) {
         }
         function refreshAdminOnlineUsers(){if(!currentUser||currentUser.role!=='admin')return;recalculateDutyStatusCache();renderAdminOnlineUsers();}
         let erlcAlertUnsubscribe=null;
+        let erlcHealthUnsubscribe=null;
         let erlcAudioContext=null;
         let erlcAudioUnlocked=false;
+        function renderERLCApiHealth(data={}){
+            const badge=document.getElementById('erlc-api-health-badge');
+            const detail=document.getElementById('erlc-api-health-detail');
+            const state=data.apiReachable;
+            const checked=Number(data.lastCheckedAt||0);
+            const success=Number(data.lastSuccessAt||0);
+            const err=String(data.lastError||'');
+            const checkedText=checked?formatDateTime(checked):'尚未檢測';
+            const successText=success?formatDateTime(success):'尚無成功紀錄';
+            if(badge){
+                badge.textContent=state===true?'🟢 ER:LC API 連線成功':state===false?'🔴 ER:LC API 連線失敗':'⚪ 尚未檢測 API';
+                badge.className='text-xs px-3 py-1.5 rounded-full border '+(state===true?'bg-emerald-500/10 text-emerald-300 border-emerald-500/20':state===false?'bg-red-500/10 text-red-300 border-red-500/20':'bg-slate-800 text-slate-300 border-slate-700');
+            }
+            if(detail){
+                detail.innerHTML=state===true
+                    ? `API 連線狀態：<span class="text-emerald-300 font-semibold">成功</span>　｜　最近成功：${escapeHtml(successText)}　｜　最近檢測：${escapeHtml(checkedText)}`
+                    : state===false
+                        ? `API 連線狀態：<span class="text-red-300 font-semibold">失敗</span>　｜　最近檢測：${escapeHtml(checkedText)}${err?`<div class="mt-1 text-red-300/80 break-words">錯誤：${escapeHtml(err)}</div>`:''}`
+                        : 'API 連線狀態：<span class="text-slate-300">等待後端 Worker 回報</span>。請確認 Worker 已部署且伺服器目前為「開服中」。';
+            }
+        }
+        function stopERLCHealthListener(){if(typeof erlcHealthUnsubscribe==='function'){try{erlcHealthUnsubscribe();}catch(e){}}erlcHealthUnsubscribe=null;}
+        function syncERLCHealthListener(){
+            stopERLCHealthListener();
+            if(!currentUser||!db||!fm)return;
+            try{
+                const ref=fm.doc(db,'systemSettings','erlcHealth');
+                erlcHealthUnsubscribe=fm.onSnapshot(ref,snap=>renderERLCApiHealth(snap.exists()?snap.data():{}),e=>{
+                    console.warn('ER:LC API 狀態監聽失敗：',e);
+                    renderERLCApiHealth({apiReachable:false,lastError:'無法讀取後端 API 狀態文件'});
+                });
+            }catch(e){console.warn('ER:LC API 狀態監聽建立失敗：',e);}
+        }
         async function renderERLCConfigStatus(){
+            syncERLCHealthListener();
             const el=document.getElementById('erlc-config-status');
             const badge=document.getElementById('erlc-server-status-badge');
             if(!el||!db||!fm)return;
@@ -6004,7 +6039,7 @@ async function republishAnnouncement(id) {
                 const previousServerOpen=existingData.serverOpen===true;
                 await fm.setDoc(erlcRef,{configured:true,serverKey:key,serverId,serverOpen:previousServerOpen,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});
                 // Server Key 的寫入需由後端安全端點處理；前端不直接把密鑰寫入公開可讀文件。
-                const status=document.getElementById('erlc-config-status');if(status)status.textContent='已儲存 ER:LC 整合設定。Server Key 請交由後端 Secret／安全端點保存。';
+                const status=document.getElementById('erlc-config-status');if(status)status.textContent='已儲存 ER:LC 整合設定，等待後端 Worker 檢測 API 連線。';
                 document.getElementById('erlc-server-key-input').value='';
                 showToast('ER:LC 整合設定已更新。','success','儲存成功');
             }catch(e){showToast('ER:LC 設定儲存失敗：'+e.message,'error','操作失敗');}
