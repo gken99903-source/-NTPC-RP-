@@ -3964,7 +3964,7 @@ async function republishAnnouncement(id) {
             const memberId=document.getElementById('punish-member-id').value.trim(),memberAcc=document.getElementById('punish-member-select').value,type=document.getElementById('punish-type').value,items=getSelectedPunishmentItems('punish-item'),department=(document.getElementById('punish-department').value.trim() || getPolicePunishmentDepartment(currentUser)),authorName=document.getElementById('punish-author-name').value.trim(),authorPos=document.getElementById('punish-author-position').value.trim(),reason=document.getElementById('punish-reason').value.trim();
             if(!['reward','punishment'].includes(type)||!items.length){showToast('請先選擇獎懲類型，並至少勾選一個獎懲項目。','warning','資料不完整');return;}
             if(!memberId||!reason||!authorName){showToast('請填寫完整獎懲資訊。','error','資料不完整');return;}
-            const now=new Date(),punishId=generateNextPunishmentId(now),foundU=appData.users.find(u=>u.account===memberAcc),resolvedMemberId=memberId||(foundU?.staffNumber||''),newPunish={id:punishId,memberId:resolvedMemberId,memberAccount:memberAcc||'',memberName:foundU?foundU.name:'未知員警',type,items,item:items.join('、'),department,authorName,authorPos,authorAccount:currentUser.account,authorRole:currentUser.role,reason,time:formatDateTime(now.getTime()),timestamp:now.getTime()};
+            const now=new Date(),punishId=generateNextPunishmentId(now),foundU=appData.users.find(u=>u.account===memberAcc),resolvedMemberId=memberId||(foundU?.staffNumber||''),newPunish={id:punishId,memberId:resolvedMemberId,memberAccount:memberAcc||'',memberName:foundU?foundU.name:'未知員警',type,items,item:items.join('、'),department,authorName,authorPos,authorAccount:String(currentUser.staffNumber||currentUser.account||'').trim(),authorStaffNumber:String(currentUser.staffNumber||'').trim(),loginAccount:String(currentUser.account||'').trim(),authorRole:currentUser.role,reason,time:formatDateTime(now.getTime()),timestamp:now.getTime()};
             try{await fm.setDoc(fm.doc(db,'policePunishments',punishId),newPunish);appData.policePunishments.unshift({docId:punishId,...newPunish});closeModal('modal-punishment');renderPolicePunishments();updateAccessLocks();showToast('警用獎懲公告已成功發布。','success','發布成功');}catch(e){showToast('雲端寫入失敗：'+e.message,'error','發布失敗');}
         }
 
@@ -4031,7 +4031,7 @@ async function republishAnnouncement(id) {
                 if(dept==='police'&&!userHasUnit('police')){showToast('只有警察身分可以建立警務打卡。','warning','權限不足');return;}
                 if(dept==='fire'&&!userHasUnit('fire')){showToast('只有消防身分可以建立消防打卡。','warning','權限不足');return;}
                 if(isSuspendedUser(currentUser.account)){showToast('你目前於停職調查階段，無法使用值班打卡功能，直到該獎懲被更改或移除。','warning','停職調查限制');return;}
-                const idVal=String(currentUser.account||'').trim();
+                const idVal=String(currentUser.staffNumber||currentUser.account||'').trim();
                 const nameVal=String(currentUser.name||'').trim();
                 const statusVal=document.getElementById('clock-status').value==='下班'?'下班':'上班';
                 const vehicleVal=String(document.getElementById('clock-vehicle').value||'').trim().slice(0,80);
@@ -4044,7 +4044,7 @@ async function republishAnnouncement(id) {
                     if(!Number.isFinite(ts)){showToast('補打卡日期或時間格式無效。','warning','資料錯誤');return;}
                     timeStr=`${dateVal} ${timeVal}:00 (補打卡)`;
                 }else{const now=new Date();ts=now.getTime();timeStr=now.toLocaleString('zh-TW',{hour12:false});}
-                const clockObj={id:'CLK-'+Date.now(),account:idVal,name:nameVal,status:statusVal,vehicle:vehicleVal||'無',time:timeStr,timestamp:ts,remark:'無'};
+                const clockObj={id:'CLK-'+Date.now(),account:idVal,staffNumber:String(currentUser.staffNumber||'').trim(),loginAccount:String(currentUser.account||'').trim(),name:nameVal,status:statusVal,vehicle:vehicleVal||'無',time:timeStr,timestamp:ts,remark:'無'};
                 const collectionName=dept==='police'?'policeClocks':'fireClocks';
                 await fm.setDoc(fm.doc(db,collectionName,clockObj.id),clockObj);
                 if(dept==='police')appData.policeClocks.unshift({docId:clockObj.id,...clockObj});else appData.fireClocks.unshift({docId:clockObj.id,...clockObj});
@@ -4792,7 +4792,7 @@ async function republishAnnouncement(id) {
         function userHasUnit(unit) { if(!currentUser) return false; if(currentUser.role==='admin') return true; return (currentUser.units||[currentUser.unit]).includes(unit); }
         function canModifyReport(r, dept) { if(!currentUser||!r)return false; if(isSuperAdminAccount(currentUser.account)||currentUser.role==='admin')return true; if(currentUser.role==='high' && dept==='police' && userHasUnit('police'))return true; return String(r.registeredByAccount||r.authorId||'').toLowerCase()===String(currentUser.account||'').toLowerCase(); }
         function canChangeReportCaseId(dept) { return !!currentUser && (currentUser.role==='admin' || (dept==='police' && currentUser.role==='high' && userHasUnit('police'))); }
-        function getRegisteredAccount(r) { return r?.registeredByAccount || r?.authorAccount || r?.authorId || '--'; }
+        function getRegisteredAccount(r) { return r?.registeredByStaffNumber || r?.authorStaffNumber || r?.staffNumber || r?.registeredByAccount || r?.authorAccount || r?.authorId || '--'; }
         function getReportVideoLinks(r) { return Array.isArray(r?.videoLinks) ? r.videoLinks.filter(Boolean) : (r?.videoLink ? [r.videoLink] : []); }
         function canRemarkReport(dept) { if(!currentUser)return false; if(currentUser.role==='admin')return true; return userHasUnit(dept)&&(currentUser.role==='high'||currentUser.role==='senior'); }
         function canManageClockRecords(){ return !!currentUser&&currentUser.role==='admin'; }
