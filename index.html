@@ -5970,7 +5970,8 @@ async function republishAnnouncement(id) {
             if(!el||!db||!fm)return;
             try{
                 const snap=await fm.getDoc(fm.doc(db,'systemSettings','erlcIntegration'));
-                const d=snap.exists?snap.data():{};
+                const rawData=(snap && snap.exists && typeof snap.data==='function')?snap.data():{};
+                const d=(rawData && typeof rawData==='object')?rawData:{};
                 const configured=d.configured===true&&!!String(d.serverKey||'').trim();
                 const open=d.serverOpen===true;
                 el.textContent=configured?'ER:LC Server Key 已設定於管理中心安全設定。實際 API 呼叫由後端 Worker 執行；前端不讀取 Key。':'尚未設定 ER:LC Server Key。';
@@ -5998,8 +5999,10 @@ async function republishAnnouncement(id) {
                 // 不把 key 加入 appData，也不讀回 key；僅讓後端服務帳號讀取。
                 const erlcRef=fm.doc(db,'systemSettings','erlcIntegration');
                 const existing=await fm.getDoc(erlcRef);
-                const existingData=existing.exists?existing.data():{};
-                await fm.setDoc(erlcRef,{configured:true,serverKey:key,serverId,serverOpen:existingData.serverOpen===true,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});
+                const rawExistingData=(existing && existing.exists && typeof existing.data==='function')?existing.data():{};
+                const existingData=(rawExistingData && typeof rawExistingData==='object')?rawExistingData:{};
+                const previousServerOpen=existingData.serverOpen===true;
+                await fm.setDoc(erlcRef,{configured:true,serverKey:key,serverId,serverOpen:previousServerOpen,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});
                 // Server Key 的寫入需由後端安全端點處理；前端不直接把密鑰寫入公開可讀文件。
                 const status=document.getElementById('erlc-config-status');if(status)status.textContent='已儲存 ER:LC 整合設定。Server Key 請交由後端 Secret／安全端點保存。';
                 document.getElementById('erlc-server-key-input').value='';
