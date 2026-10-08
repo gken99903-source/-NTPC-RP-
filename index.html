@@ -243,6 +243,34 @@
         #desktop-more-menu-chevron.is-open,
         #mobile-more-menu-chevron.is-open { transform: rotate(180deg); }
 
+        /* 更多功能：統一卡片尺寸、圖示欄位與間距，避免不同文字長度造成方格大小不一。 */
+        #desktop-more-menu {
+            width: 336px;
+            padding: .65rem;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: .5rem;
+            background: linear-gradient(180deg, rgba(15,23,42,.99), rgba(2,6,23,.99));
+            border-color: rgba(71,85,105,.8);
+        }
+        #desktop-more-menu.hidden { display: none; }
+        #desktop-more-menu .more-menu-item {
+            min-height: 52px; width: 100%; display: flex; align-items: center; gap: .55rem;
+            padding: .7rem .75rem; border: 1px solid rgba(51,65,85,.72);
+            background: rgba(15,23,42,.68); border-radius: .85rem; line-height: 1.2;
+            transition: transform .18s ease, border-color .18s ease, background .18s ease;
+        }
+        #desktop-more-menu .more-menu-item:hover { transform: translateY(-1px); border-color: rgba(96,165,250,.4); background: rgba(30,41,59,.9); }
+        #desktop-more-menu .more-menu-item i:first-child { width: 1.25rem; flex: 0 0 1.25rem; text-align: center; }
+        #mobile-more-menu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; padding: .55rem .25rem .35rem; }
+        #mobile-more-menu.hidden { display: none; }
+        #mobile-more-menu .mobile-nav-btn {
+            min-height: 52px; width: 100%; padding: .7rem .5rem;
+            border: 1px solid rgba(51,65,85,.72); border-radius: .85rem; background: rgba(15,23,42,.68);
+            display: flex; align-items: center; justify-content: center; gap: .4rem; line-height: 1.15;
+        }
+        #mobile-more-menu .mobile-nav-btn i { width: 1.15rem; flex: 0 0 1.15rem; text-align: center; }
+
         /* 首頁網站公告：深色系、每 5 秒垂直交叉淡入淡出 */
         #site-announcement-bar { position: relative; overflow: hidden; background: linear-gradient(90deg, rgba(15,23,42,.98), rgba(17,24,39,.96)); border: 1px solid rgba(71,85,105,.7); border-radius: 1rem; box-shadow: 0 16px 40px rgba(0,0,0,.25); }
         .announcement-track { position: relative; min-height: 58px; }
@@ -576,8 +604,8 @@
 
             <nav class="hidden md:flex items-center space-x-1">
                 <button id="nav-home" data-tab="home" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition text-blue-400 bg-blue-500/10"><i class="fa-solid fa-house mr-2"></i>首頁</button>
-                <button id="nav-fire" data-tab="fire" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-fire-extinguisher mr-2"></i>消防</button>
                 <button id="nav-police" data-tab="police" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-shield mr-2"></i>警務</button>
+                <button id="nav-fire" data-tab="fire" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-fire-extinguisher mr-2"></i>消防</button>
                 <button id="nav-notifications" data-tab="notifications" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800 relative"><i id="nav-notification-bell" class="fa-solid fa-bell mr-2 notification-bell-icon"></i>個人通知<span id="nav-notification-badge" class="hidden ml-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold items-center justify-center align-middle">0</span></button>
                 <button id="nav-profile" data-tab="profile" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-id-card mr-2"></i>我的資料</button>
                 <button id="nav-faq" data-tab="faq" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-circle-question mr-2"></i>常見問題</button>
@@ -613,8 +641,8 @@
         </div>
         <div id="mobile-menu" class="hidden md:hidden bg-slate-900 border-b border-slate-800">
             <button data-tab="home" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-house"></i><span>首頁</span></button>
-            <button data-tab="fire" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-fire-extinguisher"></i><span>消防</span></button>
             <button data-tab="police" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-shield"></i><span>警務</span></button>
+            <button data-tab="fire" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-fire-extinguisher"></i><span>消防</span></button>
             <button data-tab="notifications" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i id="mobile-nav-notification-bell" class="fa-solid fa-bell notification-bell-icon"></i><span>個人通知</span><span id="mobile-nav-notification-badge" class="hidden min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold items-center justify-center">0</span></button>
             <button data-tab="profile" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-id-card"></i><span>我的資料</span></button>
             <button data-tab="faq" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-circle-question"></i><span>常見問題</span></button>
@@ -628,6 +656,7 @@
                     <button type="button" onclick="openGlobalSearch(); closeMobileMenu();" class="mobile-nav-btn text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-magnifying-glass"></i><span>全站搜尋</span></button>
                     <button data-tab="academy" class="mobile-nav-btn text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-graduation-cap"></i><span>專生考核</span></button>
                     <button data-tab="admin" id="mobile-nav-admin" class="mobile-nav-btn text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-user-gear"></i><span>管理員中心</span></button>
+                    <button data-tab="update-log" class="mobile-nav-btn text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-clock-rotate-left"></i><span>更新紀錄</span></button>
                 </div>
             </div>
         </div>
@@ -678,8 +707,8 @@
                 <div class="relative z-10 px-8 py-20 sm:py-28 max-w-3xl space-y-6">
                     <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">New Taipei Roleplay 3.0</span>
                     <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">新北市公職人員<br><span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">勤務與案件管制系統</span></h1>
-                    <div><span class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.9.1</span></div>
-                    <p class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。V1.9.1 在 V1.9 基礎上進一步強化系統穩定性、稽核紀錄、登入與勤務體驗，並優化 ER:LC API 連線狀態與即時勤務偵測；同時維持雲端資料同步與低頻率資料監聽以降低不必要的資料庫使用。</p>
+                    <div><span id="home-site-version-badge" class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.9.1</span></div>
+                    <p id="home-version-intro" class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。V1.9.1 在 V1.9 基礎上進一步強化系統穩定性、稽核紀錄、登入與勤務體驗，並優化 ER:LC API 連線狀態與即時勤務偵測；同時維持雲端資料同步與低頻率資料監聽以降低不必要的資料庫使用。</p>
                     <div class="flex flex-wrap justify-center gap-4 pt-2">
                         <button data-tab="police" class="tab-shortcut-btn bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
                             <i class="fa-solid fa-shield"></i><span>進入警務系統</span>
@@ -696,10 +725,11 @@
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div class="flex items-center gap-2 text-emerald-300 font-bold">
-                            <i class="fa-solid fa-satellite-dish"></i><span>V1.9.1 最新更新</span>
+                            <i class="fa-solid fa-satellite-dish"></i><span id="home-latest-update-label">V1.9.1 最新更新</span>
                         </div>
                         <p class="text-slate-400 text-sm mt-2 leading-relaxed">本版本新增 ER:LC 勤務偵測架構、Roblox ID 綁定、執勤警員生命狀態異常警報，並將值勤判斷全面改為以打卡資料為準，減少不必要的雲端資料庫使用。</p>
                     </div>
+                    <p id="home-latest-update-summary" class="text-xs text-slate-500 mt-2"></p>
                     <button type="button" data-tab="update-log" class="tab-shortcut-btn shrink-0 px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-200 text-sm font-semibold transition">查看完整更新紀錄</button>
                 </div>
             </div>
@@ -1085,9 +1115,10 @@
                             </div>
                         </div>
                     </div>
-                    <span class="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V1.9.1</span>
+                    <span id="update-log-current-version" class="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V1.9.1</span>
                 </div>
 
+                <div id="dynamic-update-log" class="space-y-4"></div>
                 <div class="space-y-4">
                     <article class="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
@@ -1266,6 +1297,12 @@
                 </div>
 
                 <div id="faq-category-account" class="faq-category-content hidden space-y-3">
+                    <details id="faq-account-how-to-get" class="bg-slate-950 border border-blue-500/20 rounded-2xl p-4" open>
+                        <summary class="cursor-pointer text-sm font-semibold text-blue-300"><i class="fa-solid fa-user-plus mr-2"></i>我要如何獲取帳號？</summary>
+                        <div class="mt-3 rounded-xl bg-blue-500/5 border border-blue-500/10 p-4">
+                            <p class="text-sm text-slate-300 leading-7">帳號需加入公職單位後才可創建。</p>
+                        </div>
+                    </details>
                     <details id="faq-forgot-password" class="bg-slate-950 border border-amber-500/20 rounded-2xl p-4" open>
                         <summary class="cursor-pointer text-sm font-semibold text-amber-300"><i class="fa-solid fa-key mr-2"></i>忘記密碼／忘記帳號怎麼辦？</summary>
                         <div class="mt-3 rounded-xl bg-amber-500/5 border border-amber-500/10 p-4">
@@ -1438,6 +1475,7 @@
                 <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
                     <button id="btn-admin-users" data-sub="users" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap"><i class="fa-solid fa-users mr-2"></i>帳號與人員管理</button>
                     <button id="btn-admin-announcements" data-sub="announcements" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-bullhorn mr-2"></i>發布公告</button>
+                    <button id="btn-admin-site-versions" data-sub="site-versions" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-code-branch mr-2"></i>版本更新</button>
                     <button id="btn-admin-clock" data-sub="clock" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-business-time mr-2"></i>管理中心打卡</button>
                     <button id="btn-admin-logs" data-sub="logs" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clock-rotate-left mr-2"></i>一周內移除/編輯紀錄</button>
                     <button id="btn-admin-storage" data-sub="storage" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-database mr-2"></i>雲端資料庫空間</button>
@@ -1496,6 +1534,43 @@
                     <div><h3 class="text-lg font-bold text-slate-200">公告管理</h3><div id="admin-announcements-list" class="space-y-3 mt-3"></div></div>
                 </div>
 
+                <div id="admin-sub-site-versions" class="hidden space-y-6">
+                    <div class="bg-slate-900 border border-emerald-500/20 rounded-2xl p-5 shadow-xl">
+                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                            <div>
+                                <span class="text-xs uppercase tracking-wider font-bold text-emerald-300">Version Control</span>
+                                <h3 class="text-xl font-bold text-white mt-1"><i class="fa-solid fa-code-branch text-emerald-400 mr-2"></i>網站版本更新管理</h3>
+                                <p class="text-xs text-slate-500 mt-1">發布新版本後，首頁版本標籤、最新更新資訊、更新紀錄目前版本與瀏覽器標題會自動同步。</p>
+                            </div>
+                            <span id="admin-current-site-version" class="inline-flex items-center justify-center px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V1.9.1</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                        <div class="flex items-center justify-between gap-3 mb-4">
+                            <div><h4 class="font-bold text-white" id="site-version-form-title">發布新版本</h4><p class="text-xs text-slate-500 mt-1">版本號請自行輸入，例如 V2.0、V2.0.1。</p></div>
+                            <button type="button" id="site-version-reset-btn" class="hidden px-3 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs hover:bg-slate-700">取消編輯</button>
+                        </div>
+                        <input type="hidden" id="site-version-edit-id" value="">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label class="block text-xs font-semibold text-slate-400 mb-2">版本號</label><input id="site-version-number" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono" placeholder="例如 V2.0"></div>
+                            <div><label class="block text-xs font-semibold text-slate-400 mb-2">版本標題</label><input id="site-version-title" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white" placeholder="例如 系統穩定性與功能更新"></div>
+                        </div>
+                        <div class="mt-4"><label class="block text-xs font-semibold text-slate-400 mb-2">首頁最新更新簡述</label><input id="site-version-summary" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white" placeholder="會同步顯示在首頁最新更新區域"></div>
+                        <div class="mt-4"><label class="block text-xs font-semibold text-slate-400 mb-2">版本更新內容</label><textarea id="site-version-details" rows="7" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white resize-y" placeholder="每一行會成為更新紀錄的一項，例如：
+修正登入問題
+優化手機版介面
+新增案件審核功能"></textarea></div>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <button type="button" id="site-version-save-btn" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>發布版本</button>
+                            <button type="button" id="site-version-reset-btn-2" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold">清空表單</button>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                        <div class="flex items-center justify-between gap-3 mb-4"><div><h4 class="font-bold text-white">已發布版本</h4><p class="text-xs text-slate-500 mt-1">可編輯或移除版本；目前最新版本會自動套用到全站。</p></div><span id="site-version-count" class="text-xs text-slate-500">0 筆</span></div>
+                        <div id="admin-site-versions-list" class="space-y-3"></div>
+                    </div>
+                </div>
+
                 <div id="admin-sub-clock" class="hidden space-y-6">
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1524,10 +1599,11 @@
                         <table class="w-full text-left border-collapse text-sm">
                             <thead>
                                 <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
-                                    <th class="p-4">操作動作</th>
-                                    <th class="p-4">操作人員</th>
-                                    <th class="p-4">目標項目類型 / ID</th>
-                                    <th class="p-4">時間</th>
+                                    <th class="p-4 min-w-[180px]">操作動作</th>
+                                    <th class="p-4 min-w-[110px]">操作類型</th>
+                                    <th class="p-4 min-w-[140px]">操作人員</th>
+                                    <th class="p-4 min-w-[220px]">目標項目類型 / ID</th>
+                                    <th class="p-4 min-w-[180px]">時間 / 詳細資訊</th>
                                 </tr>
                             </thead>
                             <tbody id="admin-logs-tbody" class="divide-y divide-slate-800/60"></tbody>
@@ -2301,6 +2377,7 @@
             loginSessions: [],
             feedbackReports: [],
             announcements: [],
+            siteVersions: [],
             dutyHandoverNotes: [],
             faqIssues: [],
             blockedDevices: [],
@@ -2445,7 +2522,14 @@
                 btn.addEventListener('click', () => switchAdminSubTab(btn.getAttribute('data-sub')));
             });
 
-            const loginOpenBtn = document.getElementById('login-modal-open-btn');
+                        const siteVersionSaveBtn = document.getElementById('site-version-save-btn');
+            if (siteVersionSaveBtn) siteVersionSaveBtn.addEventListener('click', saveSiteVersion);
+            const siteVersionResetBtn = document.getElementById('site-version-reset-btn');
+            if (siteVersionResetBtn) siteVersionResetBtn.addEventListener('click', resetSiteVersionForm);
+            const siteVersionResetBtn2 = document.getElementById('site-version-reset-btn-2');
+            if (siteVersionResetBtn2) siteVersionResetBtn2.addEventListener('click', resetSiteVersionForm);
+
+const loginOpenBtn = document.getElementById('login-modal-open-btn');
             if (loginOpenBtn) loginOpenBtn.addEventListener('click', () => document.getElementById('modal-login').classList.remove('hidden'));
 
             const logoutBtn = document.getElementById('logout-btn');
@@ -2805,6 +2889,78 @@ function announcementExpiry(duration, now) {
             return now + 24 * 60 * 60 * 1000;
         }
 
+function getCurrentSiteVersion(){
+            const rows=(appData.siteVersions||[]).filter(v=>v&&v.active!==false).sort((a,b)=>Number(b.publishedAt||b.updatedAt||b.createdAt||0)-Number(a.publishedAt||a.updatedAt||a.createdAt||0));
+            return rows[0]||null;
+        }
+        function renderSiteVersionUI(){
+            const v=getCurrentSiteVersion();
+            const version=String(v?.version||'V1.9.1').trim()||'V1.9.1';
+            const title=String(v?.title||'系統穩定性與功能更新').trim();
+            const summary=String(v?.summary||'V1.9.1 在 V1.9 基礎上進一步強化系統穩定性、稽核紀錄、登入與勤務體驗。').trim();
+            const set=(id,val)=>{const e=document.getElementById(id);if(e)e.textContent=val;};
+            set('home-site-version-badge','網站版本 '+version);
+            set('home-latest-update-label',version+' 最新更新');
+            set('update-log-current-version','目前版本 '+version);
+            set('admin-current-site-version','目前版本 '+version);
+            const intro=document.getElementById('home-version-intro'); if(intro) intro.textContent=summary;
+            const latest=document.getElementById('home-latest-update-summary'); if(latest) latest.textContent=title+'｜'+summary;
+            document.title='新北市 RP 3.0 公職服務系統 '+version;
+            const meta=document.querySelector('meta[name="description"]'); if(meta) meta.setAttribute('content',`新北市 RP 3.0 公職服務系統 ${version}｜提供警務、消防、EMS 勤務、案件審核、個人通知、警專考核與管理中心功能。`);
+            renderDynamicUpdateLog();
+        }
+        function renderDynamicUpdateLog(){
+            const host=document.getElementById('dynamic-update-log'); if(!host)return;
+            const rows=(appData.siteVersions||[]).filter(v=>v&&v.active!==false).sort((a,b)=>Number(b.publishedAt||b.updatedAt||b.createdAt||0)-Number(a.publishedAt||a.updatedAt||a.createdAt||0));
+            host.innerHTML=rows.length?rows.map((v,i)=>{const details=Array.isArray(v.details)?v.details:(String(v.details||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean));return `<article class="rounded-2xl border ${i===0?'border-emerald-500/30 bg-emerald-500/5':'border-slate-800 bg-slate-950/60'} p-5"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3"><div><h3 class="text-lg font-bold text-white">${escapeHtml(v.version||'--')}</h3><p class="text-xs ${i===0?'text-emerald-300':'text-slate-500'} mt-1">${escapeHtml(v.title||'版本更新')}</p></div><span class="text-xs font-semibold ${i===0?'text-emerald-300':'text-slate-500'}">${i===0?'目前版本':formatDateTime(v.publishedAt||v.createdAt)}</span></div><p class="text-sm text-slate-300 mb-3">${escapeHtml(v.summary||'')}</p>${details.length?`<ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">${details.map(d=>`<li>${escapeHtml(d)}</li>`).join('')}</ul>`:''}</article>`;}).join('') : '';
+            const legacy=document.querySelector('#dynamic-update-log + .space-y-4 article'); const legacyBadge=legacy?.querySelector('span:last-child'); if(legacyBadge) legacyBadge.textContent=rows.length?'歷史版本':'目前版本';
+        }
+        function resetSiteVersionForm(){
+            ['site-version-edit-id','site-version-number','site-version-title','site-version-summary','site-version-details'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+            const t=document.getElementById('site-version-form-title');if(t)t.textContent='發布新版本';
+            const b=document.getElementById('site-version-save-btn');if(b)b.innerHTML='<i class="fa-solid fa-cloud-arrow-up mr-2"></i>發布版本';
+            document.getElementById('site-version-reset-btn')?.classList.add('hidden');
+        }
+        function editSiteVersion(id){
+            const v=(appData.siteVersions||[]).find(x=>String(x.docId||x.id)===String(id)); if(!v)return;
+            document.getElementById('site-version-edit-id').value=v.docId||v.id||'';
+            document.getElementById('site-version-number').value=v.version||'';
+            document.getElementById('site-version-title').value=v.title||'';
+            document.getElementById('site-version-summary').value=v.summary||'';
+            document.getElementById('site-version-details').value=Array.isArray(v.details)?v.details.join('\n'):(v.details||'');
+            document.getElementById('site-version-form-title').textContent='編輯版本資訊';
+            document.getElementById('site-version-save-btn').innerHTML='<i class="fa-solid fa-floppy-disk mr-2"></i>儲存修改';
+            document.getElementById('site-version-reset-btn').classList.remove('hidden');
+            document.getElementById('site-version-number').focus();
+        }
+        async function saveSiteVersion(){
+            if(!currentUser||getEffectiveRole(currentUser)!=='admin'){showToast('只有管理中心最高管理員可以管理版本資訊。','warning','權限不足');return;}
+            const id=document.getElementById('site-version-edit-id')?.value.trim();
+            const version=document.getElementById('site-version-number')?.value.trim();
+            const title=document.getElementById('site-version-title')?.value.trim();
+            const summary=document.getElementById('site-version-summary')?.value.trim();
+            const details=(document.getElementById('site-version-details')?.value||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+            if(!version||!title||!summary){showToast('請填寫版本號、版本標題與首頁最新更新簡述。','warning','資料不完整');return;}
+            const now=Date.now(); const obj={version,title,summary,details,active:true,updatedAt:now,updatedBy:currentUser.account};
+            try{
+                if(id){ await fm.updateDoc(fm.doc(db,'siteVersions',id),obj); await logAdminAction('編輯網站版本資訊',version,`${title}`,{discord:true}); showToast('版本資訊已更新，全站會自動同步。','success','更新成功'); }
+                else { const newId=`VER-${now}-${Math.random().toString(36).slice(2,7)}`; obj.id=newId;obj.createdAt=now;obj.publishedAt=now;obj.createdBy=currentUser.account; await fm.setDoc(fm.doc(db,'siteVersions',newId),obj); await logAdminAction('發布網站新版本',version,`${title}`,{discord:true}); showToast('新版本已發布，全站版本資訊已自動同步。','success','發布成功'); }
+                resetSiteVersionForm();
+            }catch(e){showToast('版本資訊儲存失敗：'+e.message,'error','操作失敗');}
+        }
+        async function deleteSiteVersion(id){
+            if(!currentUser||getEffectiveRole(currentUser)!=='admin'){showToast('只有管理中心最高管理員可以移除版本資訊。','warning','權限不足');return;}
+            const v=(appData.siteVersions||[]).find(x=>String(x.docId||x.id)===String(id));if(!v)return;
+            if(!(await showConfirm(`確定要移除版本「${v.version||'--'}」嗎？\n\n移除後若仍有其他已發布版本，網站會自動使用下一個最新版本。`,'移除版本資訊','確定移除')))return;
+            try{await fm.deleteDoc(fm.doc(db,'siteVersions',v.docId||v.id));await logAdminAction('移除網站版本資訊',v.version||id,v.title||'',{discord:true});showToast('版本資訊已移除。','success','移除成功');}catch(e){showToast('版本資訊移除失敗：'+e.message,'error','操作失敗');}
+        }
+        function renderAdminSiteVersions(){
+            const host=document.getElementById('admin-site-versions-list');if(!host)return;
+            const rows=[...(appData.siteVersions||[])].sort((a,b)=>Number(b.publishedAt||b.updatedAt||b.createdAt||0)-Number(a.publishedAt||a.updatedAt||a.createdAt||0));
+            const count=document.getElementById('site-version-count');if(count)count.textContent=`${rows.length} 筆`;
+            host.innerHTML=rows.length?rows.map((v,i)=>`<div class="rounded-2xl border ${i===0&&v.active!==false?'border-emerald-500/20 bg-emerald-500/5':'border-slate-800 bg-slate-950/50'} p-4"><div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4"><div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="font-mono font-bold text-white">${escapeHtml(v.version||'--')}</span>${i===0&&v.active!==false?'<span class="px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-300 text-[11px] font-bold">目前版本</span>':''}</div><div class="text-sm text-slate-200 mt-1">${escapeHtml(v.title||'--')}</div><div class="text-xs text-slate-500 mt-1 break-words">${escapeHtml(v.summary||'')}｜${formatDateTime(v.publishedAt||v.createdAt)}</div></div><div class="flex flex-wrap gap-2 shrink-0"><button type="button" onclick="editSiteVersion('${escapeHtml(v.docId||v.id)}')" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200 text-xs hover:bg-slate-700">編輯</button><button type="button" onclick="deleteSiteVersion('${escapeHtml(v.docId||v.id)}')" class="px-3 py-2 rounded-lg bg-red-600/15 text-red-300 text-xs hover:bg-red-600/25">移除</button></div></div></div>`).join(''):'<div class="rounded-2xl border border-slate-800 bg-slate-950/50 p-8 text-center text-slate-500">目前尚未由管理中心發布版本資訊。網站會使用內建版本資訊。</div>';
+        }
+
 function getActiveAnnouncements() {
             const now = Date.now();
             return (appData.announcements || [])
@@ -3032,6 +3188,8 @@ async function republishAnnouncement(id) {
 
                 const annSnap = await safeCollectionDocs('announcements');
                 if (annSnap.ok) appData.announcements = annSnap.docs.map(d=>({docId:d.id,...d.data()}));
+                const verSnap = await safeCollectionDocs('siteVersions');
+                if (verSnap.ok) { appData.siteVersions = verSnap.docs.map(d=>({docId:d.id,...d.data()})); renderSiteVersionUI(); }
                 const blockedSnap = await safeCollectionDocs('blockedDevices');
                 if (blockedSnap.ok) appData.blockedDevices = blockedSnap.docs.map(d=>({docId:d.id,...d.data()}));
                 const loginFailureSnap = await safeCollectionDocs('loginFailures');
@@ -3184,6 +3342,16 @@ async function republishAnnouncement(id) {
 
             // 個人通知只查目前登入者，避免每次都把整個通知集合下載。
             subscribeNotifications();
+
+            // 網站版本資訊即時同步：版本集合變更後，全站自動套用最新發布版本。
+            try {
+                const unsubSiteVersions = fm.onSnapshot(fm.collection(db, 'siteVersions'), snap => {
+                    appData.siteVersions = snap.docs.map(d => ({docId:d.id, ...d.data()}));
+                    renderSiteVersionUI();
+                    if (currentUser && getEffectiveRole(currentUser)==='admin' && !document.getElementById('admin-sub-site-versions')?.classList.contains('hidden')) renderAdminSiteVersions();
+                }, err => console.warn('網站版本資訊即時監聽失敗：', err));
+                realtimeUnsubscribers.push(unsubSiteVersions);
+            } catch(e) { console.warn('建立網站版本資訊監聽失敗：', e); }
 
             // 網站公告即時同步：只在公告新增／修改／刪除時更新，避免每 5~10 秒整批讀取。
             try {
@@ -3421,7 +3589,7 @@ async function republishAnnouncement(id) {
         }
 
         function switchAdminSubTab(sub){
-            const tabs=['users','announcements','clock','logs','storage','memo','overview','online','devices','feedback','issues','academy','jail-rules','lookup-locks','erlc'];
+            const tabs=['users','announcements','site-versions','clock','logs','storage','memo','overview','online','devices','feedback','issues','academy','jail-rules','lookup-locks','erlc'];
             const academyOnly = !!currentUser && getEffectiveRole(currentUser) !== 'admin' && hasUserPermission(currentUser,'academyInstructor');
             const allowed = !academyOnly || sub === 'academy';
             tabs.forEach(x=>{
@@ -3450,6 +3618,7 @@ async function republishAnnouncement(id) {
             if(sub==='jail-rules' && getEffectiveRole(currentUser)==='admin') renderAdminJailRules();
             if(sub==='erlc' && getEffectiveRole(currentUser)==='admin') renderERLCConfigStatus();
             if(sub==='announcements' && getEffectiveRole(currentUser)==='admin') renderAdminAnnouncements();
+            if(sub==='site-versions' && getEffectiveRole(currentUser)==='admin') renderAdminSiteVersions();
             if(sub==='clock' && getEffectiveRole(currentUser)==='admin') renderAdminClocks();
         }
 
@@ -4473,7 +4642,7 @@ async function republishAnnouncement(id) {
         function lookupKeyword(value){return String(value??'').trim().toLowerCase();}
         function lookupTextMatch(values,q){if(!q)return false;return values.some(v=>String(v??'').toLowerCase().includes(q));}
         function recordMatchesCitizen(r,q){return lookupTextMatch([r.name,r.id5,r.gender,r.birthday,r.note],q);}
-        function renderCitizenCard(r){const suspectCases=(appData.policeReports||[]).filter(x=>getLastFive(x.suspectId)===getLastFive(r.id5));const linkedVehicles=(appData.vehicleRecords||[]).filter(v=>getLastFive(v.id5)===getLastFive(r.id5));const wantedRecords=(appData.wantedRecords||[]).filter(w=>getLastFive(w.id5)===getLastFive(r.id5));const isWanted=wantedRecords.length>0;const cardBg=isWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.deceased?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><h4 class="text-lg font-bold text-white">${escapeHtml(r.name||'--')}</h4>${isWanted?'<span class="px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>通緝狀態</span>':''}${r.deceased?'<span class="px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-skull-crossbones mr-1"></i>死亡證明</span>':''}</div><p class="text-xs text-slate-500 font-mono">證件末五碼：${escapeHtml(r.id5||'--')}</p><p class="text-xs text-slate-500 mt-1">發布帳號：${escapeHtml(r.createdByAccount||'--')}</p></div><span class="text-xs text-slate-400">${escapeHtml(r.gender||'--')}｜${escapeHtml(r.birthday||'--')}</span></div><div class="mt-4 text-sm text-slate-300"><span class="text-slate-500">駕照狀況：</span>${escapeHtml((r.licenses||[]).length?(r.licenses||[]).join('、'):'無')}</div>${linkedVehicles.length?`<div class="mt-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15 text-sm"><span class="text-xs text-cyan-300 block mb-2">名下車輛（依證件末五碼自動比對）</span><div class="space-y-1">${linkedVehicles.map(v=>`<div class="text-slate-300">${escapeHtml(v.model||'未知型號')}｜車牌：<span class="font-mono text-cyan-300">${escapeHtml(v.plate||'--')}</span></div>`).join('')}</div></div>`:''}${r.note?`<div class="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm"><span class="text-xs text-slate-500 block mb-1">備注</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}<div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-blue-600/15 text-blue-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('citizen','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">編輯</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">新增備註／修改駕照</button>`:''}</div>${suspectCases.length?`<div class="mt-4 p-3 rounded-xl bg-red-500/5 border border-red-500/15 text-xs text-red-200">曾被登記為嫌疑人：${suspectCases.length} 件</div>`:''}</div>`;}
+        function renderCitizenCard(r){const suspectCases=(appData.policeReports||[]).filter(x=>getLastFive(x.suspectId)===getLastFive(r.id5));const linkedVehicles=(appData.vehicleRecords||[]).filter(v=>getLastFive(v.id5)===getLastFive(r.id5));const wantedRecords=(appData.wantedRecords||[]).filter(w=>getLastFive(w.id5)===getLastFive(r.id5));const isWanted=wantedRecords.length>0;const cardBg=isWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.deceased?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><h4 class="text-lg font-bold text-white">${escapeHtml(r.name||'--')}</h4>${isWanted?'<span class="px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>通緝狀態</span>':''}${r.deceased?'<span class="px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-skull-crossbones mr-1"></i>死亡證明</span>':''}</div><p class="text-xs text-slate-500 font-mono">證件末五碼：${escapeHtml(r.id5||'--')}</p><p class="text-xs text-slate-500 mt-1">發布帳號：${escapeHtml(r.createdByAccount||'--')}</p></div><span class="text-xs text-slate-400">${escapeHtml(r.gender||'--')}｜${escapeHtml(r.birthday||'--')}</span></div><div class="mt-4 text-sm text-slate-300"><span class="text-slate-500">駕照狀況：</span>${escapeHtml((r.licenses||[]).length?(r.licenses||[]).join('、'):'無')}</div>${linkedVehicles.length?`<div class="mt-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15 text-sm"><span class="text-xs text-cyan-300 block mb-2">名下車輛（依證件末五碼自動比對）</span><div class="space-y-1">${linkedVehicles.map(v=>`<div class="text-slate-300">${escapeHtml(v.model||'未知型號')}｜車牌：<span class="font-mono text-cyan-300">${escapeHtml(v.plate||'--')}</span></div>`).join('')}</div></div>`:''}${r.note?`<div class="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm"><span class="text-xs text-slate-500 block mb-1">備注</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}<div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-blue-600/15 text-blue-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('citizen','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">編輯</button><button type="button" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="deleteLookupRecord('citizen','${escapeHtml(r.docId||r.id)}')">移除</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">新增備註／修改駕照</button>`:''}</div>${suspectCases.length?`<div class="mt-4 p-3 rounded-xl bg-red-500/5 border border-red-500/15 text-xs text-red-200">曾被登記為嫌疑人：${suspectCases.length} 件</div>`:''}</div>`;}
         function searchCitizenRecords(){if(!lookupAccessible('citizen'))return;const q=lookupKeyword(document.getElementById('citizen-search-input')?.value||'');const filter=document.getElementById('citizen-deceased-filter')?.value||'all';const c=document.getElementById('citizen-results');if(filter==='deceased'){const rows=appData.citizenRecords.filter(r=>!!r.deceased);c.innerHTML=rows.length?rows.map(renderCitizenCard).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">目前沒有死亡證明資料。</div>';return;}if(!q){c.innerHTML='<div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-8 text-center text-slate-500"><i class="fa-solid fa-magnifying-glass text-2xl mb-2"></i><div>請輸入搜尋條件後再查詢</div><div class="text-xs mt-1">「全部」與「不顯示死亡證明」需輸入搜尋條件後才會列出資料。</div></div>';return;}let rows=appData.citizenRecords.filter(r=>{const statusOk=filter==='all'||(filter==='alive'?!r.deceased:true);return statusOk&&recordMatchesCitizen(r,q);});c.innerHTML=rows.length?rows.map(renderCitizenCard).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">查無符合條件的資料。</div>'; }
         function searchVehicleRecords(){if(!lookupAccessible('vehicles'))return;const q=lookupKeyword(document.getElementById('vehicle-search-input')?.value||'');const c=document.getElementById('vehicle-results');if(!q){c.innerHTML='<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">請輸入關鍵字。</div>';return;}const rows=appData.vehicleRecords.filter(r=>lookupTextMatch([r.model,r.owner,r.id5,r.plate,r.color,r.note,r.createdByAccount,r.createdByName],q));c.innerHTML=rows.length?rows.map(r=>{const ownerWanted=(appData.wantedRecords||[]).some(w=>getLastFive(w.id5)===getLastFive(r.id5));const cardBg=ownerWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.decommissioned?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex items-start justify-between gap-3"><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm flex-1"><div><span class="text-xs text-slate-500 block">車輛型號</span>${escapeHtml(r.model||'--')}</div><div><span class="text-xs text-slate-500 block">車輛所有人</span>${escapeHtml(r.owner||'--')}</div><div><span class="text-xs text-slate-500 block">證件末五碼</span>${escapeHtml(r.id5||'--')}</div><div><span class="text-xs text-slate-500 block">車牌／車色</span>${escapeHtml(r.plate||'--')} / ${escapeHtml(r.color||'--')}</div><div class="sm:col-span-4"><span class="text-xs text-slate-500 block">發布帳號</span>${escapeHtml(r.createdByAccount||'--')}</div>${r.note?`<div class="sm:col-span-4"><span class="text-xs text-slate-500 block">備注</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}</div>${ownerWanted?'<span class="shrink-0 px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>車主通緝中</span>':''}${r.decommissioned?'<span class="shrink-0 px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-ban mr-1"></i>註銷牌照</span>':''}</div><div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-cyan-600/15 text-cyan-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('vehicles','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('vehicles','${escapeHtml(r.docId||r.id)}')">編輯</button><button type="button" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="deleteLookupRecord('vehicles','${escapeHtml(r.docId||r.id)}')">移除</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('vehicles','${escapeHtml(r.docId||r.id)}')">新增備註</button>`:''}</div></div>`}).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">查無資料。</div>';}
         function getWantedDiscordStatusHtml(r){
@@ -6383,7 +6552,7 @@ async function republishAnnouncement(id) {
                 tr.className = "hover:bg-slate-800/40 transition";
                 tr.innerHTML = `
                     <td class="p-4 font-semibold ${String(l.operation||'').toLowerCase()==='delete'?'text-red-400':'text-purple-400'}">${escapeHtml(l.action||'--')}</td>
-                    <td class="p-4"><span class="px-2 py-1 rounded-full text-[11px] font-semibold ${String(l.operation||'').toLowerCase()==='delete'?'bg-red-500/10 text-red-300':'bg-purple-500/10 text-purple-300'}">${String(l.operation||'').toLowerCase()==='delete'?'刪除／移除':'編輯／修改'}</span></td>
+                    <td class="p-4"><span class="inline-flex items-center justify-center min-w-[88px] px-2.5 py-1 rounded-full text-[11px] font-semibold ${String(l.operation||'').toLowerCase()==='delete'?'bg-red-500/10 text-red-300':'bg-purple-500/10 text-purple-300'}">${String(l.operation||'').toLowerCase()==='delete'?'刪除／移除':String(l.operation||'').toLowerCase()==='edit'?'編輯／修改':'其他操作'}</span></td>
                     <td class="p-4 text-slate-200">${escapeHtml(l.operator||'--')}</td>
                     <td class="p-4 text-slate-300 font-mono">${escapeHtml(l.target||'--')}</td>
                     <td class="p-4 text-slate-400 text-xs">${formatDateTime(l.timestamp, l.time)}${l.detail?`<div class="text-slate-600 mt-1 max-w-md whitespace-normal">${escapeHtml(l.detail)}</div>`:''}</td>
