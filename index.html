@@ -1808,18 +1808,6 @@
                                 <p id="discord-webhook-admin-status" class="text-[11px] text-slate-500 mt-2">尚未確認設定狀態</p>
                             </div>
                         </div>
-                        <div class="mt-5 rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
-                            <div class="flex items-center justify-between gap-3 flex-wrap">
-                                <div>
-                                    <h4 class="font-semibold text-white"><i class="fa-solid fa-heart-pulse text-emerald-400 mr-2"></i>Webhook 即時健康狀態</h4>
-                                    <p class="text-[11px] text-slate-500 mt-1">由 Cloud Function 回報實際 Discord HTTP 結果，不只判斷「有沒有設定」。</p>
-                                </div>
-                                <button type="button" onclick="refreshDiscordWebhookHealth()" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200"><i class="fa-solid fa-rotate mr-1"></i>重新整理</button>
-                            </div>
-                            <div id="discord-webhook-health" class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                                <div class="text-xs text-slate-500">尚未讀取後端狀態。</div>
-                            </div>
-                        </div>
                         <div class="mt-5 rounded-xl border border-amber-500/10 bg-amber-500/5 p-4 text-xs text-slate-400 leading-relaxed">
                             <i class="fa-solid fa-circle-info text-amber-400 mr-1"></i>
                             網站只把 Webhook 設定寫入 Firebase；實際 Discord 發送由後端通知服務處理，避免把 Webhook URL 放進 GitHub Pages 前端。請勿把 Webhook URL 貼到公開程式碼或截圖中。
@@ -5033,8 +5021,6 @@ async function republishAnnouncement(id) {
 
         // Discord 通知改採「Firestore 通知佇列 → 後端服務 → Discord Webhook」。
         // GitHub Pages 不直接讀取或發送 Webhook URL，避免把 Webhook 機密暴露給一般使用者。
-        window.__NTPC_DISCORD_BACKEND_QUEUE__ = true;
-
         async function enqueueDiscordNotification(type, payload={}) {
             if(!currentUser && type !== 'case') return {ok:false, disabled:true};
             try{
@@ -5072,28 +5058,6 @@ async function republishAnnouncement(id) {
             return enqueueDiscordNotification('adminLog',{action:String(action||''),target:String(target||''),detail:String(detail||''),operator,mentionRole:!!options?.mentionRole});
         }
 
-        function discordWebhookHealthCard(key,label,d){
-            const configured=!!d?.[key];
-            const lastOk=Number(d?.[`${key}LastSuccessAt`]||0);
-            const lastFail=Number(d?.[`${key}LastFailureAt`]||0);
-            const code=d?.[`${key}LastHttpStatus`];
-            const err=d?.[`${key}LastError`]||'';
-            const last=lastOk>=lastFail?lastOk:lastFail;
-            const ok=lastOk>lastFail;
-            const state=!configured?'⚪ 尚未設定':!last?'🟡 尚未測試':ok?'🟢 最近發送成功':'🔴 最近發送失敗';
-            const detail=!configured?'請先儲存 Webhook':!last?'尚無發送紀錄':ok?`HTTP ${code||204}　${formatDateTime(lastOk)}`:`HTTP ${code||'未知'}　${formatDateTime(lastFail)}`;
-            return `<div class="rounded-xl border ${ok?'border-emerald-500/20':last&&!ok?'border-rose-500/20':'border-slate-800'} bg-slate-900 p-4"><div class="flex items-center justify-between gap-2"><span class="font-semibold text-sm text-white">${label}</span><span class="text-xs">${state}</span></div><div class="text-[11px] text-slate-400 mt-2">${detail}</div>${err&&!ok?`<div class="text-[11px] text-rose-300 mt-2 break-words">${escapeHtml(err)}</div>`:''}</div>`;
-        }
-        async function refreshDiscordWebhookHealth(){
-            if(!currentUser||getEffectiveRole(currentUser)!=='admin') return;
-            const host=document.getElementById('discord-webhook-health');
-            if(!host)return;
-            try{
-                const snap=await fm.getDoc(fm.doc(db,'systemSettings','discordWebhookStatus'));
-                const d=snap.exists?snap.data():{};
-                host.innerHTML=[['police','警察案件報告'],['fire','消防案件報告'],['adminLog','管理中心 LOG']].map(([k,l])=>discordWebhookHealthCard(k,l,d)).join('');
-            }catch(e){host.innerHTML=`<div class="text-xs text-rose-300">後端狀態讀取失敗：${escapeHtml(e.message||String(e))}</div>`;}
-        }
         async function renderDiscordWebhookSettings(){
             if(!currentUser||getEffectiveRole(currentUser)!=='admin') return;
             const status=document.getElementById('discord-webhook-config-status');
@@ -5101,9 +5065,8 @@ async function republishAnnouncement(id) {
                 const snap=await fm.getDoc(fm.doc(db,'systemSettings','discordWebhookStatus'));
                 const d=snap.exists?snap.data():{};
                 const map=[['police','discord-webhook-police-status','警察案件報告'],['fire','discord-webhook-fire-status','消防案件報告'],['adminLog','discord-webhook-admin-status','管理中心 LOG']];
-                map.forEach(([key,id,label])=>{const el=document.getElementById(id);if(el)el.innerHTML=d[key]===true?'<span class="text-emerald-400">🟢 已設定</span>　等待／依後端實際發送狀態判定':'<span class="text-slate-500">⚪ 尚未設定</span>';});
-                if(status) status.textContent=`最後設定更新：${d.updatedAt?formatDateTime(d.updatedAt):'尚無紀錄'}${d.updatedBy?` ／ ${escapeHtml(d.updatedBy)}`:''}`;
-                await refreshDiscordWebhookHealth();
+                map.forEach(([key,id,label])=>{const el=document.getElementById(id);if(el)el.innerHTML=d[key]===true?'<span class="text-emerald-400">🟢 已設定</span>　後端通知服務可使用':'<span class="text-slate-500">⚪ 尚未設定</span>';});
+                if(status) status.textContent=`最後更新：${d.updatedAt?formatDateTime(d.updatedAt):'尚無紀錄'}${d.updatedBy?` ／ ${escapeHtml(d.updatedBy)}`:''}`;
             }catch(e){if(status)status.textContent='設定狀態讀取失敗：'+e.message;}
         }
 
@@ -5132,8 +5095,7 @@ async function republishAnnouncement(id) {
             try{
                 const result=await enqueueDiscordNotification('test',{operator:{account:currentUser.account||'',name:currentUser.name||''},createdAt:Date.now()});
                 if(!result.ok) throw result.error||new Error('無法建立通知佇列');
-                showToast('測試通知已加入佇列；請按重新整理查看 Cloud Function 實際 HTTP 結果。','success','測試已排程');
-                setTimeout(refreshDiscordWebhookHealth,1500);
+                showToast('測試通知已加入 Discord 送出佇列，請稍候確認頻道。','success','測試已送出');
             }catch(e){showToast('測試通知建立失敗：'+e.message,'error','操作失敗');}
         }
 
@@ -5424,22 +5386,6 @@ async function republishAnnouncement(id) {
 
         async function rejectPolicePendingReport(){const caseId=document.getElementById('review-reject-case-id').value;const dept=document.getElementById('review-reject-dept').value||'police';const reason=document.getElementById('review-reject-reason').value.trim();const canReview=dept==='fire'||dept==='ems'?canReviewFireReports():canReviewPoliceReports();if(!canReview){showToast('權限不足。','warning','權限不足');return;}if(!reason){showToast('請填寫退件原因。','warning','退件原因必填');return;}const source=dept==='fire'?appData.firePendingReports:dept==='ems'?appData.emsPendingReports:dept==='wanted'?appData.wantedPendingRecords:appData.policePendingReports;const r=(source||[]).find(x=>String(x.caseId||x.id||x.docId)===String(caseId));if(!r)return;try{const col=dept==='fire'?'firePendingReports':dept==='ems'?'emsPendingReports':dept==='wanted'?'wantedPendingRecords':'policePendingReports';const patch={reviewStatus:'rejected',rejectionReason:reason,reviewedAt:Date.now(),reviewedBy:currentUser.account,updatedAt:Date.now()};await fm.updateDoc(fm.doc(db,col,r.docId||r.caseId||r.id),patch);Object.assign(r,patch);await removePendingReportNotifications(caseId,r.registeredByAccount||r.authorId);const title=dept==='wanted'?'通緝申請遭退件':dept==='ems'?'EMS報告遭退件':dept==='fire'?'消防案件遭退件':'案件遭退件';const recipient=r.registeredByAccount||r.authorId||r.createdByAccount;const n={type:dept==='wanted'?'wanted':'report',department:'police',caseId,recipientAccount:recipient,recipientAccountNormalized:String(recipient||'').trim().toLowerCase(),status:'rejected',title,message:`${dept==='wanted'?'通緝申請':dept==='ems'?'EMS報告':`案件 ${caseId}`} 已退件：${reason}`,timestamp:Date.now(),read:false};const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);/* 通知由 onSnapshot 回填，避免審核後本地插入與即時監聽重複。 */await logAdminAction((dept==='ems'?'EMS':dept==='fire'?'消防':'警用')+'退件案件報告',caseId,reason);closeModal('modal-review-reject');if(dept==='ems'||dept==='fire')renderFireReview();else renderPoliceReview();if(dept==='wanted'){renderLookupSystems();}renderPersonalNotifications();showToast('案件已退件，寄件人可重新編輯送件。','success','退件完成');}catch(e){showToast('退件失敗：'+e.message,'error','操作失敗');}}
         
-        // 案件報告列表統一依「發送／建立時間」由新到舊排列。
-        // 優先使用 registeredAt / timestamp，舊資料沒有數字時間時再嘗試解析 time。
-        function getReportCreatedTimestamp(r) {
-            const candidates=[r?.registeredAt,r?.timestamp,r?.submittedAt,r?.createdAt,r?.time];
-            for(const v of candidates){
-                if(typeof v==='number' && Number.isFinite(v)) return v;
-                if(typeof v==='string' && v.trim()){
-                    const n=Number(v);
-                    if(Number.isFinite(n) && n>0) return n;
-                    const parsed=Date.parse(v.replace(/年|月/g,'/').replace(/日/g,''));
-                    if(Number.isFinite(parsed)) return parsed;
-                }
-            }
-            return 0;
-        }
-
         function renderPoliceReports() {
             const container = document.getElementById('police-reports-list');
             const input = document.getElementById('search-police-report');
@@ -5451,7 +5397,7 @@ async function republishAnnouncement(id) {
                 if(!queryVal) return true;
                 const values=[r.suspectId,r.authorId,r.registeredByAccount,r.caseId,r.title,r.authorName].map(v=>String(v||'').toLowerCase());
                 return values.some(v=>v.includes(queryVal));
-            }).sort((a,b)=>getReportCreatedTimestamp(b)-getReportCreatedTimestamp(a));
+            });
             if(!filtered.length){
                 container.innerHTML='<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">沒有找到符合條件的警務案件紀錄。</div>';
                 return;
@@ -5630,14 +5576,14 @@ async function republishAnnouncement(id) {
         function renderEMSRemarkHistory(r){const el=document.getElementById('ems-remark-history');if(!el)return;const rr=getReportRemarks(r);el.innerHTML=rr.length?rr.map(x=>`<div class="rounded-lg border border-slate-800 bg-slate-950/70 p-3"><div class="flex justify-between"><span class="text-xs text-amber-400">${x.authorName||'高層'}</span><span class="text-[11px] text-slate-500">${x.time||formatDateTime(x.timestamp)}</span></div><div class="text-xs text-slate-300 mt-1 whitespace-pre-wrap">${x.text||''}</div></div>`).join(''):'<div class="text-xs text-slate-500">目前尚無高層批示。</div>';}
         function viewEMSReportDetail(id){const r=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r)return;document.getElementById('ems-detail-id').textContent=r.id||r.docId;document.getElementById('ems-detail-title').textContent=`${r.patient||'傷患'} 的EMS救護出勤報告`;const fields=[['主訴',r.chiefComplaint],['派遣類別',r.dispatchCategory],['傷患RP名稱 / ID',r.patient],['出勤單位 / 車輛',r.unitVehicle],['GCS評分 E',r.gcsE],['派遣時間',r.dispatchTime],['抵達時間',r.arrivalTime],['離開時間',r.leaveTime],['到院時間',r.hospitalTime],['返隊時間',r.returnTime],['填寫人',`${r.authorName||'--'} (${r.authorId||'--'})`],['建立時間',r.time||formatDateTime(r.timestamp)]];document.getElementById('ems-detail-fields').innerHTML=fields.map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${escapeHtml(k)}</span><span class="text-sm text-slate-200 break-words">${escapeHtml(v||'--')}</span></div>`).join('');document.getElementById('ems-detail-treatment').textContent=r.treatment||'--';renderEMSRemarkHistory(r);const actionHost=document.getElementById('ems-detail-action-bar');if(actionHost){const a=[];if(canModifyEMS(r))a.push(`<button type="button" onclick="closeModal('modal-ems-detail');openEMSReportModal('${id}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs"><i class="fa-solid fa-pen mr-1"></i>編輯</button>`);if(canModifyEMS(r))a.push(`<button type="button" onclick="deleteEMSReport('${id}'); closeModal('modal-ems-detail')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs"><i class="fa-solid fa-trash mr-1"></i>刪除</button>`);if(currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire'))) )a.push(`<button type="button" onclick="closeModal('modal-ems-detail');openRemarkModal('emsReports','${id}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs"><i class="fa-solid fa-pen-nib mr-1"></i>高層批示</button>`);actionHost.innerHTML=a.join('');}document.getElementById('modal-ems-detail').classList.remove('hidden');}
         async function deleteEMSReport(id){const r=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r||!canModifyEMS(r)){showToast('你無權限刪除這筆EMS報告。','warning','權限不足');return;}if(!(await showConfirm('確定要刪除這筆 EMS 救護出勤報告嗎？','刪除 EMS 報告','確定刪除')))return;try{await fm.deleteDoc(fm.doc(db,'emsReports',r.docId||r.id));appData.emsReports=appData.emsReports.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除EMS救護報告',r.id||id);renderEMSReports();renderMyProfile();showToast('EMS救護出勤報告已刪除。','success','刪除成功');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
-        function renderEMSReports(){const c=document.getElementById('ems-reports-list');if(!c)return;const q=(document.getElementById('search-ems-report')?.value||'').trim().toLowerCase(),arr=(appData.emsReports||[]).filter(r=>!q||[r.id,r.patient,r.authorId,r.authorName,r.dispatchCategory].some(v=>String(v||'').toLowerCase().includes(q))).sort((a,b)=>getReportCreatedTimestamp(b)-getReportCreatedTimestamp(a));c.innerHTML=arr.length?'':'<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">尚無EMS報告。</div>';arr.forEach(r=>{const key=r.docId||r.id,card=document.createElement('div');card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4';card.innerHTML=`<div class="flex justify-between gap-3"><span class="text-xs text-rose-400 font-mono">${r.id||key}</span><span class="text-xs text-slate-500">${r.time||'--'}</span></div><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs"><div><span class="text-slate-500 block">主訴</span>${r.chiefComplaint||'--'}</div><div><span class="text-slate-500 block">傷患</span>${r.patient||'--'}</div><div><span class="text-slate-500 block">出勤單位／車輛</span>${r.unitVehicle||'--'}</div><div><span class="text-slate-500 block">填寫人</span>${r.authorName||'--'} (${r.authorId||'--'})</div></div><div class="flex flex-wrap gap-2"><button onclick="viewEMSReportDetail('${key}')" class="px-3 py-2 bg-rose-500/10 text-rose-300 rounded-lg text-xs">檢視</button>${canModifyEMS(r)?`<button onclick="openEMSReportModal('${key}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs">編輯</button><button onclick="deleteEMSReport('${key}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button>`:''}${currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire')))?`<button onclick="openRemarkModal('emsReports','${key}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs">高層批示</button>`:''}${canEditReviewStatus('ems')?`<button onclick="openEditReviewStatus('ems','${key}','approved')" class="px-3 py-2 bg-blue-600/20 text-blue-300 rounded-lg text-xs"><i class="fa-solid fa-stamp mr-1"></i>編輯審核狀況</button>`:''}</div>`;c.appendChild(card);});}
+        function renderEMSReports(){const c=document.getElementById('ems-reports-list');if(!c)return;const q=(document.getElementById('search-ems-report')?.value||'').trim().toLowerCase(),arr=(appData.emsReports||[]).filter(r=>!q||[r.id,r.patient,r.authorId,r.authorName,r.dispatchCategory].some(v=>String(v||'').toLowerCase().includes(q)));c.innerHTML=arr.length?'':'<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">尚無EMS報告。</div>';arr.forEach(r=>{const key=r.docId||r.id,card=document.createElement('div');card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4';card.innerHTML=`<div class="flex justify-between gap-3"><span class="text-xs text-rose-400 font-mono">${r.id||key}</span><span class="text-xs text-slate-500">${r.time||'--'}</span></div><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs"><div><span class="text-slate-500 block">主訴</span>${r.chiefComplaint||'--'}</div><div><span class="text-slate-500 block">傷患</span>${r.patient||'--'}</div><div><span class="text-slate-500 block">出勤單位／車輛</span>${r.unitVehicle||'--'}</div><div><span class="text-slate-500 block">填寫人</span>${r.authorName||'--'} (${r.authorId||'--'})</div></div><div class="flex flex-wrap gap-2"><button onclick="viewEMSReportDetail('${key}')" class="px-3 py-2 bg-rose-500/10 text-rose-300 rounded-lg text-xs">檢視</button>${canModifyEMS(r)?`<button onclick="openEMSReportModal('${key}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs">編輯</button><button onclick="deleteEMSReport('${key}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button>`:''}${currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire')))?`<button onclick="openRemarkModal('emsReports','${key}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs">高層批示</button>`:''}${canEditReviewStatus('ems')?`<button onclick="openEditReviewStatus('ems','${key}','approved')" class="px-3 py-2 bg-blue-600/20 text-blue-300 rounded-lg text-xs"><i class="fa-solid fa-stamp mr-1"></i>編輯審核狀況</button>`:''}</div>`;c.appendChild(card);});}
 
         function renderFireReports() {
             const container=document.getElementById('fire-reports-list');
             const query=(document.getElementById('search-fire-report')?.value||'').trim().toLowerCase();
             if(!container)return;
             container.innerHTML='';
-            const filtered=(appData.fireReports||[]).filter(r=>!query||[r.caseId,r.title,r.authorId,r.authorName,r.registeredByAccount].some(v=>String(v||'').toLowerCase().includes(query))).sort((a,b)=>getReportCreatedTimestamp(b)-getReportCreatedTimestamp(a));
+            const filtered=(appData.fireReports||[]).filter(r=>!query||[r.caseId,r.title,r.authorId,r.authorName,r.registeredByAccount].some(v=>String(v||'').toLowerCase().includes(query)));
             if(!filtered.length){container.innerHTML='<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">沒有找到符合條件的消防案件紀錄。</div>';return;}
             filtered.forEach(r=>{
                 const card=document.createElement('div');
@@ -6729,7 +6675,7 @@ function ntpcDutyHoursSince(startMs){const mine=ntpcDutyRowsForCurrentUser().fil
 function renderDashRecentDuty(){const h=document.getElementById('dash-recent-duty');if(!h)return;const rows=ntpcDutyRowsForCurrentUser().slice(0,10);h.innerHTML=rows.length?rows.map(c=>{const status=String(c.status||c.action||c.type||'');const label=/上班|上班打卡|clock.?in/i.test(status)?'上班':/下班|下班打卡|clock.?out/i.test(status)?'下班':(c.status||c.action||'值勤紀錄');const unit=c.unit==='fire'||c.department==='fire'?'消防':c.unit==='admin'||c.department==='admin'?'管理':'警察';return `<div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3 flex items-center justify-between gap-3"><div><div class="text-sm font-semibold text-white">${ntpcEsc(unit)} ／ ${ntpcEsc(label)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(formatDateTime(c.timestamp||c.time,c.time))}</div></div><span class="text-[11px] px-2 py-1 rounded-full bg-slate-800 text-slate-300">${ntpcEsc(c.dutyNumber||c.managementId||c.staffNumber||currentUser.account||'--')}</span></div>`}).join(''):'<div class="text-sm text-slate-500 py-5 text-center md:col-span-2">目前沒有勤務打卡紀錄。</div>';}
 function ntpcCurrentMonthHours(){if(!currentUser)return 0;const start=new Date();start.setDate(1);start.setHours(0,0,0,0);const mine=[...(appData.policeClocks||[]),...(appData.fireClocks||[]),...(appData.adminClocks||[])].filter(c=>String(c.account||c.userAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&Number(c.timestamp||c.time||0)>=start.getTime());let total=0;const groups={};mine.forEach(c=>{const key=c.shiftId||c.clockGroup||c.id||`${c.account}-${new Date(c.timestamp||c.time).toDateString()}`;(groups[key]??=[]).push(c);});Object.values(groups).forEach(g=>{g.sort((a,b)=>Number(a.timestamp||a.time)-Number(b.timestamp||b.time));for(let i=0;i+1<g.length;i+=2){const a=Number(g[i].timestamp||g[i].time),b=Number(g[i+1].timestamp||g[i+1].time);if(b>a)total+=b-a;}});return Math.round(total/360000)/10;}
 function refreshDutyDashboard(){if(!document.getElementById('tab-dashboard'))return;const online=getCurrentDutyCount();const pending=(appData.policePendingReports||[]).length+(appData.firePendingReports||[]).length+(appData.emsPendingReports||[]).length+(appData.wantedPendingRecords||[]).length;const noti=currentUser?(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&!n.read).length:0;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};set('dash-online',online);set('dash-pending',pending);set('dash-notifications',noti);set('dash-hours',ntpcCurrentMonthHours().toFixed(1)+' h');set('dash-week-hours',currentUser?ntpcDutyHoursSince(Date.now()-7*24*60*60*1000).toFixed(1)+' h':'--');set('dash-total-hours',currentUser?ntpcDutyHoursSince(0).toFixed(1)+' h':'--');const work=document.getElementById('dash-my-work');if(work){const mine=(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser?.account||'').toLowerCase()&&!n.read).slice(0,8);work.innerHTML=mine.length?mine.map(n=>`<div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800"><div class="text-sm text-white">${ntpcEsc(n.title||'案件通知')}</div><div class="text-xs text-slate-500 mt-1">${ntpcEsc(n.message||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有待處理通知。</div>';}renderDashRecentDuty();renderDashSystemStatus();renderDashAnnouncements();renderDashHandover();renderDashManagementWork();}
-function renderDashSystemStatus(){const h=document.getElementById('dash-system-status');if(!h)return;const online=navigator.onLine;const firebaseOk=!!db&&!!fm;const realtimeOk=Array.isArray(realtimeUnsubscribers)&&realtimeUnsubscribers.length>0;h.innerHTML=[['網路連線',online,'瀏覽器網路狀態'],['Firebase',firebaseOk,'雲端資料庫模組'],['即時同步',realtimeOk,'Firestore 即時監聽'],['案件通知',!!appData.reportNotifications,'通知資料已載入'],['Discord 通知',!!window.__NTPC_DISCORD_BACKEND_QUEUE__,'由後端 Cloud Function 發送']].map(x=>`<div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60"><div><span class="status-dot ${x[1]?'status-ok':'status-bad'}"></span><span class="text-sm text-slate-200">${x[0]}</span></div><span class="text-[11px] text-slate-500">${x[2]}</span></div>`).join('');const t=document.getElementById('dash-status-time');if(t)t.textContent='更新 '+formatDateTime(Date.now());}
+function renderDashSystemStatus(){const h=document.getElementById('dash-system-status');if(!h)return;const online=navigator.onLine;const firebaseOk=!!db&&!!fm;const realtimeOk=Array.isArray(realtimeUnsubscribers)&&realtimeUnsubscribers.length>0;h.innerHTML=[['網路連線',online,'瀏覽器網路狀態'],['Firebase',firebaseOk,'雲端資料庫模組'],['即時同步',realtimeOk,'Firestore 即時監聽'],['案件通知',!!appData.reportNotifications,'通知資料已載入'],['Discord 通知',false,'本版本已停用前端 Webhook']].map(x=>`<div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60"><div><span class="status-dot ${x[1]?'status-ok':'status-bad'}"></span><span class="text-sm text-slate-200">${x[0]}</span></div><span class="text-[11px] text-slate-500">${x[2]}</span></div>`).join('');const t=document.getElementById('dash-status-time');if(t)t.textContent='更新 '+formatDateTime(Date.now());}
 function renderDashAnnouncements(){const h=document.getElementById('dash-important-announcements');if(!h)return;const rows=(appData.announcements||[]).filter(a=>a.active!==false&&a.important).sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0)).slice(0,5);h.innerHTML=rows.length?rows.map(a=>`<div class="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5"><div class="text-sm text-white">${ntpcEsc(a.text)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(a.publisher||'系統')}｜${ntpcEsc(a.time||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有置頂重要公告。</div>';}
 function getUserDepartments(u=currentUser){if(!u)return [];if(getEffectiveRole(u)==='admin')return ['police','fire'];const units=Array.isArray(u.units)?u.units:[u.unit];return [...new Set(units.filter(x=>x==='police'||x==='fire'))];}
 function handoverDepartmentOf(note){if(note?.department==='police'||note?.department==='fire')return note.department;const u=(appData.users||[]).find(x=>String(x.account||'').toLowerCase()===String(note?.authorAccount||'').toLowerCase());return getUserDepartments(u)[0]||'police';}
