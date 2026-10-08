@@ -124,6 +124,15 @@
         }
         .app-toast-close:hover { color: #e2e8f0; }
 
+        /* 導覽列：主要入口保持精簡，其餘功能收進「更多功能」資料夾 */
+        #desktop-more-menu-wrap { z-index: 90; }
+        #desktop-more-menu button,
+        #mobile-more-menu button { touch-action: manipulation; }
+        #desktop-more-menu.is-open,
+        #mobile-more-menu.is-open { display: block; }
+        #desktop-more-menu-chevron.is-open,
+        #mobile-more-menu-chevron.is-open { transform: rotate(180deg); }
+
         /* 首頁網站公告：深色系、每 5 秒垂直交叉淡入淡出 */
         #site-announcement-bar { position: relative; overflow: hidden; background: linear-gradient(90deg, rgba(15,23,42,.98), rgba(17,24,39,.96)); border: 1px solid rgba(71,85,105,.7); border-radius: 1rem; box-shadow: 0 16px 40px rgba(0,0,0,.25); }
         .announcement-track { position: relative; min-height: 58px; }
@@ -451,16 +460,24 @@
             </div>
 
             <nav class="hidden md:flex items-center space-x-1">
-                <button id="nav-dashboard" data-tab="dashboard" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-gauge-high mr-2"></i>勤務中心</button>
-                <button type="button" onclick="openGlobalSearch()" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-magnifying-glass mr-2"></i>全站搜尋</button>
-                <button id="nav-home" data-tab="home" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-blue-400 bg-blue-500/10"><i class="fa-solid fa-house mr-2"></i>首頁大廳</button>
-                <button id="nav-police" data-tab="police" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-shield mr-2"></i>警務系統</button>
-                <button id="nav-fire" data-tab="fire" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-fire-extinguisher mr-2"></i>消防系統</button>
-                <button id="nav-faq" data-tab="faq" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-circle-question mr-2"></i>常見問題</button>
-                <button id="nav-notifications" data-tab="notifications" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800 relative"><i id="nav-notification-bell" class="fa-solid fa-bell mr-2 notification-bell-icon"></i>個人通知<span id="nav-notification-badge" class="hidden ml-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold items-center justify-center align-middle">0</span></button>
-                <button id="nav-profile" data-tab="profile" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-id-card mr-2"></i>我的資訊</button>
-                <button id="nav-academy" data-tab="academy" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-graduation-cap mr-2"></i>專生考核</button>
-                <button id="nav-admin" data-tab="admin" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-user-gear mr-2"></i>管理員中心</button>
+                <button id="nav-home" data-tab="home" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition text-blue-400 bg-blue-500/10"><i class="fa-solid fa-house mr-2"></i>首頁</button>
+                <button id="nav-fire" data-tab="fire" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-fire-extinguisher mr-2"></i>消防</button>
+                <button id="nav-police" data-tab="police" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-shield mr-2"></i>警務</button>
+                <button id="nav-notifications" data-tab="notifications" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800 relative"><i id="nav-notification-bell" class="fa-solid fa-bell mr-2 notification-bell-icon"></i>個人通知<span id="nav-notification-badge" class="hidden ml-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold items-center justify-center align-middle">0</span></button>
+                <button id="nav-profile" data-tab="profile" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-id-card mr-2"></i>我的資料</button>
+                <button id="nav-faq" data-tab="faq" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-circle-question mr-2"></i>常見問題</button>
+                <div id="desktop-more-menu-wrap" class="relative">
+                    <button id="desktop-more-menu-btn" type="button" aria-haspopup="true" aria-expanded="false" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800 inline-flex items-center">
+                        <i class="fa-solid fa-folder-open mr-2"></i>更多功能<i id="desktop-more-menu-chevron" class="fa-solid fa-chevron-down ml-2 text-[10px] transition-transform"></i>
+                    </button>
+                    <div id="desktop-more-menu" class="hidden absolute right-0 top-full mt-2 w-56 rounded-2xl border border-slate-700 bg-slate-900/98 backdrop-blur-xl shadow-2xl shadow-black/40 p-2 z-[80]">
+                        <button id="nav-dashboard" data-tab="dashboard" class="nav-btn more-menu-item w-full px-3 py-2.5 rounded-xl text-sm font-medium text-left text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-gauge-high w-5 mr-2 text-blue-400"></i>勤務中心</button>
+                        <button type="button" onclick="openGlobalSearch(); closeDesktopMoreMenu();" class="more-menu-item w-full px-3 py-2.5 rounded-xl text-sm font-medium text-left text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-magnifying-glass w-5 mr-2 text-cyan-400"></i>全站搜尋</button>
+                        <div class="h-px bg-slate-800 my-1.5"></div>
+                        <button id="nav-academy" data-tab="academy" class="nav-btn more-menu-item w-full px-3 py-2.5 rounded-xl text-sm font-medium text-left text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-graduation-cap w-5 mr-2 text-amber-400"></i>專生考核</button>
+                        <button id="nav-admin" data-tab="admin" class="nav-btn more-menu-item w-full px-3 py-2.5 rounded-xl text-sm font-medium text-left text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-user-gear w-5 mr-2 text-purple-400"></i>管理員中心</button>
+                    </div>
+                </div>
             </nav>
 
             <div class="flex items-center space-x-3">
@@ -479,14 +496,24 @@
             </div>
         </div>
         <div id="mobile-menu" class="hidden md:hidden bg-slate-900 border-b border-slate-800">
-            <button data-tab="home" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-house"></i><span>首頁大廳</span></button>
-            <button data-tab="police" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-shield"></i><span>警務系統</span></button>
-            <button data-tab="fire" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-fire-extinguisher"></i><span>消防系統</span></button>
-            <button data-tab="faq" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-circle-question"></i><span>常見問題</span></button>
+            <button data-tab="home" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-house"></i><span>首頁</span></button>
+            <button data-tab="fire" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-fire-extinguisher"></i><span>消防</span></button>
+            <button data-tab="police" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-shield"></i><span>警務</span></button>
             <button data-tab="notifications" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i id="mobile-nav-notification-bell" class="fa-solid fa-bell notification-bell-icon"></i><span>個人通知</span><span id="mobile-nav-notification-badge" class="hidden min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold items-center justify-center">0</span></button>
-            <button data-tab="profile" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-id-card"></i><span>我的資訊</span></button>
-            <button data-tab="academy" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-graduation-cap"></i><span>專生考核</span></button>
-            <button data-tab="admin" id="mobile-nav-admin" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-user-gear"></i><span>管理員中心</span></button>
+            <button data-tab="profile" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-id-card"></i><span>我的資料</span></button>
+            <button data-tab="faq" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-circle-question"></i><span>常見問題</span></button>
+            <div class="border-t border-slate-800 mt-1 pt-1">
+                <button id="mobile-more-menu-btn" type="button" class="w-full px-4 py-3 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 flex items-center justify-between">
+                    <span><i class="fa-solid fa-folder-open mr-3 text-slate-400"></i>更多功能</span>
+                    <i id="mobile-more-menu-chevron" class="fa-solid fa-chevron-down text-xs transition-transform"></i>
+                </button>
+                <div id="mobile-more-menu" class="hidden px-2 pb-2">
+                    <button data-tab="dashboard" class="mobile-nav-btn text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-gauge-high"></i><span>勤務中心</span></button>
+                    <button type="button" onclick="openGlobalSearch(); closeMobileMenu();" class="mobile-nav-btn text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-magnifying-glass"></i><span>全站搜尋</span></button>
+                    <button data-tab="academy" class="mobile-nav-btn text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-graduation-cap"></i><span>專生考核</span></button>
+                    <button data-tab="admin" id="mobile-nav-admin" class="mobile-nav-btn text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-user-gear"></i><span>管理員中心</span></button>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -2115,6 +2142,35 @@
                 });
             }
 
+            const desktopMoreMenuBtn = document.getElementById('desktop-more-menu-btn');
+            if (desktopMoreMenuBtn) {
+                desktopMoreMenuBtn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    toggleDesktopMoreMenu();
+                });
+            }
+
+            const mobileMoreMenuBtn = document.getElementById('mobile-more-menu-btn');
+            if (mobileMoreMenuBtn) {
+                mobileMoreMenuBtn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    toggleMobileMoreMenu();
+                });
+            }
+
+            document.addEventListener('click', (event) => {
+                const desktopWrap = document.getElementById('desktop-more-menu-wrap');
+                if (desktopWrap && !desktopWrap.contains(event.target)) closeDesktopMoreMenu();
+            });
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    stopAnnouncementRotation();
+                    return;
+                }
+                renderSiteAnnouncements({reset:true});
+            });
+
             document.querySelectorAll('.close-modal-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const modalId = btn.getAttribute('data-modal');
@@ -2431,20 +2487,35 @@ function getActiveAnnouncements() {
                 .sort((a,b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
         }
 
-function renderSiteAnnouncements() {
+function stopAnnouncementRotation() {
+            if (announcementTimer) {
+                clearInterval(announcementTimer);
+                announcementTimer = null;
+            }
+            window.__ntpcAnnouncementGeneration = (window.__ntpcAnnouncementGeneration || 0) + 1;
+        }
+
+function renderSiteAnnouncements(options = {}) {
             const bar = document.getElementById('site-announcement-bar');
             const track = document.getElementById('announcement-track');
             if (!bar || !track) return;
+
             const rows = getActiveAnnouncements();
+            stopAnnouncementRotation();
+
             if (!rows.length) {
                 bar.classList.add('hidden');
                 track.innerHTML = '';
-                if (announcementTimer) { clearInterval(announcementTimer); announcementTimer = null; }
                 announcementIndex = 0;
                 return;
             }
+
             bar.classList.remove('hidden');
-            if (announcementIndex >= rows.length) announcementIndex = 0;
+
+            if (options.reset === true || announcementIndex >= rows.length || announcementIndex < 0) {
+                announcementIndex = 0;
+            }
+
             track.innerHTML = rows.map((a,i) => `
                 <div class="announcement-item ${i===announcementIndex?'active':''}" data-announcement-index="${i}">
                     <div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0"><i class="fa-solid fa-bullhorn"></i></div>
@@ -2453,22 +2524,46 @@ function renderSiteAnnouncements() {
                     </div>
                     <div class="announcement-publisher text-xs text-slate-500">${escapeHtml(a.publisher || '')}</div>
                 </div>`).join('');
-            if (announcementTimer) clearInterval(announcementTimer);
-            if (rows.length > 1) {
+
+            if (rows.length > 1 && !document.hidden) {
+                const generation = window.__ntpcAnnouncementGeneration || 0;
                 announcementTimer = setInterval(() => {
+                    if (document.hidden || generation !== (window.__ntpcAnnouncementGeneration || 0)) return;
+
                     const items = [...track.querySelectorAll('.announcement-item')];
-                    if (!items.length) return;
+                    if (items.length !== rows.length) {
+                        renderSiteAnnouncements({reset:true});
+                        return;
+                    }
+
                     const oldIndex = announcementIndex;
-                    announcementIndex = (announcementIndex + 1) % rows.length;
+                    const nextIndex = (announcementIndex + 1) % rows.length;
                     const oldItem = items[oldIndex];
-                    const newItem = items[announcementIndex];
-                    if (oldItem) oldItem.classList.remove('active'), oldItem.classList.add('exit-up');
-                    if (newItem) { newItem.classList.remove('exit-up'); requestAnimationFrame(() => newItem.classList.add('active')); }
-                    setTimeout(() => oldItem?.classList.remove('exit-up'), 500);
+                    const newItem = items[nextIndex];
+
+                    if (!oldItem || !newItem) {
+                        renderSiteAnnouncements({reset:true});
+                        return;
+                    }
+
+                    announcementIndex = nextIndex;
+                    oldItem.classList.remove('active', 'exit-up');
+                    void oldItem.offsetWidth;
+                    oldItem.classList.add('exit-up');
+
+                    newItem.classList.remove('active', 'exit-up');
+                    requestAnimationFrame(() => {
+                        if (document.hidden || generation !== (window.__ntpcAnnouncementGeneration || 0)) return;
+                        newItem.classList.add('active');
+                    });
+
+                    window.setTimeout(() => {
+                        if (generation !== (window.__ntpcAnnouncementGeneration || 0)) return;
+                        oldItem.classList.remove('exit-up');
+                    }, 650);
                 }, 5000);
             }
         }
-
 function renderAdminAnnouncements() {
             const c = document.getElementById('admin-announcements-list');
             if (!c) return;
@@ -2837,6 +2932,41 @@ async function republishAnnouncement(id) {
             switchFAQCategory(category, focusId);
         }
 
+        function setMoreMenuState(menuId, buttonId, open) {
+            const menu = document.getElementById(menuId);
+            const button = document.getElementById(buttonId);
+            const chevron = document.getElementById(buttonId === 'desktop-more-menu-btn' ? 'desktop-more-menu-chevron' : 'mobile-more-menu-chevron');
+            if (!menu || !button) return;
+            menu.classList.toggle('hidden', !open);
+            menu.classList.toggle('is-open', open);
+            button.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (chevron) chevron.classList.toggle('is-open', open);
+        }
+
+        function toggleDesktopMoreMenu() {
+            const menu = document.getElementById('desktop-more-menu');
+            setMoreMenuState('desktop-more-menu', 'desktop-more-menu-btn', menu ? menu.classList.contains('hidden') : true);
+        }
+
+        function closeDesktopMoreMenu() {
+            setMoreMenuState('desktop-more-menu', 'desktop-more-menu-btn', false);
+        }
+
+        function toggleMobileMoreMenu() {
+            const menu = document.getElementById('mobile-more-menu');
+            setMoreMenuState('mobile-more-menu', 'mobile-more-menu-btn', menu ? menu.classList.contains('hidden') : true);
+        }
+
+        function closeMobileMoreMenu() {
+            setMoreMenuState('mobile-more-menu', 'mobile-more-menu-btn', false);
+        }
+
+        function closeMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            if (menu) menu.classList.add('hidden');
+            closeMobileMoreMenu();
+        }
+
         function switchTab(tabId) {
             if (tabId === 'admin' && !canAccessManagementCenter()) {
                 showToast('目前帳號沒有管理中心權限。', 'warning', '權限不足');
@@ -2861,6 +2991,8 @@ async function republishAnnouncement(id) {
             }
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            closeDesktopMoreMenu();
+            closeMobileMoreMenu();
             
             if (tabId === 'dashboard') refreshDutyDashboard();
             if (tabId === 'faq') switchFAQCategory(document.querySelector('.faq-category-btn.active')?.getAttribute('data-faq-category') || 'police');
