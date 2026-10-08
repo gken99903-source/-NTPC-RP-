@@ -127,7 +127,7 @@
         /* 首頁網站公告：深色系、每 5 秒垂直交叉淡入淡出 */
         #site-announcement-bar { position: relative; overflow: hidden; background: linear-gradient(90deg, rgba(15,23,42,.98), rgba(17,24,39,.96)); border: 1px solid rgba(71,85,105,.7); border-radius: 1rem; box-shadow: 0 16px 40px rgba(0,0,0,.25); }
         .announcement-track { position: relative; min-height: 58px; }
-        .announcement-item { position: absolute; inset: 0; display: flex; align-items: center; gap: .75rem; padding: .8rem 1rem; opacity: 0; transform: translate3d(0,22px,0); transition: opacity 1s ease, transform 1s ease; pointer-events: none; will-change: transform, opacity; backface-visibility: hidden; }
+        .announcement-item { position: absolute; inset: 0; display: flex; align-items: center; gap: .75rem; padding: .8rem 1rem; opacity: 0; transform: translate3d(0,22px,0); transition: opacity .42s ease, transform .42s ease; pointer-events: none; will-change: transform, opacity; backface-visibility: hidden; }
         .announcement-item.active { opacity: 1; transform: translate3d(0,0,0); pointer-events: auto; }
         .announcement-item.exit-up { opacity: 0; transform: translate3d(0,-22px,0); }
         .announcement-content { min-width: 0; flex: 1; }
@@ -280,7 +280,7 @@
         /* 效能優化：低效能裝置／使用者偏好減少動畫時，降低昂貴模糊與動畫成本 */
         html.performance-lite .backdrop-blur-sm,
         html.performance-lite #app-confirm-overlay { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
-        html.performance-lite .announcement-item { transition-duration: 1s !important; }
+        html.performance-lite .announcement-item { transition-duration: .16s !important; }
         html.performance-lite .notification-bell-active { animation-duration: 2.8s !important; }
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
@@ -2298,7 +2298,7 @@ function renderSiteAnnouncements(){
                             oldItem.classList.remove('exit-up');
                             announcementTransitionTimer=null;
                             scheduleNext();
-                        },1000);
+                        },500);
                     });
                 },5000);
             };
@@ -4199,125 +4199,105 @@ async function republishAnnouncement(id) {
                     color: isPolice ? 0x2563eb : isEMS ? 0xf43f5e : 0xdc2626,
                     fields,
                     timestamp: new Date().toISOString(),
-                    footer: { text: '新北市 RP 3.0 公職服務整合系統 V1.8.2' },
+                    footer: { text: '新北市 RP 3.0 公職服務整合系統 V1.8' },
                     url: NTPC_RP_SITE_URL
                 }]
             };
         }
 
-        /* ============================================================
-           NTPC-RP Discord 通知核心｜沿用舊版 GitHub Pages 可用傳送方式
-           - 不使用 fetch / CORS / no-cors
-           - 一律使用 hidden iframe + HTML form POST
-           - 不等待 Discord 回應，不阻塞 Firebase / 案件流程
-           - 警察、消防／EMS、通緝、管理 LOG 各自使用原 Webhook
-           ============================================================ */
-        function ntpcDiscordPostForm(webhookUrl, payload, label='Discord') {
-            if (!webhookUrl || !payload) return false;
+        function sendDiscordWantedNotification(wanted){
+            const webhookUrl=NTPC_RP_DISCORD_POLICE_WEBHOOK_URL;
+            if(!webhookUrl)return;
+            try{
+                const targetName=`ntpc_discord_wanted_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                const iframe=document.createElement('iframe'); iframe.name=targetName; iframe.style.cssText='position:absolute;width:0;height:0;border:0;visibility:hidden;'; document.body.appendChild(iframe);
+                const form=document.createElement('form'); form.method='POST'; form.action=webhookUrl+(webhookUrl.includes('?')?'&':'?')+'wait=false'; form.target=targetName; form.enctype='application/x-www-form-urlencoded'; form.style.display='none';
+                const payload={username:'新北市 RP 3.0 通緝申請通知',embeds:[{title:'🚨 新申請｜警察通緝資料',description:'通緝申請已成功寫入雲端資料庫，等待警察高層審核。',color:0xe11d48,fields:[
+                    {name:'被通緝人',value:escapeDiscordText(wanted.name),inline:true},
+                    {name:'證件末五碼',value:escapeDiscordText(wanted.id5),inline:true},
+                    {name:'發布帳號',value:escapeDiscordText(`${wanted.createdByName||'--'} (${wanted.createdByAccount||'--'})`),inline:true},
+                    {name:'發布單位',value:escapeDiscordText(wanted.publishUnit||wanted.department||'--'),inline:true},
+                    {name:'通緝原因',value:escapeDiscordText(wanted.reason),inline:false},
+                    {name:'所違反條例',value:escapeDiscordText(wanted.law),inline:false},
+                    {name:'勤務網站',value:`[點我前往勤務網站](${NTPC_RP_SITE_URL})`,inline:false}
+                ],timestamp:new Date().toISOString(),footer:{text:'新北市 RP 3.0 公職服務整合系統 V1.8'},url:NTPC_RP_SITE_URL}]};
+                const input=document.createElement('input'); input.type='hidden'; input.name='payload_json'; input.value=JSON.stringify(payload); form.appendChild(input); document.body.appendChild(form); form.submit(); setTimeout(()=>{try{form.remove();iframe.remove();}catch(_){ }},8000);
+            }catch(e){console.warn('Discord 通緝申請通知發送失敗：',e);}
+        }
+
+        function sendDiscordCaseNotification(department, report) {
+            const webhookUrl = department === 'police' ? NTPC_RP_DISCORD_POLICE_WEBHOOK_URL : NTPC_RP_DISCORD_FIRE_WEBHOOK_URL;
+            if (!webhookUrl) return;
             try {
                 const targetName = `ntpc_discord_${Date.now()}_${Math.random().toString(36).slice(2)}`;
                 const iframe = document.createElement('iframe');
                 iframe.name = targetName;
-                iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;pointer-events:none;';
+                iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;';
                 document.body.appendChild(iframe);
-
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = webhookUrl + (webhookUrl.includes('?') ? '&' : '?') + 'wait=false';
                 form.target = targetName;
                 form.enctype = 'application/x-www-form-urlencoded';
                 form.style.display = 'none';
-
                 const input = document.createElement('input');
                 input.type = 'hidden';
                 input.name = 'payload_json';
-                input.value = JSON.stringify(payload);
+                input.value = JSON.stringify(buildDiscordCasePayload(department, report));
                 form.appendChild(input);
                 document.body.appendChild(form);
                 form.submit();
-
-                setTimeout(() => {
-                    try { form.remove(); iframe.remove(); } catch (_) {}
-                }, 8000);
-                console.info(`[NTPC-RP] ${label} 已交由 Discord Webhook 傳送。`);
-                return true;
+                setTimeout(() => { try { form.remove(); iframe.remove(); } catch (_) {} }, 8000);
             } catch (e) {
-                console.warn(`[NTPC-RP] ${label} 發送失敗：`, e);
-                return false;
-            }
-        }
-
-        function sendDiscordCaseNotification(department, report) {
-            const webhookUrl = department === 'police'
-                ? NTPC_RP_DISCORD_POLICE_WEBHOOK_URL
-                : NTPC_RP_DISCORD_FIRE_WEBHOOK_URL;
-            if (!webhookUrl || !report) return false;
-            return ntpcDiscordPostForm(
-                webhookUrl,
-                buildDiscordCasePayload(department, report),
-                department === 'police' ? '警察案件 Discord' : '消防／EMS 案件 Discord'
-            );
-        }
-
-        function sendDiscordWantedNotification(wanted) {
-            const webhookUrl = NTPC_RP_DISCORD_POLICE_WEBHOOK_URL;
-            if (!webhookUrl || !wanted) return false;
-            try {
-                const payload = {
-                    username:'新北市 RP 3.0 通緝申請通知',
-                    embeds:[{
-                        title:'🚨 新申請｜警察通緝資料',
-                        description:'通緝申請已成功寫入雲端資料庫，等待警察高層審核。',
-                        color:0xe11d48,
-                        fields:[
-                            {name:'被通緝人',value:escapeDiscordText(wanted.name),inline:true},
-                            {name:'證件末五碼',value:escapeDiscordText(wanted.id5),inline:true},
-                            {name:'發布帳號',value:escapeDiscordText(`${wanted.createdByName||'--'} (${wanted.createdByAccount||'--'})`),inline:true},
-                            {name:'發布單位',value:escapeDiscordText(wanted.publishUnit||wanted.department||'--'),inline:true},
-                            {name:'通緝原因',value:escapeDiscordText(wanted.reason),inline:false},
-                            {name:'所違反條例',value:escapeDiscordText(wanted.law),inline:false},
-                            {name:'勤務網站',value:`[點我前往勤務網站](${NTPC_RP_SITE_URL})`,inline:false}
-                        ],
-                        timestamp:new Date().toISOString(),
-                        footer:{text:'新北市 RP 3.0 公職服務整合系統 V1.8.2'},
-                        url:NTPC_RP_SITE_URL
-                    }]
-                };
-                return ntpcDiscordPostForm(webhookUrl,payload,'警察通緝 Discord');
-            } catch(e) {
-                console.warn('Discord 通緝申請通知發送失敗：',e);
-                return false;
+                console.warn('Discord 案件通知發送失敗：', e);
             }
         }
 
         function sendManagementDiscordLog(action, target, detail='', options={}) {
             const webhookUrl = NTPC_RP_DISCORD_ADMIN_LOG_WEBHOOK_URL;
-            if (!webhookUrl) return false;
+            if (!webhookUrl) return;
             try {
                 const mentionRole = !!options.mentionRole;
                 const operator = currentUser ? `${currentUser.name || '未知'} (${currentUser.account || '--'})` : '系統自動處理';
                 const payload = {
-                    username:'新北市 RP 3.0 管理中心 LOG',
+                    username: '新北市 RP 3.0 管理中心 LOG',
                     ...(mentionRole ? {content:`<@&${NTPC_RP_DISCORD_ADMIN_LOG_ROLE_ID}>`} : {}),
                     allowed_mentions: mentionRole ? {roles:[NTPC_RP_DISCORD_ADMIN_LOG_ROLE_ID]} : {parse:[]},
-                    embeds:[{
-                        title:`🛡️ 管理中心操作紀錄｜${String(action || '--').slice(0,200)}`,
-                        color:mentionRole ? 0xf59e0b : 0x6366f1,
-                        fields:[
-                            {name:'操作人員',value:escapeDiscordText(operator).slice(0,1024),inline:true},
-                            {name:'操作類型',value:escapeDiscordText(action).slice(0,1024),inline:true},
-                            {name:'目標',value:escapeDiscordText(target).slice(0,1024),inline:false},
-                            ...(detail ? [{name:'詳細資訊',value:escapeDiscordText(detail).slice(0,1024),inline:false}] : [])
+                    embeds: [{
+                        title: `🛡️ 管理中心操作紀錄｜${action}`,
+                        color: mentionRole ? 0xf59e0b : 0x6366f1,
+                        fields: [
+                            {name:'操作人員', value:escapeDiscordText(operator).slice(0,1024), inline:true},
+                            {name:'操作類型', value:escapeDiscordText(action).slice(0,1024), inline:true},
+                            {name:'目標', value:escapeDiscordText(target).slice(0,1024), inline:false},
+                            ...(detail ? [{name:'詳細資訊', value:escapeDiscordText(detail).slice(0,1024), inline:false}] : [])
                         ],
                         timestamp:new Date().toISOString(),
-                        footer:{text:'新北市 RP 3.0 公職服務整合系統 V1.8.2'},
+                        footer:{text:'新北市 RP 3.0 公職服務整合系統 V1.8'},
                         url:NTPC_RP_SITE_URL
                     }]
                 };
-                return ntpcDiscordPostForm(webhookUrl,payload,'管理中心 Discord LOG');
+                const targetName = `ntpc_admin_log_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                const iframe = document.createElement('iframe');
+                iframe.name = targetName;
+                iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;';
+                document.body.appendChild(iframe);
+                const form = document.createElement('form');
+                form.method='POST';
+                form.action=webhookUrl + (webhookUrl.includes('?')?'&':'?') + 'wait=false';
+                form.target=targetName;
+                form.enctype='application/x-www-form-urlencoded';
+                form.style.display='none';
+                const input=document.createElement('input');
+                input.type='hidden';
+                input.name='payload_json';
+                input.value=JSON.stringify(payload);
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+                setTimeout(()=>{try{form.remove();iframe.remove();}catch(_){ }},8000);
             } catch(e) {
                 console.warn('管理中心 Discord LOG 發送失敗：',e);
-                return false;
             }
         }
 
@@ -4394,7 +4374,6 @@ async function republishAnnouncement(id) {
                     reportObj.reviewedAt = 0;
                     reportObj.reviewedBy = '';
                     reportObj.rejectionReason = '';
-                    reportObj.discordNotificationSent = false;
                     reportObj.submittedAt = now.getTime();
                     await fm.setDoc(fm.doc(db, collectionName, caseId), reportObj);
                     const pendingTarget = dept === 'police' ? appData.policePendingReports : appData.firePendingReports;
@@ -4404,8 +4383,8 @@ async function republishAnnouncement(id) {
                     const nref = fm.doc(fm.collection(db,'reportNotifications'));
                     await fm.setDoc(nref, notification);
                     appData.reportNotifications.unshift({docId:nref.id,...notification});
-                    // Firestore 寫入成功後立即由瀏覽器送出 Discord 通知。
-                    void sendDiscordCaseNotification(dept, reportObj);
+                    // Firestore 寫入成功後才發送 Discord 案件通知，避免資料庫失敗卻先通知。
+                    sendDiscordCaseNotification(dept, reportObj);
                     closeModal('modal-report');
                     if(dept==='police'){ renderPoliceReports(); renderPoliceReview(); } else { renderFireReports(); renderFireReview(); }
                     renderMyProfile();
@@ -4775,7 +4754,7 @@ async function republishAnnouncement(id) {
             const obj={...(old||{}),id,...f,authorId:academyMode?'警專專生':(old?.authorId||currentUser.account),authorName:academyMode?'專生考生':(old?.authorName||currentUser.name),registeredByAccount:academyMode?'':(old?.registeredByAccount||currentUser.account),registeredByName:academyMode?'專生考生':(old?.registeredByName||currentUser.name),timestamp:old?.timestamp||now,time:old?.time||formatDateTime(now),updatedAt:now};
             if(academyMode){academyExamCache.emsReports.unshift(obj);saveAcademyCache();closeModal('modal-ems-report');renderAcademyCache();showSubmitSuccessAnimation('考核 EMS 送出成功',`${id} 已保留於本次瀏覽器快取。`);return;}
             try{
-                const pendingObj={...obj,reviewStatus:'pending',rejectionReason:'',reviewedAt:0,reviewedBy:'',discordNotificationSent:false,submittedAt:now,updatedAt:now};
+                const pendingObj={...obj,reviewStatus:'pending',rejectionReason:'',reviewedAt:0,reviewedBy:'',submittedAt:now,updatedAt:now};
                 await fm.setDoc(fm.doc(db,'emsPendingReports',id),pendingObj);
                 if(old&&appData.emsReports.some(x=>String(x.docId||x.id)===String(editId))) await fm.deleteDoc(fm.doc(db,'emsReports',old.docId||old.id));
                 appData.emsPendingReports=appData.emsPendingReports.filter(x=>String(x.docId||x.id)!==String(id));
@@ -4784,8 +4763,8 @@ async function republishAnnouncement(id) {
                 await removePendingReportNotifications(id,pendingObj.registeredByAccount);
                 const n={type:'report',department:'fire',caseId:id,recipientAccount:pendingObj.registeredByAccount,recipientAccountNormalized:String(pendingObj.registeredByAccount||'').trim().toLowerCase(),status:'pending',title:old?'EMS報告已重新送件':'EMS報告已送出，等待消防高層審核',message:old?`EMS報告 ${id} 已重新送入消防高層審核。`:`EMS報告 ${id} 已送入消防高層審核系統。`,timestamp:now,read:false};
                 const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); appData.reportNotifications.unshift({docId:nr.id,...n});
-                // Firestore 寫入成功後立即由瀏覽器送出消防／EMS Discord 通知。
-                void sendDiscordCaseNotification('fire', pendingObj);
+                // EMS 與消防共用消防／EMS Discord Webhook。
+                sendDiscordCaseNotification('ems', pendingObj);
                 await logAdminAction(old?'EMS報告退件後重新送件':'提交EMS報告等待消防高層審核',id);
                 closeModal('modal-ems-report');renderEMSReports();renderFireReview();renderPersonalNotifications();renderMyProfile();showSubmitSuccessAnimation(old?'EMS重新送審成功':'EMS報告送審成功',old?`${id} 已重新送入消防高層審核。`:`${id} 已送入消防高層審核系統。`);
             }catch(e){showToast('EMS報告送審失敗：'+e.message,'error','操作失敗');}
