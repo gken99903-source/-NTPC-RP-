@@ -653,6 +653,8 @@
                 <div class="dashboard-card"><div class="text-xs text-slate-500">待審案件</div><div id="dash-pending" class="text-3xl font-extrabold text-amber-400 mt-2">--</div></div>
                 <div class="dashboard-card"><div class="text-xs text-slate-500">個人通知</div><div id="dash-notifications" class="text-3xl font-extrabold text-blue-400 mt-2">--</div></div>
                 <div class="dashboard-card"><div class="text-xs text-slate-500">本月勤務時數</div><div id="dash-hours" class="text-3xl font-extrabold text-emerald-400 mt-2">--</div></div>
+                <div class="dashboard-card"><div class="text-xs text-slate-500">本週勤務時數</div><div id="dash-week-hours" class="text-3xl font-extrabold text-cyan-400 mt-2">--</div></div>
+                <div class="dashboard-card"><div class="text-xs text-slate-500">累計勤務時數</div><div id="dash-total-hours" class="text-3xl font-extrabold text-purple-400 mt-2">--</div></div>
             </div>
             <div class="grid lg:grid-cols-2 gap-6">
                 <div class="dashboard-card"><div class="flex items-center justify-between mb-3"><h3 class="font-bold text-white"><i class="fa-solid fa-list-check mr-2 text-amber-400"></i>我的待處理</h3><button onclick="openGlobalSearch()" class="text-xs text-blue-400">全站搜尋</button></div><div id="dash-my-work" class="space-y-2"></div></div>
@@ -661,6 +663,7 @@
             </div>
             <div class="grid lg:grid-cols-2 gap-6">
                 <div class="dashboard-card"><h3 class="font-bold text-white mb-3"><i class="fa-solid fa-bullhorn mr-2 text-amber-400"></i>重要公告</h3><div id="dash-important-announcements" class="space-y-2"></div></div>
+                <div class="dashboard-card"><div class="flex items-center justify-between gap-3 mb-3"><h3 class="font-bold text-white"><i class="fa-solid fa-clock-rotate-left mr-2 text-cyan-400"></i>最近 10 筆勤務紀錄</h3><span class="text-[11px] text-slate-500">僅顯示目前登入帳號</span></div><div id="dash-recent-duty" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div></div>
                 <div class="dashboard-card"><h3 class="font-bold text-white mb-3"><i class="fa-solid fa-right-left mr-2 text-purple-400"></i>勤務交接簿</h3><div id="dash-handover-list" class="ntpc-mini-scroll space-y-2"></div><button onclick="openHandoverModal()" class="mt-3 w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm text-white">新增交接事項</button></div>
             </div>
             <div class="dashboard-card"><div class="flex flex-col md:flex-row md:items-center justify-between gap-3"><div><h3 class="font-bold text-white"><i class="fa-solid fa-person-running mr-2 text-emerald-400"></i>我的勤務狀態</h3><p class="text-xs text-slate-500 mt-1">狀態會同步至雲端人員資料，供管理中心查看。</p></div><div class="flex gap-2"><select id="dash-duty-status" onchange="updateDutyStatus(this.value)" class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white"><option value="off">離線／未值勤</option><option value="on">執勤中</option><option value="break">暫離</option><option value="handover">交接中</option></select></div></div></div>
@@ -1087,8 +1090,32 @@
                 <div class="space-y-4">
                     <article class="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                            <h3 class="text-lg font-bold text-white">V1.9.1</h3>
+                            <div>
+                                <h3 class="text-lg font-bold text-white">V1.9.1</h3>
+                                <p class="text-xs text-emerald-300 mt-1">V1.9 發布後的穩定性、稽核與操作體驗更新</p>
+                            </div>
                             <span class="text-xs font-semibold text-emerald-300">目前版本</span>
+                        </div>
+                        <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
+                            <li>修正「一周內移除／編輯紀錄」：補齊帳號、查詢資料與打卡紀錄的編輯／刪除稽核，並只顯示最近 7×24 小時內相關操作。</li>
+                            <li>ER:LC 警報音效改為單一開／關狀態，重複點擊不會重複建立音效監聽；可隨時關閉音效而不停止 ER:LC 同步。</li>
+                            <li>Discord Webhook 改為後端 Worker 發送入口；GitHub Pages 不保存 Webhook 機密，降低跨來源發送失敗問題。</li>
+                            <li>常見問題「提交問題給管理中心」改用網站自製視窗，提交成功後顯示勾選動畫。</li>
+                            <li>勤務中心改為登入後才能使用，未登入會先要求登入，不會直接開啟勤務資料。</li>
+                            <li>強化全站搜尋權限：未登入不可搜尋，並依帳號所屬單位限制資料範圍，避免跨單位查詢。</li>
+                            <li>勤務中心補強個人勤務統計與最近勤務紀錄，直接使用既有打卡資料計算，不新增額外雲端資料。</li>
+                            <li>管理中心補強既有稽核紀錄的時間軸檢視，沿用原本 LOG 資料，不新增獨立 LOG 資料庫。</li>
+                            <li>ER:LC 新增「伺服器狀況」控制：管理中心設定為開服中才啟用 Worker 的 ER:LC API 偵測，關服期間完全暫停偵測，以降低每日 API 使用量。</li>
+                        </ul>
+                    </article>
+
+                    <article class="rounded-2xl border border-red-500/25 bg-red-500/5 p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                            <div>
+                                <h3 class="text-lg font-bold text-white">V1.9</h3>
+                                <p class="text-xs text-red-300 mt-1">ER:LC 整合與系統架構更新</p>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-500">前一版本</span>
                         </div>
                         <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
                             <li>新增 ER:LC 勤務偵測整合架構，可依 Roblox ID 對應網站帳號。</li>
@@ -1097,11 +1124,8 @@
                             <li>管理中心新增 ER:LC Server Key／API 設定入口，並採後端 Worker 架構避免 GitHub Pages 直接持有金鑰。</li>
                             <li>值勤人數改以最新打卡資料計算；停止網站在線心跳式值勤判斷。</li>
                             <li>打卡資料異動時才更新值勤狀態，降低不必要的雲端讀寫。</li>
-                            <li>首頁版本資訊、功能介紹與系統說明全面更新至 V1.9。</li>
+                            <li>首頁版本資訊、功能介紹與系統說明更新至 V1.9。</li>
                             <li>新增「更新紀錄」頁面，集中查看各版本的重要功能與修正。</li>
-                            <li>修正「一周內移除／編輯紀錄」：補齊帳號、查詢資料與打卡紀錄的編輯／刪除稽核，並只顯示最近 7×24 小時內相關操作。</li>
-                            <li>ER:LC 警報音效改為單一開／關狀態，重複點擊不會重複建立音效監聽；可隨時關閉音效而不停止 ER:LC 同步。</li>
-                            <li>Discord Webhook 改為後端 Worker 發送入口；GitHub Pages 不保存 Webhook 機密，降低跨來源發送失敗問題。</li>
                         </ul>
                     </article>
 
@@ -1491,6 +1515,10 @@
                             <i class="fa-solid fa-trash-can mr-2"></i>一鍵刪除所有紀錄
                         </button>
                     </div>
+                    <div id="admin-activity-timeline" class="mb-6 bg-slate-900 rounded-2xl border border-slate-800 shadow-xl p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4"><div><h4 class="font-bold text-white"><i class="fa-solid fa-timeline mr-2 text-cyan-400"></i>全站操作時間軸</h4><p class="text-xs text-slate-500 mt-1">沿用既有 adminLogs，只在前端整理顯示，不新增雲端紀錄。</p></div><span class="text-[11px] text-slate-500">最近 20 筆</span></div>
+                        <div id="admin-activity-timeline-list" class="space-y-2"></div>
+                    </div>
                     <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
                         <table class="w-full text-left border-collapse text-sm">
                             <thead>
@@ -1619,7 +1647,20 @@
                             <div><label class="block text-xs text-slate-400 mb-2">ER:LC Server ID（選填）</label><input id="erlc-server-id-input" type="text" inputmode="numeric" placeholder="若 Server Key 已包含伺服器識別資訊可留白" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-red-500"></div>
                         </div>
                         <div class="mt-4 p-4 rounded-xl border border-red-500/10 bg-red-500/5 text-xs text-slate-400 leading-relaxed">
-                            <i class="fa-solid fa-shield-halved text-red-400 mr-1"></i>為避免 GitHub Pages 暴露 Server Key，V1.9 不會在瀏覽器直接呼叫 ER:LC API。此設定供後端 ER:LC Worker 讀取；KillLogs 新事件再寫入網站的即時警報集合。
+                            <i class="fa-solid fa-shield-halved text-red-400 mr-1"></i>為避免 GitHub Pages 暴露 Server Key，V1.9 不會在瀏覽器直接呼叫 ER:LC API。此設定供後端 ER:LC Worker 讀取；只有管理中心設定為「開服中」時，Worker 才會啟動 ER:LC API 偵測。
+                        </div>
+                        <div class="mt-4 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                            <div class="flex items-center justify-between gap-3 flex-wrap">
+                                <div>
+                                    <div class="text-sm font-bold text-white"><i class="fa-solid fa-power-off text-emerald-400 mr-2"></i>ER:LC 伺服器狀況</div>
+                                    <div class="text-xs text-slate-500 mt-1">關服時 Worker 不會呼叫 ER:LC API；開服後恢復死亡即時偵測與 10 分鐘歷史事件掃描。</div>
+                                </div>
+                                <span id="erlc-server-status-badge" class="text-xs px-3 py-1.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">🔴 關服中</span>
+                            </div>
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <button type="button" onclick="setERLCServerStatus(true)" class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl px-5 py-2.5 text-sm font-semibold"><i class="fa-solid fa-play mr-2"></i>設定為開服中</button>
+                                <button type="button" onclick="setERLCServerStatus(false)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl px-5 py-2.5 text-sm font-semibold"><i class="fa-solid fa-stop mr-2"></i>設定為關服中</button>
+                            </div>
                         </div>
                         <div class="mt-4 flex flex-wrap gap-2">
                             <button type="button" onclick="saveERLCConfig()" class="bg-red-600 hover:bg-red-500 text-white rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>儲存 ER:LC 設定</button>
@@ -5923,7 +5964,31 @@ async function republishAnnouncement(id) {
         let erlcAlertUnsubscribe=null;
         let erlcAudioContext=null;
         let erlcAudioUnlocked=false;
-        function renderERLCConfigStatus(){const el=document.getElementById('erlc-config-status');if(!el)return;el.textContent='ER:LC Server Key 已設定於管理中心安全設定。實際 API 呼叫由後端 Worker 執行；前端不讀取 Key。';}
+        async function renderERLCConfigStatus(){
+            const el=document.getElementById('erlc-config-status');
+            const badge=document.getElementById('erlc-server-status-badge');
+            if(!el||!db||!fm)return;
+            try{
+                const snap=await fm.getDoc(fm.doc(db,'systemSettings','erlcIntegration'));
+                const d=snap.exists?snap.data():{};
+                const configured=d.configured===true&&!!String(d.serverKey||'').trim();
+                const open=d.serverOpen===true;
+                el.textContent=configured?'ER:LC Server Key 已設定於管理中心安全設定。實際 API 呼叫由後端 Worker 執行；前端不讀取 Key。':'尚未設定 ER:LC Server Key。';
+                if(badge){badge.textContent=open?'🟢 開服中':'🔴 關服中';badge.className='text-xs px-3 py-1.5 rounded-full '+(open?'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20':'bg-slate-800 text-slate-300 border border-slate-700');}
+            }catch(e){if(el)el.textContent='ER:LC 設定狀態讀取失敗：'+e.message;}
+        }
+        async function setERLCServerStatus(isOpen){
+            if(!currentUser||getEffectiveRole(currentUser)!=='admin'){showToast('只有管理中心可以設定 ER:LC 伺服器狀況。','warning','權限不足');return;}
+            try{
+                const ref=fm.doc(db,'systemSettings','erlcIntegration');
+                const snap=await fm.getDoc(ref);
+                const d=snap.exists?snap.data():{};
+                if(!d.configured||!String(d.serverKey||'').trim()){showToast('請先設定 ER:LC Server Key。','warning','尚未設定');return;}
+                await fm.setDoc(ref,{serverOpen:!!isOpen,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});
+                await renderERLCConfigStatus();
+                showToast(isOpen?'ER:LC 已設定為開服中，Worker 將開始偵測。':'ER:LC 已設定為關服中，Worker 將停止 ER:LC API 偵測。','success','伺服器狀況已更新');
+            }catch(e){showToast('伺服器狀況更新失敗：'+e.message,'error','操作失敗');}
+        }
         async function saveERLCConfig(){
             if(!currentUser||getEffectiveRole(currentUser)!=='admin'){showToast('只有管理中心可以設定 ER:LC。','warning','權限不足');return;}
             const key=String(document.getElementById('erlc-server-key-input')?.value||'').trim();
@@ -5931,7 +5996,10 @@ async function republishAnnouncement(id) {
             if(!key){showToast('請輸入 ER:LC Server Key。','warning','資料不完整');return;}
             try{
                 // 不把 key 加入 appData，也不讀回 key；僅讓後端服務帳號讀取。
-                await fm.setDoc(fm.doc(db,'systemSettings','erlcIntegration'),{configured:true,serverKey:key,serverId,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});
+                const erlcRef=fm.doc(db,'systemSettings','erlcIntegration');
+                const existing=await fm.getDoc(erlcRef);
+                const existingData=existing.exists?existing.data():{};
+                await fm.setDoc(erlcRef,{configured:true,serverKey:key,serverId,serverOpen:existingData.serverOpen===true,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});
                 // Server Key 的寫入需由後端安全端點處理；前端不直接把密鑰寫入公開可讀文件。
                 const status=document.getElementById('erlc-config-status');if(status)status.textContent='已儲存 ER:LC 整合設定。Server Key 請交由後端 Secret／安全端點保存。';
                 document.getElementById('erlc-server-key-input').value='';
@@ -5941,7 +6009,7 @@ async function republishAnnouncement(id) {
         async function clearERLCConfig(){
             if(!currentUser||getEffectiveRole(currentUser)!=='admin')return;
             if(!(await showConfirm('確定要停用 ER:LC 整合設定嗎？','停用 ER:LC','確定停用')))return;
-            try{await fm.setDoc(fm.doc(db,'systemSettings','erlcIntegration'),{configured:false,serverKey:'',serverId:'',updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});if(document.getElementById('erlc-config-status'))document.getElementById('erlc-config-status').textContent='ER:LC 整合已停用。';showToast('ER:LC 整合已停用。','success','操作完成');}catch(e){showToast('停用失敗：'+e.message,'error','操作失敗');}
+            try{await fm.setDoc(fm.doc(db,'systemSettings','erlcIntegration'),{configured:false,serverKey:'',serverId:'',serverOpen:false,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});await renderERLCConfigStatus();showToast('ER:LC 整合已停用，伺服器狀況也已切換為關服。','success','操作完成');}catch(e){showToast('停用失敗：'+e.message,'error','操作失敗');}
         }
         async function unlockERLCAlertAudio(){try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;erlcAudioContext=erlcAudioContext||new AC();await erlcAudioContext.resume();const o=erlcAudioContext.createOscillator(),g=erlcAudioContext.createGain();g.gain.value=0.0001;o.connect(g);g.connect(erlcAudioContext.destination);o.start();o.stop(erlcAudioContext.currentTime+0.02);erlcAudioUnlocked=true;showToast('警報音效已啟用。','success','音效啟用');}catch(e){showToast('瀏覽器未允許啟用音效。','warning','音效未啟用');}}
         async function playERLCOfficerAlert(){if(!erlcAudioUnlocked)return;try{const AC=window.AudioContext||window.webkitAudioContext;erlcAudioContext=erlcAudioContext||new AC();await erlcAudioContext.resume();for(let i=0;i<6;i++){const o=erlcAudioContext.createOscillator(),g=erlcAudioContext.createGain();o.type='square';o.frequency.value=i%2?880:660;g.gain.setValueAtTime(0.0001,erlcAudioContext.currentTime+i*0.18);g.gain.exponentialRampToValueAtTime(0.12,erlcAudioContext.currentTime+i*0.18+0.02);g.gain.exponentialRampToValueAtTime(0.0001,erlcAudioContext.currentTime+i*0.18+0.15);o.connect(g);g.connect(erlcAudioContext.destination);o.start(erlcAudioContext.currentTime+i*0.18);o.stop(erlcAudioContext.currentTime+i*0.18+0.16);}}catch(e){}}
@@ -6193,6 +6261,8 @@ async function republishAnnouncement(id) {
             }
         }
 
+        function renderAdminActivityTimeline(){const host=document.getElementById('admin-activity-timeline-list');if(!host)return;const rows=(appData.adminLogs||[]).slice().sort((a,b)=>Number(b.timestamp||Date.parse(b.time||''))-Number(a.timestamp||Date.parse(a.time||''))).slice(0,20);host.innerHTML=rows.length?rows.map(l=>{const op=String(l.operation||'other').toLowerCase();const icon=op==='delete'?'fa-trash-can':op==='edit'?'fa-pen-to-square':'fa-circle-info';const cls=op==='delete'?'text-red-400':op==='edit'?'text-purple-400':'text-cyan-400';return `<div class="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/50 p-3"><div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center ${cls}"><i class="fa-solid ${icon}"></i></div><div class="min-w-0 flex-1"><div class="text-sm font-semibold text-white">${escapeHtml(l.action||'系統操作')}</div><div class="text-xs text-slate-400 mt-1">${escapeHtml(l.operator||'--')} ／ ${escapeHtml(l.target||'--')}</div>${l.detail?`<div class="text-[11px] text-slate-500 mt-1 break-words">${escapeHtml(l.detail)}</div>`:''}</div><span class="text-[10px] text-slate-600 shrink-0">${escapeHtml(formatDateTime(l.timestamp,l.time))}</span></div>`}).join(''):'<div class="text-sm text-slate-500 text-center py-6">目前沒有操作紀錄。</div>';}
+
         function renderAdminLogs() {
             const clear=document.getElementById('clear-all-admin-logs-btn');
             if(clear) clear.classList.toggle('hidden',!isSuperAdminAccount(currentUser?.account));
@@ -6227,6 +6297,7 @@ async function republishAnnouncement(id) {
                 `;
                 tbody.appendChild(tr);
             });
+            renderAdminActivityTimeline();
         }
 
         function estimateJsonBytes(value) {
@@ -6265,13 +6336,17 @@ async function republishAnnouncement(id) {
     
 /* ================= V1.8.2 勤務中心與通知穩定層 ================= */
 function ntpcEsc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
-function ntpcAllRows(){const a=[]; const add=(arr,type,labelFn)=> (arr||[]).forEach(x=>a.push({type,label:labelFn(x),row:x})); add(appData.policeReports,'case',x=>`警察案件 ${x.caseId||x.docId||''}｜${x.title||x.suspectName||''}`); add(appData.fireReports,'case',x=>`消防案件 ${x.caseId||x.docId||''}｜${x.title||''}`); add(appData.emsReports,'case',x=>`EMS案件 ${x.caseId||x.docId||''}｜${x.title||''}`); add(appData.policePendingReports,'pending',x=>`待審警察案件 ${x.caseId||x.docId||''}`); add(appData.firePendingReports,'pending',x=>`待審消防案件 ${x.caseId||x.docId||''}`); add(appData.citizenRecords,'citizen',x=>`市民 ${x.name||''}｜${x.id5||x.id||''}`); add(appData.vehicleRecords,'vehicle',x=>`車輛 ${x.plate||x.licensePlate||x.id||x.docId||''}｜${x.owner||''}`); add(appData.wantedRecords,'wanted',x=>`通緝 ${x.name||''}｜${x.id5||''}`); add(appData.wantedPendingRecords,'wanted',x=>`待審通緝 ${x.name||''}｜${x.id5||''}`); add(appData.users,'user',x=>`帳號 ${x.account||''}｜${x.name||''}｜${x.staffNumber||x.managementId||''}`); add(appData.announcements,'announcement',x=>`公告 ${x.text||''}`); return a;}
-function openGlobalSearch(){const m=document.getElementById('modal-global-search');if(!m)return;m.classList.remove('hidden');const i=document.getElementById('global-search-input');setTimeout(()=>i?.focus(),50);runGlobalSearch(i?.value||'');}
+function ntpcSearchScope(u=currentUser){const admin=!!u&&getEffectiveRole(u)==='admin';const units=Array.isArray(u?.units)?u.units:(u?.unit?[u.unit]:[]);return {loggedIn:!!u,police:admin||units.includes('police'),fire:admin||units.includes('fire'),admin};}
+function ntpcAllRows(){const scope=ntpcSearchScope();if(!scope.loggedIn)return [];const a=[];const add=(arr,type,labelFn,allowed=true,dept='')=>{if(!allowed)return;(arr||[]).forEach(x=>a.push({type,dept,label:labelFn(x),row:x}));};add(appData.policeReports,'case',x=>`警察案件 ${x.caseId||x.docId||''}｜${x.title||x.suspectName||''}`,scope.police,'police');add(appData.policePendingReports,'pending',x=>`待審警察案件 ${x.caseId||x.docId||''}`,scope.police,'police');add(appData.fireReports,'case',x=>`消防案件 ${x.caseId||x.docId||''}｜${x.title||''}`,scope.fire,'fire');add(appData.firePendingReports,'pending',x=>`待審消防案件 ${x.caseId||x.docId||''}`,scope.fire,'fire');add(appData.emsReports,'case',x=>`EMS案件 ${x.caseId||x.docId||''}｜${x.title||''}`,scope.fire,'fire');add(appData.emsPendingReports,'pending',x=>`待審EMS案件 ${x.caseId||x.docId||''}`,scope.fire,'fire');add(appData.citizenRecords,'citizen',x=>`市民 ${x.name||''}｜${x.id5||x.id||''}`,scope.police);add(appData.vehicleRecords,'vehicle',x=>`車輛 ${x.plate||x.licensePlate||x.id||x.docId||''}｜${x.owner||''}`,scope.police);add(appData.wantedRecords,'wanted',x=>`通緝 ${x.name||''}｜${x.id5||''}`,scope.police,'police');add(appData.wantedPendingRecords,'wanted',x=>`待審通緝 ${x.name||''}｜${x.id5||''}`,scope.police,'police');add(appData.users,'user',x=>`帳號 ${x.account||''}｜${x.name||''}｜${x.staffNumber||x.managementId||''}`,scope.admin);add(appData.announcements,'announcement',x=>`公告 ${x.text||''}`,true);return a;}
+function openGlobalSearch(){if(!currentUser){showToast('全站搜尋需要先登入系統。','warning','需要登入');document.getElementById('modal-login')?.classList.remove('hidden');return;}const m=document.getElementById('modal-global-search');if(!m)return;m.classList.remove('hidden');const i=document.getElementById('global-search-input');setTimeout(()=>i?.focus(),50);runGlobalSearch(i?.value||'');}
 function closeGlobalSearch(){document.getElementById('modal-global-search')?.classList.add('hidden');}
-function runGlobalSearch(q){const host=document.getElementById('global-search-results');if(!host)return;q=String(q||'').trim().toLowerCase();if(!q){host.innerHTML='<div class="text-center py-10 text-slate-500">輸入關鍵字開始搜尋</div>';return;}const rows=ntpcAllRows().filter(x=>String(x.label).toLowerCase().includes(q)).slice(0,60);host.innerHTML=rows.length?rows.map(x=>`<div class="ntpc-search-result" onclick="ntpcOpenSearchResult('${ntpcEsc(x.type)}','${ntpcEsc(x.row.caseId||x.row.docId||x.row.id||x.row.account||'')}')"><div class="text-sm text-white">${ntpcEsc(x.label)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(x.type)}</div></div>`).join(''):'<div class="text-center py-10 text-slate-500">找不到符合資料。</div>';}
-function ntpcOpenSearchResult(type,id){closeGlobalSearch();if(type==='announcement'){switchTab('home');return;}if(type==='user'){if(canAccessManagementCenter())switchTab('admin');else showToast('帳號資料僅限管理中心查看。','warning','權限限制');return;}if(type==='case'||type==='pending'){if(String(id).startsWith('NTPD'))switchTab('police');else switchTab('fire');return;}if(type==='wanted'){switchTab('police');return;}switchTab('home');}
+function runGlobalSearch(q){const host=document.getElementById('global-search-results');if(!host)return;if(!currentUser){host.innerHTML='<div class="text-center py-10 text-slate-500">請先登入後使用全站搜尋。</div>';return;}q=String(q||'').trim().toLowerCase();if(!q){host.innerHTML='<div class="text-center py-10 text-slate-500">輸入關鍵字開始搜尋</div>';return;}const rows=ntpcAllRows().filter(x=>String(x.label).toLowerCase().includes(q)).slice(0,60);host.innerHTML=rows.length?rows.map(x=>`<div class="ntpc-search-result" onclick="ntpcOpenSearchResult('${ntpcEsc(x.type)}','${ntpcEsc(x.row.caseId||x.row.docId||x.row.id||x.row.account||'')}','${ntpcEsc(x.dept||'')}')"><div class="text-sm text-white">${ntpcEsc(x.label)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(x.type)}${x.dept?` ／ ${ntpcEsc(x.dept)}`:''}</div></div>`).join(''):'<div class="text-center py-10 text-slate-500">找不到符合條件的資料，或目前帳號沒有查看該單位資料的權限。</div>';}
+function ntpcOpenSearchResult(type,id,dept=''){if(!currentUser){showToast('請先登入後再查看搜尋結果。','warning','需要登入');return;}const scope=ntpcSearchScope();if(dept==='police'&&!scope.police){showToast('此資料屬於警察單位，當前帳號無權限查看。','warning','單位權限限制');return;}if(dept==='fire'&&!scope.fire){showToast('此資料屬於消防／EMS單位，當前帳號無權限查看。','warning','單位權限限制');return;}closeGlobalSearch();if(type==='announcement'){switchTab('home');return;}if(type==='user'){if(scope.admin)switchTab('admin');else showToast('帳號資料僅限管理中心查看。','warning','權限限制');return;}if(type==='case'||type==='pending'){if(dept==='police')switchTab('police');else if(dept==='fire')switchTab('fire');return;}if(type==='wanted'||type==='citizen'||type==='vehicle'){switchTab('police');return;}switchTab('home');}
+function ntpcDutyRowsForCurrentUser(){if(!currentUser)return [];const key=String(currentUser.account||'').toLowerCase();return [...(appData.policeClocks||[]),...(appData.fireClocks||[]),...(appData.adminClocks||[])].filter(c=>String(c.account||c.userAccount||'').toLowerCase()===key).sort((a,b)=>Number(b.timestamp||b.time||0)-Number(a.timestamp||a.time||0));}
+function ntpcDutyHoursSince(startMs){const mine=ntpcDutyRowsForCurrentUser().filter(c=>Number(c.timestamp||c.time||0)>=startMs);const groups={};mine.forEach(c=>{const key=c.shiftId||c.clockGroup||c.id||`${c.account}-${new Date(c.timestamp||c.time).toDateString()}`;(groups[key]??=[]).push(c);});let total=0;Object.values(groups).forEach(g=>{g.sort((a,b)=>Number(a.timestamp||a.time)-Number(b.timestamp||b.time));for(let i=0;i+1<g.length;i+=2){const a=Number(g[i].timestamp||g[i].time),b=Number(g[i+1].timestamp||g[i+1].time);if(b>a)total+=b-a;}});return total/3600000;}
+function renderDashRecentDuty(){const h=document.getElementById('dash-recent-duty');if(!h)return;const rows=ntpcDutyRowsForCurrentUser().slice(0,10);h.innerHTML=rows.length?rows.map(c=>{const status=String(c.status||c.action||c.type||'');const label=/上班|上班打卡|clock.?in/i.test(status)?'上班':/下班|下班打卡|clock.?out/i.test(status)?'下班':(c.status||c.action||'值勤紀錄');const unit=c.unit==='fire'||c.department==='fire'?'消防':c.unit==='admin'||c.department==='admin'?'管理':'警察';return `<div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3 flex items-center justify-between gap-3"><div><div class="text-sm font-semibold text-white">${ntpcEsc(unit)} ／ ${ntpcEsc(label)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(formatDateTime(c.timestamp||c.time,c.time))}</div></div><span class="text-[11px] px-2 py-1 rounded-full bg-slate-800 text-slate-300">${ntpcEsc(c.dutyNumber||c.managementId||c.staffNumber||currentUser.account||'--')}</span></div>`}).join(''):'<div class="text-sm text-slate-500 py-5 text-center md:col-span-2">目前沒有勤務打卡紀錄。</div>';}
 function ntpcCurrentMonthHours(){if(!currentUser)return 0;const start=new Date();start.setDate(1);start.setHours(0,0,0,0);const mine=[...(appData.policeClocks||[]),...(appData.fireClocks||[]),...(appData.adminClocks||[])].filter(c=>String(c.account||c.userAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&Number(c.timestamp||c.time||0)>=start.getTime());let total=0;const groups={};mine.forEach(c=>{const key=c.shiftId||c.clockGroup||c.id||`${c.account}-${new Date(c.timestamp||c.time).toDateString()}`;(groups[key]??=[]).push(c);});Object.values(groups).forEach(g=>{g.sort((a,b)=>Number(a.timestamp||a.time)-Number(b.timestamp||b.time));for(let i=0;i+1<g.length;i+=2){const a=Number(g[i].timestamp||g[i].time),b=Number(g[i+1].timestamp||g[i+1].time);if(b>a)total+=b-a;}});return Math.round(total/360000)/10;}
-function refreshDutyDashboard(){if(!document.getElementById('tab-dashboard'))return;const online=getCurrentDutyCount();const pending=(appData.policePendingReports||[]).length+(appData.firePendingReports||[]).length+(appData.emsPendingReports||[]).length+(appData.wantedPendingRecords||[]).length;const noti=currentUser?(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&!n.read).length:0;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};set('dash-online',online);set('dash-pending',pending);set('dash-notifications',noti);set('dash-hours',ntpcCurrentMonthHours().toFixed(1)+' h');const work=document.getElementById('dash-my-work');if(work){const mine=(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser?.account||'').toLowerCase()&&!n.read).slice(0,8);work.innerHTML=mine.length?mine.map(n=>`<div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800"><div class="text-sm text-white">${ntpcEsc(n.title||'案件通知')}</div><div class="text-xs text-slate-500 mt-1">${ntpcEsc(n.message||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有待處理通知。</div>';}renderDashSystemStatus();renderDashAnnouncements();renderDashHandover();renderDashManagementWork();const sel=document.getElementById('dash-duty-status');if(sel&&currentUser)sel.value=currentUser.dutyStatus||'off';}
+function refreshDutyDashboard(){if(!document.getElementById('tab-dashboard'))return;const online=getCurrentDutyCount();const pending=(appData.policePendingReports||[]).length+(appData.firePendingReports||[]).length+(appData.emsPendingReports||[]).length+(appData.wantedPendingRecords||[]).length;const noti=currentUser?(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&!n.read).length:0;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};set('dash-online',online);set('dash-pending',pending);set('dash-notifications',noti);set('dash-hours',ntpcCurrentMonthHours().toFixed(1)+' h');set('dash-week-hours',currentUser?ntpcDutyHoursSince(Date.now()-7*24*60*60*1000).toFixed(1)+' h':'--');set('dash-total-hours',currentUser?ntpcDutyHoursSince(0).toFixed(1)+' h':'--');const work=document.getElementById('dash-my-work');if(work){const mine=(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser?.account||'').toLowerCase()&&!n.read).slice(0,8);work.innerHTML=mine.length?mine.map(n=>`<div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800"><div class="text-sm text-white">${ntpcEsc(n.title||'案件通知')}</div><div class="text-xs text-slate-500 mt-1">${ntpcEsc(n.message||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有待處理通知。</div>';}renderDashRecentDuty();renderDashSystemStatus();renderDashAnnouncements();renderDashHandover();renderDashManagementWork();const sel=document.getElementById('dash-duty-status');if(sel&&currentUser)sel.value=currentUser.dutyStatus||'off';}
 function renderDashSystemStatus(){const h=document.getElementById('dash-system-status');if(!h)return;const online=navigator.onLine;const firebaseOk=!!db&&!!fm;const realtimeOk=Array.isArray(realtimeUnsubscribers)&&realtimeUnsubscribers.length>0;h.innerHTML=[['網路連線',online,'瀏覽器網路狀態'],['Firebase',firebaseOk,'雲端資料庫模組'],['即時同步',realtimeOk,'Firestore 即時監聽'],['案件通知',!!appData.reportNotifications,'通知資料已載入'],['Discord 通知',true,'目前採可靠送出佇列；瀏覽器無法直接取得 Discord 回應碼']].map(x=>`<div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60"><div><span class="status-dot ${x[1]?'status-ok':'status-bad'}"></span><span class="text-sm text-slate-200">${x[0]}</span></div><span class="text-[11px] text-slate-500">${x[2]}</span></div>`).join('');const t=document.getElementById('dash-status-time');if(t)t.textContent='更新 '+formatDateTime(Date.now());}
 function renderDashAnnouncements(){const h=document.getElementById('dash-important-announcements');if(!h)return;const rows=(appData.announcements||[]).filter(a=>a.active!==false&&a.important).sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0)).slice(0,5);h.innerHTML=rows.length?rows.map(a=>`<div class="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5"><div class="text-sm text-white">${ntpcEsc(a.text)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(a.publisher||'系統')}｜${ntpcEsc(a.time||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有置頂重要公告。</div>';}
 function renderDashHandover(){const h=document.getElementById('dash-handover-list');if(!h)return;const rows=(appData.dutyHandoverNotes||[]).slice().sort((a,b)=>Number(b.timestamp||0)-Number(a.timestamp||0)).slice(0,10);h.innerHTML=rows.length?rows.map(a=>`<div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800"><div class="text-xs text-purple-300">${ntpcEsc(a.authorName||a.authorAccount||'勤務人員')}｜${ntpcEsc(a.time||formatDateTime(a.timestamp))}</div><div class="text-sm text-slate-200 mt-1 whitespace-pre-wrap">${ntpcEsc(a.text)}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有交接事項。</div>';}
