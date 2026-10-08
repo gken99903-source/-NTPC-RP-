@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self' https://discord.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://placehold.co; connect-src 'self' https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; upgrade-insecure-requests">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; media-src 'self' https://raw.githubusercontent.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://placehold.co; connect-src 'self' https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; upgrade-insecure-requests">
     <!-- NTPC-RP Discord webhook fix + management LOG: 2026-10-06-v4 -->
     <!-- Security audit: 2026-10-07. Front-end hardening only; Firestore Rules/Firebase Auth/Discord secrets still require backend configuration. -->
     <title>新北市 RP 3.0 公職服務系統 V1.9.1</title>
@@ -34,6 +34,8 @@
         let erlcAudioContext = null;
         let erlcAlarmOscillator = null;
         let erlcAlarmGain = null;
+        const ERLC_OFFICER_ALERT_SOUND_URL = 'https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/10-99.mp3';
+        let erlcOfficerAlertAudio = null;
 
         function stopERLCAlarmSound(){
             try { if (erlcAlarmOscillator) { erlcAlarmOscillator.stop(); erlcAlarmOscillator.disconnect(); } } catch(e) {}
@@ -44,11 +46,24 @@
 
         function updateERLCAudioButtons(){
             document.querySelectorAll('[data-erlc-audio-toggle]').forEach(btn => {
+                const mode = btn.dataset.erlcAudioToggle || '';
                 btn.dataset.audioEnabled = erlcAudioEnabled ? 'true' : 'false';
-                btn.innerHTML = erlcAudioEnabled
-                    ? '<i class="fa-solid fa-volume-high mr-2"></i>🔊 警報音效：已啟用'
-                    : '<i class="fa-solid fa-volume-xmark mr-2"></i>🔇 警報音效：已關閉';
                 btn.setAttribute('aria-pressed', erlcAudioEnabled ? 'true' : 'false');
+                if (mode === 'enable') {
+                    btn.disabled = erlcAudioEnabled;
+                    btn.classList.toggle('opacity-50', erlcAudioEnabled);
+                    btn.classList.toggle('cursor-not-allowed', erlcAudioEnabled);
+                    btn.innerHTML = erlcAudioEnabled
+                        ? '<i class="fa-solid fa-volume-high mr-2"></i>警報音效：已開啟'
+                        : '<i class="fa-solid fa-volume-high mr-2"></i>開啟警報音效';
+                } else if (mode === 'disable') {
+                    btn.disabled = !erlcAudioEnabled;
+                    btn.classList.toggle('opacity-50', !erlcAudioEnabled);
+                    btn.classList.toggle('cursor-not-allowed', !erlcAudioEnabled);
+                    btn.innerHTML = erlcAudioEnabled
+                        ? '<i class="fa-solid fa-volume-xmark mr-2"></i>關閉警報音效'
+                        : '<i class="fa-solid fa-volume-xmark mr-2"></i>警報音效：已關閉';
+                }
             });
         }
 
@@ -57,9 +72,24 @@
                 const AC = window.AudioContext || window.webkitAudioContext;
                 if (AC && !erlcAudioContext) erlcAudioContext = new AC();
                 if (erlcAudioContext?.state === 'suspended') await erlcAudioContext.resume();
+                if (!erlcOfficerAlertAudio) {
+                    erlcOfficerAlertAudio = new Audio(ERLC_OFFICER_ALERT_SOUND_URL);
+                    erlcOfficerAlertAudio.preload = 'auto';
+                    erlcOfficerAlertAudio.volume = 1;
+                }
+                // 使用者主動點擊「開啟」後先解鎖 HTMLAudioElement，避免之後背景即時警報被瀏覽器攔截。
+                try {
+                    erlcOfficerAlertAudio.muted = true;
+                    await erlcOfficerAlertAudio.play();
+                    erlcOfficerAlertAudio.pause();
+                    erlcOfficerAlertAudio.currentTime = 0;
+                    erlcOfficerAlertAudio.muted = false;
+                } catch (audioUnlockError) {
+                    console.warn('ER:LC 自訂音效預解鎖失敗，警報觸發時將再次嘗試：', audioUnlockError);
+                }
                 erlcAudioEnabled = true;
                 updateERLCAudioButtons();
-                showToast?.('ER:LC 警報音效已啟用，再次點擊即可關閉。','success','音效設定');
+                showToast?.('ER:LC 警報音效已啟用。警員倒地時將播放 10-99.mp3。','success','音效設定');
             } catch(e) {
                 erlcAudioEnabled = false;
                 updateERLCAudioButtons();
@@ -70,6 +100,7 @@
         function disableERLCAudio(){
             erlcAudioEnabled = false;
             stopERLCAlarmSound();
+            try { if (erlcOfficerAlertAudio) { erlcOfficerAlertAudio.pause(); erlcOfficerAlertAudio.currentTime = 0; } } catch(e) {}
             updateERLCAudioButtons();
             try { if (erlcAudioContext?.state === 'running') erlcAudioContext.suspend(); } catch(e) {}
             showToast?.('ER:LC 警報音效已關閉。','success','音效設定');
@@ -106,36 +137,9 @@
             } catch(e) {}
         }
 
-        if (!window.__erlcAudioDelegatedListener) {
-            document.addEventListener('click', (event) => {
-                const btn = event.target.closest?.('[data-erlc-audio-toggle]');
-                if (btn) {
-                    event.preventDefault();
-                    toggleERLCAudio();
-                }
-            });
-            window.__erlcAudioDelegatedListener = true;
-        }
 
 
-        // Discord：GitHub Pages 不直接保存 Webhook URL，正式環境由 Worker/後端發送。
-        const ERLC_DISCORD_BACKEND_ENDPOINT = String(window.ERLC_DISCORD_BACKEND_ENDPOINT || '').trim();
-        async function sendDiscordThroughBackend(payload){
-            if (!ERLC_DISCORD_BACKEND_ENDPOINT) return {ok:false, reason:'backend-not-configured'};
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 10000);
-            try {
-                const res = await fetch(ERLC_DISCORD_BACKEND_ENDPOINT, {
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body:JSON.stringify(payload),
-                    signal:controller.signal
-                });
-                return {ok:res.ok, status:res.status};
-            } catch(error) {
-                return {ok:false, reason:error?.name === 'AbortError' ? 'timeout' : (error?.message || 'network-error')};
-            } finally { clearTimeout(timeout); }
-        }
+        // Discord Webhook 功能已停用：本版本不在前端保存、發送或重試任何 Webhook。
 
 </script>
     <script>
@@ -547,7 +551,18 @@
         import { getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // 安全提醒：Firebase Web 設定本身不是祕密；真正的防護必須靠 Firebase Authentication／Security Rules。
-        // Discord Webhook 等祕密值不應長期放在前端，建議後續移至 Cloud Functions / Secret Manager。
+        // 安全強化：前端資料只視為不可信輸入；真正權限邊界仍由 Firebase Security Rules 決定。
+        // 所有可顯示的使用者輸入應經 escapeHtml()；禁止將使用者輸入當成 JavaScript 執行。
+        window.__NTPC_SECURITY_HARDENED__ = true;
+        window.addEventListener('error', (event) => {
+            // 避免未捕獲錯誤直接造成整頁中斷；只記錄到 console，不顯示敏感資料。
+            try { console.warn('NTPC-RP 前端錯誤已攔截：', event?.message || 'unknown-error'); } catch (_) {}
+        });
+        window.addEventListener('unhandledrejection', (event) => {
+            try { console.warn('NTPC-RP 未處理的非同步錯誤：', event?.reason?.message || String(event?.reason || 'unknown-error')); } catch (_) {}
+        });
+
+        // 本安全強化版不在前端保存 Discord Webhook 或其他 Discord 機密。
         const firebaseConfig = {
             apiKey: "AIzaSyBJi9v-oDJ54-Z61T5JKy44Mg22vZCPiw",
             authDomain: "ntpcrp-cb0725.firebaseapp.com",
@@ -1131,7 +1146,7 @@
                         <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
                             <li>修正「一周內移除／編輯紀錄」：補齊帳號、查詢資料與打卡紀錄的編輯／刪除稽核，並只顯示最近 7×24 小時內相關操作。</li>
                             <li>ER:LC 警報音效改為單一開／關狀態，重複點擊不會重複建立音效監聽；可隨時關閉音效而不停止 ER:LC 同步。</li>
-                            <li>Discord Webhook 改為後端 Worker 發送入口；GitHub Pages 不保存 Webhook 機密，降低跨來源發送失敗問題。</li>
+                            <li>全面移除前端 Discord Webhook，降低機密外洩與跨來源請求風險。</li>
                             <li>常見問題「提交問題給管理中心」改用網站自製視窗，提交成功後顯示勾選動畫。</li>
                             <li>勤務中心改為登入後才能使用，未登入會先要求登入，不會直接開啟勤務資料。</li>
                             <li>強化全站搜尋權限：未登入不可搜尋，並依帳號所屬單位限制資料範圍，避免跨單位查詢。</li>
@@ -1195,7 +1210,7 @@
                         </div>
                         <ul class="space-y-2 text-sm text-slate-400 list-disc pl-5">
                             <li>強化勤務中心、通知與相關畫面穩定性。</li>
-                            <li>改善 Discord 通知與案件通知的重試及錯誤處理。</li>
+                            <li>強化前端安全防護與操作穩定性。</li>
                             <li>持續整合管理中心、案件與勤務相關功能。</li>
                         </ul>
                     </article>
@@ -1742,7 +1757,8 @@
                         <div class="mt-4 flex flex-wrap gap-2">
                             <button type="button" onclick="saveERLCConfig()" class="bg-red-600 hover:bg-red-500 text-white rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>儲存 ER:LC 設定</button>
                             <button type="button" onclick="clearERLCConfig()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-trash mr-2"></i>清除設定</button>
-                            <button type="button" onclick="unlockERLCAlertAudio()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-volume-high mr-2"></i>啟用警報音效</button>
+                            <button type="button" data-erlc-audio-toggle="enable" onclick="enableERLCAudio()" class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-volume-high mr-2"></i>開啟警報音效</button>
+                            <button type="button" data-erlc-audio-toggle="disable" onclick="disableERLCAudio()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-volume-xmark mr-2"></i>關閉警報音效</button>
                         </div>
                         <div id="erlc-config-status" class="mt-4 text-xs text-slate-500">尚未設定 ER:LC Server Key。</div><div id="erlc-api-health-detail" class="mt-3 bg-slate-950/70 border border-slate-800 rounded-xl p-4 text-xs text-slate-400">API 連線狀態：等待後端 Worker 回報。</div>
                     </div>
@@ -4930,160 +4946,11 @@ async function republishAnnouncement(id) {
         function getViolationSelection(prefix='report'){return updateViolationJailTotal(prefix);}
 
 
-        // Discord 案件通知：警察與消防／EMS 使用不同 Webhook。
-        // 使用隱藏表單 POST，避免 GitHub Pages 前端因跨來源 CORS 預檢而導致通知無法送出。
-        const NTPC_RP_DISCORD_POLICE_WEBHOOK_URL = "https://discord.com/api/webhooks/1556813074176933938/m8-oi0s9rD0MDb3X5Xy3rEjUrdQ0ZYA6v2z6UTiDILFGQMSliGltIjbegmzNTtsEtQJQ";
-        const NTPC_RP_DISCORD_FIRE_WEBHOOK_URL = "https://discord.com/api/webhooks/1556959309265371155/xXOkB8yRJUn-mka2PP3GUKzsPoddI43aOit9SStBEU6zIAcGExiWOd-4lVgLtIWoHMns";
-        // 管理中心 LOG 專用 Webhook：編輯／退件／刪除與裝置自動封鎖事件。
-        const NTPC_RP_DISCORD_ADMIN_LOG_WEBHOOK_URL = "https://discord.com/api/webhooks/1556969901409964052/iFj6S2juQ6Fas9ms0Lc_R4Ak9ExtmaM-gbkc_SZbqpxYJTWzY393wCOXa0PdQdlQRcgi";
-        const NTPC_RP_DISCORD_ADMIN_LOG_ROLE_ID = '1434850635894755409';
-        const NTPC_RP_SITE_URL = 'https://gken99903-source.github.io/-NTPC-RP-/';
-
-        function escapeDiscordText(value) {
-            return String(value ?? '--').replace(/\\/g, '\\\\').replace(/`/g, '\\`');
-        }
-
-        function buildDiscordCasePayload(department, report) {
-            const isPolice = department === 'police';
-            const isEMS = department === 'ems';
-            const title = isEMS ? '🚑 新案件｜EMS 救護報告' : isPolice ? '🚓 新案件｜警察案件報告' : '🚒 新案件｜消防案件報告';
-            const fields = [];
-            if (isEMS) {
-                fields.push(
-                    { name: '案件編號', value: escapeDiscordText(report.id || report.caseId || report.docId), inline: true },
-                    { name: '填寫人', value: escapeDiscordText(`${report.authorName || '--'} (${report.authorId || '--'})`), inline: true },
-                    { name: '主訴', value: escapeDiscordText(report.chiefComplaint), inline: false },
-                    { name: '傷患', value: escapeDiscordText(report.patient), inline: true },
-                    { name: '出勤單位／車輛', value: escapeDiscordText(report.unitVehicle), inline: true },
-                    { name: '治療／處置', value: escapeDiscordText(report.treatment), inline: false }
-                );
-            } else {
-                fields.push(
-                    { name: '案件編號', value: escapeDiscordText(report.caseId), inline: true },
-                    { name: '填寫人', value: escapeDiscordText(`${report.authorName || '--'} (${report.authorId || '--'})`), inline: true },
-                    { name: '案件標題', value: escapeDiscordText(report.title), inline: false }
-                );
-                if (isPolice) {
-                    const crimes = Array.isArray(report.violations) && report.violations.length ? report.violations.join('、') : '未填寫';
-                    fields.push(
-                        { name: '嫌疑人', value: escapeDiscordText(`${report.suspectName || '無'} / ${report.suspectId || '無'}`), inline: true },
-                        { name: '違反條例', value: escapeDiscordText(crimes), inline: false },
-                        { name: '總監獄時間', value: escapeDiscordText(formatJailMinutes(Number(report.jailMinutes || 0))), inline: true },
-                        { name: '組織犯罪加重⅓', value: report.organizedCrime ? '是' : '否', inline: true }
-                    );
-                }
-                fields.push({ name: '案件內容', value: escapeDiscordText(report.content).slice(0, 1024) || '--', inline: false });
-            }
-            fields.push({ name: '勤務網站', value: `[點我前往勤務網站](${NTPC_RP_SITE_URL})`, inline: false });
-            return {
-                username: '新北市 RP 3.0 案件通知',
-                embeds: [{
-                    title,
-                    description: '案件已成功寫入雲端資料庫，等待高層審核。',
-                    color: isPolice ? 0x2563eb : isEMS ? 0xf43f5e : 0xdc2626,
-                    fields,
-                    timestamp: new Date().toISOString(),
-                    footer: { text: '新北市 RP 3.0 公職服務整合系統 V1.9.1' },
-                    url: NTPC_RP_SITE_URL
-                }]
-            };
-        }
-
-        function sendDiscordWantedNotification(wanted){
-            const webhookUrl=NTPC_RP_DISCORD_POLICE_WEBHOOK_URL;
-            if(!webhookUrl)return;
-            try{
-                const targetName=`ntpc_discord_wanted_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-                const iframe=document.createElement('iframe'); iframe.name=targetName; iframe.style.cssText='position:absolute;width:0;height:0;border:0;visibility:hidden;'; document.body.appendChild(iframe);
-                const form=document.createElement('form'); form.method='POST'; form.action=webhookUrl+(webhookUrl.includes('?')?'&':'?')+'wait=false'; form.target=targetName; form.enctype='application/x-www-form-urlencoded'; form.style.display='none';
-                const payload={username:'新北市 RP 3.0 通緝申請通知',embeds:[{title:'🚨 新申請｜警察通緝資料',description:'通緝申請已成功寫入雲端資料庫，等待警察高層審核。',color:0xe11d48,fields:[
-                    {name:'被通緝人',value:escapeDiscordText(wanted.name),inline:true},
-                    {name:'證件末五碼',value:escapeDiscordText(wanted.id5),inline:true},
-                    {name:'發布帳號',value:escapeDiscordText(`${wanted.createdByName||'--'} (${wanted.createdByAccount||'--'})`),inline:true},
-                    {name:'發布單位',value:escapeDiscordText(wanted.publishUnit||wanted.department||'--'),inline:true},
-                    {name:'通緝原因',value:escapeDiscordText(wanted.reason),inline:false},
-                    {name:'所違反條例',value:escapeDiscordText(wanted.law),inline:false},
-                    {name:'勤務網站',value:`[點我前往勤務網站](${NTPC_RP_SITE_URL})`,inline:false}
-                ],timestamp:new Date().toISOString(),footer:{text:'新北市 RP 3.0 公職服務整合系統 V1.9.1'},url:NTPC_RP_SITE_URL}]};
-                const input=document.createElement('input'); input.type='hidden'; input.name='payload_json'; input.value=JSON.stringify(payload); form.appendChild(input); document.body.appendChild(form); form.submit(); setTimeout(()=>{try{form.remove();iframe.remove();}catch(_){ }},8000);
-            }catch(e){console.warn('Discord 通緝申請通知發送失敗：',e);}
-        }
-
-        function sendDiscordCaseNotification(department, report) {
-            const webhookUrl = department === 'police' ? NTPC_RP_DISCORD_POLICE_WEBHOOK_URL : NTPC_RP_DISCORD_FIRE_WEBHOOK_URL;
-            if (!webhookUrl) return;
-            try {
-                const targetName = `ntpc_discord_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-                const iframe = document.createElement('iframe');
-                iframe.name = targetName;
-                iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;';
-                document.body.appendChild(iframe);
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = webhookUrl + (webhookUrl.includes('?') ? '&' : '?') + 'wait=false';
-                form.target = targetName;
-                form.enctype = 'application/x-www-form-urlencoded';
-                form.style.display = 'none';
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'payload_json';
-                input.value = JSON.stringify(buildDiscordCasePayload(department, report));
-                form.appendChild(input);
-                document.body.appendChild(form);
-                form.submit();
-                setTimeout(() => { try { form.remove(); iframe.remove(); } catch (_) {} }, 8000);
-            } catch (e) {
-                console.warn('Discord 案件通知發送失敗：', e);
-            }
-        }
-
-        function sendManagementDiscordLog(action, target, detail='', options={}) {
-            const webhookUrl = NTPC_RP_DISCORD_ADMIN_LOG_WEBHOOK_URL;
-            if (!webhookUrl) return;
-            try {
-                const mentionRole = !!options.mentionRole;
-                const operator = currentUser ? `${currentUser.name || '未知'} (${currentUser.account || '--'})` : '系統自動處理';
-                const payload = {
-                    username: '新北市 RP 3.0 管理中心 LOG',
-                    ...(mentionRole ? {content:`<@&${NTPC_RP_DISCORD_ADMIN_LOG_ROLE_ID}>`} : {}),
-                    allowed_mentions: mentionRole ? {roles:[NTPC_RP_DISCORD_ADMIN_LOG_ROLE_ID]} : {parse:[]},
-                    embeds: [{
-                        title: `🛡️ 管理中心操作紀錄｜${action}`,
-                        color: mentionRole ? 0xf59e0b : 0x6366f1,
-                        fields: [
-                            {name:'操作人員', value:escapeDiscordText(operator).slice(0,1024), inline:true},
-                            {name:'操作類型', value:escapeDiscordText(action).slice(0,1024), inline:true},
-                            {name:'目標', value:escapeDiscordText(target).slice(0,1024), inline:false},
-                            ...(detail ? [{name:'詳細資訊', value:escapeDiscordText(detail).slice(0,1024), inline:false}] : [])
-                        ],
-                        timestamp:new Date().toISOString(),
-                        footer:{text:'新北市 RP 3.0 公職服務整合系統 V1.9.1'},
-                        url:NTPC_RP_SITE_URL
-                    }]
-                };
-                const targetName = `ntpc_admin_log_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-                const iframe = document.createElement('iframe');
-                iframe.name = targetName;
-                iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;';
-                document.body.appendChild(iframe);
-                const form = document.createElement('form');
-                form.method='POST';
-                form.action=webhookUrl + (webhookUrl.includes('?')?'&':'?') + 'wait=false';
-                form.target=targetName;
-                form.enctype='application/x-www-form-urlencoded';
-                form.style.display='none';
-                const input=document.createElement('input');
-                input.type='hidden';
-                input.name='payload_json';
-                input.value=JSON.stringify(payload);
-                form.appendChild(input);
-                document.body.appendChild(form);
-                form.submit();
-                setTimeout(()=>{try{form.remove();iframe.remove();}catch(_){ }},8000);
-            } catch(e) {
-                console.warn('管理中心 Discord LOG 發送失敗：',e);
-            }
-        }
+        // Discord Webhook：V1.9.1 安全強化版已完整停用。
+        // 保留空操作入口，讓既有案件／通緝流程不因舊呼叫點而中斷；不會進行任何網路請求、localStorage 暫存或 Webhook 紀錄。
+        function sendDiscordCaseNotification(){ return Promise.resolve({ok:false, disabled:true}); }
+        function sendDiscordWantedNotification(){ return Promise.resolve({ok:false, disabled:true}); }
+        function sendManagementDiscordLog(){ return Promise.resolve({ok:false, disabled:true}); }
 
         async function submitReport() {
             if (window.__ntpcReportSubmitting) { showToast('案件正在送出，請勿重複點擊。','warning','請稍候'); return; }
@@ -6141,7 +6008,6 @@ async function republishAnnouncement(id) {
         async function refreshAdminOnlineUsers(){if(!currentUser||currentUser.role!=='admin'||!fm||!db)return;try{const snap=await fm.getDocs(fm.collection(db,'users'));appData.users=snap.docs.map(d=>{const data=d.data();return {docId:d.id,...data,units:data.units||(data.unit?[data.unit]:['admin'])};});const fresh=appData.users.find(u=>String(u.account)===String(currentUser.account));if(fresh)currentUser=fresh;renderAdminOnlineUsers();}catch(e){console.warn('管理中心在線狀態刷新失敗：',e);renderAdminOnlineUsers();}}
         let erlcAlertUnsubscribe=null;
         let erlcHealthUnsubscribe=null;
-        let erlcAudioUnlocked=false;
         function renderERLCApiHealth(data={}){
             const badge=document.getElementById('erlc-api-health-badge');
             const detail=document.getElementById('erlc-api-health-detail');
@@ -6226,8 +6092,24 @@ async function republishAnnouncement(id) {
             if(!(await showConfirm('確定要停用 ER:LC 整合設定嗎？','停用 ER:LC','確定停用')))return;
             try{await fm.setDoc(fm.doc(db,'systemSettings','erlcIntegration'),{configured:false,serverKey:'',serverId:'',serverOpen:false,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});await renderERLCConfigStatus();showToast('ER:LC 整合已停用，伺服器狀況也已切換為關服。','success','操作完成');}catch(e){showToast('停用失敗：'+e.message,'error','操作失敗');}
         }
-        async function unlockERLCAlertAudio(){try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;erlcAudioContext=erlcAudioContext||new AC();await erlcAudioContext.resume();erlcAudioEnabled=true;erlcAudioUnlocked=true;updateERLCAudioButtons();const o=erlcAudioContext.createOscillator(),g=erlcAudioContext.createGain();g.gain.value=0.0001;o.connect(g);g.connect(erlcAudioContext.destination);o.start();o.stop(erlcAudioContext.currentTime+0.02);showToast('警報音效已啟用。','success','音效啟用');}catch(e){showToast('瀏覽器未允許啟用音效。','warning','音效未啟用');}}
-        async function playERLCOfficerAlert(){if(!erlcAudioUnlocked)return;try{const AC=window.AudioContext||window.webkitAudioContext;erlcAudioContext=erlcAudioContext||new AC();await erlcAudioContext.resume();for(let i=0;i<6;i++){const o=erlcAudioContext.createOscillator(),g=erlcAudioContext.createGain();o.type='square';o.frequency.value=i%2?880:660;g.gain.setValueAtTime(0.0001,erlcAudioContext.currentTime+i*0.18);g.gain.exponentialRampToValueAtTime(0.12,erlcAudioContext.currentTime+i*0.18+0.02);g.gain.exponentialRampToValueAtTime(0.0001,erlcAudioContext.currentTime+i*0.18+0.15);o.connect(g);g.connect(erlcAudioContext.destination);o.start(erlcAudioContext.currentTime+i*0.18);o.stop(erlcAudioContext.currentTime+i*0.18+0.16);}}catch(e){}}
+        async function playERLCOfficerAlert(){
+            if(!erlcAudioEnabled)return;
+            try{
+                if(!erlcOfficerAlertAudio){
+                    erlcOfficerAlertAudio=new Audio(ERLC_OFFICER_ALERT_SOUND_URL);
+                    erlcOfficerAlertAudio.preload='auto';
+                    erlcOfficerAlertAudio.volume=1;
+                }
+                if(!erlcAudioEnabled)return;
+                erlcOfficerAlertAudio.pause();
+                erlcOfficerAlertAudio.currentTime=0;
+                erlcOfficerAlertAudio.muted=false;
+                await erlcOfficerAlertAudio.play();
+            }catch(e){
+                console.warn('ER:LC 警員死亡自訂音效播放失敗：',e);
+                showToast?.('警員倒地音效播放失敗，請確認已開啟音效並先點擊頁面。','warning','音效播放');
+            }
+        }
         function showERLCDeathAlert(a){
             const isOfficer=String(a.type||'')==='officer-life-alert';
             // 相容 Worker 不同版本可能使用的欄位名稱，優先使用 Worker 正式寫入的 postalCode。
@@ -6499,9 +6381,8 @@ async function republishAnnouncement(id) {
             } catch (e) {
                 console.error("Log error", e);
             }
-            // 個人通知中心的移除／一鍵刪除不會呼叫此函式，因此不會出現在管理中心 Discord LOG。
-            const shouldDiscord = typeof options?.discord === 'boolean' ? options.discord : /編輯|退件|刪除|移除/.test(actionText);
-            if(shouldDiscord){ sendManagementDiscordLog(actionText,target,detail); }
+            // V1.9.1 安全強化版：管理中心 LOG 僅寫入 Firestore，不再向任何 Discord Webhook 發送。
+            // 保留 options 參數以相容既有呼叫點，但完全忽略 options.discord。
         }
 
         async function deleteAllAdminLogs(){
@@ -6609,7 +6490,7 @@ function ntpcDutyHoursSince(startMs){const mine=ntpcDutyRowsForCurrentUser().fil
 function renderDashRecentDuty(){const h=document.getElementById('dash-recent-duty');if(!h)return;const rows=ntpcDutyRowsForCurrentUser().slice(0,10);h.innerHTML=rows.length?rows.map(c=>{const status=String(c.status||c.action||c.type||'');const label=/上班|上班打卡|clock.?in/i.test(status)?'上班':/下班|下班打卡|clock.?out/i.test(status)?'下班':(c.status||c.action||'值勤紀錄');const unit=c.unit==='fire'||c.department==='fire'?'消防':c.unit==='admin'||c.department==='admin'?'管理':'警察';return `<div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3 flex items-center justify-between gap-3"><div><div class="text-sm font-semibold text-white">${ntpcEsc(unit)} ／ ${ntpcEsc(label)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(formatDateTime(c.timestamp||c.time,c.time))}</div></div><span class="text-[11px] px-2 py-1 rounded-full bg-slate-800 text-slate-300">${ntpcEsc(c.dutyNumber||c.managementId||c.staffNumber||currentUser.account||'--')}</span></div>`}).join(''):'<div class="text-sm text-slate-500 py-5 text-center md:col-span-2">目前沒有勤務打卡紀錄。</div>';}
 function ntpcCurrentMonthHours(){if(!currentUser)return 0;const start=new Date();start.setDate(1);start.setHours(0,0,0,0);const mine=[...(appData.policeClocks||[]),...(appData.fireClocks||[]),...(appData.adminClocks||[])].filter(c=>String(c.account||c.userAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&Number(c.timestamp||c.time||0)>=start.getTime());let total=0;const groups={};mine.forEach(c=>{const key=c.shiftId||c.clockGroup||c.id||`${c.account}-${new Date(c.timestamp||c.time).toDateString()}`;(groups[key]??=[]).push(c);});Object.values(groups).forEach(g=>{g.sort((a,b)=>Number(a.timestamp||a.time)-Number(b.timestamp||b.time));for(let i=0;i+1<g.length;i+=2){const a=Number(g[i].timestamp||g[i].time),b=Number(g[i+1].timestamp||g[i+1].time);if(b>a)total+=b-a;}});return Math.round(total/360000)/10;}
 function refreshDutyDashboard(){if(!document.getElementById('tab-dashboard'))return;const online=getCurrentDutyCount();const pending=(appData.policePendingReports||[]).length+(appData.firePendingReports||[]).length+(appData.emsPendingReports||[]).length+(appData.wantedPendingRecords||[]).length;const noti=currentUser?(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&!n.read).length:0;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};set('dash-online',online);set('dash-pending',pending);set('dash-notifications',noti);set('dash-hours',ntpcCurrentMonthHours().toFixed(1)+' h');set('dash-week-hours',currentUser?ntpcDutyHoursSince(Date.now()-7*24*60*60*1000).toFixed(1)+' h':'--');set('dash-total-hours',currentUser?ntpcDutyHoursSince(0).toFixed(1)+' h':'--');const work=document.getElementById('dash-my-work');if(work){const mine=(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser?.account||'').toLowerCase()&&!n.read).slice(0,8);work.innerHTML=mine.length?mine.map(n=>`<div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800"><div class="text-sm text-white">${ntpcEsc(n.title||'案件通知')}</div><div class="text-xs text-slate-500 mt-1">${ntpcEsc(n.message||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有待處理通知。</div>';}renderDashRecentDuty();renderDashSystemStatus();renderDashAnnouncements();renderDashHandover();renderDashManagementWork();}
-function renderDashSystemStatus(){const h=document.getElementById('dash-system-status');if(!h)return;const online=navigator.onLine;const firebaseOk=!!db&&!!fm;const realtimeOk=Array.isArray(realtimeUnsubscribers)&&realtimeUnsubscribers.length>0;h.innerHTML=[['網路連線',online,'瀏覽器網路狀態'],['Firebase',firebaseOk,'雲端資料庫模組'],['即時同步',realtimeOk,'Firestore 即時監聽'],['案件通知',!!appData.reportNotifications,'通知資料已載入'],['Discord 通知',true,'目前採可靠送出佇列；瀏覽器無法直接取得 Discord 回應碼']].map(x=>`<div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60"><div><span class="status-dot ${x[1]?'status-ok':'status-bad'}"></span><span class="text-sm text-slate-200">${x[0]}</span></div><span class="text-[11px] text-slate-500">${x[2]}</span></div>`).join('');const t=document.getElementById('dash-status-time');if(t)t.textContent='更新 '+formatDateTime(Date.now());}
+function renderDashSystemStatus(){const h=document.getElementById('dash-system-status');if(!h)return;const online=navigator.onLine;const firebaseOk=!!db&&!!fm;const realtimeOk=Array.isArray(realtimeUnsubscribers)&&realtimeUnsubscribers.length>0;h.innerHTML=[['網路連線',online,'瀏覽器網路狀態'],['Firebase',firebaseOk,'雲端資料庫模組'],['即時同步',realtimeOk,'Firestore 即時監聽'],['案件通知',!!appData.reportNotifications,'通知資料已載入'],['Discord 通知',false,'本版本已停用前端 Webhook']].map(x=>`<div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60"><div><span class="status-dot ${x[1]?'status-ok':'status-bad'}"></span><span class="text-sm text-slate-200">${x[0]}</span></div><span class="text-[11px] text-slate-500">${x[2]}</span></div>`).join('');const t=document.getElementById('dash-status-time');if(t)t.textContent='更新 '+formatDateTime(Date.now());}
 function renderDashAnnouncements(){const h=document.getElementById('dash-important-announcements');if(!h)return;const rows=(appData.announcements||[]).filter(a=>a.active!==false&&a.important).sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0)).slice(0,5);h.innerHTML=rows.length?rows.map(a=>`<div class="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5"><div class="text-sm text-white">${ntpcEsc(a.text)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(a.publisher||'系統')}｜${ntpcEsc(a.time||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有置頂重要公告。</div>';}
 function renderDashHandover(){const h=document.getElementById('dash-handover-list');if(!h)return;const rows=(appData.dutyHandoverNotes||[]).slice().sort((a,b)=>Number(b.timestamp||0)-Number(a.timestamp||0)).slice(0,10);h.innerHTML=rows.length?rows.map(a=>`<div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800"><div class="text-xs text-purple-300">${ntpcEsc(a.authorName||a.authorAccount||'勤務人員')}｜${ntpcEsc(a.time||formatDateTime(a.timestamp))}</div><div class="text-sm text-slate-200 mt-1 whitespace-pre-wrap">${ntpcEsc(a.text)}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有交接事項。</div>';}
 function openHandoverModal(){if(!currentUser){showToast('請先登入。','warning','需要登入');return;}document.getElementById('modal-handover')?.classList.remove('hidden');document.getElementById('handover-text')?.focus();}
@@ -6624,22 +6505,10 @@ function openFAQIssueModal(){if(!currentUser){showToast('請先登入後再提�
 async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登入後再提交問題。','warning','需要登入');return;}const input=document.getElementById('faq-issue-text'),text=String(input?.value||'').trim();if(!text){showToast('請先描述你遇到的問題。','error','內容未填寫');input?.focus();return;}if(text.length>1000){showToast('問題內容最多 1000 字。','warning','內容過長');return;}const btn=document.getElementById('submit-faq-issue-btn');if(btn?.classList.contains('is-busy-action'))return;btn?.classList.add('is-busy-action');try{const now=Date.now(),id='FAQ-'+now,obj={id,account:currentUser.account,name:currentUser.name||'',text:text.slice(0,1000),timestamp:now,time:formatDateTime(now),status:'open'};await fm.setDoc(fm.doc(db,'faqIssues',id),obj);appData.faqIssues.unshift({docId:id,...obj});closeModal('modal-faq-issue');await logAdminAction('提交常見問題協助單',id,text,{discord:false});renderFAQIssues();renderDashManagementWork();showSubmitSuccessAnimation('問題提交成功','問題已送至管理中心，管理人員可以查看。');}catch(e){showToast('提交失敗：'+e.message,'error','操作失敗');}finally{btn?.classList.remove('is-busy-action');}}
 /* 公告重要標記：兼容既有發布流程。 */
 (function patchAnnouncementImportant(){const btn=document.getElementById('publish-announcement-btn');if(!btn||btn.dataset.v182)return;btn.dataset.v182='1';btn.addEventListener('click',()=>{setTimeout(()=>{const text=document.getElementById('announcement-text-input')?.value;},0);});const original=window.publishAnnouncement;if(typeof original==='function'&&original.__v182)return;})();
-/* Webhook：避免同一事件重複發送，失敗時自動重試，並保留發送紀錄。前端無法可靠取得跨來源 Discord 回應碼，因此狀態採 queued/sent-attempt。 */
-const NTPC_DISCORD_RETRY_STORE='ntpcrp_discord_retry_v182';
-function ntpcWebhookKey(type,payload){return 'v182-'+type+'-'+btoa(unescape(encodeURIComponent(JSON.stringify(payload)))).slice(0,80);}
-function ntpcReadWebhookQueue(){try{return JSON.parse(localStorage.getItem(NTPC_DISCORD_RETRY_STORE)||'[]');}catch(_){return[];}}
-function ntpcWriteWebhookQueue(q){try{localStorage.setItem(NTPC_DISCORD_RETRY_STORE,JSON.stringify(q.slice(-30)));}catch(_) {}}
-async function ntpcRecordWebhookLog(type,status,detail=''){try{if(!db||!fm)return;const id='WH-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);await fm.setDoc(fm.doc(db,'webhookLogs',id),{id,type,status,detail:String(detail||'').slice(0,500),account:currentUser?.account||'system',timestamp:Date.now()});}catch(e){console.warn('Webhook 紀錄寫入失敗',e);}}
-function ntpcFormWebhook(url,payload){return new Promise((resolve,reject)=>{try{if(!url)throw new Error('Webhook URL 未設定');const name='ntpc_webhook_'+Date.now()+'_'+Math.random().toString(36).slice(2);const iframe=document.createElement('iframe');iframe.name=name;iframe.style.cssText='position:absolute;width:0;height:0;border:0;visibility:hidden;';document.body.appendChild(iframe);const form=document.createElement('form');form.method='POST';form.action=url+(url.includes('?')?'&':'?')+'wait=false';form.target=name;form.enctype='application/x-www-form-urlencoded';form.style.display='none';const input=document.createElement('input');input.type='hidden';input.name='payload_json';input.value=JSON.stringify(payload);form.appendChild(input);document.body.appendChild(form);form.submit();setTimeout(()=>{try{form.remove();iframe.remove();}catch(_){}resolve(true);},1800);}catch(e){reject(e);}});}
-async function ntpcReliableDiscordSend(type,url,payload){if(!url)return {ok:false,reason:'missing-webhook'};const key=ntpcWebhookKey(type,payload);const q=ntpcReadWebhookQueue();if(q.some(x=>x.key===key&&x.status==='sent-attempt'))return {ok:true,deduped:true};const item={key,type,timestamp:Date.now(),status:'queued',payload};q.push(item);ntpcWriteWebhookQueue(q);ntpcRecordWebhookLog(type,'queued');try{if(navigator.onLine===false)throw new Error('offline');await ntpcFormWebhook(url,payload);item.status='sent-attempt';item.sentAt=Date.now();ntpcWriteWebhookQueue(ntpcReadWebhookQueue().map(x=>x.key===key?item:x));ntpcRecordWebhookLog(type,'sent-attempt');return {ok:true};}catch(e){item.status='failed';item.error=String(e.message||e);ntpcRecordWebhookLog(type,'failed',item.error);ntpcWriteWebhookQueue(ntpcReadWebhookQueue().map(x=>x.key===key?item:x));setTimeout(()=>{try{ntpcFormWebhook(url,payload).then(()=>{const qq=ntpcReadWebhookQueue();const ii=qq.find(x=>x.key===key);if(ii){ii.status='sent-attempt';ii.sentAt=Date.now();ntpcWriteWebhookQueue(qq);}}).catch(()=>{});}catch(_){}},2500);return {ok:false,error:e};}}
-async function ntpcRetryWebhookQueue(){const q=ntpcReadWebhookQueue();for(const x of q.filter(a=>a.status==='failed').slice(-5)){try{const url=x.type==='police'?NTPC_RP_DISCORD_POLICE_WEBHOOK_URL:x.type==='fire'||x.type==='ems'?NTPC_RP_DISCORD_FIRE_WEBHOOK_URL:NTPC_RP_DISCORD_ADMIN_LOG_WEBHOOK_URL;const payload=x.payload;if(!payload)continue;await ntpcFormWebhook(url,payload);x.status='sent-attempt';x.sentAt=Date.now();}catch(_){} }ntpcWriteWebhookQueue(q);}
-/* 覆寫三個發送入口，但保留既有 payload 格式。 */
-const __oldSendDiscordCaseNotification=window.sendDiscordCaseNotification;window.sendDiscordCaseNotification=async function(department,report){try{const url=department==='police'?NTPC_RP_DISCORD_POLICE_WEBHOOK_URL:NTPC_RP_DISCORD_FIRE_WEBHOOK_URL;const payload=buildDiscordCasePayload(department,report);return await ntpcReliableDiscordSend(department,url,payload);}catch(e){console.warn('案件 Discord 通知異常',e);return {ok:false,error:e};}};
-const __oldSendDiscordWantedNotification=window.sendDiscordWantedNotification;window.sendDiscordWantedNotification=async function(wanted){try{return await ntpcReliableDiscordSend('police',NTPC_RP_DISCORD_POLICE_WEBHOOK_URL,{username:'新北市 RP 3.0 通緝申請通知',embeds:[{title:'🚨 新申請｜警察通緝資料',description:'通緝申請已成功寫入雲端資料庫，等待警察高層審核。',color:0xe11d48,fields:[{name:'被通緝人',value:escapeDiscordText(wanted.name),inline:true},{name:'證件末五碼',value:escapeDiscordText(wanted.id5),inline:true},{name:'發布帳號',value:escapeDiscordText(`${wanted.createdByName||'--'} (${wanted.createdByAccount||'--'})`),inline:true},{name:'發布單位',value:escapeDiscordText(wanted.publishUnit||wanted.department||'--'),inline:true},{name:'通緝原因',value:escapeDiscordText(wanted.reason),inline:false},{name:'所違反條例',value:escapeDiscordText(wanted.law),inline:false},{name:'勤務網站',value:`[點我前往勤務網站](${NTPC_RP_SITE_URL})`,inline:false}],timestamp:new Date().toISOString(),footer:{text:'新北市 RP 3.0 公職服務整合系統 V1.9.1'},url:NTPC_RP_SITE_URL}]});}catch(e){console.warn('通緝 Discord 通知異常',e);return {ok:false,error:e};}};
-const __oldSendManagementDiscordLog=window.sendManagementDiscordLog;window.sendManagementDiscordLog=async function(action,target,detail='',options={}){try{const url=NTPC_RP_DISCORD_ADMIN_LOG_WEBHOOK_URL;const mentionRole=!!options.mentionRole;const operator=currentUser?`${currentUser.name||'未知'} (${currentUser.account||'--'})`:'系統自動處理';const payload={username:'新北市 RP 3.0 管理中心 LOG',...(mentionRole?{content:`<@&${NTPC_RP_DISCORD_ADMIN_LOG_ROLE_ID}>`}:{}),allowed_mentions:mentionRole?{roles:[NTPC_RP_DISCORD_ADMIN_LOG_ROLE_ID]}:{parse:[]},embeds:[{title:`🛡️ 管理中心操作紀錄｜${action}`,color:mentionRole?0xf59e0b:0x6366f1,fields:[{name:'操作人員',value:escapeDiscordText(operator).slice(0,1024),inline:true},{name:'操作類型',value:escapeDiscordText(action).slice(0,1024),inline:true},{name:'目標',value:escapeDiscordText(target).slice(0,1024),inline:false},...(detail?[{name:'詳細資訊',value:escapeDiscordText(detail).slice(0,1024),inline:false}]:[])],timestamp:new Date().toISOString(),footer:{text:'新北市 RP 3.0 管理中心 LOG V1.9'},url:NTPC_RP_SITE_URL}]};return await ntpcReliableDiscordSend('admin',url,payload);}catch(e){console.warn('管理中心 Discord LOG 異常',e);return {ok:false,error:e};}};
+/* Discord Webhook 已停用：不建立 retry queue、不寫入 webhookLogs、不進行跨來源 POST。 */
 /* 初始化：補載交接簿，並把公告重要標記送入既有資料。 */
-setTimeout(async()=>{try{appData.dutyHandoverNotes=appData.dutyHandoverNotes||[];await loadHandoverNotes();renderDashHandover();renderDashAnnouncements();refreshDutyDashboard();ntpcRetryWebhookQueue();}catch(e){console.warn('V1.8.2 初始化失敗',e);}},1200);
-window.addEventListener('online',()=>{ntpcRetryWebhookQueue();renderDashSystemStatus();});window.addEventListener('offline',()=>renderDashSystemStatus());
+setTimeout(async()=>{try{appData.dutyHandoverNotes=appData.dutyHandoverNotes||[];await loadHandoverNotes();renderDashHandover();renderDashAnnouncements();refreshDutyDashboard();}catch(e){console.warn('V1.8.2 初始化失敗',e);}},1200);
+window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEventListener('offline',()=>renderDashSystemStatus());
 
 </script>
 
