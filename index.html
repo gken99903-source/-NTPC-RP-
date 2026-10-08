@@ -678,7 +678,7 @@
                     <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">New Taipei Roleplay 3.0</span>
                     <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">新北市公職人員<br><span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">勤務與案件管制系統</span></h1>
                     <div><span class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.9.1</span></div>
-                    <p class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。V1.9 進一步整合警務、消防救護、案件審核、個人通知、值勤打卡、管理中心與 ER:LC 勤務偵測，並以雲端資料同步與低頻率資料監聽降低不必要的資料庫使用。</p>
+                    <p class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。V1.9.1 在 V1.9 基礎上進一步強化系統穩定性、稽核紀錄、登入與勤務體驗，並優化 ER:LC API 連線狀態與即時勤務偵測；同時維持雲端資料同步與低頻率資料監聽以降低不必要的資料庫使用。</p>
                     <div class="flex flex-wrap justify-center gap-4 pt-2">
                         <button data-tab="police" class="tab-shortcut-btn bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
                             <i class="fa-solid fa-shield"></i><span>進入警務系統</span>
@@ -695,7 +695,7 @@
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div class="flex items-center gap-2 text-emerald-300 font-bold">
-                            <i class="fa-solid fa-satellite-dish"></i><span>V1.9 最新更新</span>
+                            <i class="fa-solid fa-satellite-dish"></i><span>V1.9.1 最新更新</span>
                         </div>
                         <p class="text-slate-400 text-sm mt-2 leading-relaxed">本版本新增 ER:LC 勤務偵測架構、Roblox ID 綁定、執勤警員生命狀態異常警報，並將值勤判斷全面改為以打卡資料為準，減少不必要的雲端資料庫使用。</p>
                     </div>
@@ -4814,7 +4814,7 @@ async function republishAnnouncement(id) {
                     color: isPolice ? 0x2563eb : isEMS ? 0xf43f5e : 0xdc2626,
                     fields,
                     timestamp: new Date().toISOString(),
-                    footer: { text: '新北市 RP 3.0 公職服務整合系統 V1.9' },
+                    footer: { text: '新北市 RP 3.0 公職服務整合系統 V1.9.1' },
                     url: NTPC_RP_SITE_URL
                 }]
             };
@@ -4835,7 +4835,7 @@ async function republishAnnouncement(id) {
                     {name:'通緝原因',value:escapeDiscordText(wanted.reason),inline:false},
                     {name:'所違反條例',value:escapeDiscordText(wanted.law),inline:false},
                     {name:'勤務網站',value:`[點我前往勤務網站](${NTPC_RP_SITE_URL})`,inline:false}
-                ],timestamp:new Date().toISOString(),footer:{text:'新北市 RP 3.0 公職服務整合系統 V1.9'},url:NTPC_RP_SITE_URL}]};
+                ],timestamp:new Date().toISOString(),footer:{text:'新北市 RP 3.0 公職服務整合系統 V1.9.1'},url:NTPC_RP_SITE_URL}]};
                 const input=document.createElement('input'); input.type='hidden'; input.name='payload_json'; input.value=JSON.stringify(payload); form.appendChild(input); document.body.appendChild(form); form.submit(); setTimeout(()=>{try{form.remove();iframe.remove();}catch(_){ }},8000);
             }catch(e){console.warn('Discord 通緝申請通知發送失敗：',e);}
         }
@@ -4888,7 +4888,7 @@ async function republishAnnouncement(id) {
                             ...(detail ? [{name:'詳細資訊', value:escapeDiscordText(detail).slice(0,1024), inline:false}] : [])
                         ],
                         timestamp:new Date().toISOString(),
-                        footer:{text:'新北市 RP 3.0 公職服務整合系統 V1.9'},
+                        footer:{text:'新北市 RP 3.0 公職服務整合系統 V1.9.1'},
                         url:NTPC_RP_SITE_URL
                     }]
                 };
@@ -6422,7 +6422,7 @@ async function ntpcReliableDiscordSend(type,url,payload){if(!url)return {ok:fals
 async function ntpcRetryWebhookQueue(){const q=ntpcReadWebhookQueue();for(const x of q.filter(a=>a.status==='failed').slice(-5)){try{const url=x.type==='police'?NTPC_RP_DISCORD_POLICE_WEBHOOK_URL:x.type==='fire'||x.type==='ems'?NTPC_RP_DISCORD_FIRE_WEBHOOK_URL:NTPC_RP_DISCORD_ADMIN_LOG_WEBHOOK_URL;const payload=x.payload;if(!payload)continue;await ntpcFormWebhook(url,payload);x.status='sent-attempt';x.sentAt=Date.now();}catch(_){} }ntpcWriteWebhookQueue(q);}
 /* 覆寫三個發送入口，但保留既有 payload 格式。 */
 const __oldSendDiscordCaseNotification=window.sendDiscordCaseNotification;window.sendDiscordCaseNotification=async function(department,report){try{const url=department==='police'?NTPC_RP_DISCORD_POLICE_WEBHOOK_URL:NTPC_RP_DISCORD_FIRE_WEBHOOK_URL;const payload=buildDiscordCasePayload(department,report);return await ntpcReliableDiscordSend(department,url,payload);}catch(e){console.warn('案件 Discord 通知異常',e);return {ok:false,error:e};}};
-const __oldSendDiscordWantedNotification=window.sendDiscordWantedNotification;window.sendDiscordWantedNotification=async function(wanted){try{return await ntpcReliableDiscordSend('police',NTPC_RP_DISCORD_POLICE_WEBHOOK_URL,{username:'新北市 RP 3.0 通緝申請通知',embeds:[{title:'🚨 新申請｜警察通緝資料',description:'通緝申請已成功寫入雲端資料庫，等待警察高層審核。',color:0xe11d48,fields:[{name:'被通緝人',value:escapeDiscordText(wanted.name),inline:true},{name:'證件末五碼',value:escapeDiscordText(wanted.id5),inline:true},{name:'發布帳號',value:escapeDiscordText(`${wanted.createdByName||'--'} (${wanted.createdByAccount||'--'})`),inline:true},{name:'發布單位',value:escapeDiscordText(wanted.publishUnit||wanted.department||'--'),inline:true},{name:'通緝原因',value:escapeDiscordText(wanted.reason),inline:false},{name:'所違反條例',value:escapeDiscordText(wanted.law),inline:false},{name:'勤務網站',value:`[點我前往勤務網站](${NTPC_RP_SITE_URL})`,inline:false}],timestamp:new Date().toISOString(),footer:{text:'新北市 RP 3.0 公職服務整合系統 V1.9'},url:NTPC_RP_SITE_URL}]});}catch(e){console.warn('通緝 Discord 通知異常',e);return {ok:false,error:e};}};
+const __oldSendDiscordWantedNotification=window.sendDiscordWantedNotification;window.sendDiscordWantedNotification=async function(wanted){try{return await ntpcReliableDiscordSend('police',NTPC_RP_DISCORD_POLICE_WEBHOOK_URL,{username:'新北市 RP 3.0 通緝申請通知',embeds:[{title:'🚨 新申請｜警察通緝資料',description:'通緝申請已成功寫入雲端資料庫，等待警察高層審核。',color:0xe11d48,fields:[{name:'被通緝人',value:escapeDiscordText(wanted.name),inline:true},{name:'證件末五碼',value:escapeDiscordText(wanted.id5),inline:true},{name:'發布帳號',value:escapeDiscordText(`${wanted.createdByName||'--'} (${wanted.createdByAccount||'--'})`),inline:true},{name:'發布單位',value:escapeDiscordText(wanted.publishUnit||wanted.department||'--'),inline:true},{name:'通緝原因',value:escapeDiscordText(wanted.reason),inline:false},{name:'所違反條例',value:escapeDiscordText(wanted.law),inline:false},{name:'勤務網站',value:`[點我前往勤務網站](${NTPC_RP_SITE_URL})`,inline:false}],timestamp:new Date().toISOString(),footer:{text:'新北市 RP 3.0 公職服務整合系統 V1.9.1'},url:NTPC_RP_SITE_URL}]});}catch(e){console.warn('通緝 Discord 通知異常',e);return {ok:false,error:e};}};
 const __oldSendManagementDiscordLog=window.sendManagementDiscordLog;window.sendManagementDiscordLog=async function(action,target,detail='',options={}){try{const url=NTPC_RP_DISCORD_ADMIN_LOG_WEBHOOK_URL;const mentionRole=!!options.mentionRole;const operator=currentUser?`${currentUser.name||'未知'} (${currentUser.account||'--'})`:'系統自動處理';const payload={username:'新北市 RP 3.0 管理中心 LOG',...(mentionRole?{content:`<@&${NTPC_RP_DISCORD_ADMIN_LOG_ROLE_ID}>`}:{}),allowed_mentions:mentionRole?{roles:[NTPC_RP_DISCORD_ADMIN_LOG_ROLE_ID]}:{parse:[]},embeds:[{title:`🛡️ 管理中心操作紀錄｜${action}`,color:mentionRole?0xf59e0b:0x6366f1,fields:[{name:'操作人員',value:escapeDiscordText(operator).slice(0,1024),inline:true},{name:'操作類型',value:escapeDiscordText(action).slice(0,1024),inline:true},{name:'目標',value:escapeDiscordText(target).slice(0,1024),inline:false},...(detail?[{name:'詳細資訊',value:escapeDiscordText(detail).slice(0,1024),inline:false}]:[])],timestamp:new Date().toISOString(),footer:{text:'新北市 RP 3.0 管理中心 LOG V1.9'},url:NTPC_RP_SITE_URL}]};return await ntpcReliableDiscordSend('admin',url,payload);}catch(e){console.warn('管理中心 Discord LOG 異常',e);return {ok:false,error:e};}};
 /* 初始化：補載交接簿，並把公告重要標記送入既有資料。 */
 setTimeout(async()=>{try{appData.dutyHandoverNotes=appData.dutyHandoverNotes||[];await loadHandoverNotes();renderDashHandover();renderDashAnnouncements();refreshDutyDashboard();ntpcRetryWebhookQueue();}catch(e){console.warn('V1.8.2 初始化失敗',e);}},1200);
