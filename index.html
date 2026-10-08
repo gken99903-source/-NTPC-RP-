@@ -6554,8 +6554,14 @@ async function republishAnnouncement(id) {
             } catch (e) {
                 console.error("Log error", e);
             }
-            // V1.9.1 安全強化版：管理中心 LOG 僅寫入 Firestore，不再向任何 Discord Webhook 發送。
-            // 保留 options 參數以相容既有呼叫點，但完全忽略 options.discord。
+            // Discord 通知採後端佇列架構：前端只建立佇列，不接觸真正的 Webhook URL。
+            // 管理中心 LOG 成功寫入 Firestore 後，同步建立 Discord 通知佇列。
+            try {
+                const discordResult = await sendManagementDiscordLog(actionText, target, detail, options);
+                if (!discordResult?.ok) console.warn('管理中心 LOG Discord 佇列建立失敗：', discordResult?.error || discordResult);
+            } catch (discordError) {
+                console.warn('管理中心 LOG Discord 通知建立失敗：', discordError);
+            }
         }
 
         async function deleteAllAdminLogs(){
