@@ -7,7 +7,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self' https://discord.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://placehold.co; connect-src 'self' https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; upgrade-insecure-requests">
     <!-- NTPC-RP Discord webhook fix + management LOG: 2026-10-06-v4 -->
     <!-- Security audit: 2026-10-07. Front-end hardening only; Firestore Rules/Firebase Auth/Discord secrets still require backend configuration. -->
-    <title>新北市 RP 3.0 公職服務系統 V1.9</title>
+    <title>新北市 RP 3.0 公職服務系統 V1.9.1</title>
     <!-- 網站圖標與連結分享資訊 -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/image.png53.png">
     <link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/image.png53.png">
@@ -27,7 +27,116 @@
     <meta name="twitter:title" content="新北市 RP 3.0 公職服務系統｜勤務與案件管理">
     <meta name="twitter:description" content="整合警務、消防、EMS 勤務、案件審核、個人通知、警專考核與管理中心的 RP 公職勤務服務系統。">
     <meta name="twitter:image" content="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/image.png53.png">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com">
+        // ER:LC 警報音效：單一全域狀態，重複點擊不會建立重複監聽器。
+        let erlcAudioEnabled = false;
+        let erlcAudioContext = null;
+        let erlcAlarmOscillator = null;
+        let erlcAlarmGain = null;
+
+        function stopERLCAlarmSound(){
+            try { if (erlcAlarmOscillator) { erlcAlarmOscillator.stop(); erlcAlarmOscillator.disconnect(); } } catch(e) {}
+            try { if (erlcAlarmGain) erlcAlarmGain.disconnect(); } catch(e) {}
+            erlcAlarmOscillator = null;
+            erlcAlarmGain = null;
+        }
+
+        function updateERLCAudioButtons(){
+            document.querySelectorAll('[data-erlc-audio-toggle]').forEach(btn => {
+                btn.dataset.audioEnabled = erlcAudioEnabled ? 'true' : 'false';
+                btn.innerHTML = erlcAudioEnabled
+                    ? '<i class="fa-solid fa-volume-high mr-2"></i>🔊 警報音效：已啟用'
+                    : '<i class="fa-solid fa-volume-xmark mr-2"></i>🔇 警報音效：已關閉';
+                btn.setAttribute('aria-pressed', erlcAudioEnabled ? 'true' : 'false');
+            });
+        }
+
+        async function enableERLCAudio(){
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (AC && !erlcAudioContext) erlcAudioContext = new AC();
+                if (erlcAudioContext?.state === 'suspended') await erlcAudioContext.resume();
+                erlcAudioEnabled = true;
+                updateERLCAudioButtons();
+                showToast?.('ER:LC 警報音效已啟用，再次點擊即可關閉。','success','音效設定');
+            } catch(e) {
+                erlcAudioEnabled = false;
+                updateERLCAudioButtons();
+                showToast?.('瀏覽器未允許音效，請再次點擊按鈕。','error','音效設定');
+            }
+        }
+
+        function disableERLCAudio(){
+            erlcAudioEnabled = false;
+            stopERLCAlarmSound();
+            updateERLCAudioButtons();
+            try { if (erlcAudioContext?.state === 'running') erlcAudioContext.suspend(); } catch(e) {}
+            showToast?.('ER:LC 警報音效已關閉。','success','音效設定');
+        }
+
+        async function toggleERLCAudio(){
+            if (erlcAudioEnabled) disableERLCAudio();
+            else await enableERLCAudio();
+        }
+
+        function playERLCAlarmSound(){
+            if (!erlcAudioEnabled) return;
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return;
+                if (!erlcAudioContext) erlcAudioContext = new AC();
+                if (erlcAudioContext.state === 'suspended') erlcAudioContext.resume();
+                stopERLCAlarmSound();
+                const now = erlcAudioContext.currentTime;
+                const osc = erlcAudioContext.createOscillator();
+                const gain = erlcAudioContext.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.setValueAtTime(660, now + 0.18);
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(0.22, now + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
+                osc.connect(gain);
+                gain.connect(erlcAudioContext.destination);
+                osc.start(now);
+                osc.stop(now + 0.45);
+                erlcAlarmOscillator = osc;
+                erlcAlarmGain = gain;
+            } catch(e) {}
+        }
+
+        if (!window.__erlcAudioDelegatedListener) {
+            document.addEventListener('click', (event) => {
+                const btn = event.target.closest?.('[data-erlc-audio-toggle]');
+                if (btn) {
+                    event.preventDefault();
+                    toggleERLCAudio();
+                }
+            });
+            window.__erlcAudioDelegatedListener = true;
+        }
+
+
+        // Discord：GitHub Pages 不直接保存 Webhook URL，正式環境由 Worker/後端發送。
+        const ERLC_DISCORD_BACKEND_ENDPOINT = String(window.ERLC_DISCORD_BACKEND_ENDPOINT || '').trim();
+        async function sendDiscordThroughBackend(payload){
+            if (!ERLC_DISCORD_BACKEND_ENDPOINT) return {ok:false, reason:'backend-not-configured'};
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10000);
+            try {
+                const res = await fetch(ERLC_DISCORD_BACKEND_ENDPOINT, {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify(payload),
+                    signal:controller.signal
+                });
+                return {ok:res.ok, status:res.status};
+            } catch(error) {
+                return {ok:false, reason:error?.name === 'AbortError' ? 'timeout' : (error?.message || 'network-error')};
+            } finally { clearTimeout(timeout); }
+        }
+
+</script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -565,7 +674,7 @@
                 <div class="relative z-10 px-8 py-20 sm:py-28 max-w-3xl space-y-6">
                     <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">New Taipei Roleplay 3.0</span>
                     <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">新北市公職人員<br><span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">勤務與案件管制系統</span></h1>
-                    <div><span class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.9</span></div>
+                    <div><span class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.9.1</span></div>
                     <p class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。V1.9 進一步整合警務、消防救護、案件審核、個人通知、值勤打卡、管理中心與 ER:LC 勤務偵測，並以雲端資料同步與低頻率資料監聽降低不必要的資料庫使用。</p>
                     <div class="flex flex-wrap justify-center gap-4 pt-2">
                         <button data-tab="police" class="tab-shortcut-btn bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
@@ -972,13 +1081,13 @@
                             </div>
                         </div>
                     </div>
-                    <span class="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V1.9</span>
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V1.9.1</span>
                 </div>
 
                 <div class="space-y-4">
                     <article class="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                            <h3 class="text-lg font-bold text-white">V1.9</h3>
+                            <h3 class="text-lg font-bold text-white">V1.9.1</h3>
                             <span class="text-xs font-semibold text-emerald-300">目前版本</span>
                         </div>
                         <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
@@ -990,6 +1099,9 @@
                             <li>打卡資料異動時才更新值勤狀態，降低不必要的雲端讀寫。</li>
                             <li>首頁版本資訊、功能介紹與系統說明全面更新至 V1.9。</li>
                             <li>新增「更新紀錄」頁面，集中查看各版本的重要功能與修正。</li>
+                            <li>修正「一周內移除／編輯紀錄」：補齊帳號、查詢資料與打卡紀錄的編輯／刪除稽核，並只顯示最近 7×24 小時內相關操作。</li>
+                            <li>ER:LC 警報音效改為單一開／關狀態，重複點擊不會重複建立音效監聽；可隨時關閉音效而不停止 ER:LC 同步。</li>
+                            <li>Discord Webhook 改為後端 Worker 發送入口；GitHub Pages 不保存 Webhook 機密，降低跨來源發送失敗問題。</li>
                         </ul>
                     </article>
 
@@ -1154,7 +1266,7 @@
                     </details>
                 </div>
             </div>
-        <div class="mt-6 p-4 rounded-2xl border border-slate-800 bg-slate-900/70"><div class="font-semibold text-white">找不到答案？</div><p class="text-xs text-slate-500 mt-1">登入後可直接建立協助單，管理中心會收到問題。</p><button onclick="submitFAQIssue()" class="mt-3 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm">提交問題給管理中心</button></div>
+        <div class="mt-6 p-4 rounded-2xl border border-slate-800 bg-slate-900/70"><div class="font-semibold text-white">找不到答案？</div><p class="text-xs text-slate-500 mt-1">登入後可直接建立協助單，管理中心會收到問題。</p><button type="button" id="open-faq-issue-btn" class="mt-3 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm">提交問題給管理中心</button></div>
                 </section>
 
         <!-- My Profile Tab -->
@@ -2227,6 +2339,15 @@
                     }
                 }
 
+                if (tabId === 'dashboard') {
+                    if (!currentUser) {
+                        showToast('勤務中心需要先登入系統。', 'warning', '需要登入');
+                        switchTab('home');
+                        setTimeout(() => document.getElementById('login-modal')?.classList.remove('hidden'), 80);
+                        return;
+                    }
+                }
+
                 if (tabId === 'profile') {
                     if (!currentUser) {
                         showToast('我的資訊需要先登入系統。', 'warning', '需要登入');
@@ -2471,7 +2592,7 @@
             const submitAdminClockBtn=document.getElementById('submit-admin-clock-btn'); if(submitAdminClockBtn)submitAdminClockBtn.addEventListener('click',submitAdminClock);
             const clearSessionsBtn=document.getElementById('clear-all-login-sessions-btn'); if(clearSessionsBtn)clearSessionsBtn.addEventListener('click',deleteAllLoginSessions);
             const fbBtn=document.getElementById('home-feedback-btn'); if(fbBtn)fbBtn.addEventListener('click',openFeedbackModal);
-            const fbSubmit=document.getElementById('submit-feedback-btn'); if(fbSubmit)fbSubmit.addEventListener('click',submitFeedback);
+            const fbSubmit=document.getElementById('submit-feedback-btn'); if(fbSubmit)fbSubmit.addEventListener('click',submitFeedback); const faqIssueBtn=document.getElementById('open-faq-issue-btn'); if(faqIssueBtn)faqIssueBtn.addEventListener('click',openFAQIssueModal); const faqIssueSubmit=document.getElementById('submit-faq-issue-btn'); if(faqIssueSubmit)faqIssueSubmit.addEventListener('click',submitFAQIssue);
             document.querySelectorAll('input[name="new-user-units"],input[name="edit-user-units"]').forEach(cb=>cb.addEventListener('change',()=>syncUnitDivisionVisibility(cb.name.startsWith('new-')?'new':'edit')));
 
             const searchPoliceInput = document.getElementById('search-police-report');
@@ -3137,6 +3258,11 @@ async function republishAnnouncement(id) {
         }
 
         function switchTab(tabId) {
+            if (tabId === 'dashboard' && !currentUser) {
+                showToast('勤務中心需要先登入系統。', 'warning', '需要登入');
+                tabId = 'home';
+                setTimeout(() => document.getElementById('login-modal')?.classList.remove('hidden'), 80);
+            }
             if (tabId === 'admin' && !canAccessManagementCenter()) {
                 showToast('目前帳號沒有管理中心權限。', 'warning', '權限不足');
                 tabId = 'home';
@@ -4228,7 +4354,15 @@ async function republishAnnouncement(id) {
                     if(!addedNote){showToast('請輸入要新增的備註。','warning','資料不完整');return;}
                     data={updatedAt:now,cloudSyncedAt:now,updatedByAccount:currentUser.account,updatedByName:currentUser.name,note:[existing.note||'',`【${formatDateTime(now)}｜${currentUser.account}】 ${addedNote}`].filter(Boolean).join('\n'),noteHistory:[...(existing.noteHistory||[]),{at:now,account:currentUser.account,by:currentUser.name||currentUser.account,note:addedNote}]};
                 }
-                try{await fm.updateDoc(fm.doc(db,col,id),data);Object.assign(existing,data);existing.docId=id;renderLookupSystems();type==='citizen'?searchCitizenRecords():searchVehicleRecords();showToast('資料已更新，並保留操作紀錄。','success','更新成功');document.getElementById('modal-lookup-post').classList.add('hidden');}catch(e){showToast('更新失敗：'+e.message,'error','操作失敗');}return;
+                try{
+                    await fm.updateDoc(fm.doc(db,col,id),data);
+                    Object.assign(existing,data); existing.docId=id;
+                    await logAdminAction(`編輯${lookupTypeLabel(type)}資料`, id,
+                        `修改帳號：${currentUser?.account || '--'}；${type==='citizen'?'駕照／備註資料':'備註資料'}已更新。`);
+                    renderLookupSystems(); type==='citizen'?searchCitizenRecords():searchVehicleRecords();
+                    showToast('資料已更新，並保留管理中心 LOG。','success','更新成功');
+                    document.getElementById('modal-lookup-post').classList.add('hidden');
+                }catch(e){showToast('更新失敗：'+e.message,'error','操作失敗');}return;
             }
             if(type==='citizen'){
                 const name=document.getElementById('lookup-name').value.trim(),id5=document.getElementById('lookup-id5').value.trim(),gender=document.getElementById('lookup-gender').value.trim(),birthday=document.getElementById('lookup-birthday').value,note=document.getElementById('lookup-note')?.value.trim()||'',deceased=!!document.getElementById('lookup-deceased')?.checked,licenses=[];
@@ -5425,7 +5559,7 @@ async function republishAnnouncement(id) {
                 const dept=editType.split('-')[0],list=dept==='police'?appData.policeClocks:appData.fireClocks,c=list.find(x=>String(x.docId||x.id)===String(idKey));
                 if(!canManageClockRecords()||!c){showToast('管理處權限不足。','warning','權限不足');return;}
                 c.account=document.getElementById('edit-clock-account').value.trim();c.staffNumber=c.staffNumber||'';c.name=document.getElementById('edit-clock-name').value.trim();c.status=document.getElementById('edit-clock-status').value.trim();c.vehicle=document.getElementById('edit-clock-vehicle').value.trim();c.time=document.getElementById('edit-clock-time').value.trim();c.remark=document.getElementById('edit-clock-remark').value.trim();
-                try{await fm.updateDoc(fm.doc(db,dept==='police'?'policeClocks':'fireClocks',c.docId||c.id),{account:c.account,staffNumber:c.staffNumber||'',name:c.name,status:c.status,vehicle:c.vehicle,time:c.time,remark:c.remark});await logAdminAction('編輯打卡紀錄',`${dept}:${c.docId||c.id}`);closeModal('modal-edit');dept==='police'?renderPoliceClocks():renderFireClocks();recalculateDutyStatusCache();renderAdminOverview();showToast('打卡紀錄已更新。','success','更新成功');}catch(e){showToast('更新失敗：'+e.message,'error','操作失敗');}
+                try{await fm.updateDoc(fm.doc(db,dept==='police'?'policeClocks':'fireClocks',c.docId||c.id),{account:c.account,staffNumber:c.staffNumber||'',name:c.name,status:c.status,vehicle:c.vehicle,time:c.time,remark:c.remark});await logAdminAction('編輯打卡紀錄',`${dept}:${c.docId||c.id}`,`人員：${c.name||'--'}；狀態：${c.status||'--'}；時間：${c.time||'--'}。`);closeModal('modal-edit');dept==='police'?renderPoliceClocks():renderFireClocks();recalculateDutyStatusCache();renderAdminOverview();showToast('打卡紀錄已更新。','success','更新成功');}catch(e){showToast('更新失敗：'+e.message,'error','操作失敗');}
                 return;
             }
 
@@ -5572,8 +5706,12 @@ async function republishAnnouncement(id) {
             const collectionName = dept === 'police' ? 'policeClocks' : 'fireClocks';
             try {
                 await fm.deleteDoc(fm.doc(db, collectionName, clockId));
+                const clockList = dept === 'police' ? appData.policeClocks : appData.fireClocks;
+                const deletedClock = clockList.find(x => String(x.docId || x.id) === String(clockId));
                 if (dept === 'police') appData.policeClocks = appData.policeClocks.filter(x => String(x.docId || x.id) !== String(clockId));
                 else appData.fireClocks = appData.fireClocks.filter(x => String(x.docId || x.id) !== String(clockId));
+                await logAdminAction('刪除打卡紀錄', `${dept}:${clockId}`,
+                    `單位：${dept === 'police' ? '警察' : '消防'}；人員：${deletedClock?.name || '--'}；狀態：${deletedClock?.status || '--'}；時間：${deletedClock?.time || '--'}。`);
 
                 if (dept === 'police') renderPoliceClocks();
                 else renderFireClocks();
@@ -5998,8 +6136,10 @@ async function republishAnnouncement(id) {
             }
             if (!(await showConfirm(`確定要刪除帳號 ${account} 嗎？`, '刪除使用者帳號', '確定刪除'))) return;
             try {
+                const targetUser = appData.users.find(x => x.account === account);
                 await fm.deleteDoc(fm.doc(db, 'users', account));
                 appData.users = appData.users.filter(x => x.account !== account);
+                await logAdminAction('刪除帳號', account, `刪除帳號：${account}；RP名稱：${targetUser?.name || '--'}。`);
                 renderAdminUsers();
                 populateMemberSelects();
                 showToast('帳號已刪除。', 'success', '操作成功');
@@ -6009,15 +6149,19 @@ async function republishAnnouncement(id) {
         }
 
         async function logAdminAction(action, target, detail='', options={}) {
-            const now = new Date();
+            const nowMs = Date.now();
+            const now = new Date(nowMs);
+            const actionText = String(action || '');
+            const operation = /刪除|移除/.test(actionText) ? 'delete' : (/編輯|修改|更新/.test(actionText) ? 'edit' : 'other');
             const logObj = {
-                id: 'LOG-' + Date.now(),
-                action,
+                id: 'LOG-' + nowMs + '-' + Math.random().toString(36).slice(2,8),
+                action: actionText,
+                operation,
                 operator: currentUser ? `${currentUser.name} (${currentUser.account})` : '未知',
-                target,
+                target: String(target || ''),
                 detail: detail || '',
                 time: now.toLocaleString('zh-TW', { hour12: false }),
-                timestamp: now.getTime()
+                timestamp: nowMs
             };
             try {
                 await fm.setDoc(fm.doc(db, 'adminLogs', logObj.id), logObj);
@@ -6026,7 +6170,6 @@ async function republishAnnouncement(id) {
                 console.error("Log error", e);
             }
             // 個人通知中心的移除／一鍵刪除不會呼叫此函式，因此不會出現在管理中心 Discord LOG。
-            const actionText=String(action||'');
             const shouldDiscord = typeof options?.discord === 'boolean' ? options.discord : /編輯|退件|刪除|移除/.test(actionText);
             if(shouldDiscord){ sendManagementDiscordLog(actionText,target,detail); }
         }
@@ -6058,10 +6201,17 @@ async function republishAnnouncement(id) {
 
             tbody.innerHTML = '';
             const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-            const recentLogs = appData.adminLogs.filter(l => l.timestamp >= oneWeekAgo);
+            const recentLogs = (appData.adminLogs || [])
+                .filter(l => {
+                    const ts = Number(l.timestamp || Date.parse(l.time || ''));
+                    const action = String(l.action || '');
+                    return Number.isFinite(ts) && ts >= oneWeekAgo && ts <= Date.now()
+                        && (/編輯|修改|更新|刪除|移除/.test(action) || ['edit','delete'].includes(String(l.operation || '')));
+                })
+                .sort((a,b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
 
             if (recentLogs.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-500">最近一周內無編輯或移除紀錄。</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500">最近一周內沒有編輯或刪除／移除紀錄。</td></tr>`;
                 return;
             }
 
@@ -6069,10 +6219,11 @@ async function republishAnnouncement(id) {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/40 transition";
                 tr.innerHTML = `
-                    <td class="p-4 font-semibold text-purple-400">${escapeHtml(l.action||'--')}</td>
+                    <td class="p-4 font-semibold ${String(l.operation||'').toLowerCase()==='delete'?'text-red-400':'text-purple-400'}">${escapeHtml(l.action||'--')}</td>
+                    <td class="p-4"><span class="px-2 py-1 rounded-full text-[11px] font-semibold ${String(l.operation||'').toLowerCase()==='delete'?'bg-red-500/10 text-red-300':'bg-purple-500/10 text-purple-300'}">${String(l.operation||'').toLowerCase()==='delete'?'刪除／移除':'編輯／修改'}</span></td>
                     <td class="p-4 text-slate-200">${escapeHtml(l.operator||'--')}</td>
                     <td class="p-4 text-slate-300 font-mono">${escapeHtml(l.target||'--')}</td>
-                    <td class="p-4 text-slate-400 text-xs">${formatDateTime(l.timestamp, l.time)}</td>
+                    <td class="p-4 text-slate-400 text-xs">${formatDateTime(l.timestamp, l.time)}${l.detail?`<div class="text-slate-600 mt-1 max-w-md whitespace-normal">${escapeHtml(l.detail)}</div>`:''}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -6133,7 +6284,8 @@ async function loadHandoverNotes(){if(!db||!fm)return;try{const snap=await fm.ge
 async function renderFAQIssues(){const h=document.getElementById('admin-faq-issues-list');if(!h)return;const rows=(appData.faqIssues||[]).slice().sort((a,b)=>Number(b.timestamp||0)-Number(a.timestamp||0));h.innerHTML=rows.length?rows.map(x=>`<div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800"><div class="flex flex-wrap justify-between gap-2"><div class="text-sm text-white">${ntpcEsc(x.name||x.account||'未知使用者')} <span class="text-xs text-slate-500">(${ntpcEsc(x.account||'--')})</span></div><span class="text-xs ${x.status==='closed'?'text-emerald-400':'text-amber-400'}">${x.status==='closed'?'已處理':'待處理'}</span></div><div class="text-sm text-slate-300 mt-2 whitespace-pre-wrap">${ntpcEsc(x.text)}</div><div class="text-[11px] text-slate-500 mt-2">${ntpcEsc(x.time||formatDateTime(x.timestamp))}</div><div class="mt-3 flex gap-2">${x.status!=='closed'?`<button onclick="closeFAQIssue('${ntpcEsc(x.docId||x.id)}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs">標記已處理</button>`:''}</div></div>`).join(''):'<div class="text-center py-8 text-slate-500">目前沒有問題回報。</div>';}
 async function closeFAQIssue(id){if(!currentUser||getEffectiveRole(currentUser)!=='admin'||!db||!fm)return;try{await fm.updateDoc(fm.doc(db,'faqIssues',id),{status:'closed',closedAt:Date.now(),closedBy:currentUser.account});const x=(appData.faqIssues||[]).find(a=>(a.docId||a.id)===id);if(x)Object.assign(x,{status:'closed',closedAt:Date.now(),closedBy:currentUser.account});renderFAQIssues();showToast('問題單已標記處理。','success','操作完成');}catch(e){showToast('更新問題單失敗：'+e.message,'error','操作失敗');}}
 function renderDashManagementWork(){const card=document.getElementById('dash-management-work-card'),h=document.getElementById('dash-management-work');if(!card||!h)return;const can=!!currentUser&&canAccessManagementCenter();card.classList.toggle('hidden',!can);if(!can)return;const items=[['警察案件待審',appData.policePendingReports?.length||0,'police'],['消防／EMS待審', (appData.firePendingReports?.length||0)+(appData.emsPendingReports?.length||0),'fire'],['通緝待審',appData.wantedPendingRecords?.length||0,'police'],['帳號協助單',appData.faqIssues?.filter(x=>x.status!=='closed').length||0,'admin'],['異常回報',appData.feedbackReports?.length||0,'admin']];h.innerHTML=items.map(x=>`<div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800"><span class="text-sm text-slate-200">${x[0]}</span><span class="font-bold ${x[1]?'text-amber-400':'text-emerald-400'}">${x[1]}</span></div>`).join('');}
-async function submitFAQIssue(){const text=prompt('請輸入你遇到的問題（請勿輸入密碼）：');if(!text||!currentUser||!db||!fm)return;try{const id='FAQ-'+Date.now();const obj={id,account:currentUser.account,name:currentUser.name||'',text:text.slice(0,1000),timestamp:Date.now(),status:'open'};await fm.setDoc(fm.doc(db,'faqIssues',id),obj);await logAdminAction('提交常見問題協助單',id,text,{discord:false});showToast('問題已送出，管理中心可查看。','success','提交成功');}catch(e){showToast('提交失敗：'+e.message,'error','操作失敗');}}
+function openFAQIssueModal(){if(!currentUser){showToast('請先登入後再提交問題。','warning','需要登入');return;}const nameEl=document.getElementById('faq-issue-account-preview');if(nameEl)nameEl.textContent=`${currentUser.name||'使用者'} (${currentUser.account})`;const input=document.getElementById('faq-issue-text');if(input)input.value='';document.getElementById('modal-faq-issue')?.classList.remove('hidden');setTimeout(()=>document.getElementById('faq-issue-text')?.focus(),80);}
+async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登入後再提交問題。','warning','需要登入');return;}const input=document.getElementById('faq-issue-text'),text=String(input?.value||'').trim();if(!text){showToast('請先描述你遇到的問題。','error','內容未填寫');input?.focus();return;}if(text.length>1000){showToast('問題內容最多 1000 字。','warning','內容過長');return;}const btn=document.getElementById('submit-faq-issue-btn');if(btn?.classList.contains('is-busy-action'))return;btn?.classList.add('is-busy-action');try{const now=Date.now(),id='FAQ-'+now,obj={id,account:currentUser.account,name:currentUser.name||'',text:text.slice(0,1000),timestamp:now,time:formatDateTime(now),status:'open'};await fm.setDoc(fm.doc(db,'faqIssues',id),obj);appData.faqIssues.unshift({docId:id,...obj});closeModal('modal-faq-issue');await logAdminAction('提交常見問題協助單',id,text,{discord:false});renderFAQIssues();renderDashManagementWork();showSubmitSuccessAnimation('問題提交成功','問題已送至管理中心，管理人員可以查看。');}catch(e){showToast('提交失敗：'+e.message,'error','操作失敗');}finally{btn?.classList.remove('is-busy-action');}}
 /* 公告重要標記：兼容既有發布流程。 */
 (function patchAnnouncementImportant(){const btn=document.getElementById('publish-announcement-btn');if(!btn||btn.dataset.v182)return;btn.dataset.v182='1';btn.addEventListener('click',()=>{setTimeout(()=>{const text=document.getElementById('announcement-text-input')?.value;},0);});const original=window.publishAnnouncement;if(typeof original==='function'&&original.__v182)return;})();
 /* Webhook：避免同一事件重複發送，失敗時自動重試，並保留發送紀錄。前端無法可靠取得跨來源 Discord 回應碼，因此狀態採 queued/sent-attempt。 */
@@ -6159,6 +6311,7 @@ window.addEventListener('online',()=>{ntpcRetryWebhookQueue();renderDashSystemSt
 
     <div id="modal-admin-clock" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl"><div class="flex justify-between items-center"><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-business-time text-purple-400 mr-2"></i>管理中心打卡</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-admin-clock"><i class="fa-solid fa-xmark"></i></button></div><div class="bg-slate-950 border border-slate-800 rounded-2xl p-4"><div class="text-xs text-slate-500">目前管理員</div><div id="admin-clock-user-preview" class="mt-1 font-bold text-white">--</div></div><div><label class="block text-xs font-semibold text-slate-400 mb-2">打卡狀態</label><select id="admin-clock-status" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><option value="上班">上班</option><option value="下班">下班</option></select></div><div><label class="block text-xs font-semibold text-slate-400 mb-2">備註（可選）</label><textarea id="admin-clock-remark" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white" placeholder="例如：晚間值勤、臨時加班"></textarea></div><button id="submit-admin-clock-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white py-3 rounded-xl font-semibold">確認打卡</button></div></div>
 
+    <div id="modal-faq-issue" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative"><div class="flex items-center justify-between"><div><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-circle-question text-blue-400 mr-2"></i>提交問題給管理中心</h3><p class="text-xs text-slate-500 mt-1">請描述你遇到的問題，請勿輸入密碼或其他敏感資訊。</p></div><button type="button" class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-faq-issue"><i class="fa-solid fa-xmark text-lg"></i></button></div><div class="space-y-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">問題內容</label><textarea id="faq-issue-text" maxlength="1000" rows="7" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 resize-y" placeholder="請詳細描述問題，例如：哪個頁面、按了什麼按鈕、出現什麼情況……"></textarea></div><div class="text-xs text-slate-500">提交帳號：<span id="faq-issue-account-preview" class="font-mono text-slate-300">--</span></div><button type="button" id="submit-faq-issue-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl transition">送出問題</button></div></div></div>
     <div id="modal-feedback" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative"><div class="flex items-center justify-between"><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-message-exclamation text-amber-400 mr-2"></i>異常／意見回報</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-feedback"><i class="fa-solid fa-xmark text-lg"></i></button></div><div class="space-y-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">主旨</label><input id="feedback-subject" maxlength="120" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細資訊</label><textarea id="feedback-details" rows="7" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white"></textarea></div><div class="text-xs text-slate-500">回報帳號：<span id="feedback-account-preview" class="font-mono text-slate-300">--</span></div><button id="submit-feedback-btn" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl">送出回報</button></div></div></div>
 
     <footer class="mt-auto border-t border-slate-800 bg-slate-950/80">
