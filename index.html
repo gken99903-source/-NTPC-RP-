@@ -7,7 +7,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self' https://discord.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://placehold.co; connect-src 'self' https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; upgrade-insecure-requests">
     <!-- NTPC-RP Discord webhook fix + management LOG: 2026-10-06-v4 -->
     <!-- Security audit: 2026-10-07. Front-end hardening only; Firestore Rules/Firebase Auth/Discord secrets still require backend configuration. -->
-    <title>新北市 RP 3.0 公職服務系統 V1.8.1</title>
+    <title>新北市 RP 3.0 公職服務系統 V1.8.2</title>
     <!-- 網站圖標與連結分享資訊 -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/image.png53.png">
     <link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/image.png53.png">
@@ -380,7 +380,15 @@
         }
         .is-busy-action { pointer-events: none !important; opacity: .65 !important; }
                 }
-    </style>
+    
+/* V1.8.2 勤務中心／搜尋／狀態／通知穩定性增強 */
+.dashboard-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}@media(max-width:900px){.dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.dashboard-grid{grid-template-columns:1fr 1fr;gap:.65rem}}
+.dashboard-card{background:rgba(15,23,42,.82);border:1px solid rgba(51,65,85,.75);border-radius:1rem;padding:1rem;box-shadow:0 10px 30px rgba(0,0,0,.16)}
+.status-dot{width:.55rem;height:.55rem;border-radius:999px;display:inline-block;margin-right:.4rem}.status-ok{background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,.45)}.status-warn{background:#f59e0b}.status-bad{background:#ef4444}.status-neutral{background:#64748b}
+.ntpc-search-result{padding:.75rem;border:1px solid rgba(51,65,85,.7);border-radius:.75rem;background:rgba(2,6,23,.5);cursor:pointer}.ntpc-search-result:hover{background:rgba(30,41,59,.7)}
+.ntpc-mini-scroll{max-height:320px;overflow:auto}.ntpc-kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;border:1px solid #334155;border-bottom-width:2px;border-radius:.35rem;padding:.05rem .35rem;color:#94a3b8}
+
+</style>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -443,6 +451,8 @@
             </div>
 
             <nav class="hidden md:flex items-center space-x-1">
+                <button id="nav-dashboard" data-tab="dashboard" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-gauge-high mr-2"></i>勤務中心</button>
+                <button type="button" onclick="openGlobalSearch()" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-magnifying-glass mr-2"></i>全站搜尋</button>
                 <button id="nav-home" data-tab="home" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-blue-400 bg-blue-500/10"><i class="fa-solid fa-house mr-2"></i>首頁大廳</button>
                 <button id="nav-police" data-tab="police" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-shield mr-2"></i>警務系統</button>
                 <button id="nav-fire" data-tab="fire" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-fire-extinguisher mr-2"></i>消防系統</button>
@@ -487,7 +497,33 @@
             <div id="announcement-track" class="announcement-track px-2 pb-2"></div>
         </section>
 
-        <section id="tab-home" class="space-y-8">
+        
+        <!-- 勤務中心 Dashboard -->
+        <section id="tab-dashboard" class="hidden space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div><span class="text-xs uppercase tracking-wider font-bold text-blue-400">Duty Command Dashboard</span><h2 class="text-2xl font-bold text-white mt-2"><i class="fa-solid fa-gauge-high mr-2 text-blue-400"></i>勤務中心</h2><p class="text-sm text-slate-400 mt-1">集中查看目前勤務、案件、通知與系統狀態。</p></div>
+                    <div class="flex gap-2"><button onclick="refreshDutyDashboard()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold"><i class="fa-solid fa-rotate mr-2"></i>重新整理</button><button onclick="openGlobalSearch()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-sm font-semibold"><i class="fa-solid fa-magnifying-glass mr-2"></i>搜尋</button></div>
+                </div>
+            </div>
+            <div class="dashboard-grid">
+                <div class="dashboard-card"><div class="text-xs text-slate-500">目前在線</div><div id="dash-online" class="text-3xl font-extrabold text-white mt-2">--</div></div>
+                <div class="dashboard-card"><div class="text-xs text-slate-500">待審案件</div><div id="dash-pending" class="text-3xl font-extrabold text-amber-400 mt-2">--</div></div>
+                <div class="dashboard-card"><div class="text-xs text-slate-500">個人通知</div><div id="dash-notifications" class="text-3xl font-extrabold text-blue-400 mt-2">--</div></div>
+                <div class="dashboard-card"><div class="text-xs text-slate-500">本月勤務時數</div><div id="dash-hours" class="text-3xl font-extrabold text-emerald-400 mt-2">--</div></div>
+            </div>
+            <div class="grid lg:grid-cols-2 gap-6">
+                <div class="dashboard-card"><div class="flex items-center justify-between mb-3"><h3 class="font-bold text-white"><i class="fa-solid fa-list-check mr-2 text-amber-400"></i>我的待處理</h3><button onclick="openGlobalSearch()" class="text-xs text-blue-400">全站搜尋</button></div><div id="dash-my-work" class="space-y-2"></div></div>
+                <div class="dashboard-card"><div class="flex items-center justify-between mb-3"><h3 class="font-bold text-white"><i class="fa-solid fa-signal mr-2 text-emerald-400"></i>系統狀態</h3><span class="text-xs text-slate-500" id="dash-status-time">--</span></div><div id="dash-system-status" class="space-y-2"></div><div id="dash-management-work-card" class="dashboard-card hidden"><div class="flex items-center justify-between mb-3"><h3 class="font-bold text-white"><i class="fa-solid fa-inbox mr-2 text-purple-400"></i>管理中心待處理工作箱</h3><span class="text-xs text-slate-500">依目前雲端資料統計</span></div><div id="dash-management-work" class="space-y-2"></div></div>
+            </div>
+            </div>
+            <div class="grid lg:grid-cols-2 gap-6">
+                <div class="dashboard-card"><h3 class="font-bold text-white mb-3"><i class="fa-solid fa-bullhorn mr-2 text-amber-400"></i>重要公告</h3><div id="dash-important-announcements" class="space-y-2"></div></div>
+                <div class="dashboard-card"><h3 class="font-bold text-white mb-3"><i class="fa-solid fa-right-left mr-2 text-purple-400"></i>勤務交接簿</h3><div id="dash-handover-list" class="ntpc-mini-scroll space-y-2"></div><button onclick="openHandoverModal()" class="mt-3 w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm text-white">新增交接事項</button></div>
+            </div>
+            <div class="dashboard-card"><div class="flex flex-col md:flex-row md:items-center justify-between gap-3"><div><h3 class="font-bold text-white"><i class="fa-solid fa-person-running mr-2 text-emerald-400"></i>我的勤務狀態</h3><p class="text-xs text-slate-500 mt-1">狀態會同步至雲端人員資料，供管理中心查看。</p></div><div class="flex gap-2"><select id="dash-duty-status" onchange="updateDutyStatus(this.value)" class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white"><option value="off">離線／未值勤</option><option value="on">執勤中</option><option value="break">暫離</option><option value="handover">交接中</option></select></div></div></div>
+        </section>
+<section id="tab-home" class="space-y-8">
             <div class="relative rounded-3xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-900">
                 <div class="absolute inset-0 z-0">
                     <img src="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/IMG_2981.png" alt="Cover" class="w-full h-full object-cover opacity-40 transition-all duration-700" onerror="this.src='https://placehold.co/1600x900/0f172a/38bdf8?text=New+Taipei+RP+3.0'">
@@ -496,7 +532,7 @@
                 <div class="relative z-10 px-8 py-20 sm:py-28 max-w-3xl space-y-6">
                     <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">New Taipei Roleplay 3.0</span>
                     <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">新北市公職人員<br><span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">勤務與案件管制系統</span></h1>
-                    <div><span class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.8</span></div>
+                    <div><span class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.8.2</span></div>
                     <p class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口，整合警務、消防救護、案件審核、個人通知、考核與管理中心等勤務功能，提供統一且便利的公職勤務管理。</p>
                     <div class="flex flex-wrap justify-center gap-4 pt-2">
                         <button data-tab="police" class="tab-shortcut-btn bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
@@ -981,7 +1017,8 @@
                     </details>
                 </div>
             </div>
-        </section>
+        <div class="mt-6 p-4 rounded-2xl border border-slate-800 bg-slate-900/70"><div class="font-semibold text-white">找不到答案？</div><p class="text-xs text-slate-500 mt-1">登入後可直接建立協助單，管理中心會收到問題。</p><button onclick="submitFAQIssue()" class="mt-3 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm">提交問題給管理中心</button></div>
+                </section>
 
         <!-- My Profile Tab -->
         <section id="tab-notifications" class="hidden space-y-8">
@@ -1134,6 +1171,7 @@
                     <button id="btn-admin-overview" data-sub="overview" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-chart-line mr-2"></i>全單位總彙整</button>
                     <button id="btn-admin-online" data-sub="online" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-signal mr-2"></i>在線狀態</button>
                     <button id="btn-admin-devices" data-sub="devices" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-laptop mr-2"></i>登入裝置稽核</button>
+                    <button id="btn-admin-issues" data-sub="issues" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-circle-question mr-2"></i>問題回報</button>
                     <button id="btn-admin-feedback" data-sub="feedback" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-message-exclamation mr-2"></i>異常／意見回報</button>
                     <button id="btn-admin-academy" data-sub="academy" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-graduation-cap mr-2"></i>專生考核系統</button>
                     <button id="btn-admin-jail-rules" data-sub="jail-rules" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-scale-balanced mr-2"></i>警用刑期表</button>
@@ -1175,7 +1213,7 @@
                             <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-400 mb-2">公告內容</label><textarea id="announcement-text-input" rows="3" maxlength="500" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500" placeholder="請輸入要顯示於首頁上方的公告內容..."></textarea></div>
                             <div class="space-y-4">
                                 <div><label class="block text-xs font-semibold text-slate-400 mb-2">發布人</label><input id="announcement-publisher-input" maxlength="40" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white" placeholder="例如：系統管理處"></div>
-                                <div><label class="block text-xs font-semibold text-slate-400 mb-2">持續顯示</label><select id="announcement-duration-input" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white"><option value="1d">1 天</option><option value="7d">7 天</option><option value="manual">直到手動下架</option></select></div>
+                                <div><label class="block text-xs font-semibold text-slate-400 mb-2">持續顯示</label><select id="announcement-duration-input" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white"><option value="1d">1 天</option><option value="7d">7 天</option><option value="manual">直到手動下架</option></select> <label class="flex items-center gap-2 text-sm text-slate-300 mt-3"><input id="announcement-important-input" type="checkbox" class="rounded border-slate-700 bg-slate-950"> 重要公告（優先顯示於勤務中心）</label></div>
                                 <button id="publish-announcement-btn" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2.5 rounded-xl transition"><i class="fa-solid fa-paper-plane mr-2"></i>立即發布</button>
                             </div>
                         </div>
@@ -1274,6 +1312,8 @@
                     <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl"><table class="w-full text-left border-collapse text-xs"><thead><tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50"><th class="p-3">帳號</th><th class="p-3">登入時間</th><th class="p-3">平台／瀏覽器</th><th class="p-3">螢幕</th><th class="p-3">裝置識別</th><th class="p-3 text-right">操作</th></tr></thead><tbody id="admin-devices-tbody" class="divide-y divide-slate-800/60"></tbody></table></div>
                     <div><h4 class="text-sm font-bold text-slate-300 mb-2">目前封鎖中的裝置</h4><div id="admin-blocked-devices-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div></div>
                 </div>
+                <div id="admin-sub-issues" class="hidden space-y-6"><div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl"><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-circle-question text-blue-400 mr-2"></i>FAQ 問題回報</h3><p class="text-xs text-slate-500 mt-1">使用者從常見問題提交的協助單。</p><div id="admin-faq-issues-list" class="space-y-3 mt-4"></div></div></div>
+
                 <div id="admin-sub-feedback" class="hidden space-y-4"><div><h3 class="text-lg font-bold text-slate-200">異常／意見回報</h3><p class="text-xs text-slate-500 mt-1">管理員可備注、刪除；每次備注／刪除都會寫入操作稽核。</p></div><div id="admin-feedback-list" class="space-y-3"></div></div>
                 <div id="admin-sub-academy" class="hidden space-y-6">
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
@@ -1339,7 +1379,16 @@
                 </div>
             </div>
         </section>
-    </main>
+    
+        <div id="modal-global-search" class="hidden fixed inset-0 z-[80] bg-slate-950/80 backdrop-blur-sm p-4">
+            <div class="max-w-4xl mx-auto mt-10 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
+                <div class="p-4 border-b border-slate-800 flex items-center gap-3"><i class="fa-solid fa-magnifying-glass text-blue-400"></i><input id="global-search-input" oninput="runGlobalSearch(this.value)" onkeydown="if(event.key==='Escape')closeGlobalSearch()" class="flex-1 bg-transparent outline-none text-white" placeholder="搜尋案件編號、姓名、帳號、管理編號、車輛、通緝、公告、FAQ…"><button onclick="closeGlobalSearch()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button></div>
+                <div class="px-4 py-2 text-xs text-slate-500">可搜尋 <span class="ntpc-kbd">案件</span> <span class="ntpc-kbd">市民</span> <span class="ntpc-kbd">車輛</span> <span class="ntpc-kbd">通緝</span> <span class="ntpc-kbd">公告</span> <span class="ntpc-kbd">帳號</span></div>
+                <div id="global-search-results" class="p-4 space-y-2 ntpc-mini-scroll"><div class="text-center py-10 text-slate-500">輸入關鍵字開始搜尋</div></div>
+            </div>
+        </div>
+        <div id="modal-handover" class="hidden fixed inset-0 z-[81] bg-slate-950/80 backdrop-blur-sm p-4"><div class="max-w-xl mx-auto mt-20 bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl"><div class="flex justify-between items-center"><h3 class="text-xl font-bold text-white">新增勤務交接</h3><button onclick="closeHandoverModal()" class="text-slate-400"><i class="fa-solid fa-xmark"></i></button></div><textarea id="handover-text" rows="5" maxlength="1000" class="w-full mt-4 bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white" placeholder="例如：案件 NTPD-0000000001 尚待補充影片；某勤務區域已交接給下一班。"></textarea><button onclick="saveHandoverNote()" class="mt-3 w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold">儲存交接事項</button></div></div>
+</main>
 
     <!-- Login Modal -->
     <div id="modal-login" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
@@ -1917,6 +1966,8 @@
             loginSessions: [],
             feedbackReports: [],
             announcements: [],
+            dutyHandoverNotes: [],
+            faqIssues: [],
             blockedDevices: [],
             loginFailures: [],
             adminClocks: [],
@@ -2442,11 +2493,12 @@ async function publishAnnouncement() {
             const duration = document.getElementById('announcement-duration-input')?.value || '1d';
             if (!text || !publisher) { showToast('請填寫公告內容與發布人。','warning','資料不完整'); return; }
             const now = Date.now(), id = `ANN-${now}`;
-            const obj = { id, text, publisher, duration, createdAt:now, time:formatDateTime(now), expiresAt:announcementExpiry(duration,now), active:true, createdBy:currentUser.account };
+            const important = !!document.getElementById('announcement-important-input')?.checked;
+            const obj = { id, text, publisher, duration, important, createdAt:now, time:formatDateTime(now), expiresAt:announcementExpiry(duration,now), active:true, createdBy:currentUser.account };
             try {
                 await fm.setDoc(fm.doc(db,'announcements',id),obj);
                 appData.announcements.push({docId:id,...obj});
-                const input = document.getElementById('announcement-text-input'); if (input) input.value='';
+                const input = document.getElementById('announcement-text-input'); if (input) input.value=''; const imp=document.getElementById('announcement-important-input'); if(imp) imp.checked=false;
                 renderAdminAnnouncements(); renderSiteAnnouncements();
                 showToast('公告已發布至首頁。','success','發布成功');
             } catch(e) { showToast('公告發布失敗：'+e.message,'error','操作失敗'); }
@@ -2517,6 +2569,10 @@ async function republishAnnouncement(id) {
                 if (policePendingSnap.ok) appData.policePendingReports = policePendingSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
                 const reportNotifySnap = await safeCollectionDocs('reportNotifications');
                 if (reportNotifySnap.ok) appData.reportNotifications = reportNotifySnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+                const handoverSnap = await safeCollectionDocs('dutyHandoverNotes');
+                if (handoverSnap.ok) appData.dutyHandoverNotes = handoverSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+                const faqIssueSnap = await safeCollectionDocs('faqIssues');
+                if (faqIssueSnap.ok) appData.faqIssues = faqIssueSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
 
                 const punishSnap = await safeCollectionDocs('policePunishments');
                 if (punishSnap.ok) appData.policePunishments = punishSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
@@ -2786,7 +2842,7 @@ async function republishAnnouncement(id) {
                 showToast('目前帳號沒有管理中心權限。', 'warning', '權限不足');
                 tabId = 'home';
             }
-            ['home', 'police', 'fire', 'faq', 'notifications', 'profile', 'academy', 'admin'].forEach(t => {
+            ['dashboard', 'home', 'police', 'fire', 'faq', 'notifications', 'profile', 'academy', 'admin'].forEach(t => {
                 const tabEl = document.getElementById(`tab-${t}`);
                 if (tabEl) tabEl.classList.add('hidden');
                 
@@ -2806,6 +2862,7 @@ async function republishAnnouncement(id) {
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
             
+            if (tabId === 'dashboard') refreshDutyDashboard();
             if (tabId === 'faq') switchFAQCategory(document.querySelector('.faq-category-btn.active')?.getAttribute('data-faq-category') || 'police');
             if (tabId === 'notifications') renderPersonalNotifications();
             if (tabId === 'profile') renderMyProfile();
@@ -2895,7 +2952,7 @@ async function republishAnnouncement(id) {
         }
 
         function switchAdminSubTab(sub){
-            const tabs=['users','announcements','clock','logs','storage','memo','overview','online','devices','feedback','academy','jail-rules','lookup-locks'];
+            const tabs=['users','announcements','clock','logs','storage','memo','overview','online','devices','feedback','issues','academy','jail-rules','lookup-locks'];
             const academyOnly = !!currentUser && getEffectiveRole(currentUser) !== 'admin' && hasUserPermission(currentUser,'academyInstructor');
             const allowed = !academyOnly || sub === 'academy';
             tabs.forEach(x=>{
@@ -2916,6 +2973,7 @@ async function republishAnnouncement(id) {
             if(sub==='online' && getEffectiveRole(currentUser)==='admin') refreshAdminOnlineUsers();
             if(sub==='devices' && getEffectiveRole(currentUser)==='admin') renderAdminDevices();
             if(sub==='feedback' && getEffectiveRole(currentUser)==='admin') renderAdminFeedback();
+            if(sub==='issues' && getEffectiveRole(currentUser)==='admin') renderFAQIssues();
             if(sub==='storage' && getEffectiveRole(currentUser)==='admin') renderAdminStorage();
             if(sub==='users' && getEffectiveRole(currentUser)==='admin') renderAdminUsers();
             if(sub==='logs' && getEffectiveRole(currentUser)==='admin') renderAdminLogs();
@@ -4389,6 +4447,9 @@ async function republishAnnouncement(id) {
         }
 
         async function submitReport() {
+            if (window.__ntpcReportSubmitting) { showToast('案件正在送出，請勿重複點擊。','warning','請稍候'); return; }
+            window.__ntpcReportSubmitting = true;
+            try {
             const academyMode = !!academyExamSession && academyExamSession.type === currentActiveDepartmentForReport;
             if (!currentUser && !academyMode) {
                 showToast('請先登入系統。', 'warning', '需要登入');
@@ -4480,7 +4541,9 @@ async function republishAnnouncement(id) {
             } catch (e) {
                 showToast('提交失敗：' + e.message, 'error', '操作失敗');
             }
+        } catch (e) { console.error('案件送出流程異常：', e); showToast('案件送出流程發生異常，請稍後再試。', 'error', '系統異常'); } finally { window.__ntpcReportSubmitting = false; }
         }
+
 
         function getReportRemarks(report) {
             return ensureReportRemarks(report);
@@ -5702,7 +5765,49 @@ async function republishAnnouncement(id) {
             if(docsEl)docsEl.textContent=totalDocs;
             if(freeEl)freeEl.textContent=`${freeMb.toFixed(1)} MB`;
         }
-    </script>
+    
+/* ================= V1.8.2 勤務中心與通知穩定層 ================= */
+function ntpcEsc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function ntpcAllRows(){const a=[]; const add=(arr,type,labelFn)=> (arr||[]).forEach(x=>a.push({type,label:labelFn(x),row:x})); add(appData.policeReports,'case',x=>`警察案件 ${x.caseId||x.docId||''}｜${x.title||x.suspectName||''}`); add(appData.fireReports,'case',x=>`消防案件 ${x.caseId||x.docId||''}｜${x.title||''}`); add(appData.emsReports,'case',x=>`EMS案件 ${x.caseId||x.docId||''}｜${x.title||''}`); add(appData.policePendingReports,'pending',x=>`待審警察案件 ${x.caseId||x.docId||''}`); add(appData.firePendingReports,'pending',x=>`待審消防案件 ${x.caseId||x.docId||''}`); add(appData.citizenRecords,'citizen',x=>`市民 ${x.name||''}｜${x.id5||x.id||''}`); add(appData.vehicleRecords,'vehicle',x=>`車輛 ${x.plate||x.licensePlate||x.id||x.docId||''}｜${x.owner||''}`); add(appData.wantedRecords,'wanted',x=>`通緝 ${x.name||''}｜${x.id5||''}`); add(appData.wantedPendingRecords,'wanted',x=>`待審通緝 ${x.name||''}｜${x.id5||''}`); add(appData.users,'user',x=>`帳號 ${x.account||''}｜${x.name||''}｜${x.staffNumber||x.managementId||''}`); add(appData.announcements,'announcement',x=>`公告 ${x.text||''}`); return a;}
+function openGlobalSearch(){const m=document.getElementById('modal-global-search');if(!m)return;m.classList.remove('hidden');const i=document.getElementById('global-search-input');setTimeout(()=>i?.focus(),50);runGlobalSearch(i?.value||'');}
+function closeGlobalSearch(){document.getElementById('modal-global-search')?.classList.add('hidden');}
+function runGlobalSearch(q){const host=document.getElementById('global-search-results');if(!host)return;q=String(q||'').trim().toLowerCase();if(!q){host.innerHTML='<div class="text-center py-10 text-slate-500">輸入關鍵字開始搜尋</div>';return;}const rows=ntpcAllRows().filter(x=>String(x.label).toLowerCase().includes(q)).slice(0,60);host.innerHTML=rows.length?rows.map(x=>`<div class="ntpc-search-result" onclick="ntpcOpenSearchResult('${ntpcEsc(x.type)}','${ntpcEsc(x.row.caseId||x.row.docId||x.row.id||x.row.account||'')}')"><div class="text-sm text-white">${ntpcEsc(x.label)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(x.type)}</div></div>`).join(''):'<div class="text-center py-10 text-slate-500">找不到符合資料。</div>';}
+function ntpcOpenSearchResult(type,id){closeGlobalSearch();if(type==='announcement'){switchTab('home');return;}if(type==='user'){if(canAccessManagementCenter())switchTab('admin');else showToast('帳號資料僅限管理中心查看。','warning','權限限制');return;}if(type==='case'||type==='pending'){if(String(id).startsWith('NTPD'))switchTab('police');else switchTab('fire');return;}if(type==='wanted'){switchTab('police');return;}switchTab('home');}
+function ntpcCurrentMonthHours(){if(!currentUser)return 0;const start=new Date();start.setDate(1);start.setHours(0,0,0,0);const mine=[...(appData.policeClocks||[]),...(appData.fireClocks||[]),...(appData.adminClocks||[])].filter(c=>String(c.account||c.userAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&Number(c.timestamp||c.time||0)>=start.getTime());let total=0;const groups={};mine.forEach(c=>{const key=c.shiftId||c.clockGroup||c.id||`${c.account}-${new Date(c.timestamp||c.time).toDateString()}`;(groups[key]??=[]).push(c);});Object.values(groups).forEach(g=>{g.sort((a,b)=>Number(a.timestamp||a.time)-Number(b.timestamp||b.time));for(let i=0;i+1<g.length;i+=2){const a=Number(g[i].timestamp||g[i].time),b=Number(g[i+1].timestamp||g[i+1].time);if(b>a)total+=b-a;}});return Math.round(total/360000)/10;}
+function refreshDutyDashboard(){if(!document.getElementById('tab-dashboard'))return;const users=appData.users||[];const online=users.filter(u=>u.online||Number(u.lastSeen||0)>Date.now()-120000).length;const pending=(appData.policePendingReports||[]).length+(appData.firePendingReports||[]).length+(appData.emsPendingReports||[]).length+(appData.wantedPendingRecords||[]).length;const noti=currentUser?(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&!n.read).length:0;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};set('dash-online',online);set('dash-pending',pending);set('dash-notifications',noti);set('dash-hours',ntpcCurrentMonthHours().toFixed(1)+' h');const work=document.getElementById('dash-my-work');if(work){const mine=(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser?.account||'').toLowerCase()&&!n.read).slice(0,8);work.innerHTML=mine.length?mine.map(n=>`<div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800"><div class="text-sm text-white">${ntpcEsc(n.title||'案件通知')}</div><div class="text-xs text-slate-500 mt-1">${ntpcEsc(n.message||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有待處理通知。</div>';}renderDashSystemStatus();renderDashAnnouncements();renderDashHandover();renderDashManagementWork();const sel=document.getElementById('dash-duty-status');if(sel&&currentUser)sel.value=currentUser.dutyStatus||'off';}
+function renderDashSystemStatus(){const h=document.getElementById('dash-system-status');if(!h)return;const online=navigator.onLine;const firebaseOk=!!db&&!!fm;const realtimeOk=Array.isArray(realtimeUnsubscribers)&&realtimeUnsubscribers.length>0;h.innerHTML=[['網路連線',online,'瀏覽器網路狀態'],['Firebase',firebaseOk,'雲端資料庫模組'],['即時同步',realtimeOk,'Firestore 即時監聽'],['案件通知',!!appData.reportNotifications,'通知資料已載入'],['Discord 通知',true,'目前採可靠送出佇列；瀏覽器無法直接取得 Discord 回應碼']].map(x=>`<div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60"><div><span class="status-dot ${x[1]?'status-ok':'status-bad'}"></span><span class="text-sm text-slate-200">${x[0]}</span></div><span class="text-[11px] text-slate-500">${x[2]}</span></div>`).join('');const t=document.getElementById('dash-status-time');if(t)t.textContent='更新 '+formatDateTime(Date.now());}
+function renderDashAnnouncements(){const h=document.getElementById('dash-important-announcements');if(!h)return;const rows=(appData.announcements||[]).filter(a=>a.active!==false&&a.important).sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0)).slice(0,5);h.innerHTML=rows.length?rows.map(a=>`<div class="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5"><div class="text-sm text-white">${ntpcEsc(a.text)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(a.publisher||'系統')}｜${ntpcEsc(a.time||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有置頂重要公告。</div>';}
+function renderDashHandover(){const h=document.getElementById('dash-handover-list');if(!h)return;const rows=(appData.dutyHandoverNotes||[]).slice().sort((a,b)=>Number(b.timestamp||0)-Number(a.timestamp||0)).slice(0,10);h.innerHTML=rows.length?rows.map(a=>`<div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800"><div class="text-xs text-purple-300">${ntpcEsc(a.authorName||a.authorAccount||'勤務人員')}｜${ntpcEsc(a.time||formatDateTime(a.timestamp))}</div><div class="text-sm text-slate-200 mt-1 whitespace-pre-wrap">${ntpcEsc(a.text)}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有交接事項。</div>';}
+async function updateDutyStatus(status){if(!currentUser||!db||!fm)return;status=['off','on','break','handover'].includes(status)?status:'off';currentUser.dutyStatus=status;currentUser.lastSeen=Date.now();currentUser.online=status!=='off';try{await fm.setDoc(fm.doc(db,'users',currentUser.account),{dutyStatus:status,online:currentUser.online,lastSeen:Date.now()},{merge:true});const u=(appData.users||[]).find(x=>x.account===currentUser.account);if(u)Object.assign(u,{dutyStatus:status,online:currentUser.online,lastSeen:Date.now()});refreshDutyDashboard();showToast('勤務狀態已同步。','success','狀態更新');}catch(e){showToast('勤務狀態同步失敗：'+e.message,'error','同步失敗');}}
+function openHandoverModal(){if(!currentUser){showToast('請先登入。','warning','需要登入');return;}document.getElementById('modal-handover')?.classList.remove('hidden');document.getElementById('handover-text')?.focus();}
+function closeHandoverModal(){document.getElementById('modal-handover')?.classList.add('hidden');}
+async function saveHandoverNote(){const text=document.getElementById('handover-text')?.value.trim();if(!text||!currentUser||!db||!fm)return;if(window.__handoverSaving)return;window.__handoverSaving=true;try{const id='HAND-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);const obj={id,text,authorAccount:currentUser.account,authorName:currentUser.name||currentUser.account,timestamp:Date.now(),time:formatDateTime(Date.now())};await fm.setDoc(fm.doc(db,'dutyHandoverNotes',id),obj);appData.dutyHandoverNotes=appData.dutyHandoverNotes||[];appData.dutyHandoverNotes.unshift({docId:id,...obj});document.getElementById('handover-text').value='';closeHandoverModal();renderDashHandover();await logAdminAction('新增勤務交接事項',id,text,{discord:false});showToast('交接事項已儲存。','success','操作完成');}catch(e){showToast('交接事項儲存失敗：'+e.message,'error','操作失敗');}finally{window.__handoverSaving=false;}}
+async function loadHandoverNotes(){if(!db||!fm)return;try{const snap=await fm.getDocs(fm.collection(db,'dutyHandoverNotes'));appData.dutyHandoverNotes=snap.docs.map(d=>({docId:d.id,...d.data()}));}catch(e){console.warn('交接簿讀取失敗',e);appData.dutyHandoverNotes=appData.dutyHandoverNotes||[];}}
+/* FAQ 找不到答案：建立問題單，不直接暴露管理資料。 */
+async function renderFAQIssues(){const h=document.getElementById('admin-faq-issues-list');if(!h)return;const rows=(appData.faqIssues||[]).slice().sort((a,b)=>Number(b.timestamp||0)-Number(a.timestamp||0));h.innerHTML=rows.length?rows.map(x=>`<div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800"><div class="flex flex-wrap justify-between gap-2"><div class="text-sm text-white">${ntpcEsc(x.name||x.account||'未知使用者')} <span class="text-xs text-slate-500">(${ntpcEsc(x.account||'--')})</span></div><span class="text-xs ${x.status==='closed'?'text-emerald-400':'text-amber-400'}">${x.status==='closed'?'已處理':'待處理'}</span></div><div class="text-sm text-slate-300 mt-2 whitespace-pre-wrap">${ntpcEsc(x.text)}</div><div class="text-[11px] text-slate-500 mt-2">${ntpcEsc(x.time||formatDateTime(x.timestamp))}</div><div class="mt-3 flex gap-2">${x.status!=='closed'?`<button onclick="closeFAQIssue('${ntpcEsc(x.docId||x.id)}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs">標記已處理</button>`:''}</div></div>`).join(''):'<div class="text-center py-8 text-slate-500">目前沒有問題回報。</div>';}
+async function closeFAQIssue(id){if(!currentUser||getEffectiveRole(currentUser)!=='admin'||!db||!fm)return;try{await fm.updateDoc(fm.doc(db,'faqIssues',id),{status:'closed',closedAt:Date.now(),closedBy:currentUser.account});const x=(appData.faqIssues||[]).find(a=>(a.docId||a.id)===id);if(x)Object.assign(x,{status:'closed',closedAt:Date.now(),closedBy:currentUser.account});renderFAQIssues();showToast('問題單已標記處理。','success','操作完成');}catch(e){showToast('更新問題單失敗：'+e.message,'error','操作失敗');}}
+function renderDashManagementWork(){const card=document.getElementById('dash-management-work-card'),h=document.getElementById('dash-management-work');if(!card||!h)return;const can=!!currentUser&&canAccessManagementCenter();card.classList.toggle('hidden',!can);if(!can)return;const items=[['警察案件待審',appData.policePendingReports?.length||0,'police'],['消防／EMS待審', (appData.firePendingReports?.length||0)+(appData.emsPendingReports?.length||0),'fire'],['通緝待審',appData.wantedPendingRecords?.length||0,'police'],['帳號協助單',appData.faqIssues?.filter(x=>x.status!=='closed').length||0,'admin'],['異常回報',appData.feedbackReports?.length||0,'admin']];h.innerHTML=items.map(x=>`<div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800"><span class="text-sm text-slate-200">${x[0]}</span><span class="font-bold ${x[1]?'text-amber-400':'text-emerald-400'}">${x[1]}</span></div>`).join('');}
+async function submitFAQIssue(){const text=prompt('請輸入你遇到的問題（請勿輸入密碼）：');if(!text||!currentUser||!db||!fm)return;try{const id='FAQ-'+Date.now();const obj={id,account:currentUser.account,name:currentUser.name||'',text:text.slice(0,1000),timestamp:Date.now(),status:'open'};await fm.setDoc(fm.doc(db,'faqIssues',id),obj);await logAdminAction('提交常見問題協助單',id,text,{discord:false});showToast('問題已送出，管理中心可查看。','success','提交成功');}catch(e){showToast('提交失敗：'+e.message,'error','操作失敗');}}
+/* 公告重要標記：兼容既有發布流程。 */
+(function patchAnnouncementImportant(){const btn=document.getElementById('publish-announcement-btn');if(!btn||btn.dataset.v182)return;btn.dataset.v182='1';btn.addEventListener('click',()=>{setTimeout(()=>{const text=document.getElementById('announcement-text-input')?.value;},0);});const original=window.publishAnnouncement;if(typeof original==='function'&&original.__v182)return;})();
+/* Webhook：避免同一事件重複發送，失敗時自動重試，並保留發送紀錄。前端無法可靠取得跨來源 Discord 回應碼，因此狀態採 queued/sent-attempt。 */
+const NTPC_DISCORD_RETRY_STORE='ntpcrp_discord_retry_v182';
+function ntpcWebhookKey(type,payload){return 'v182-'+type+'-'+btoa(unescape(encodeURIComponent(JSON.stringify(payload)))).slice(0,80);}
+function ntpcReadWebhookQueue(){try{return JSON.parse(localStorage.getItem(NTPC_DISCORD_RETRY_STORE)||'[]');}catch(_){return[];}}
+function ntpcWriteWebhookQueue(q){try{localStorage.setItem(NTPC_DISCORD_RETRY_STORE,JSON.stringify(q.slice(-30)));}catch(_) {}}
+async function ntpcRecordWebhookLog(type,status,detail=''){try{if(!db||!fm)return;const id='WH-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);await fm.setDoc(fm.doc(db,'webhookLogs',id),{id,type,status,detail:String(detail||'').slice(0,500),account:currentUser?.account||'system',timestamp:Date.now()});}catch(e){console.warn('Webhook 紀錄寫入失敗',e);}}
+function ntpcFormWebhook(url,payload){return new Promise((resolve,reject)=>{try{if(!url)throw new Error('Webhook URL 未設定');const name='ntpc_webhook_'+Date.now()+'_'+Math.random().toString(36).slice(2);const iframe=document.createElement('iframe');iframe.name=name;iframe.style.cssText='position:absolute;width:0;height:0;border:0;visibility:hidden;';document.body.appendChild(iframe);const form=document.createElement('form');form.method='POST';form.action=url+(url.includes('?')?'&':'?')+'wait=false';form.target=name;form.enctype='application/x-www-form-urlencoded';form.style.display='none';const input=document.createElement('input');input.type='hidden';input.name='payload_json';input.value=JSON.stringify(payload);form.appendChild(input);document.body.appendChild(form);form.submit();setTimeout(()=>{try{form.remove();iframe.remove();}catch(_){}resolve(true);},1800);}catch(e){reject(e);}});}
+async function ntpcReliableDiscordSend(type,url,payload){if(!url)return {ok:false,reason:'missing-webhook'};const key=ntpcWebhookKey(type,payload);const q=ntpcReadWebhookQueue();if(q.some(x=>x.key===key&&x.status==='sent-attempt'))return {ok:true,deduped:true};const item={key,type,timestamp:Date.now(),status:'queued',payload};q.push(item);ntpcWriteWebhookQueue(q);ntpcRecordWebhookLog(type,'queued');try{if(navigator.onLine===false)throw new Error('offline');await ntpcFormWebhook(url,payload);item.status='sent-attempt';item.sentAt=Date.now();ntpcWriteWebhookQueue(ntpcReadWebhookQueue().map(x=>x.key===key?item:x));ntpcRecordWebhookLog(type,'sent-attempt');return {ok:true};}catch(e){item.status='failed';item.error=String(e.message||e);ntpcRecordWebhookLog(type,'failed',item.error);ntpcWriteWebhookQueue(ntpcReadWebhookQueue().map(x=>x.key===key?item:x));setTimeout(()=>{try{ntpcFormWebhook(url,payload).then(()=>{const qq=ntpcReadWebhookQueue();const ii=qq.find(x=>x.key===key);if(ii){ii.status='sent-attempt';ii.sentAt=Date.now();ntpcWriteWebhookQueue(qq);}}).catch(()=>{});}catch(_){}},2500);return {ok:false,error:e};}}
+async function ntpcRetryWebhookQueue(){const q=ntpcReadWebhookQueue();for(const x of q.filter(a=>a.status==='failed').slice(-5)){try{const url=x.type==='police'?NTPC_RP_DISCORD_POLICE_WEBHOOK_URL:x.type==='fire'||x.type==='ems'?NTPC_RP_DISCORD_FIRE_WEBHOOK_URL:NTPC_RP_DISCORD_ADMIN_LOG_WEBHOOK_URL;const payload=x.payload;if(!payload)continue;await ntpcFormWebhook(url,payload);x.status='sent-attempt';x.sentAt=Date.now();}catch(_){} }ntpcWriteWebhookQueue(q);}
+/* 覆寫三個發送入口，但保留既有 payload 格式。 */
+const __oldSendDiscordCaseNotification=window.sendDiscordCaseNotification;window.sendDiscordCaseNotification=async function(department,report){try{const url=department==='police'?NTPC_RP_DISCORD_POLICE_WEBHOOK_URL:NTPC_RP_DISCORD_FIRE_WEBHOOK_URL;const payload=buildDiscordCasePayload(department,report);return await ntpcReliableDiscordSend(department,url,payload);}catch(e){console.warn('案件 Discord 通知異常',e);return {ok:false,error:e};}};
+const __oldSendDiscordWantedNotification=window.sendDiscordWantedNotification;window.sendDiscordWantedNotification=async function(wanted){try{return await ntpcReliableDiscordSend('police',NTPC_RP_DISCORD_POLICE_WEBHOOK_URL,{username:'新北市 RP 3.0 通緝申請通知',embeds:[{title:'🚨 新申請｜警察通緝資料',description:'通緝申請已成功寫入雲端資料庫，等待警察高層審核。',color:0xe11d48,fields:[{name:'被通緝人',value:escapeDiscordText(wanted.name),inline:true},{name:'證件末五碼',value:escapeDiscordText(wanted.id5),inline:true},{name:'發布帳號',value:escapeDiscordText(`${wanted.createdByName||'--'} (${wanted.createdByAccount||'--'})`),inline:true},{name:'發布單位',value:escapeDiscordText(wanted.publishUnit||wanted.department||'--'),inline:true},{name:'通緝原因',value:escapeDiscordText(wanted.reason),inline:false},{name:'所違反條例',value:escapeDiscordText(wanted.law),inline:false},{name:'勤務網站',value:`[點我前往勤務網站](${NTPC_RP_SITE_URL})`,inline:false}],timestamp:new Date().toISOString(),footer:{text:'新北市 RP 3.0 公職服務整合系統 V1.8.2'},url:NTPC_RP_SITE_URL}]});}catch(e){console.warn('通緝 Discord 通知異常',e);return {ok:false,error:e};}};
+const __oldSendManagementDiscordLog=window.sendManagementDiscordLog;window.sendManagementDiscordLog=async function(action,target,detail='',options={}){try{const url=NTPC_RP_DISCORD_ADMIN_LOG_WEBHOOK_URL;const mentionRole=!!options.mentionRole;const operator=currentUser?`${currentUser.name||'未知'} (${currentUser.account||'--'})`:'系統自動處理';const payload={username:'新北市 RP 3.0 管理中心 LOG',...(mentionRole?{content:`<@&${NTPC_RP_DISCORD_ADMIN_LOG_ROLE_ID}>`}:{}),allowed_mentions:mentionRole?{roles:[NTPC_RP_DISCORD_ADMIN_LOG_ROLE_ID]}:{parse:[]},embeds:[{title:`🛡️ 管理中心操作紀錄｜${action}`,color:mentionRole?0xf59e0b:0x6366f1,fields:[{name:'操作人員',value:escapeDiscordText(operator).slice(0,1024),inline:true},{name:'操作類型',value:escapeDiscordText(action).slice(0,1024),inline:true},{name:'目標',value:escapeDiscordText(target).slice(0,1024),inline:false},...(detail?[{name:'詳細資訊',value:escapeDiscordText(detail).slice(0,1024),inline:false}]:[])],timestamp:new Date().toISOString(),footer:{text:'新北市 RP 3.0 管理中心 LOG V1.8.2'},url:NTPC_RP_SITE_URL}]};return await ntpcReliableDiscordSend('admin',url,payload);}catch(e){console.warn('管理中心 Discord LOG 異常',e);return {ok:false,error:e};}};
+/* 初始化：補載交接簿，並把公告重要標記送入既有資料。 */
+setTimeout(async()=>{try{appData.dutyHandoverNotes=appData.dutyHandoverNotes||[];await loadHandoverNotes();renderDashHandover();renderDashAnnouncements();refreshDutyDashboard();ntpcRetryWebhookQueue();}catch(e){console.warn('V1.8.2 初始化失敗',e);}},1200);
+window.addEventListener('online',()=>{ntpcRetryWebhookQueue();renderDashSystemStatus();});window.addEventListener('offline',()=>renderDashSystemStatus());
+
+</script>
 
     <div id="modal-academy-code-management" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl"><div class="flex items-center justify-between p-5 border-b border-slate-800"><div><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-list-check text-indigo-400 mr-2"></i>專生考核代碼管理</h3><p class="text-xs text-slate-500 mt-1">管理層可查看與刪除雲端考核代碼。</p></div><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-academy-code-management"><i class="fa-solid fa-xmark text-lg"></i></button></div><div id="management-academy-code-list" class="p-5 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto max-h-[75vh]"></div></div></div>
 
