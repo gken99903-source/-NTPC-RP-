@@ -30,7 +30,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         // ER:LC 警報音效：每台裝置／每個瀏覽器獨立保存，不同步到 Firestore；重複點擊不會建立重複監聽器。
-        let erlcAudioEnabled = (() => { try { return localStorage.getItem('ntpc_erlc_audio_enabled') === '1'; } catch(e) { return false; } })();
+        let erlcAudioEnabled = (() => { try { const saved = localStorage.getItem('ntpc_erlc_audio_enabled'); return saved === null ? true : saved === '1'; } catch(e) { return true; } })();
         let erlcAudioContext = null;
         let erlcAlarmOscillator = null;
         let erlcAlarmGain = null;
@@ -49,7 +49,15 @@
                 const mode = btn.dataset.erlcAudioToggle || '';
                 btn.dataset.audioEnabled = erlcAudioEnabled ? 'true' : 'false';
                 btn.setAttribute('aria-pressed', erlcAudioEnabled ? 'true' : 'false');
-                if (mode === 'enable') {
+                if (mode === 'toggle') {
+                    btn.classList.toggle('bg-emerald-600', erlcAudioEnabled);
+                    btn.classList.toggle('hover:bg-emerald-500', erlcAudioEnabled);
+                    btn.classList.toggle('bg-slate-800', !erlcAudioEnabled);
+                    btn.classList.toggle('hover:bg-slate-700', !erlcAudioEnabled);
+                    btn.innerHTML = erlcAudioEnabled
+                        ? '<i class="fa-solid fa-volume-high mr-2"></i>警報音效：已開啟'
+                        : '<i class="fa-solid fa-volume-xmark mr-2"></i>警報音效：已關閉';
+                } else if (mode === 'enable') {
                     btn.disabled = erlcAudioEnabled;
                     btn.classList.toggle('opacity-50', erlcAudioEnabled);
                     btn.classList.toggle('cursor-not-allowed', erlcAudioEnabled);
@@ -101,7 +109,7 @@
 
         function disableERLCAudio(){
             erlcAudioEnabled = false;
-            try { localStorage.removeItem('ntpc_erlc_audio_enabled'); } catch(e) {}
+            try { localStorage.setItem('ntpc_erlc_audio_enabled','0'); } catch(e) {}
             stopERLCAlarmSound();
             try { if (erlcOfficerAlertAudio) { erlcOfficerAlertAudio.pause(); erlcOfficerAlertAudio.currentTime = 0; } } catch(e) {}
             updateERLCAudioButtons();
@@ -831,6 +839,7 @@
                     <button id="btn-police-citizen" data-sub="citizen" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-id-card mr-2"></i>市民身份系統</button>
                     <button id="btn-police-vehicles" data-sub="vehicles" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-car-side mr-2"></i>車輛資訊系統</button>
                     <button id="btn-police-wanted" data-sub="wanted" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-user-secret mr-2"></i>通緝查詢系統</button>
+                    <button id="police-erlc-audio-toggle" type="button" data-erlc-audio-toggle="toggle" onclick="toggleERLCAudio()" class="px-4 py-2 rounded-xl text-sm font-semibold transition bg-emerald-600 hover:bg-emerald-500 text-white whitespace-nowrap" title="切換 ER:LC 警報音效"><i class="fa-solid fa-volume-high mr-2"></i>警報音效：已開啟</button>
                 </div>
 
                 <div id="police-sub-reports" class="space-y-4">
@@ -1760,8 +1769,6 @@
                         <div class="mt-4 flex flex-wrap gap-2">
                             <button type="button" onclick="saveERLCConfig()" class="bg-red-600 hover:bg-red-500 text-white rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>儲存 ER:LC 設定</button>
                             <button type="button" onclick="clearERLCConfig()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-trash mr-2"></i>清除設定</button>
-                            <button type="button" data-erlc-audio-toggle="enable" onclick="enableERLCAudio()" class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-volume-high mr-2"></i>開啟警報音效</button>
-                            <button type="button" data-erlc-audio-toggle="disable" onclick="disableERLCAudio()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-volume-xmark mr-2"></i>關閉警報音效</button>
                         </div>
                         <div id="erlc-config-status" class="mt-4 text-xs text-slate-500">尚未設定 ER:LC Server Key。</div><div id="erlc-api-health-detail" class="mt-3 bg-slate-950/70 border border-slate-800 rounded-xl p-4 text-xs text-slate-400">API 連線狀態：等待後端 Worker 回報。</div>
                     </div>
@@ -2442,6 +2449,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const inputLimitsForSecurity={'login-username':80,'login-password':128,'clock-id':40,'clock-name':60,'clock-vehicle':80,'announcement-text-input':2000,'announcement-publisher-input':80,'new-user-roblox-id':30,'edit-user-roblox-id-input':30};
             Object.entries(inputLimitsForSecurity).forEach(([id,max])=>{const el=document.getElementById(id);if(el)el.maxLength=max;});
+            updateERLCAudioButtons();
             const handleTabClick = (e) => {
                 const btn = e.currentTarget.closest('[data-tab]');
                 if (!btn) return;
