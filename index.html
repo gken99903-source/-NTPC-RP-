@@ -446,6 +446,7 @@
                 <button id="nav-home" data-tab="home" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-blue-400 bg-blue-500/10"><i class="fa-solid fa-house mr-2"></i>首頁大廳</button>
                 <button id="nav-police" data-tab="police" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-shield mr-2"></i>警務系統</button>
                 <button id="nav-fire" data-tab="fire" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-fire-extinguisher mr-2"></i>消防系統</button>
+                <button id="nav-faq" data-tab="faq" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-circle-question mr-2"></i>常見問題</button>
                 <button id="nav-notifications" data-tab="notifications" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800 relative"><i id="nav-notification-bell" class="fa-solid fa-bell mr-2 notification-bell-icon"></i>個人通知<span id="nav-notification-badge" class="hidden ml-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold items-center justify-center align-middle">0</span></button>
                 <button id="nav-profile" data-tab="profile" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-id-card mr-2"></i>我的資訊</button>
                 <button id="nav-academy" data-tab="academy" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-graduation-cap mr-2"></i>專生考核</button>
@@ -471,6 +472,7 @@
             <button data-tab="home" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-house"></i><span>首頁大廳</span></button>
             <button data-tab="police" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-shield"></i><span>警務系統</span></button>
             <button data-tab="fire" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-fire-extinguisher"></i><span>消防系統</span></button>
+            <button data-tab="faq" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-circle-question"></i><span>常見問題</span></button>
             <button data-tab="notifications" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i id="mobile-nav-notification-bell" class="fa-solid fa-bell notification-bell-icon"></i><span>個人通知</span><span id="mobile-nav-notification-badge" class="hidden min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold items-center justify-center">0</span></button>
             <button data-tab="profile" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-id-card"></i><span>我的資訊</span></button>
             <button data-tab="academy" class="mobile-nav-btn text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-graduation-cap"></i><span>專生考核</span></button>
@@ -875,6 +877,112 @@
             </div>
         </section>
 
+        <!-- FAQ Tab：未登入也可瀏覽 -->
+        <section id="tab-faq" class="hidden space-y-8">
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
+                <div class="flex items-start gap-4 mb-6">
+                    <div class="w-12 h-12 shrink-0 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-circle-question"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">常見問題</h2>
+                        <p class="text-sm text-slate-500 mt-1">快速查找警務系統、消防系統與帳號使用上的常見問題。此頁面無須登入即可瀏覽。</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8" role="tablist" aria-label="常見問題分類">
+                    <button type="button" data-faq-category="police" class="faq-category-btn active bg-blue-600/15 border border-blue-500/30 text-blue-300 rounded-2xl p-4 text-left transition hover:bg-blue-600/20">
+                        <i class="fa-solid fa-shield mr-2"></i><span class="font-bold">警方系統</span>
+                        <span class="block text-xs text-slate-500 mt-1">打卡、案件與警務功能</span>
+                    </button>
+                    <button type="button" data-faq-category="fire" class="faq-category-btn bg-slate-950 border border-slate-800 text-slate-300 rounded-2xl p-4 text-left transition hover:bg-slate-800">
+                        <i class="fa-solid fa-fire-extinguisher mr-2"></i><span class="font-bold">消防系統</span>
+                        <span class="block text-xs text-slate-500 mt-1">消防、EMS 與案件送審</span>
+                    </button>
+                    <button type="button" data-faq-category="account" class="faq-category-btn bg-slate-950 border border-slate-800 text-slate-300 rounded-2xl p-4 text-left transition hover:bg-slate-800">
+                        <i class="fa-solid fa-user-lock mr-2"></i><span class="font-bold">帳號疑問</span>
+                        <span class="block text-xs text-slate-500 mt-1">登入、密碼與帳號問題</span>
+                    </button>
+                </div>
+
+                <div id="faq-category-police" class="faq-category-content space-y-3">
+                    <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4" open>
+                        <summary class="cursor-pointer text-sm font-semibold text-white">警務系統要怎麼進入？</summary>
+                        <p class="text-sm text-slate-400 leading-7 mt-3">警務系統屬於勤務功能，必須先登入具有警察身分的帳號。登入後即可依權限使用打卡、補打卡、案件報告、案件審核與其他警務功能。</p>
+                    </details>
+                    <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+                        <summary class="cursor-pointer text-sm font-semibold text-white">打卡時的編號會使用什麼資料？</summary>
+                        <p class="text-sm text-slate-400 leading-7 mt-3">系統會優先使用帳號設定的「管理編號」；如果沒有設定管理編號，才會使用登入帳號作為打卡編號。</p>
+                    </details>
+                    <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+                        <summary class="cursor-pointer text-sm font-semibold text-white">忘記打卡可以補打卡嗎？</summary>
+                        <p class="text-sm text-slate-400 leading-7 mt-3">可以使用「補打卡」功能登記指定日期與時間。實際可使用的功能仍會依目前登入帳號的權限與系統設定為準。</p>
+                    </details>
+                    <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+                        <summary class="cursor-pointer text-sm font-semibold text-white">警察案件報告送出後為什麼沒有立即公開？</summary>
+                        <p class="text-sm text-slate-400 leading-7 mt-3">案件送出後會先進入案件審核流程。通過高層審核後才會成為正式案件資料；若遭退件，送件人可以查看退件原因並依系統提供的功能修改後重新送件。</p>
+                    </details>
+                    <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+                        <summary class="cursor-pointer text-sm font-semibold text-white">案件編號可以自己隨意填寫嗎？</summary>
+                        <p class="text-sm text-slate-400 leading-7 mt-3">案件編號應依警務案件登記頁面的規則填寫。若系統已提供編號檢查或自動編號功能，請依畫面提示操作，避免造成案件重複或格式錯誤。</p>
+                    </details>
+                    <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+                        <summary class="cursor-pointer text-sm font-semibold text-white">案件被退件後可以重新送件嗎？</summary>
+                        <p class="text-sm text-slate-400 leading-7 mt-3">可以。退件案件會保留退件原因，送件人可依原因修改案件內容，再使用重新送件功能進入審核流程。</p>
+                    </details>
+                </div>
+
+                <div id="faq-category-fire" class="faq-category-content hidden space-y-3">
+                    <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4" open>
+                        <summary class="cursor-pointer text-sm font-semibold text-white">消防系統要怎麼進入？</summary>
+                        <p class="text-sm text-slate-400 leading-7 mt-3">消防系統屬於勤務功能，必須先登入具有消防身分的帳號。消防人員登入後即可依權限使用消防、救護、案件與勤務相關功能。</p>
+                    </details>
+                    <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+                        <summary class="cursor-pointer text-sm font-semibold text-white">消防案件和警察案件使用相同的規則嗎？</summary>
+                        <p class="text-sm text-slate-400 leading-7 mt-3">不完全相同。消防與 EMS 案件使用消防系統的案件流程與欄位，不使用警察專用的違反條例與刑期計算功能。</p>
+                    </details>
+                    <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+                        <summary class="cursor-pointer text-sm font-semibold text-white">EMS 案件送出後由誰審核？</summary>
+                        <p class="text-sm text-slate-400 leading-7 mt-3">EMS 案件會依目前系統的消防案件審核流程進行，送出後進入消防高層的審核範圍。</p>
+                    </details>
+                    <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+                        <summary class="cursor-pointer text-sm font-semibold text-white">消防案件被退件怎麼辦？</summary>
+                        <p class="text-sm text-slate-400 leading-7 mt-3">請先查看退件原因，再回到案件資料進行修正並重新送件。若按鈕沒有反應或資料無法正常更新，請重新整理頁面後再確認；仍無法處理時請透過政府信箱回報。</p>
+                    </details>
+                    <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+                        <summary class="cursor-pointer text-sm font-semibold text-white">消防打卡的編號規則是什麼？</summary>
+                        <p class="text-sm text-slate-400 leading-7 mt-3">消防打卡同樣會優先使用帳號設定的管理編號；沒有管理編號時，才會使用登入帳號。</p>
+                    </details>
+                </div>
+
+                <div id="faq-category-account" class="faq-category-content hidden space-y-3">
+                    <details id="faq-forgot-password" class="bg-slate-950 border border-amber-500/20 rounded-2xl p-4" open>
+                        <summary class="cursor-pointer text-sm font-semibold text-amber-300"><i class="fa-solid fa-key mr-2"></i>忘記密碼／忘記帳號怎麼辦？</summary>
+                        <div class="mt-3 rounded-xl bg-amber-500/5 border border-amber-500/10 p-4">
+                            <p class="text-sm text-slate-300 leading-7">若帳號或密碼忘記，請親自前往<strong class="text-amber-300">政府信箱</strong>開單請求協助。</p>
+                            <p class="text-xs text-slate-500 mt-2">請勿在公開頻道、留言或其他非官方管道提供自己的密碼。</p>
+                        </div>
+                    </details>
+                    <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+                        <summary class="cursor-pointer text-sm font-semibold text-white">登入時顯示帳號或密碼錯誤怎麼辦？</summary>
+                        <p class="text-sm text-slate-400 leading-7 mt-3">請先確認帳號／編號與密碼是否輸入正確，並注意大小寫及前後空白。若仍無法登入，請使用上方「忘記密碼」說明，親自前往政府信箱開單請求協助。</p>
+                    </details>
+                    <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+                        <summary class="cursor-pointer text-sm font-semibold text-white">登入後重新整理頁面會被登出嗎？</summary>
+                        <p class="text-sm text-slate-400 leading-7 mt-3">正常情況下，系統會嘗試恢復近期的瀏覽器登入工作階段。若工作階段已過期、被登出或瀏覽器清除相關資料，仍需要重新登入。</p>
+                    </details>
+                    <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+                        <summary class="cursor-pointer text-sm font-semibold text-white">為什麼我看不到警察或消防系統？</summary>
+                        <p class="text-sm text-slate-400 leading-7 mt-3">警察與消防勤務頁面會依登入帳號的單位與權限限制。未登入時可以瀏覽常見問題，但不能直接進入需要公職身分的勤務功能。</p>
+                    </details>
+                    <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+                        <summary class="cursor-pointer text-sm font-semibold text-white">登入多次失敗後為什麼無法繼續登入？</summary>
+                        <p class="text-sm text-slate-400 leading-7 mt-3">系統具有預防性裝置封鎖機制，用來降低短時間大量嘗試登入的風險。若畫面顯示「預防性封鎖」，請依畫面提示洽政府信箱。</p>
+                    </details>
+                </div>
+            </div>
+        </section>
+
         <!-- My Profile Tab -->
         <section id="tab-notifications" class="hidden space-y-8">
             <div class="bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl">
@@ -1253,6 +1361,7 @@
                     <div class="relative"><input type="password" id="login-password" autocomplete="current-password" placeholder="請輸入密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-blue-500"><button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-2" aria-label="顯示密碼"><i class="fa-solid fa-eye"></i></button></div>
                 </div>
                 <button id="handle-login-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">立即登入</button>
+                <button type="button" id="login-forgot-password-btn" class="w-full text-sm text-slate-400 hover:text-blue-400 transition underline underline-offset-4">忘記密碼？前往常見問題</button>
             </div>
         </div>
     </div>
@@ -1911,6 +2020,18 @@
                 btn.removeEventListener('click', handleTabClick);
                 btn.addEventListener('click', handleTabClick);
             });
+
+            document.querySelectorAll('.faq-category-btn').forEach(btn => {
+                btn.addEventListener('click', () => switchFAQCategory(btn.getAttribute('data-faq-category')));
+            });
+
+            const loginForgotPasswordBtn = document.getElementById('login-forgot-password-btn');
+            if (loginForgotPasswordBtn) {
+                loginForgotPasswordBtn.addEventListener('click', () => {
+                    closeModal('modal-login');
+                    openFAQ('account', 'faq-forgot-password');
+                });
+            }
 
             const logoBtn = document.getElementById('logo-home-btn');
             if (logoBtn) logoBtn.addEventListener('click', () => switchTab('home'));
@@ -2625,12 +2746,47 @@ async function republishAnnouncement(id) {
             }
         }
 
+        function switchFAQCategory(category, focusId = '') {
+            const validCategories = ['police', 'fire', 'account'];
+            if (!validCategories.includes(category)) category = 'police';
+            document.querySelectorAll('.faq-category-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.faq-category-btn').forEach(btn => {
+                const active = btn.getAttribute('data-faq-category') === category;
+                btn.classList.toggle('active', active);
+                btn.classList.toggle('bg-blue-600/15', active && category === 'police');
+                btn.classList.toggle('border-blue-500/30', active && category === 'police');
+                btn.classList.toggle('text-blue-300', active && category === 'police');
+                btn.classList.toggle('bg-red-600/15', active && category === 'fire');
+                btn.classList.toggle('border-red-500/30', active && category === 'fire');
+                btn.classList.toggle('text-red-300', active && category === 'fire');
+                btn.classList.toggle('bg-amber-600/15', active && category === 'account');
+                btn.classList.toggle('border-amber-500/30', active && category === 'account');
+                btn.classList.toggle('text-amber-300', active && category === 'account');
+                btn.classList.toggle('bg-slate-950', !active);
+                btn.classList.toggle('border-slate-800', !active);
+                btn.classList.toggle('text-slate-300', !active);
+            });
+            const content = document.getElementById(`faq-category-${category}`);
+            if (content) content.classList.remove('hidden');
+            if (focusId) {
+                setTimeout(() => {
+                    const target = document.getElementById(focusId);
+                    if (target) target.scrollIntoView({behavior:'smooth', block:'center'});
+                }, 80);
+            }
+        }
+
+        function openFAQ(category = 'account', focusId = '') {
+            switchTab('faq');
+            switchFAQCategory(category, focusId);
+        }
+
         function switchTab(tabId) {
             if (tabId === 'admin' && !canAccessManagementCenter()) {
                 showToast('目前帳號沒有管理中心權限。', 'warning', '權限不足');
                 tabId = 'home';
             }
-            ['home', 'police', 'fire', 'notifications', 'profile', 'academy', 'admin'].forEach(t => {
+            ['home', 'police', 'fire', 'faq', 'notifications', 'profile', 'academy', 'admin'].forEach(t => {
                 const tabEl = document.getElementById(`tab-${t}`);
                 if (tabEl) tabEl.classList.add('hidden');
                 
@@ -2650,6 +2806,7 @@ async function republishAnnouncement(id) {
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
             
+            if (tabId === 'faq') switchFAQCategory(document.querySelector('.faq-category-btn.active')?.getAttribute('data-faq-category') || 'police');
             if (tabId === 'notifications') renderPersonalNotifications();
             if (tabId === 'profile') renderMyProfile();
             if (tabId === 'academy') {
