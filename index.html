@@ -27,7 +27,8 @@
     <meta name="twitter:title" content="新北市 RP 3.0 公職服務系統｜勤務與案件管理">
     <meta name="twitter:description" content="整合警務、消防、EMS 勤務、案件審核、個人通知、警專考核與管理中心的 RP 公職勤務服務系統。">
     <meta name="twitter:image" content="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/image.png53.png">
-    <script src="https://cdn.tailwindcss.com">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
         // ER:LC 警報音效：單一全域狀態，重複點擊不會建立重複監聽器。
         let erlcAudioEnabled = false;
         let erlcAudioContext = null;
@@ -5963,7 +5964,6 @@ async function republishAnnouncement(id) {
         function refreshAdminOnlineUsers(){if(!currentUser||currentUser.role!=='admin')return;recalculateDutyStatusCache();renderAdminOnlineUsers();}
         let erlcAlertUnsubscribe=null;
         let erlcHealthUnsubscribe=null;
-        let erlcAudioContext=null;
         let erlcAudioUnlocked=false;
         function renderERLCApiHealth(data={}){
             const badge=document.getElementById('erlc-api-health-badge');
@@ -6049,7 +6049,7 @@ async function republishAnnouncement(id) {
             if(!(await showConfirm('確定要停用 ER:LC 整合設定嗎？','停用 ER:LC','確定停用')))return;
             try{await fm.setDoc(fm.doc(db,'systemSettings','erlcIntegration'),{configured:false,serverKey:'',serverId:'',serverOpen:false,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});await renderERLCConfigStatus();showToast('ER:LC 整合已停用，伺服器狀況也已切換為關服。','success','操作完成');}catch(e){showToast('停用失敗：'+e.message,'error','操作失敗');}
         }
-        async function unlockERLCAlertAudio(){try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;erlcAudioContext=erlcAudioContext||new AC();await erlcAudioContext.resume();const o=erlcAudioContext.createOscillator(),g=erlcAudioContext.createGain();g.gain.value=0.0001;o.connect(g);g.connect(erlcAudioContext.destination);o.start();o.stop(erlcAudioContext.currentTime+0.02);erlcAudioUnlocked=true;showToast('警報音效已啟用。','success','音效啟用');}catch(e){showToast('瀏覽器未允許啟用音效。','warning','音效未啟用');}}
+        async function unlockERLCAlertAudio(){try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;erlcAudioContext=erlcAudioContext||new AC();await erlcAudioContext.resume();erlcAudioEnabled=true;erlcAudioUnlocked=true;updateERLCAudioButtons();const o=erlcAudioContext.createOscillator(),g=erlcAudioContext.createGain();g.gain.value=0.0001;o.connect(g);g.connect(erlcAudioContext.destination);o.start();o.stop(erlcAudioContext.currentTime+0.02);showToast('警報音效已啟用。','success','音效啟用');}catch(e){showToast('瀏覽器未允許啟用音效。','warning','音效未啟用');}}
         async function playERLCOfficerAlert(){if(!erlcAudioUnlocked)return;try{const AC=window.AudioContext||window.webkitAudioContext;erlcAudioContext=erlcAudioContext||new AC();await erlcAudioContext.resume();for(let i=0;i<6;i++){const o=erlcAudioContext.createOscillator(),g=erlcAudioContext.createGain();o.type='square';o.frequency.value=i%2?880:660;g.gain.setValueAtTime(0.0001,erlcAudioContext.currentTime+i*0.18);g.gain.exponentialRampToValueAtTime(0.12,erlcAudioContext.currentTime+i*0.18+0.02);g.gain.exponentialRampToValueAtTime(0.0001,erlcAudioContext.currentTime+i*0.18+0.15);o.connect(g);g.connect(erlcAudioContext.destination);o.start(erlcAudioContext.currentTime+i*0.18);o.stop(erlcAudioContext.currentTime+i*0.18+0.16);}}catch(e){}}
         function showERLCDeathAlert(a){
             const isOfficer=String(a.type||'')==='officer-life-alert';
