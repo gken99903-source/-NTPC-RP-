@@ -29,8 +29,8 @@
     <meta name="twitter:image" content="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/image.png53.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // ER:LC 警報音效：單一全域狀態，重複點擊不會建立重複監聽器。
-        let erlcAudioEnabled = false;
+        // ER:LC 警報音效：每台裝置／每個瀏覽器獨立保存，不同步到 Firestore；重複點擊不會建立重複監聽器。
+        let erlcAudioEnabled = (() => { try { return localStorage.getItem('ntpc_erlc_audio_enabled') === '1'; } catch(e) { return false; } })();
         let erlcAudioContext = null;
         let erlcAlarmOscillator = null;
         let erlcAlarmGain = null;
@@ -88,10 +88,12 @@
                     console.warn('ER:LC 自訂音效預解鎖失敗，警報觸發時將再次嘗試：', audioUnlockError);
                 }
                 erlcAudioEnabled = true;
+                try { localStorage.setItem('ntpc_erlc_audio_enabled','1'); } catch(e) {}
                 updateERLCAudioButtons();
                 showToast?.('ER:LC 警報音效已啟用。警員倒地時將播放 10-99.mp3。','success','音效設定');
             } catch(e) {
                 erlcAudioEnabled = false;
+                try { localStorage.removeItem('ntpc_erlc_audio_enabled'); } catch(e) {}
                 updateERLCAudioButtons();
                 showToast?.('瀏覽器未允許音效，請再次點擊按鈕。','error','音效設定');
             }
@@ -99,6 +101,7 @@
 
         function disableERLCAudio(){
             erlcAudioEnabled = false;
+            try { localStorage.removeItem('ntpc_erlc_audio_enabled'); } catch(e) {}
             stopERLCAlarmSound();
             try { if (erlcOfficerAlertAudio) { erlcOfficerAlertAudio.pause(); erlcOfficerAlertAudio.currentTime = 0; } } catch(e) {}
             updateERLCAudioButtons();
@@ -6118,18 +6121,36 @@ async function republishAnnouncement(id) {
             if(isOfficer)playERLCOfficerAlert();
             const box=document.getElementById('erlc-live-alert-modal');if(box){box.classList.remove('hidden');box.querySelector('[data-erlc-alert-title]').textContent=isOfficer?'🚨 警員生命狀態異常':'🔴 市民生命狀態異常';box.querySelector('[data-erlc-alert-body]').innerHTML=`<div>📍 郵遞區號：${escapeHtml(postalCode)}</div>${isOfficer?`<div>👮 單位：${escapeHtml(a.unit||'--')}</div><div>👤 ${escapeHtml(a.name||'--')}</div><div>🆔 值勤編號：${escapeHtml(a.staffNumber||a.account||'--')}</div>`:''}`;}}
         function stopERLCAlertListener(){if(typeof erlcAlertUnsubscribe==='function'){try{erlcAlertUnsubscribe();}catch(e){}}erlcAlertUnsubscribe=null;}
+        const erlcDisplayedAlertIds = new Set();
+        let erlcAlertListenerGeneration = 0;
         function syncERLCAlertListener(){
             stopERLCAlertListener();
-            // 死亡通報是全站即時警報，不應限制只有「值勤中的警察」才能收到。
-            // Worker 會在事件本身判定受害者是否為值勤警察；網站端只負責接收並顯示。
+            // 死亡通報是全站即時警報：登入後所有單位（警察、消防、EMS、管理中心）都會收到。
+            // 但「重新建立監聽器」時不能把目前 active 的舊警報重新當成新警報，否則會造成亂響。
             if(!currentUser||!db||!fm)return;
+            const generation=++erlcAlertListenerGeneration;
             try{
                 const ref=fm.query(fm.collection(db,'erlcLiveAlerts'),fm.where('active','==',true));
+                let initialized=false;
                 erlcAlertUnsubscribe=fm.onSnapshot(ref,snap=>{
+                    if(generation!==erlcAlertListenerGeneration)return;
+                    if(!initialized){
+                        // 首次快照只建立已存在警報的 ID，不播放、不彈窗。
+                        snap.docs.forEach(d=>erlcDisplayedAlertIds.add(d.id));
+                        initialized=true;
+                        return;
+                    }
                     snap.docChanges().filter(c=>c.type==='added').forEach(c=>{
+                        if(erlcDisplayedAlertIds.has(c.doc.id))return;
+                        erlcDisplayedAlertIds.add(c.doc.id);
                         const a={docId:c.doc.id,...c.doc.data()};
                         showERLCDeathAlert(a);
                     });
+                    // 避免 Set 無限成長，只保留最近使用的一批 ID。
+                    if(erlcDisplayedAlertIds.size>500){
+                        const keep=[...erlcDisplayedAlertIds].slice(-250);
+                        erlcDisplayedAlertIds.clear(); keep.forEach(id=>erlcDisplayedAlertIds.add(id));
+                    }
                 },e=>console.warn('ER:LC 即時警報監聽失敗：',e));
             }catch(e){console.warn('ER:LC 警報監聽建立失敗：',e);}
         }
