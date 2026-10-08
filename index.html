@@ -1808,6 +1808,18 @@
                                 <p id="discord-webhook-admin-status" class="text-[11px] text-slate-500 mt-2">尚未確認設定狀態</p>
                             </div>
                         </div>
+                        <div class="mt-5 rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+                            <div class="flex items-center justify-between gap-3 flex-wrap">
+                                <div>
+                                    <h4 class="font-semibold text-white"><i class="fa-solid fa-heart-pulse text-emerald-400 mr-2"></i>Webhook 即時健康狀態</h4>
+                                    <p class="text-[11px] text-slate-500 mt-1">由 Cloud Function 回報實際 Discord HTTP 結果，不只判斷「有沒有設定」。</p>
+                                </div>
+                                <button type="button" onclick="refreshDiscordWebhookHealth()" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200"><i class="fa-solid fa-rotate mr-1"></i>重新整理</button>
+                            </div>
+                            <div id="discord-webhook-health" class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div class="text-xs text-slate-500">尚未讀取後端狀態。</div>
+                            </div>
+                        </div>
                         <div class="mt-5 rounded-xl border border-amber-500/10 bg-amber-500/5 p-4 text-xs text-slate-400 leading-relaxed">
                             <i class="fa-solid fa-circle-info text-amber-400 mr-1"></i>
                             網站只把 Webhook 設定寫入 Firebase；實際 Discord 發送由後端通知服務處理，避免把 Webhook URL 放進 GitHub Pages 前端。請勿把 Webhook URL 貼到公開程式碼或截圖中。
@@ -3136,7 +3148,7 @@ async function publishAnnouncement() {
             const publisher = document.getElementById('announcement-publisher-input')?.value.trim() || '';
             const duration = document.getElementById('announcement-duration-input')?.value || '1d';
             if (!text || !publisher) { showToast('請填寫公告內容與發布人。','warning','資料不完整'); return; }
-            const now = Date.now(), id = `ANN-${now}`;
+            const now = Date.now(), id = `ANN-${now}-${Math.random().toString(36).slice(2,7)}`;
             const important = !!document.getElementById('announcement-important-input')?.checked;
             const obj = { id, text, publisher, duration, important, createdAt:now, time:formatDateTime(now), expiresAt:announcementExpiry(duration,now), active:true, createdBy:currentUser.account };
             try {
@@ -4917,7 +4929,7 @@ async function republishAnnouncement(id) {
                     if(!Number.isFinite(ts)){showToast('補打卡日期或時間格式無效。','warning','資料錯誤');return;}
                     timeStr=`${dateVal} ${timeVal}:00 (補打卡)`;
                 }else{const now=new Date();ts=now.getTime();timeStr=now.toLocaleString('zh-TW',{hour12:false});}
-                const clockObj={id:'CLK-'+Date.now(),account:accountVal,staffNumber:staffNumberVal,name:nameVal,status:statusVal,vehicle:vehicleVal||'無',time:timeStr,timestamp:ts,remark:'無'};
+                const clockObj={id:'CLK-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),account:accountVal,staffNumber:staffNumberVal,name:nameVal,status:statusVal,vehicle:vehicleVal||'無',time:timeStr,timestamp:ts,remark:'無'};
                 const collectionName=dept==='police'?'policeClocks':'fireClocks';
                 await fm.setDoc(fm.doc(db,collectionName,clockObj.id),clockObj);
                 /* 雲端成功後交由 onSnapshot 唯一回填，避免本地插入與即時監聽造成重複顯示。 */
@@ -5021,6 +5033,8 @@ async function republishAnnouncement(id) {
 
         // Discord 通知改採「Firestore 通知佇列 → 後端服務 → Discord Webhook」。
         // GitHub Pages 不直接讀取或發送 Webhook URL，避免把 Webhook 機密暴露給一般使用者。
+        window.__NTPC_DISCORD_BACKEND_QUEUE__ = true;
+
         async function enqueueDiscordNotification(type, payload={}) {
             if(!currentUser && type !== 'case') return {ok:false, disabled:true};
             try{
@@ -5047,11 +5061,39 @@ async function republishAnnouncement(id) {
             return enqueueDiscordNotification('case',{department:dept,report:JSON.parse(JSON.stringify(report||{}))});
         }
 
+        // 相容舊版通緝流程：目前 Discord Webhook 僅負責「警察案件／消防案件／管理中心 LOG」，
+        // 通緝申請不應因舊版 Discord 函式不存在而中斷 Firestore 寫入。
+        function sendDiscordWantedNotification() {
+            return Promise.resolve({ok:false,disabled:true,reason:'wanted webhook not configured'});
+        }
+
         function sendManagementDiscordLog(action,target,detail='',options={}) {
             const operator=currentUser ? {account:currentUser.account||'',name:currentUser.name||''} : {account:'system',name:'系統自動處理'};
             return enqueueDiscordNotification('adminLog',{action:String(action||''),target:String(target||''),detail:String(detail||''),operator,mentionRole:!!options?.mentionRole});
         }
 
+        function discordWebhookHealthCard(key,label,d){
+            const configured=!!d?.[key];
+            const lastOk=Number(d?.[`${key}LastSuccessAt`]||0);
+            const lastFail=Number(d?.[`${key}LastFailureAt`]||0);
+            const code=d?.[`${key}LastHttpStatus`];
+            const err=d?.[`${key}LastError`]||'';
+            const last=lastOk>=lastFail?lastOk:lastFail;
+            const ok=lastOk>lastFail;
+            const state=!configured?'⚪ 尚未設定':!last?'🟡 尚未測試':ok?'🟢 最近發送成功':'🔴 最近發送失敗';
+            const detail=!configured?'請先儲存 Webhook':!last?'尚無發送紀錄':ok?`HTTP ${code||204}　${formatDateTime(lastOk)}`:`HTTP ${code||'未知'}　${formatDateTime(lastFail)}`;
+            return `<div class="rounded-xl border ${ok?'border-emerald-500/20':last&&!ok?'border-rose-500/20':'border-slate-800'} bg-slate-900 p-4"><div class="flex items-center justify-between gap-2"><span class="font-semibold text-sm text-white">${label}</span><span class="text-xs">${state}</span></div><div class="text-[11px] text-slate-400 mt-2">${detail}</div>${err&&!ok?`<div class="text-[11px] text-rose-300 mt-2 break-words">${escapeHtml(err)}</div>`:''}</div>`;
+        }
+        async function refreshDiscordWebhookHealth(){
+            if(!currentUser||getEffectiveRole(currentUser)!=='admin') return;
+            const host=document.getElementById('discord-webhook-health');
+            if(!host)return;
+            try{
+                const snap=await fm.getDoc(fm.doc(db,'systemSettings','discordWebhookStatus'));
+                const d=snap.exists?snap.data():{};
+                host.innerHTML=[['police','警察案件報告'],['fire','消防案件報告'],['adminLog','管理中心 LOG']].map(([k,l])=>discordWebhookHealthCard(k,l,d)).join('');
+            }catch(e){host.innerHTML=`<div class="text-xs text-rose-300">後端狀態讀取失敗：${escapeHtml(e.message||String(e))}</div>`;}
+        }
         async function renderDiscordWebhookSettings(){
             if(!currentUser||getEffectiveRole(currentUser)!=='admin') return;
             const status=document.getElementById('discord-webhook-config-status');
@@ -5059,8 +5101,9 @@ async function republishAnnouncement(id) {
                 const snap=await fm.getDoc(fm.doc(db,'systemSettings','discordWebhookStatus'));
                 const d=snap.exists?snap.data():{};
                 const map=[['police','discord-webhook-police-status','警察案件報告'],['fire','discord-webhook-fire-status','消防案件報告'],['adminLog','discord-webhook-admin-status','管理中心 LOG']];
-                map.forEach(([key,id,label])=>{const el=document.getElementById(id);if(el)el.innerHTML=d[key]===true?'<span class="text-emerald-400">🟢 已設定</span>　後端通知服務可使用':'<span class="text-slate-500">⚪ 尚未設定</span>';});
-                if(status) status.textContent=`最後更新：${d.updatedAt?formatDateTime(d.updatedAt):'尚無紀錄'}${d.updatedBy?` ／ ${escapeHtml(d.updatedBy)}`:''}`;
+                map.forEach(([key,id,label])=>{const el=document.getElementById(id);if(el)el.innerHTML=d[key]===true?'<span class="text-emerald-400">🟢 已設定</span>　等待／依後端實際發送狀態判定':'<span class="text-slate-500">⚪ 尚未設定</span>';});
+                if(status) status.textContent=`最後設定更新：${d.updatedAt?formatDateTime(d.updatedAt):'尚無紀錄'}${d.updatedBy?` ／ ${escapeHtml(d.updatedBy)}`:''}`;
+                await refreshDiscordWebhookHealth();
             }catch(e){if(status)status.textContent='設定狀態讀取失敗：'+e.message;}
         }
 
@@ -5089,7 +5132,8 @@ async function republishAnnouncement(id) {
             try{
                 const result=await enqueueDiscordNotification('test',{operator:{account:currentUser.account||'',name:currentUser.name||''},createdAt:Date.now()});
                 if(!result.ok) throw result.error||new Error('無法建立通知佇列');
-                showToast('測試通知已加入 Discord 送出佇列，請稍候確認頻道。','success','測試已送出');
+                showToast('測試通知已加入佇列；請按重新整理查看 Cloud Function 實際 HTTP 結果。','success','測試已排程');
+                setTimeout(refreshDiscordWebhookHealth,1500);
             }catch(e){showToast('測試通知建立失敗：'+e.message,'error','操作失敗');}
         }
 
@@ -6136,7 +6180,7 @@ async function republishAnnouncement(id) {
                 return false;
             }catch(e){console.warn('login failure audit',e);return false;}
         }
-        async function recordLoginSession(user){if(!user||!fm||!db)return;const now=Date.now(),device=getDeviceInfo(),fingerprint=getDeviceFingerprint(device),deviceKey=getDeviceKey(device),id=`LOGIN-${String(user.account).replace(/[^a-zA-Z0-9_-]/g,'_')}-${now}`,session={id,account:user.account,name:user.name,loginAt:now,time:formatDateTime(now),device,fingerprint,deviceKey};try{await fm.setDoc(fm.doc(db,'loginSessions',id),session);await fm.updateDoc(fm.doc(db,'users',user.docId||user.account),{lastLoginAt:now,lastDevice:device});user.lastLoginAt=now;user.lastDevice=device;appData.loginSessions.unshift({docId:id,...session});}catch(e){console.warn('login audit',e);}}
+        async function recordLoginSession(user){if(!user||!fm||!db)return;const now=Date.now(),device=getDeviceInfo(),fingerprint=getDeviceFingerprint(device),deviceKey=getDeviceKey(device),id=`LOGIN-${String(user.account).replace(/[^a-zA-Z0-9_-]/g,'_')}-${now}-${Math.random().toString(36).slice(2,7)}`,session={id,account:user.account,name:user.name,loginAt:now,time:formatDateTime(now),device,fingerprint,deviceKey};try{await fm.setDoc(fm.doc(db,'loginSessions',id),session);await fm.updateDoc(fm.doc(db,'users',user.docId||user.account),{lastLoginAt:now,lastDevice:device});user.lastLoginAt=now;user.lastDevice=device;appData.loginSessions.unshift({docId:id,...session});}catch(e){console.warn('login audit',e);}}
         async function pruneOldLoginSessions() {
             if (!currentUser || currentUser.role !== 'admin' || !fm || !db) return;
             const cutoff = Date.now() - 3 * 24 * 60 * 60 * 1000;
@@ -6378,7 +6422,7 @@ async function republishAnnouncement(id) {
             }catch(e){showToast('解封失敗：'+e.message,'error','操作失敗');}
         }
 
-        async function submitFeedback(){if(!currentUser){showToast('請先登入後再回報。','warning','需要登入');return;}const subject=document.getElementById('feedback-subject').value.trim(),details=document.getElementById('feedback-details').value.trim();if(!subject||!details){showToast('請填寫主旨與詳細資訊。','error','資料不完整');return;}const now=Date.now(),id=`FB-${now}`,obj={id,subject,details,account:currentUser.account,name:currentUser.name,staffNumber:currentUser.staffNumber||'',time:formatDateTime(now),timestamp:now,status:'未處理'};try{await fm.setDoc(fm.doc(db,'feedbackReports',id),obj);appData.feedbackReports.unshift({docId:id,...obj});closeModal('modal-feedback');showToast('回報已送至管理中心。','success','回報成功');renderAdminFeedback();}catch(e){showToast('回報送出失敗：'+e.message,'error','操作失敗');}}
+        async function submitFeedback(){if(!currentUser){showToast('請先登入後再回報。','warning','需要登入');return;}const subject=document.getElementById('feedback-subject').value.trim(),details=document.getElementById('feedback-details').value.trim();if(!subject||!details){showToast('請填寫主旨與詳細資訊。','error','資料不完整');return;}const now=Date.now(),id=`FB-${now}-${Math.random().toString(36).slice(2,7)}`,obj={id,subject,details,account:currentUser.account,name:currentUser.name,staffNumber:currentUser.staffNumber||'',time:formatDateTime(now),timestamp:now,status:'未處理'};try{await fm.setDoc(fm.doc(db,'feedbackReports',id),obj);appData.feedbackReports.unshift({docId:id,...obj});closeModal('modal-feedback');showToast('回報已送至管理中心。','success','回報成功');renderAdminFeedback();}catch(e){showToast('回報送出失敗：'+e.message,'error','操作失敗');}}
         function openFeedbackModal(){if(!currentUser){showToast('請先登入後再回報。','warning','需要登入');return;}document.getElementById('feedback-account-preview').textContent=`${currentUser.name} (${currentUser.account})`;document.getElementById('modal-feedback').classList.remove('hidden');}
         function renderAdminFeedback(){const c=document.getElementById('admin-feedback-list');if(!c)return;const rows=(appData.feedbackReports||[]).sort((a,b)=>b.timestamp-a.timestamp);c.innerHTML=rows.length?rows.map(r=>{const id=String(r.docId||r.id||'').replace(/'/g,"\'");const subject=escapeHtml(r.subject||'無主旨'),name=escapeHtml(r.name||'--'),account=escapeHtml(r.account||'--'),staff=r.staffNumber?`／${escapeHtml(r.staffNumber)}`:'',details=escapeHtml(r.details||''),note=escapeHtml(r.adminNote||''),status=escapeHtml(r.status||'未處理'),time=escapeHtml(formatDateTime(r.timestamp,r.time));const noteValue=String(r.adminNote||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2"><div><h4 class="font-bold text-white">${subject}</h4><div class="text-xs text-cyan-400 font-mono mt-1">${name} (${account})${staff}</div></div><span class="text-xs text-slate-500">${time}</span></div><div class="bg-slate-950 rounded-xl p-4 text-sm text-slate-300 whitespace-pre-wrap break-words">${details}</div><div class="grid grid-cols-1 md:grid-cols-[160px_1fr_auto] gap-2"><select id="fb-status-${escapeHtml(id)}" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"><option ${status==='未處理'?'selected':''}>未處理</option><option ${status==='處理中'?'selected':''}>處理中</option><option ${status==='已處理'?'selected':''}>已處理</option></select><input id="fb-note-${escapeHtml(id)}" value="${noteValue}" placeholder="管理員備注..." class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"><div class="flex gap-2"><button type="button" onclick="saveFeedbackAdmin('${id}')" class="px-3 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-xs">儲存備注</button><button type="button" onclick="deleteFeedback('${id}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-xl text-xs">刪除訊息</button></div></div>${note?`<div class="text-xs text-amber-300 bg-amber-500/5 border border-amber-500/10 rounded-xl p-3">管理員備注：${note}</div>`:''}</div>`}).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">目前沒有回報內容。</div>';}
         async function saveFeedbackAdmin(id){if(!currentUser||currentUser.role!=='admin')return;const r=appData.feedbackReports.find(x=>String(x.docId||x.id)===String(id));if(!r)return;const status=document.getElementById(`fb-status-${id}`)?.value||'未處理',adminNote=document.getElementById(`fb-note-${id}`)?.value.trim()||'';try{await fm.updateDoc(fm.doc(db,'feedbackReports',r.docId||r.id),{status,adminNote,adminNoteBy:currentUser.account,adminNoteAt:Date.now()});r.status=status;r.adminNote=adminNote;r.adminNoteBy=currentUser.account;r.adminNoteAt=Date.now();await logAdminAction('備注／更新意見回報',r.docId||r.id);renderAdminFeedback();showToast('回報備注已儲存。','success','儲存成功');}catch(e){showToast('儲存失敗：'+e.message,'error','操作失敗');}}
@@ -6669,7 +6713,7 @@ function ntpcDutyHoursSince(startMs){const mine=ntpcDutyRowsForCurrentUser().fil
 function renderDashRecentDuty(){const h=document.getElementById('dash-recent-duty');if(!h)return;const rows=ntpcDutyRowsForCurrentUser().slice(0,10);h.innerHTML=rows.length?rows.map(c=>{const status=String(c.status||c.action||c.type||'');const label=/上班|上班打卡|clock.?in/i.test(status)?'上班':/下班|下班打卡|clock.?out/i.test(status)?'下班':(c.status||c.action||'值勤紀錄');const unit=c.unit==='fire'||c.department==='fire'?'消防':c.unit==='admin'||c.department==='admin'?'管理':'警察';return `<div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3 flex items-center justify-between gap-3"><div><div class="text-sm font-semibold text-white">${ntpcEsc(unit)} ／ ${ntpcEsc(label)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(formatDateTime(c.timestamp||c.time,c.time))}</div></div><span class="text-[11px] px-2 py-1 rounded-full bg-slate-800 text-slate-300">${ntpcEsc(c.dutyNumber||c.managementId||c.staffNumber||currentUser.account||'--')}</span></div>`}).join(''):'<div class="text-sm text-slate-500 py-5 text-center md:col-span-2">目前沒有勤務打卡紀錄。</div>';}
 function ntpcCurrentMonthHours(){if(!currentUser)return 0;const start=new Date();start.setDate(1);start.setHours(0,0,0,0);const mine=[...(appData.policeClocks||[]),...(appData.fireClocks||[]),...(appData.adminClocks||[])].filter(c=>String(c.account||c.userAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&Number(c.timestamp||c.time||0)>=start.getTime());let total=0;const groups={};mine.forEach(c=>{const key=c.shiftId||c.clockGroup||c.id||`${c.account}-${new Date(c.timestamp||c.time).toDateString()}`;(groups[key]??=[]).push(c);});Object.values(groups).forEach(g=>{g.sort((a,b)=>Number(a.timestamp||a.time)-Number(b.timestamp||b.time));for(let i=0;i+1<g.length;i+=2){const a=Number(g[i].timestamp||g[i].time),b=Number(g[i+1].timestamp||g[i+1].time);if(b>a)total+=b-a;}});return Math.round(total/360000)/10;}
 function refreshDutyDashboard(){if(!document.getElementById('tab-dashboard'))return;const online=getCurrentDutyCount();const pending=(appData.policePendingReports||[]).length+(appData.firePendingReports||[]).length+(appData.emsPendingReports||[]).length+(appData.wantedPendingRecords||[]).length;const noti=currentUser?(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&!n.read).length:0;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};set('dash-online',online);set('dash-pending',pending);set('dash-notifications',noti);set('dash-hours',ntpcCurrentMonthHours().toFixed(1)+' h');set('dash-week-hours',currentUser?ntpcDutyHoursSince(Date.now()-7*24*60*60*1000).toFixed(1)+' h':'--');set('dash-total-hours',currentUser?ntpcDutyHoursSince(0).toFixed(1)+' h':'--');const work=document.getElementById('dash-my-work');if(work){const mine=(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser?.account||'').toLowerCase()&&!n.read).slice(0,8);work.innerHTML=mine.length?mine.map(n=>`<div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800"><div class="text-sm text-white">${ntpcEsc(n.title||'案件通知')}</div><div class="text-xs text-slate-500 mt-1">${ntpcEsc(n.message||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有待處理通知。</div>';}renderDashRecentDuty();renderDashSystemStatus();renderDashAnnouncements();renderDashHandover();renderDashManagementWork();}
-function renderDashSystemStatus(){const h=document.getElementById('dash-system-status');if(!h)return;const online=navigator.onLine;const firebaseOk=!!db&&!!fm;const realtimeOk=Array.isArray(realtimeUnsubscribers)&&realtimeUnsubscribers.length>0;h.innerHTML=[['網路連線',online,'瀏覽器網路狀態'],['Firebase',firebaseOk,'雲端資料庫模組'],['即時同步',realtimeOk,'Firestore 即時監聽'],['案件通知',!!appData.reportNotifications,'通知資料已載入'],['Discord 通知',false,'本版本已停用前端 Webhook']].map(x=>`<div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60"><div><span class="status-dot ${x[1]?'status-ok':'status-bad'}"></span><span class="text-sm text-slate-200">${x[0]}</span></div><span class="text-[11px] text-slate-500">${x[2]}</span></div>`).join('');const t=document.getElementById('dash-status-time');if(t)t.textContent='更新 '+formatDateTime(Date.now());}
+function renderDashSystemStatus(){const h=document.getElementById('dash-system-status');if(!h)return;const online=navigator.onLine;const firebaseOk=!!db&&!!fm;const realtimeOk=Array.isArray(realtimeUnsubscribers)&&realtimeUnsubscribers.length>0;h.innerHTML=[['網路連線',online,'瀏覽器網路狀態'],['Firebase',firebaseOk,'雲端資料庫模組'],['即時同步',realtimeOk,'Firestore 即時監聽'],['案件通知',!!appData.reportNotifications,'通知資料已載入'],['Discord 通知',!!window.__NTPC_DISCORD_BACKEND_QUEUE__,'由後端 Cloud Function 發送']].map(x=>`<div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60"><div><span class="status-dot ${x[1]?'status-ok':'status-bad'}"></span><span class="text-sm text-slate-200">${x[0]}</span></div><span class="text-[11px] text-slate-500">${x[2]}</span></div>`).join('');const t=document.getElementById('dash-status-time');if(t)t.textContent='更新 '+formatDateTime(Date.now());}
 function renderDashAnnouncements(){const h=document.getElementById('dash-important-announcements');if(!h)return;const rows=(appData.announcements||[]).filter(a=>a.active!==false&&a.important).sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0)).slice(0,5);h.innerHTML=rows.length?rows.map(a=>`<div class="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5"><div class="text-sm text-white">${ntpcEsc(a.text)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(a.publisher||'系統')}｜${ntpcEsc(a.time||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有置頂重要公告。</div>';}
 function getUserDepartments(u=currentUser){if(!u)return [];if(getEffectiveRole(u)==='admin')return ['police','fire'];const units=Array.isArray(u.units)?u.units:[u.unit];return [...new Set(units.filter(x=>x==='police'||x==='fire'))];}
 function handoverDepartmentOf(note){if(note?.department==='police'||note?.department==='fire')return note.department;const u=(appData.users||[]).find(x=>String(x.account||'').toLowerCase()===String(note?.authorAccount||'').toLowerCase());return getUserDepartments(u)[0]||'police';}
@@ -6687,7 +6731,7 @@ async function renderFAQIssues(){const h=document.getElementById('admin-faq-issu
 async function closeFAQIssue(id){if(!currentUser||getEffectiveRole(currentUser)!=='admin'||!db||!fm)return;try{await fm.updateDoc(fm.doc(db,'faqIssues',id),{status:'closed',closedAt:Date.now(),closedBy:currentUser.account});const x=(appData.faqIssues||[]).find(a=>(a.docId||a.id)===id);if(x)Object.assign(x,{status:'closed',closedAt:Date.now(),closedBy:currentUser.account});renderFAQIssues();showToast('問題單已標記處理。','success','操作完成');}catch(e){showToast('更新問題單失敗：'+e.message,'error','操作失敗');}}
 function renderDashManagementWork(){const card=document.getElementById('dash-management-work-card'),h=document.getElementById('dash-management-work');if(!card||!h)return;const can=!!currentUser&&canAccessManagementCenter();card.classList.toggle('hidden',!can);if(!can)return;const items=[['警察案件待審',appData.policePendingReports?.length||0,'police'],['消防／EMS待審', (appData.firePendingReports?.length||0)+(appData.emsPendingReports?.length||0),'fire'],['通緝待審',appData.wantedPendingRecords?.length||0,'police'],['帳號協助單',appData.faqIssues?.filter(x=>x.status!=='closed').length||0,'admin'],['異常回報',appData.feedbackReports?.length||0,'admin']];h.innerHTML=items.map(x=>`<div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800"><span class="text-sm text-slate-200">${x[0]}</span><span class="font-bold ${x[1]?'text-amber-400':'text-emerald-400'}">${x[1]}</span></div>`).join('');}
 function openFAQIssueModal(){if(!currentUser){showToast('請先登入後再提交問題。','warning','需要登入');return;}const nameEl=document.getElementById('faq-issue-account-preview');if(nameEl)nameEl.textContent=`${currentUser.name||'使用者'} (${currentUser.account})`;const input=document.getElementById('faq-issue-text');if(input)input.value='';document.getElementById('modal-faq-issue')?.classList.remove('hidden');setTimeout(()=>document.getElementById('faq-issue-text')?.focus(),80);}
-async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登入後再提交問題。','warning','需要登入');return;}const input=document.getElementById('faq-issue-text'),text=String(input?.value||'').trim();if(!text){showToast('請先描述你遇到的問題。','error','內容未填寫');input?.focus();return;}if(text.length>1000){showToast('問題內容最多 1000 字。','warning','內容過長');return;}const btn=document.getElementById('submit-faq-issue-btn');if(btn?.classList.contains('is-busy-action'))return;btn?.classList.add('is-busy-action');try{const now=Date.now(),id='FAQ-'+now,obj={id,account:currentUser.account,name:currentUser.name||'',text:text.slice(0,1000),timestamp:now,time:formatDateTime(now),status:'open'};await fm.setDoc(fm.doc(db,'faqIssues',id),obj);appData.faqIssues.unshift({docId:id,...obj});closeModal('modal-faq-issue');await logAdminAction('提交常見問題協助單',id,text,{discord:false});renderFAQIssues();renderDashManagementWork();showSubmitSuccessAnimation('問題提交成功','問題已送至管理中心，管理人員可以查看。');}catch(e){showToast('提交失敗：'+e.message,'error','操作失敗');}finally{btn?.classList.remove('is-busy-action');}}
+async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登入後再提交問題。','warning','需要登入');return;}const input=document.getElementById('faq-issue-text'),text=String(input?.value||'').trim();if(!text){showToast('請先描述你遇到的問題。','error','內容未填寫');input?.focus();return;}if(text.length>1000){showToast('問題內容最多 1000 字。','warning','內容過長');return;}const btn=document.getElementById('submit-faq-issue-btn');if(btn?.classList.contains('is-busy-action'))return;btn?.classList.add('is-busy-action');try{const now=Date.now(),id='FAQ-'+now+'-'+Math.random().toString(36).slice(2,7),obj={id,account:currentUser.account,name:currentUser.name||'',text:text.slice(0,1000),timestamp:now,time:formatDateTime(now),status:'open'};await fm.setDoc(fm.doc(db,'faqIssues',id),obj);appData.faqIssues.unshift({docId:id,...obj});closeModal('modal-faq-issue');await logAdminAction('提交常見問題協助單',id,text,{discord:false});renderFAQIssues();renderDashManagementWork();showSubmitSuccessAnimation('問題提交成功','問題已送至管理中心，管理人員可以查看。');}catch(e){showToast('提交失敗：'+e.message,'error','操作失敗');}finally{btn?.classList.remove('is-busy-action');}}
 /* 公告重要標記：兼容既有發布流程。 */
 (function patchAnnouncementImportant(){const btn=document.getElementById('publish-announcement-btn');if(!btn||btn.dataset.v182)return;btn.dataset.v182='1';btn.addEventListener('click',()=>{setTimeout(()=>{const text=document.getElementById('announcement-text-input')?.value;},0);});const original=window.publishAnnouncement;if(typeof original==='function'&&original.__v182)return;})();
 /* Discord Webhook 已停用：不建立 retry queue、不寫入 webhookLogs、不進行跨來源 POST。 */
