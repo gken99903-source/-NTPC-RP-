@@ -4240,7 +4240,7 @@ async function republishAnnouncement(id) {
             return out;
         }
 
-        function ntpcDiscordSend(webhookUrl, payload, label='Discord') {
+        async function ntpcDiscordSend(webhookUrl, payload, label='Discord') {
             if (!webhookUrl || !payload) {
                 console.warn(`[NTPC-RP] ${label} 未設定 Webhook，略過發送。`);
                 return false;
@@ -4248,6 +4248,34 @@ async function republishAnnouncement(id) {
             try {
                 const safePayload = ntpcDiscordNormalizePayload(payload);
                 if (!safePayload) return false;
+
+                /*
+                 * GitHub Pages -> Discord：不要使用 application/json fetch，
+                 * 因為會觸發 CORS preflight。改用 FormData + no-cors，
+                 * Discord Webhook API 可接受 multipart/form-data 的 payload_json。
+                 * no-cors 雖然不能讀取 Discord 回應，但請求本身可以送出。
+                 */
+                const formData = new FormData();
+                formData.append('payload_json', JSON.stringify(safePayload));
+
+                try {
+                    await fetch(
+                        webhookUrl + (webhookUrl.includes('?') ? '&' : '?') + 'wait=false',
+                        {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            body: formData,
+                            credentials: 'omit',
+                            cache: 'no-store'
+                        }
+                    );
+                    console.info(`[NTPC-RP] ${label} 已送出 Discord Webhook。`);
+                    return true;
+                } catch (fetchError) {
+                    console.warn(`[NTPC-RP] ${label} fetch 傳送失敗，改用表單備援：`, fetchError);
+                }
+
+                /* fetch 被瀏覽器環境阻擋時的第二層備援。 */
                 const targetName = `ntpc_discord_${Date.now()}_${Math.random().toString(36).slice(2)}`;
                 const iframe = document.createElement('iframe');
                 iframe.name = targetName;
@@ -4269,14 +4297,12 @@ async function republishAnnouncement(id) {
                 document.body.appendChild(form);
                 form.submit();
 
-                // 不讀取 Discord 回應，因此不會因 CORS 造成前端錯誤。
                 setTimeout(() => {
                     try { form.remove(); iframe.remove(); } catch (_) {}
                 }, 10000);
-                console.info(`[NTPC-RP] ${label} 已交由瀏覽器送出。`);
+                console.info(`[NTPC-RP] ${label} 已交由表單備援送出。`);
                 return true;
             } catch (e) {
-                // Discord 不得影響案件寫入、登入、審核等主流程。
                 console.warn(`[NTPC-RP] ${label} 發送失敗：`, e);
                 return false;
             }
@@ -4442,7 +4468,8 @@ async function republishAnnouncement(id) {
                     const nref = fm.doc(fm.collection(db,'reportNotifications'));
                     await fm.setDoc(nref, notification);
                     appData.reportNotifications.unshift({docId:nref.id,...notification});
-                    // Discord 由 Firebase Cloud Functions 監聽 pending collection 後自動發送。
+                    // Firestore 寫入成功後立即由瀏覽器送出 Discord 通知。
+                    void sendDiscordCaseNotification(dept, reportObj);
                     closeModal('modal-report');
                     if(dept==='police'){ renderPoliceReports(); renderPoliceReview(); } else { renderFireReports(); renderFireReview(); }
                     renderMyProfile();
@@ -4821,7 +4848,8 @@ async function republishAnnouncement(id) {
                 await removePendingReportNotifications(id,pendingObj.registeredByAccount);
                 const n={type:'report',department:'fire',caseId:id,recipientAccount:pendingObj.registeredByAccount,recipientAccountNormalized:String(pendingObj.registeredByAccount||'').trim().toLowerCase(),status:'pending',title:old?'EMS報告已重新送件':'EMS報告已送出，等待消防高層審核',message:old?`EMS報告 ${id} 已重新送入消防高層審核。`:`EMS報告 ${id} 已送入消防高層審核系統。`,timestamp:now,read:false};
                 const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); appData.reportNotifications.unshift({docId:nr.id,...n});
-                // Discord 由 Firebase Cloud Functions 監聽 emsPendingReports 後自動發送。
+                // Firestore 寫入成功後立即由瀏覽器送出消防／EMS Discord 通知。
+                void sendDiscordCaseNotification('fire', pendingObj);
                 await logAdminAction(old?'EMS報告退件後重新送件':'提交EMS報告等待消防高層審核',id);
                 closeModal('modal-ems-report');renderEMSReports();renderFireReview();renderPersonalNotifications();renderMyProfile();showSubmitSuccessAnimation(old?'EMS重新送審成功':'EMS報告送審成功',old?`${id} 已重新送入消防高層審核。`:`${id} 已送入消防高層審核系統。`);
             }catch(e){showToast('EMS報告送審失敗：'+e.message,'error','操作失敗');}
