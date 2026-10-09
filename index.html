@@ -1163,13 +1163,13 @@
                             <li>本次僅更新 HTML 內的版本號、首頁主述與更新紀錄，不新增網站功能。</li>
                         </ul>
                     </article>
-                    <article class="rounded-2xl border border-slate-800 bg-slate-950/50 p-5">
+                    <article class="rounded-2xl border border-red-500/25 bg-red-500/5 p-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                             <div>
                                 <h3 class="text-lg font-bold text-white">V1.9.1</h3>
-                                <p class="text-xs text-slate-400 mt-1">V1.9 發布後的穩定性、稽核與操作體驗更新</p>
+                                <p class="text-xs text-red-300 mt-1">V1.9 發布後的穩定性、稽核與操作體驗更新</p>
                             </div>
-                            <span class="text-xs font-semibold text-slate-500">前一版本</span>
+                            <span class="text-xs font-semibold text-red-300">前一版本</span>
                         </div>
                         <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
                             <li>修正「一周內移除／編輯紀錄」：補齊帳號、查詢資料與打卡紀錄的編輯／刪除稽核，並只顯示最近 7×24 小時內相關操作。</li>
@@ -1184,13 +1184,13 @@
                         </ul>
                     </article>
 
-                    <article class="rounded-2xl border border-red-500/25 bg-red-500/5 p-5">
+                    <article class="rounded-2xl border border-slate-800 bg-slate-950/50 p-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                             <div>
                                 <h3 class="text-lg font-bold text-white">V1.9</h3>
-                                <p class="text-xs text-red-300 mt-1">ER:LC 整合與系統架構更新</p>
+                                <p class="text-xs text-slate-400 mt-1">ER:LC 整合與系統架構更新</p>
                             </div>
-                            <span class="text-xs font-semibold text-slate-500">前一版本</span>
+                            <span class="text-xs font-semibold text-slate-500">歷史版本</span>
                         </div>
                         <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
                             <li>新增 ER:LC 勤務偵測整合架構，可依 Roblox ID 對應網站帳號。</li>
@@ -2971,8 +2971,21 @@ function announcementExpiry(duration, now) {
             return now + 24 * 60 * 60 * 1000;
         }
 
-function getCurrentSiteVersion(){
-            const rows=(appData.siteVersions||[]).filter(v=>v&&v.active!==false).sort((a,b)=>Number(b.publishedAt||b.updatedAt||b.createdAt||0)-Number(a.publishedAt||a.updatedAt||a.createdAt||0));
+function compareSiteVersion(a, b){
+            const parts = value => String(value || '0').trim().replace(/^[vV]/, '').split(/[.+-]/).map(x => { const n = Number.parseInt(x, 10); return Number.isFinite(n) ? n : 0; });
+            const aa=parts(a), bb=parts(b), len=Math.max(aa.length,bb.length);
+            for(let i=0;i<len;i++){ const diff=(aa[i]||0)-(bb[i]||0); if(diff) return diff; }
+            return 0;
+        }
+        function sortSiteVersions(rows){
+            return [...rows].sort((a,b)=>{
+                const versionOrder=compareSiteVersion(b?.version,a?.version);
+                if(versionOrder!==0) return versionOrder;
+                return Number(b?.publishedAt||b?.updatedAt||b?.createdAt||0)-Number(a?.publishedAt||a?.updatedAt||a?.createdAt||0);
+            });
+        }
+        function getCurrentSiteVersion(){
+            const rows=sortSiteVersions((appData.siteVersions||[]).filter(v=>v&&v.active!==false));
             return rows[0]||null;
         }
         function renderSiteVersionUI(){
@@ -2993,9 +3006,8 @@ function getCurrentSiteVersion(){
         }
         function renderDynamicUpdateLog(){
             const host=document.getElementById('dynamic-update-log'); if(!host)return;
-            const rows=(appData.siteVersions||[]).filter(v=>v&&v.active!==false).sort((a,b)=>Number(b.publishedAt||b.updatedAt||b.createdAt||0)-Number(a.publishedAt||a.updatedAt||a.createdAt||0));
-            host.innerHTML=rows.length?rows.map((v,i)=>{const details=Array.isArray(v.details)?v.details:(String(v.details||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean));return `<article class="rounded-2xl border ${i===0?'border-emerald-500/30 bg-emerald-500/5':'border-slate-800 bg-slate-950/60'} p-5"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3"><div><h3 class="text-lg font-bold text-white">${escapeHtml(v.version||'--')}</h3><p class="text-xs ${i===0?'text-emerald-300':'text-slate-500'} mt-1">${escapeHtml(v.title||'版本更新')}</p></div><span class="text-xs font-semibold ${i===0?'text-emerald-300':'text-slate-500'}">${i===0?'目前版本':formatDateTime(v.publishedAt||v.createdAt)}</span></div><p class="text-sm text-slate-300 mb-3">${escapeHtml(v.summary||'')}</p>${details.length?`<ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">${details.map(d=>`<li>${escapeHtml(d)}</li>`).join('')}</ul>`:''}</article>`;}).join('') : '';
-            const legacy=document.querySelector('#dynamic-update-log + .space-y-4 article'); const legacyBadge=legacy?.querySelector('span:last-child'); if(legacyBadge) legacyBadge.textContent=rows.length?'歷史版本':'目前版本';
+            const rows=sortSiteVersions((appData.siteVersions||[]).filter(v=>v&&v.active!==false));
+            host.innerHTML=rows.length?rows.map((v,i)=>{const details=Array.isArray(v.details)?v.details:(String(v.details||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean));return `<article class="rounded-2xl border ${i===0?'border-emerald-500/30 bg-emerald-500/5':i===1?'border-red-500/25 bg-red-500/5':'border-slate-800 bg-slate-950/60'} p-5"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3"><div><h3 class="text-lg font-bold text-white">${escapeHtml(v.version||'--')}</h3><p class="text-xs ${i===0?'text-emerald-300':i===1?'text-red-300':'text-slate-500'} mt-1">${escapeHtml(v.title||'版本更新')}</p></div><span class="text-xs font-semibold ${i===0?'text-emerald-300':i===1?'text-red-300':'text-slate-500'}">${i===0?'目前版本':i===1?'前一版本':formatDateTime(v.publishedAt||v.createdAt)}</span></div><p class="text-sm text-slate-300 mb-3">${escapeHtml(v.summary||'')}</p>${details.length?`<ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">${details.map(d=>`<li>${escapeHtml(d)}</li>`).join('')}</ul>`:''}</article>`;}).join('') : '';
         }
         function resetSiteVersionForm(){
             ['site-version-edit-id','site-version-number','site-version-title','site-version-summary','site-version-details'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
@@ -3038,9 +3050,9 @@ function getCurrentSiteVersion(){
         }
         function renderAdminSiteVersions(){
             const host=document.getElementById('admin-site-versions-list');if(!host)return;
-            const rows=[...(appData.siteVersions||[])].sort((a,b)=>Number(b.publishedAt||b.updatedAt||b.createdAt||0)-Number(a.publishedAt||a.updatedAt||a.createdAt||0));
+            const rows=sortSiteVersions(appData.siteVersions||[]);
             const count=document.getElementById('site-version-count');if(count)count.textContent=`${rows.length} 筆`;
-            host.innerHTML=rows.length?rows.map((v,i)=>`<div class="rounded-2xl border ${i===0&&v.active!==false?'border-emerald-500/20 bg-emerald-500/5':'border-slate-800 bg-slate-950/50'} p-4"><div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4"><div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="font-mono font-bold text-white">${escapeHtml(v.version||'--')}</span>${i===0&&v.active!==false?'<span class="px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-300 text-[11px] font-bold">目前版本</span>':''}</div><div class="text-sm text-slate-200 mt-1">${escapeHtml(v.title||'--')}</div><div class="text-xs text-slate-500 mt-1 break-words">${escapeHtml(v.summary||'')}｜${formatDateTime(v.publishedAt||v.createdAt)}</div></div><div class="flex flex-wrap gap-2 shrink-0"><button type="button" onclick="editSiteVersion('${escapeHtml(v.docId||v.id)}')" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200 text-xs hover:bg-slate-700">編輯</button><button type="button" onclick="deleteSiteVersion('${escapeHtml(v.docId||v.id)}')" class="px-3 py-2 rounded-lg bg-red-600/15 text-red-300 text-xs hover:bg-red-600/25">移除</button></div></div></div>`).join(''):'<div class="rounded-2xl border border-slate-800 bg-slate-950/50 p-8 text-center text-slate-500">目前尚未由管理中心發布版本資訊。網站會使用內建版本資訊。</div>';
+            host.innerHTML=rows.length?rows.map((v,i)=>`<div class="rounded-2xl border ${i===0&&v.active!==false?'border-emerald-500/20 bg-emerald-500/5':i===1?'border-red-500/25 bg-red-500/5':'border-slate-800 bg-slate-950/50'} p-4"><div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4"><div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="font-mono font-bold text-white">${escapeHtml(v.version||'--')}</span>${i===0&&v.active!==false?'<span class="px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-300 text-[11px] font-bold">目前版本</span>':i===1?'<span class="px-2 py-1 rounded-full bg-red-500/10 text-red-300 text-[11px] font-bold">前一版本</span>':''}</div><div class="text-sm text-slate-200 mt-1">${escapeHtml(v.title||'--')}</div><div class="text-xs text-slate-500 mt-1 break-words">${escapeHtml(v.summary||'')}｜${formatDateTime(v.publishedAt||v.createdAt)}</div></div><div class="flex flex-wrap gap-2 shrink-0"><button type="button" onclick="editSiteVersion('${escapeHtml(v.docId||v.id)}')" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200 text-xs hover:bg-slate-700">編輯</button><button type="button" onclick="deleteSiteVersion('${escapeHtml(v.docId||v.id)}')" class="px-3 py-2 rounded-lg bg-red-600/15 text-red-300 text-xs hover:bg-red-600/25">移除</button></div></div></div>`).join(''):'<div class="rounded-2xl border border-slate-800 bg-slate-950/50 p-8 text-center text-slate-500">目前尚未由管理中心發布版本資訊。網站會使用內建版本資訊。</div>';
         }
 
 function getActiveAnnouncements() {
