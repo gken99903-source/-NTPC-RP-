@@ -6416,8 +6416,34 @@ async function republishAnnouncement(id) {
             if(!(date instanceof Date)||Number.isNaN(date.getTime()))date=new Date();
             return new Intl.DateTimeFormat('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(date);
         }
+        function isERLCOfficerCurrentlyOnDuty(alertData={}){
+            // 警員倒地警報必須同時符合「網站帳號已綁定 Roblox ID」及「最新警察打卡狀態為上班」。
+            // 無法確認對應人員或無法確認在勤時，採安全預設：不顯示警員倒地警報。
+            const robloxId=String(alertData.robloxId||alertData.robloxUserId||alertData.playerId||alertData.userId||alertData.RobloxId||'').trim();
+            const account=String(alertData.account||alertData.userAccount||alertData.websiteAccount||'').trim().toLowerCase();
+            const staffNumber=String(alertData.staffNumber||alertData.dutyNumber||alertData.managementNumber||'').trim().toLowerCase();
+            const playerName=String(alertData.name||alertData.playerName||alertData.username||'').trim().toLowerCase();
+            const users=appData?.users||[];
+            const officer=users.find(u=>{
+                const units=u.units||[u.unit];
+                if(!units.includes('police'))return false;
+                if(robloxId && String(u.robloxId||'').trim()===robloxId)return true;
+                if(account && String(u.account||'').trim().toLowerCase()===account)return true;
+                if(staffNumber && [u.staffNumber,u.managementNumber,u.adminNumber,u.memberNumber].some(v=>String(v||'').trim().toLowerCase()===staffNumber))return true;
+                if(!robloxId&&!account&&!staffNumber&&playerName && String(u.name||'').trim().toLowerCase()===playerName)return true;
+                return false;
+            });
+            if(!officer)return false;
+            const key=String(officer.account||'').trim().toLowerCase();
+            const latest=dutyStatusCache?.police?.get(key);
+            return latest?.status==='上班';
+        }
         function showERLCDeathAlert(a){
             const isOfficer=String(a.type||'')==='officer-life-alert';
+            if(isOfficer&&!isERLCOfficerCurrentlyOnDuty(a)){
+                console.info('已忽略非值勤或無法確認值勤狀態的警員倒地警報。');
+                return;
+            }
             // 相容 Worker 不同版本可能使用的欄位名稱，優先使用 Worker 正式寫入的 postalCode。
             const postalCode=String(a.postalCode||a.PostalCode||a.postal||a.location?.PostalCode||a.Location?.PostalCode||'未提供').trim()||'未提供';
             const title=isOfficer?'🚨 警員生命狀態異常':'🔴 市民生命狀態異常';
