@@ -1621,6 +1621,14 @@
                             <div class="flex gap-2"><button id="admin-clock-in-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold">上班打卡</button><button id="admin-clock-out-btn" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold">下班打卡</button></div>
                         </div>
                     </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div><label for="admin-clocks-date-filter" class="block text-xs font-semibold text-slate-400 mb-2">紀錄日期（預設今天）</label><input id="admin-clocks-date-filter" type="date" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white"></div>
+                            <div><label for="admin-clocks-person-filter" class="block text-xs font-semibold text-slate-400 mb-2">指定管理員</label><input id="admin-clocks-person-filter" type="search" placeholder="輸入姓名或帳號查詢" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white"></div>
+                            <div class="flex items-end"><button type="button" id="admin-clocks-filter-clear" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm font-semibold"><i class="fa-solid fa-rotate-left mr-2"></i>重設篩選（回到今日）</button></div>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-3">預設只顯示今天的管理中心打卡紀錄；查詢其他日期請選擇日期，也可輸入姓名或帳號縮小到特定人員。</p>
+                    </div>
                     <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl"><table class="w-full text-left text-sm"><thead><tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50"><th class="p-4">管理員</th><th class="p-4">狀態</th><th class="p-4">時間</th><th class="p-4">備註</th><th class="p-4 text-right">操作</th></tr></thead><tbody id="admin-clocks-tbody" class="divide-y divide-slate-800/60"></tbody></table></div>
                 </div>
 
@@ -2699,6 +2707,18 @@ const loginOpenBtn = document.getElementById('login-modal-open-btn');
                 if (policeClockStatusFilter) policeClockStatusFilter.value = 'all';
                 renderPoliceClocks();
             });
+            const adminClockDateFilter = document.getElementById('admin-clocks-date-filter');
+            const adminClockPersonFilter = document.getElementById('admin-clocks-person-filter');
+            const adminClockFilterClear = document.getElementById('admin-clocks-filter-clear');
+            if (adminClockDateFilter && !adminClockDateFilter.value) adminClockDateFilter.value = localDateKey(Date.now());
+            if (adminClockDateFilter) adminClockDateFilter.addEventListener('change', renderAdminClocks);
+            if (adminClockPersonFilter) adminClockPersonFilter.addEventListener('input', renderAdminClocks);
+            if (adminClockFilterClear) adminClockFilterClear.addEventListener('click', () => {
+                if (adminClockDateFilter) adminClockDateFilter.value = localDateKey(Date.now());
+                if (adminClockPersonFilter) adminClockPersonFilter.value = '';
+                renderAdminClocks();
+            });
+
             const policeClockRefresh = document.getElementById('police-clocks-refresh-btn');
             if (policeClockRefresh) policeClockRefresh.addEventListener('click', async () => {
                 policeClockRefresh.disabled = true;
@@ -2943,7 +2963,24 @@ window.renderAdminOverview = function renderAdminOverview() {
             if(ad) ad.textContent=dutyCountCache.admin;
         };
 
-function renderAdminClocks(){const t=document.getElementById('admin-clocks-tbody');if(!t)return;const rows=[...(appData.adminClocks||[])].sort((a,b)=>b.timestamp-a.timestamp);t.innerHTML=rows.length?rows.map(c=>`<tr><td class="p-4 font-medium text-white">${c.name||'--'} (${c.account||'--'})</td><td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs ${c.status==='上班'?'bg-emerald-500/10 text-emerald-400':'bg-rose-500/10 text-rose-400'}">${c.status}</span></td><td class="p-4 text-slate-300 text-xs">${c.time||formatDateTime(c.timestamp)}</td><td class="p-4 text-slate-400 text-xs">${c.remark||'無'}</td><td class="p-4 text-right"><button onclick="deleteAdminClock('${c.docId||c.id}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button></td></tr>`).join(''):'<tr><td colspan="5" class="p-6 text-center text-slate-500">尚無管理中心打卡紀錄。</td></tr>';}
+function renderAdminClocks(){
+            const t=document.getElementById('admin-clocks-tbody');
+            if(!t)return;
+            const dateInput=document.getElementById('admin-clocks-date-filter');
+            const personInput=document.getElementById('admin-clocks-person-filter');
+            if(dateInput&&!dateInput.value)dateInput.value=localDateKey(Date.now());
+            const selectedDate=dateInput?.value||localDateKey(Date.now());
+            const personQuery=String(personInput?.value||'').trim().toLocaleLowerCase();
+            const rows=[...(appData.adminClocks||[])].filter(c=>{
+                if(selectedDate&&localDateKey(getClockTimestamp(c))!==selectedDate)return false;
+                if(personQuery){
+                    const haystack=[c.name,c.account,c.managementId,c.staffNumber].filter(Boolean).join(' ').toLocaleLowerCase();
+                    if(!haystack.includes(personQuery))return false;
+                }
+                return true;
+            }).sort((a,b)=>getClockTimestamp(b)-getClockTimestamp(a));
+            t.innerHTML=rows.length?rows.map(c=>`<tr><td class="p-4 font-medium text-white">${escapeHtml(c.name||'--')} (${escapeHtml(c.account||'--')})</td><td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs ${c.status==='上班'?'bg-emerald-500/10 text-emerald-400':'bg-rose-500/10 text-rose-400'}">${escapeHtml(c.status||'--')}</span></td><td class="p-4 text-slate-300 text-xs">${escapeHtml(c.time||formatDateTime(getClockTimestamp(c)))}</td><td class="p-4 text-slate-400 text-xs">${escapeHtml(c.remark||'無')}</td><td class="p-4 text-right"><button onclick="deleteAdminClock('${String(c.docId||c.id||'').replace(/'/g,"\\'")}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button></td></tr>`).join(''):'<tr><td colspan="5" class="p-6 text-center text-slate-500">此日期或人員沒有符合的管理中心打卡紀錄。</td></tr>';
+        }
 
 function openAdminClockModal(status){if(!currentUser||currentUser.role!=='admin'){showToast('管理中心打卡僅限最高管理員。','warning','權限不足');return;}document.getElementById('admin-clock-status').value=status;document.getElementById('admin-clock-remark').value='';document.getElementById('admin-clock-user-preview').textContent=`${currentUser.name} (${currentUser.account})`;document.getElementById('modal-admin-clock').classList.remove('hidden');}
 
