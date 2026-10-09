@@ -5206,15 +5206,29 @@ async function republishAnnouncement(id) {
             return enqueueDiscordNotification('adminLog',{action:String(action||''),target:String(target||''),detail:String(detail||''),operator,mentionRole:!!options?.mentionRole});
         }
 
+        window.__ntpcDiscordStatusCache = window.__ntpcDiscordStatusCache || {data:null, fetchedAt:0, promise:null};
+        async function getDiscordWebhookStatus(force=false){
+            const cache=window.__ntpcDiscordStatusCache;
+            if(!force && cache.data && Date.now()-cache.fetchedAt<60000) return cache.data;
+            if(!force && cache.promise) return cache.promise;
+            cache.promise=(async()=>{const snap=await fm.getDoc(fm.doc(db,'systemSettings','discordWebhookStatus'));const data=snap.exists?(snap.data()||{}):{};cache.data=data;cache.fetchedAt=Date.now();return data;})();
+            try{return await cache.promise;}finally{cache.promise=null;}
+        }
+        function discordStatusLabel(d,key){
+            if(d[key]!==true) return '<span class="text-slate-500">⚪ 尚未設定 Webhook</span>';
+            const result=String(d[`${key}LastResult`]||'');
+            if(result==='success') return `<span class="text-emerald-400">🟢 已設定｜最近發送成功</span><span class="block text-slate-500 mt-1">${d[`${key}LastSuccessAt`]?escapeHtml(formatDateTime(d[`${key}LastSuccessAt`])):''}</span>`;
+            if(result==='failed') return `<span class="text-rose-400">🔴 已設定｜最近發送失敗</span><span class="block text-rose-300/80 mt-1 break-words">${escapeHtml(String(d[`${key}LastError`]||'未提供錯誤原因').slice(0,220))}</span>`;
+            return '<span class="text-amber-300">🟡 已設定｜尚無後端成功回報</span>';
+        }
         async function renderDiscordWebhookSettings(){
             if(!currentUser||getEffectiveRole(currentUser)!=='admin') return;
             const status=document.getElementById('discord-webhook-config-status');
             try{
-                const snap=await fm.getDoc(fm.doc(db,'systemSettings','discordWebhookStatus'));
-                const d=snap.exists?snap.data():{};
-                const map=[['police','discord-webhook-police-status','警察案件報告'],['fire','discord-webhook-fire-status','消防案件報告'],['adminLog','discord-webhook-admin-status','管理中心 LOG']];
-                map.forEach(([key,id,label])=>{const el=document.getElementById(id);if(el)el.innerHTML=d[key]===true?'<span class="text-emerald-400">🟢 已設定</span>　後端通知服務可使用':'<span class="text-slate-500">⚪ 尚未設定</span>';});
-                if(status) status.textContent=`最後更新：${d.updatedAt?formatDateTime(d.updatedAt):'尚無紀錄'}${d.updatedBy?` ／ ${escapeHtml(d.updatedBy)}`:''}`;
+                const d=await getDiscordWebhookStatus();
+                const map=[['police','discord-webhook-police-status'],['fire','discord-webhook-fire-status'],['adminLog','discord-webhook-admin-status']];
+                map.forEach(([key,id])=>{const el=document.getElementById(id);if(el)el.innerHTML=discordStatusLabel(d,key);});
+                if(status) status.textContent=`狀態資料更新：${d.updatedAt?formatDateTime(d.updatedAt):'尚無後端回報'}${d.updatedBy?` ／ 設定帳號：${escapeHtml(d.updatedBy)}`:''}。已設定不代表已成功送達，請以「最近發送結果」為準。`;
             }catch(e){if(status)status.textContent='設定狀態讀取失敗：'+e.message;}
         }
 
@@ -5230,6 +5244,7 @@ async function republishAnnouncement(id) {
             try{
                 await fm.setDoc(fm.doc(db,'systemSettings','discordWebhooks'),{police,fire,adminLog,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:false});
                 await fm.setDoc(fm.doc(db,'systemSettings','discordWebhookStatus'),{police:!!police,fire:!!fire,adminLog:!!adminLog,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});
+                window.__ntpcDiscordStatusCache={data:null,fetchedAt:0,promise:null};
                 document.getElementById('discord-webhook-police-input').value='';
                 document.getElementById('discord-webhook-fire-input').value='';
                 document.getElementById('discord-webhook-admin-input').value='';
@@ -5244,6 +5259,7 @@ async function republishAnnouncement(id) {
                 const result=await enqueueDiscordNotification('test',{operator:{account:currentUser.account||'',name:currentUser.name||''},createdAt:Date.now()});
                 if(!result.ok) throw result.error||new Error('無法建立通知佇列');
                 showToast('測試通知已加入 Discord 送出佇列，請稍候確認頻道。','success','測試已送出');
+                setTimeout(()=>{window.__ntpcDiscordStatusCache={data:null,fetchedAt:0,promise:null};renderDiscordWebhookSettings();renderDashSystemStatus();},5000);
             }catch(e){showToast('測試通知建立失敗：'+e.message,'error','操作失敗');}
         }
 
@@ -6475,7 +6491,40 @@ async function republishAnnouncement(id) {
             const latest=dutyStatusCache?.police?.get(key);
             return latest?.status==='上班';
         }
+        function erlcAlertMillis(value){
+            if(value===undefined||value===null||value==='')return NaN;
+            try{
+                if(typeof value.toMillis==='function')return value.toMillis();
+                if(typeof value.toDate==='function')return value.toDate().getTime();
+                if(typeof value==='number')return value<100000000000?value*1000:value;
+                const raw=String(value).trim();
+                if(/^\d+(?:\.\d+)?$/.test(raw)){const n=Number(raw);return n<100000000000?n*1000:n;}
+                const parsed=Date.parse(raw);return Number.isFinite(parsed)?parsed:NaN;
+            }catch(_){return NaN;}
+        }
+        function isValidFreshERLCAlert(a){
+            const type=String(a?.type||'');
+            if(type!=='officer-life-alert'&&type!=='player-death'){
+                console.warn('已忽略未知 ER:LC 警報類型。',type||'(empty)');return false;
+            }
+            const now=Date.now();
+            const created=erlcAlertMillis(a.createdAt||a.created_at||a.detectedAt);
+            const expires=erlcAlertMillis(a.expiresAt||a.expires_at);
+            const robloxId=String(a.victimRobloxId||a.robloxId||a.robloxUserId||a.playerId||'').trim();
+            // 只接受 Worker 新建立、尚未過期且具有受害者 ID 的即時事件；舊文件或殘缺事件不彈窗。
+            if(!Number.isFinite(created)||created>now+10000||now-created>60000){
+                console.warn('已忽略時間不合理或過舊的 ER:LC 警報。',a?.docId||'');return false;
+            }
+            if(!Number.isFinite(expires)||expires<=now){
+                console.warn('已忽略已過期或缺少到期時間的 ER:LC 警報。',a?.docId||'');return false;
+            }
+            if(!robloxId){
+                console.warn('已忽略缺少 Roblox ID 的 ER:LC 警報。',a?.docId||'');return false;
+            }
+            return true;
+        }
         function showERLCDeathAlert(a){
+            if(!isValidFreshERLCAlert(a))return;
             const isOfficer=String(a.type||'')==='officer-life-alert';
             if(isOfficer&&!isERLCOfficerCurrentlyOnDuty(a)){
                 console.info('已忽略非值勤或無法確認值勤狀態的警員倒地警報。');
@@ -6898,7 +6947,22 @@ function ntpcDutyHoursSince(startMs){const mine=ntpcDutyRowsForCurrentUser().fil
 function renderDashRecentDuty(){const h=document.getElementById('dash-recent-duty');if(!h)return;const rows=ntpcDutyRowsForCurrentUser().slice(0,10);h.innerHTML=rows.length?rows.map(c=>{const status=String(c.status||c.action||c.type||'');const label=/上班|上班打卡|clock.?in/i.test(status)?'上班':/下班|下班打卡|clock.?out/i.test(status)?'下班':(c.status||c.action||'值勤紀錄');const unit=c.unit==='fire'||c.department==='fire'?'消防':c.unit==='admin'||c.department==='admin'?'管理':'警察';return `<div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3 flex items-center justify-between gap-3"><div><div class="text-sm font-semibold text-white">${ntpcEsc(unit)} ／ ${ntpcEsc(label)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(formatDateTime(c.timestamp||c.time,c.time))}</div></div><span class="text-[11px] px-2 py-1 rounded-full bg-slate-800 text-slate-300">${ntpcEsc(c.dutyNumber||c.managementId||c.staffNumber||currentUser.account||'--')}</span></div>`}).join(''):'<div class="text-sm text-slate-500 py-5 text-center md:col-span-2">目前沒有勤務打卡紀錄。</div>';}
 function ntpcCurrentMonthHours(){if(!currentUser)return 0;const start=new Date();start.setDate(1);start.setHours(0,0,0,0);const mine=[...(appData.policeClocks||[]),...(appData.fireClocks||[]),...(appData.adminClocks||[])].filter(c=>String(c.account||c.userAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&getClockTimestamp(c)>=start.getTime());let total=0;const groups={};mine.forEach(c=>{const key=c.shiftId||c.clockGroup||c.id||`${c.account}-${new Date(getClockTimestamp(c)).toDateString()}`;(groups[key]??=[]).push(c);});Object.values(groups).forEach(g=>{g.sort((a,b)=>getClockTimestamp(a)-getClockTimestamp(b));for(let i=0;i+1<g.length;i+=2){const a=getClockTimestamp(g[i]),b=getClockTimestamp(g[i+1]);if(b>a)total+=b-a;}});return Math.round(total/360000)/10;}
 function refreshDutyDashboard(){if(!document.getElementById('tab-dashboard'))return;const online=getCurrentDutyCount();const pending=(appData.policePendingReports||[]).length+(appData.firePendingReports||[]).length+(appData.emsPendingReports||[]).length+(appData.wantedPendingRecords||[]).length;const noti=currentUser?(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&!n.read).length:0;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};set('dash-online',online);set('dash-pending',pending);set('dash-notifications',noti);set('dash-hours',ntpcCurrentMonthHours().toFixed(1)+' h');set('dash-week-hours',currentUser?ntpcDutyHoursSince(Date.now()-7*24*60*60*1000).toFixed(1)+' h':'--');set('dash-total-hours',currentUser?ntpcDutyHoursSince(0).toFixed(1)+' h':'--');const work=document.getElementById('dash-my-work');if(work){const mine=(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser?.account||'').toLowerCase()&&!n.read).slice(0,8);work.innerHTML=mine.length?mine.map(n=>`<div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800"><div class="text-sm text-white">${ntpcEsc(n.title||'案件通知')}</div><div class="text-xs text-slate-500 mt-1">${ntpcEsc(n.message||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有待處理通知。</div>';}renderDashRecentDuty();renderDashSystemStatus();renderDashAnnouncements();renderDashHandover();renderDashManagementWork();}
-function renderDashSystemStatus(){const h=document.getElementById('dash-system-status');if(!h)return;const online=navigator.onLine;const firebaseOk=!!db&&!!fm;const realtimeOk=Array.isArray(realtimeUnsubscribers)&&realtimeUnsubscribers.length>0;h.innerHTML=[['網路連線',online,'瀏覽器網路狀態'],['Firebase',firebaseOk,'雲端資料庫模組'],['即時同步',realtimeOk,'Firestore 即時監聽'],['案件通知',!!appData.reportNotifications,'通知資料已載入'],['Discord 通知',false,'本版本已停用前端 Webhook']].map(x=>`<div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60"><div><span class="status-dot ${x[1]?'status-ok':'status-bad'}"></span><span class="text-sm text-slate-200">${x[0]}</span></div><span class="text-[11px] text-slate-500">${x[2]}</span></div>`).join('');const t=document.getElementById('dash-status-time');if(t)t.textContent='更新 '+formatDateTime(Date.now());}
+function renderDashSystemStatus(){
+    const h=document.getElementById('dash-system-status');if(!h)return;
+    const online=navigator.onLine,firebaseOk=!!db&&!!fm,realtimeOk=Array.isArray(realtimeUnsubscribers)&&realtimeUnsubscribers.length>0;
+    const rows=[['網路連線',online,'瀏覽器網路狀態'],['Firebase',firebaseOk,'雲端資料庫模組'],['即時同步',realtimeOk,'Firestore 即時監聽'],['案件通知',!!appData.reportNotifications,'通知資料已載入']];
+    const cache=window.__ntpcDiscordStatusCache||{};const d=cache.data||{};
+    const configured=['police','fire','adminLog'].some(k=>d[k]===true);
+    const results=['police','fire','adminLog'].map(k=>String(d[`${k}LastResult`]||''));
+    const failed=results.includes('failed'),success=results.includes('success');
+    const discordText=failed?'最近發送失敗，請查看 Webhook 設定':success?'最近一次發送成功':configured?'已設定，尚無發送結果':'尚無設定／後端狀態';
+    const discordOk=success&&!failed;
+    rows.push(['Discord 通知',discordOk,discordText]);
+    h.innerHTML=rows.map(x=>`<div class="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-slate-950/60"><div class="shrink-0"><span class="status-dot ${x[1]?'status-ok':'status-bad'}"></span><span class="text-sm text-slate-200">${x[0]}</span></div><span class="text-[11px] text-slate-500 text-right">${x[2]}</span></div>`).join('');
+    const t=document.getElementById('dash-status-time');if(t)t.textContent='更新 '+formatDateTime(Date.now());
+    // 只在快取過期時讀取一次狀態文件，避免儀表板每次重繪都增加 Firestore 讀取量。
+    if(!cache.data || Date.now()-(cache.fetchedAt||0)>60000){getDiscordWebhookStatus().then(()=>{if(document.getElementById('dash-system-status'))renderDashSystemStatus();}).catch(e=>console.warn('Discord 狀態讀取失敗',e));}
+}
 function renderDashAnnouncements(){const h=document.getElementById('dash-important-announcements');if(!h)return;const rows=(appData.announcements||[]).filter(a=>a.active!==false&&a.important).sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0)).slice(0,5);h.innerHTML=rows.length?rows.map(a=>`<div class="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5"><div class="text-sm text-white">${ntpcEsc(a.text)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(a.publisher||'系統')}｜${ntpcEsc(a.time||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有置頂重要公告。</div>';}
 function getUserDepartments(u=currentUser){if(!u)return [];if(getEffectiveRole(u)==='admin')return ['police','fire'];const units=Array.isArray(u.units)?u.units:[u.unit];return [...new Set(units.filter(x=>x==='police'||x==='fire'))];}
 function handoverDepartmentOf(note){if(note?.department==='police'||note?.department==='fire')return note.department;const u=(appData.users||[]).find(x=>String(x.account||'').toLowerCase()===String(note?.authorAccount||'').toLowerCase());return getUserDepartments(u)[0]||'police';}
@@ -6919,7 +6983,7 @@ function openFAQIssueModal(){if(!currentUser){showToast('請先登入後再提�
 async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登入後再提交問題。','warning','需要登入');return;}const input=document.getElementById('faq-issue-text'),text=String(input?.value||'').trim();if(!text){showToast('請先描述你遇到的問題。','error','內容未填寫');input?.focus();return;}if(text.length>1000){showToast('問題內容最多 1000 字。','warning','內容過長');return;}const btn=document.getElementById('submit-faq-issue-btn');if(btn?.classList.contains('is-busy-action'))return;btn?.classList.add('is-busy-action');try{const now=Date.now(),id='FAQ-'+now+'-'+Math.random().toString(36).slice(2,7),obj={id,account:currentUser.account,name:currentUser.name||'',text:text.slice(0,1000),timestamp:now,time:formatDateTime(now),status:'open'};await fm.setDoc(fm.doc(db,'faqIssues',id),obj);appData.faqIssues.unshift({docId:id,...obj});closeModal('modal-faq-issue');await logAdminAction('提交常見問題協助單',id,text,{discord:false});renderFAQIssues();renderDashManagementWork();showSubmitSuccessAnimation('問題提交成功','問題已送至管理中心，管理人員可以查看。');}catch(e){showToast('提交失敗：'+e.message,'error','操作失敗');}finally{btn?.classList.remove('is-busy-action');}}
 /* 公告重要標記：兼容既有發布流程。 */
 (function patchAnnouncementImportant(){const btn=document.getElementById('publish-announcement-btn');if(!btn||btn.dataset.v182)return;btn.dataset.v182='1';btn.addEventListener('click',()=>{setTimeout(()=>{const text=document.getElementById('announcement-text-input')?.value;},0);});const original=window.publishAnnouncement;if(typeof original==='function'&&original.__v182)return;})();
-/* Discord Webhook 已停用：不建立 retry queue、不寫入 webhookLogs、不進行跨來源 POST。 */
+/* Discord Webhook 使用 Firestore 佇列，由 Cloud Functions 負責實際發送；通緝通知仍由原有 Discord BOT 處理。 */
 /* 初始化：補載交接簿，並把公告重要標記送入既有資料。 */
 setTimeout(async()=>{try{appData.dutyHandoverNotes=appData.dutyHandoverNotes||[];await loadHandoverNotes();renderDashHandover();renderDashAnnouncements();refreshDutyDashboard();}catch(e){console.warn('V1.8.2 初始化失敗',e);}},1200);
 window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEventListener('offline',()=>renderDashSystemStatus());
