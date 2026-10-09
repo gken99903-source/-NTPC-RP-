@@ -2689,12 +2689,13 @@ const loginOpenBtn = document.getElementById('login-modal-open-btn');
             if (loginPassword) loginPassword.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); handleLogin(); } });
 
             const policeClockDateFilter = document.getElementById('police-clocks-date-filter');
+            if (policeClockDateFilter && !policeClockDateFilter.value) policeClockDateFilter.value = localDateKey(Date.now());
             if (policeClockDateFilter) policeClockDateFilter.addEventListener('change', renderPoliceClocks);
             const policeClockStatusFilter = document.getElementById('police-clocks-status-filter');
             if (policeClockStatusFilter) policeClockStatusFilter.addEventListener('change', renderPoliceClocks);
             const policeClockClear = document.getElementById('police-clocks-date-clear');
             if (policeClockClear) policeClockClear.addEventListener('click', () => {
-                if (policeClockDateFilter) policeClockDateFilter.value = '';
+                if (policeClockDateFilter) policeClockDateFilter.value = localDateKey(Date.now());
                 if (policeClockStatusFilter) policeClockStatusFilter.value = 'all';
                 renderPoliceClocks();
             });
@@ -2703,13 +2704,26 @@ const loginOpenBtn = document.getElementById('login-modal-open-btn');
                 policeClockRefresh.disabled = true;
                 policeClockRefresh.innerHTML = '<i class=\"fa-solid fa-spinner fa-spin mr-1\"></i>更新中';
                 try {
-                    const snap = await safeCollectionDocs('policeClocks');
-                    if (snap.ok) {
-                        appData.policeClocks = snap.docs.map(d => ({ docId: d.id, ...d.data() }));
-                        renderPoliceClocks();
-                        if (typeof window.renderAdminOverview === 'function') window.renderAdminOverview();
-                        showToast('警務打卡資料已更新。', 'info', '刷新完成');
-                    } else throw new Error(snap.error || '無法讀取打卡資料');
+                    // safeCollectionDocs 是 loadAllDataFromCloud 內部的區域函式，
+                    // 此按鈕的事件處理器不在其作用域內，因此直接透過 Firestore SDK 讀取。
+                    // 加入短暫重試，避免偶發網路問題造成刷新立即失敗。
+                    let snap = null;
+                    let lastError = null;
+                    for (let attempt = 0; attempt < 3; attempt++) {
+                        try {
+                            snap = await fm.getDocs(fm.collection(db, 'policeClocks'));
+                            lastError = null;
+                            break;
+                        } catch (readError) {
+                            lastError = readError;
+                            if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 350 * (attempt + 1)));
+                        }
+                    }
+                    if (lastError) throw lastError;
+                    appData.policeClocks = snap.docs.map(d => ({ docId: d.id, ...d.data() }));
+                    renderPoliceClocks();
+                    if (typeof window.renderAdminOverview === 'function') window.renderAdminOverview();
+                    showToast('警務打卡資料已更新。', 'info', '刷新完成');
                 } catch (e) {
                     showToast('刷新打卡資料失敗：' + e.message, 'error', '刷新失敗');
                 } finally {
@@ -2807,18 +2821,20 @@ const loginOpenBtn = document.getElementById('login-modal-open-btn');
             if (searchEMSInput) searchEMSInput.addEventListener('input', renderEMSReports);
 
             const policeDateFilter = document.getElementById('police-clocks-date-filter');
+            if (policeDateFilter && !policeDateFilter.value) policeDateFilter.value = localDateKey(Date.now());
             if (policeDateFilter) policeDateFilter.addEventListener('change', renderPoliceClocks);
             const policeDateClear = document.getElementById('police-clocks-date-clear');
             if (policeDateClear) policeDateClear.addEventListener('click', () => {
-                if (policeDateFilter) policeDateFilter.value = '';
+                if (policeDateFilter) policeDateFilter.value = localDateKey(Date.now());
                 renderPoliceClocks();
             });
 
             const fireDateFilter = document.getElementById('fire-clocks-date-filter');
+            if (fireDateFilter && !fireDateFilter.value) fireDateFilter.value = localDateKey(Date.now());
             if (fireDateFilter) fireDateFilter.addEventListener('change', renderFireClocks);
             const fireDateClear = document.getElementById('fire-clocks-date-clear');
             if (fireDateClear) fireDateClear.addEventListener('click', () => {
-                if (fireDateFilter) fireDateFilter.value = '';
+                if (fireDateFilter) fireDateFilter.value = localDateKey(Date.now());
                 renderFireClocks();
             });
 
@@ -5999,7 +6015,7 @@ async function republishAnnouncement(id) {
         function localDateKey(timestamp){const d=new Date(Number(timestamp||0));if(!Number.isFinite(d.getTime()))return '';return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
         function renderPoliceClocks() {
             const tbody = document.getElementById('police-clocks-tbody');
-            const dateFilter = document.getElementById('police-clocks-date-filter')?.value || '';
+            const dateFilter = document.getElementById('police-clocks-date-filter')?.value || localDateKey(Date.now());
             const statusFilter = document.getElementById('police-clocks-status-filter')?.value || 'all';
             const countEl = document.getElementById('police-current-duty-count');
             if (!tbody) return;
@@ -6038,7 +6054,7 @@ async function republishAnnouncement(id) {
 
         function renderFireClocks() {
             const tbody = document.getElementById('fire-clocks-tbody');
-            const dateFilter = document.getElementById('fire-clocks-date-filter')?.value || '';
+            const dateFilter = document.getElementById('fire-clocks-date-filter')?.value || localDateKey(Date.now());
             if (!tbody) return;
 
             tbody.innerHTML = '';
