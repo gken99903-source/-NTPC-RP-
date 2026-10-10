@@ -1569,6 +1569,9 @@
                     <button id="btn-admin-clock" data-sub="clock" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-business-time mr-2"></i>管理中心打卡</button>
                     <button id="btn-admin-logs" data-sub="logs" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clock-rotate-left mr-2"></i>一周內移除/編輯紀錄</button>
                     <button id="btn-admin-storage" data-sub="storage" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-database mr-2"></i>雲端資料庫空間</button>
+                    <button id="btn-admin-duty-alerts" data-sub="duty-alerts" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-triangle-exclamation mr-2"></i>異常勤務審核中心</button>
+                    <button id="btn-admin-notification-alerts" data-sub="notification-alerts" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-bell mr-2"></i>審核／Discord 通知異常</button>
+                    <button id="btn-admin-sync-health" data-sub="sync-health" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-heart-pulse mr-2"></i>系統健康與同步</button>
                     <button id="btn-admin-memo" data-sub="memo" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-note-sticky mr-2"></i>管理員共同備忘錄</button>
                     <button id="btn-admin-overview" data-sub="overview" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-chart-line mr-2"></i>全單位總彙整</button>
                     <button id="btn-admin-online" data-sub="online" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-signal mr-2"></i>值勤狀態</button>
@@ -1714,13 +1717,13 @@
                         <div class="flex items-center justify-between">
                             <h3 class="text-lg font-bold text-white flex items-center space-x-2">
                                 <i class="fa-solid fa-database text-purple-500"></i>
-                                <span>雲端資料庫容量使用狀況</span>
+                                <span>目前載入資料量（估算）</span>
                             </h3>
-                            <span class="px-3 py-1 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-full text-xs font-semibold">上限 1 GB</span>
+                            <span class="px-3 py-1 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-full text-xs font-semibold">非真實配額</span>
                         </div>
                         <div class="space-y-2">
                             <div class="flex items-center justify-between gap-4 text-sm">
-                                <span id="storage-used-text" class="text-slate-300 font-medium">當前已使用：-- KB</span>
+                                <span id="storage-used-text" class="text-slate-300 font-medium">已同步內容估計：-- KB</span>
                                 <span id="storage-percent-text" class="inline-flex items-center justify-center min-w-[4.5rem] px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 font-extrabold leading-none">0.0000%</span>
                             </div>
                             <div class="w-full bg-slate-950 rounded-full h-4 overflow-hidden border border-slate-800 p-0.5">
@@ -1729,7 +1732,7 @@
                         </div>
                         <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800 text-xs text-slate-400">
                             <div>文件總數：<span id="storage-docs-count" class="text-white font-mono font-bold">0</span> 筆</div>
-                            <div>剩餘可用空間：<span id="storage-free-text" class="text-emerald-400 font-mono font-bold">--</span></div>
+                            <div>容量／配額查詢：<span id="storage-free-text" class="text-emerald-400 font-mono font-bold">--</span></div>
                         </div>
                         <div class="pt-4 border-t border-slate-800">
                             <div class="flex items-center justify-between gap-3 mb-3">
@@ -1739,11 +1742,39 @@
                             <div id="storage-category-list" class="space-y-2"></div>
                         </div>
                         <div class="text-[10px] leading-relaxed text-slate-500 bg-slate-950/70 border border-slate-800 rounded-xl p-3">
-                            ※「資料大小」為前端依目前同步資料 JSON 大小及每份文件最低 1 KB 估算，並非 Firebase Console 的實際帳單儲存量；Firestore 索引、文件名稱及其他服務開銷未計入。
+                            ※本面板只估算當前帳號已載入的文件內容，不代表 Firestore 真正使用量、讀／寫配額或剩餘空間。要查看真實用量請前往 <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" class="text-blue-300 underline">Firebase Console → Firestore Database → 使用量</a>。
                         </div>
                     </div>
                 </div>
 
+                <!-- V1.9.3 管理中心：以已載入快取診斷，避免增加背景集合監聽 -->
+                <div id="admin-sub-duty-alerts" class="hidden space-y-4">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                        <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-clock text-amber-400 mr-2"></i>異常勤務審核中心</h3>
+                        <p class="text-xs text-slate-400">利用既有警察、消防、管理打卡快取判斷連續上班／下班、孤立下班及超過 18 小時未下班。只提供人工檢視／修正，不自動刪卡。</p>
+                        <div class="flex flex-wrap gap-3"><select id="duty-alert-dept" aria-label="勤務部門" onchange="renderAdminDutyAlerts()" class="bg-slate-950 border border-slate-700 rounded-xl text-sm text-white px-3 py-2"><option value="all">所有部門</option><option value="police">警察</option><option value="fire">消防</option><option value="admin">管理中心</option></select><select id="duty-alert-type" aria-label="異常類型" onchange="renderAdminDutyAlerts()" class="bg-slate-950 border border-slate-700 rounded-xl text-sm text-white px-3 py-2"><option value="all">全部異常</option><option value="duplicate">重複上下班</option><option value="orphan">孤立下班</option><option value="long">超時未下班</option></select><button type="button" onclick="renderAdminDutyAlerts()" class="bg-slate-800 rounded-xl px-4 py-2 text-sm text-slate-200">重新整理畫面</button></div>
+                        <div id="duty-alert-summary" class="text-sm text-amber-300"></div><div id="duty-alert-list" class="space-y-3"></div>
+                    </div>
+                </div>
+                <div id="admin-sub-notification-alerts" class="hidden space-y-4">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                        <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-bell text-indigo-400 mr-2"></i>審核與 Discord 通知異常中心</h3>
+                        <p class="text-xs text-slate-400">彙整尚未審核超過 24 小時的案件、已核准通緝的 Discord 私訊失敗或長時間待處理。只在按下「查詢近期通知」時額外讀取最近 100 則通知。</p>
+                        <div class="flex gap-2 flex-wrap"><button type="button" onclick="renderAdminNotificationAlerts()" class="bg-slate-800 rounded-xl px-4 py-2 text-sm text-slate-200">用已載入資料重新整理</button><button id="alert-load-notices" type="button" onclick="loadRecentAdminNotifications()" class="bg-indigo-600/25 border border-indigo-500/30 rounded-xl px-4 py-2 text-sm text-indigo-200">查詢近期通知（100 則）</button></div>
+                        <div id="notification-alert-load-status" class="text-xs text-slate-400">尚未查詢全站通知；此面板不會在背景額外讀取。</div>
+                        <div id="notification-alert-summary" class="text-sm text-amber-300"></div><div id="notification-alert-list" class="space-y-3"></div>
+                    </div>
+                </div>
+                <div id="admin-sub-sync-health" class="hidden space-y-4">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                        <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-heart-pulse text-emerald-400 mr-2"></i>系統健康與資料同步面板</h3>
+                        <p class="text-xs text-slate-400">顯示此瀏覽器 Firebase 同步時間、監聽數量、網路狀態與最近錯誤。不代表 Firebase 專案整體健康、實際配額或 Discord Bot 在線狀態。</p>
+                        <button type="button" onclick="renderAdminSyncHealth()" class="bg-slate-800 rounded-xl px-4 py-2 text-sm text-slate-200">更新診斷結果（不讀取 Firestore）</button>
+                        <div id="sync-health-metrics" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                        <h4 class="font-semibold text-slate-200 text-sm">最近同步錯誤（最多 15 則）</h4>
+                        <div id="sync-health-errors" class="space-y-2"></div>
+                    </div>
+                </div>
                 <div id="admin-sub-memo" class="hidden space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-lg font-bold text-slate-200">管理員共同備忘錄</h3>
@@ -3298,12 +3329,17 @@ async function republishAnnouncement(id) {
                     let lastError = null;
                     for (let attempt = 0; attempt <= retries; attempt++) {
                         try {
-                            return { ok: true, docs: (await fm.getDocs(collectionRef || fm.collection(db, collectionName))).docs };
+                            const snapshot=await fm.getDocs(collectionRef || fm.collection(db, collectionName));
+                            ntpcMarkSyncSuccess(collectionName+'（初始）',snapshot.size);
+                            return { ok: true, docs: snapshot.docs };
                         } catch (err) {
                             lastError = err;
-                            if (attempt < retries) await new Promise(r => setTimeout(r, 350 * (attempt + 1)));
+                            // 權限、配額及缺少索引不是短暫網路問題，避免無效的重試請求。
+                            if(/permission-denied|resource-exhausted|quota|failed-precondition/i.test(String(err?.code||'')+' '+String(err?.message||'')))break;
+                            if(attempt < retries)await new Promise(r=>setTimeout(r,350*(attempt+1)));
                         }
                     }
+                    ntpcMarkSyncError(collectionName+'（初始）',lastError);
                     console.warn(`雲端集合 ${collectionName} 讀取失敗，保留目前資料並繼續同步：`, lastError);
                     return { ok: false, docs: [], error: lastError };
                 };
@@ -3366,7 +3402,7 @@ async function republishAnnouncement(id) {
                         appData.adminMemo = memoDoc.data().content || '';
                     } else {
                         appData.adminMemo = '1. 本週重點：加強轄區夜間巡邏與消防安檢。\n2. 各分局/大隊長請於每日下班前完成同仁打卡與案件審核。';
-                        try { await fm.setDoc(fm.doc(db, 'systemSettings', 'adminMemo'), { content: appData.adminMemo, updatedAt: Date.now(), updatedBy: currentUser?.account || 'system' }); } catch (e) { console.warn('預設備忘錄寫入失敗，略過：', e); }
+                        // 初次載入不自動寫回預設備忘錄；管理員明確儲存時再寫入 Firestore。
                     }
                 } else {
                     // 雲端設定無法讀取時，優先沿用本機備份，避免更新 HTML 後刑期表退回預設值。
@@ -3394,7 +3430,7 @@ async function republishAnnouncement(id) {
                 renderFireClocks();
                 renderAdminUsers();
                 renderAdminLogs();
-                renderAdminStorage();
+                ntpcMaybeRenderAdminStorage();
                 if (typeof window.renderAdminOverview === 'function') window.renderAdminOverview();
                 renderAdminAnnouncements();
                 renderAdminClocks();
@@ -3414,6 +3450,8 @@ async function republishAnnouncement(id) {
         // 使用 onSnapshot，只有初始快照及資料「新增／修改／刪除」時才同步；打卡集合不再先 getDocs 再 onSnapshot，避免重複讀取。
         let realtimeUnsubscribers = [];
         function stopRealtimeListeners() {
+            if(typeof ntpcSyncHealth!=='undefined'){ntpcSyncHealth.events={};ntpcSyncHealth.lastSuccess=0;ntpcSyncHealth.errors=[];}
+            if(typeof ntpcRecentAdminNotifications!=='undefined'){ntpcRecentAdminNotifications=[];ntpcNoticeLoadedAt=0;}
             realtimeUnsubscribers.forEach(unsub => { try { if (typeof unsub === 'function') unsub(); } catch(e) {} });
             realtimeUnsubscribers = [];
         }
@@ -3424,9 +3462,10 @@ async function republishAnnouncement(id) {
             if (!currentUser) {
                 try {
                     const ua = fm.onSnapshot(fm.collection(db,'announcements'), snap => {
+                        ntpcMarkSyncSuccess('公開公告',snap.size);
                         appData.announcements = snap.docs.map(d=>({docId:d.id,...d.data()}));
                         renderSiteAnnouncements();
-                    }, err => console.warn('公開公告同步失敗：',err));
+                    }, err => {ntpcMarkSyncError('公開公告',err);console.warn('公開公告同步失敗：',err);});
                     realtimeUnsubscribers.push(ua);
                 } catch(e) { console.warn('建立公開公告監聽失敗：',e); }
                 // 訪客階段只下載公告；版本號使用 HTML 內既有的靜態資訊，登入後再同步版本集合。
@@ -3444,12 +3483,13 @@ async function republishAnnouncement(id) {
                 if (canReviewFireReports()) renderFireReview();
             };
 
-            const subscribe = (collectionName, mapper, onChange) => {
+            const subscribe = (collectionName, mapper, onChange, queryRef = null) => {
                 try {
-                    const unsub = fm.onSnapshot(fm.collection(db, collectionName), snap => {
+                    const unsub = fm.onSnapshot(queryRef || fm.collection(db, collectionName), snap => {
+                        ntpcMarkSyncSuccess(collectionName,snap.size);
                         onChange(snap.docs.map(d => mapper(d)));
-                        refreshVisibleData();
-                    }, err => console.warn(`即時監聽 ${collectionName} 失敗：`, err));
+                        ntpcRenderOpenAdminMonitorPanels();
+                    }, err => { ntpcMarkSyncError(collectionName,err); console.warn(`即時監聽 ${collectionName} 失敗：`, err); });
                     realtimeUnsubscribers.push(unsub);
                 } catch(e) { console.warn(`建立 ${collectionName} 即時監聽失敗：`, e); }
             };
@@ -3458,36 +3498,42 @@ async function republishAnnouncement(id) {
                 try {
                     const ref = fm.query(fm.collection(db, 'reportNotifications'), fm.where('recipientAccount', '==', currentUser.account));
                     const unsub = fm.onSnapshot(ref, snap => {
+                        ntpcMarkSyncSuccess('reportNotifications',snap.size);
                         appData.reportNotifications = snap.docs.map(d => ({docId:d.id, ...d.data()}));
-                        refreshVisibleData();
-                    }, err => console.warn('個人通知即時監聽失敗：', err));
+                        renderPersonalNotifications();renderMyProfile();
+                        ntpcRenderOpenAdminMonitorPanels();
+                    }, err => {ntpcMarkSyncError('reportNotifications',err);console.warn('個人通知即時監聽失敗：', err);});
                     realtimeUnsubscribers.push(unsub);
                 } catch(e) { console.warn('建立個人通知即時監聽失敗：', e); }
             };
 
             // 正式案件：只監聽目前帳號有權瀏覽的單位。
             if (currentUser.role === 'admin' || userHasUnit('police')) {
-                subscribe('policeReports', d => ({docId:d.id, ...d.data()}), rows => { appData.policeReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); renderAdminStorage(); if(document.getElementById('citizen-results')?.children.length) searchCitizenRecords(); });
+                subscribe('policeReports', d => ({docId:d.id, ...d.data()}), rows => { appData.policeReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); ntpcMaybeRenderAdminStorage(); if(document.getElementById('citizen-results')?.children.length) searchCitizenRecords(); });
             }
             if (currentUser.role === 'admin' || userHasUnit('fire')) {
-                subscribe('fireReports', d => ({docId:d.id, ...d.data()}), rows => { appData.fireReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); renderAdminStorage(); });
+                subscribe('fireReports', d => ({docId:d.id, ...d.data()}), rows => { appData.fireReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); ntpcMaybeRenderAdminStorage(); });
                 subscribe('emsReports', d => ({docId:d.id, ...d.data()}), rows => { appData.emsReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); renderEMSReports(); renderAdminStorage(); renderMyProfile(); });
             }
             if (currentUser.role === 'admin' || userHasUnit('police')) {
-                subscribe('citizenRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.citizenRecords = rows; renderLookupSystems(); renderAdminStorage(); });
-                subscribe('vehicleRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.vehicleRecords = rows; renderLookupSystems(); renderAdminStorage(); });
-                subscribe('wantedPendingRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.wantedPendingRecords = rows; updateReviewTabBadges(); renderPoliceReview(); renderPersonalNotifications(); refreshDutyDashboard(); });
+                subscribe('citizenRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.citizenRecords = rows; renderLookupSystems(); ntpcMaybeRenderAdminStorage(); });
+                subscribe('vehicleRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.vehicleRecords = rows; renderLookupSystems(); ntpcMaybeRenderAdminStorage(); });
+                const wantedPendingRef=canReviewPoliceReports()?null:fm.query(fm.collection(db,'wantedPendingRecords'),fm.where('createdByAccount','==',currentUser.account));
+                subscribe('wantedPendingRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.wantedPendingRecords = rows; updateReviewTabBadges(); if(canReviewPoliceReports())renderPoliceReview(); renderPersonalNotifications(); refreshDutyDashboard(); },wantedPendingRef);
                 subscribe('wantedRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.wantedRecords = rows; renderLookupSystems(); updateWantedDiscordBotStatus(); });
             }
             // 待審案件：寄件者需要自己的案件；高層／高階／管理中心則需要看到對應單位的全部待審案件。
             const canPoliceReviewNow = canReviewPoliceReports();
             const canFireReviewNow = canReviewFireReports();
             if (canPoliceReviewNow || userHasUnit('police')) {
-                subscribe('policePendingReports', d => ({docId:d.id, ...d.data()}), rows => { appData.policePendingReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); refreshDutyDashboard(); });
+                const policePendingRef=canPoliceReviewNow?null:fm.query(fm.collection(db,'policePendingReports'),fm.where('registeredByAccount','==',currentUser.account));
+                subscribe('policePendingReports', d => ({docId:d.id, ...d.data()}), rows => { appData.policePendingReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); if(canPoliceReviewNow)renderPoliceReview();else renderPersonalNotifications();refreshDutyDashboard(); },policePendingRef);
             }
             if (canFireReviewNow || userHasUnit('fire')) {
-                subscribe('firePendingReports', d => ({docId:d.id, ...d.data()}), rows => { appData.firePendingReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); refreshDutyDashboard(); });
-                subscribe('emsPendingReports', d => ({docId:d.id, ...d.data()}), rows => { appData.emsPendingReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); refreshDutyDashboard(); });
+                const firePendingRef=canFireReviewNow?null:fm.query(fm.collection(db,'firePendingReports'),fm.where('registeredByAccount','==',currentUser.account));
+                const emsPendingRef=canFireReviewNow?null:fm.query(fm.collection(db,'emsPendingReports'),fm.where('registeredByAccount','==',currentUser.account));
+                subscribe('firePendingReports', d => ({docId:d.id, ...d.data()}), rows => { appData.firePendingReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); if(canFireReviewNow)renderFireReview();else renderPersonalNotifications();refreshDutyDashboard(); },firePendingRef);
+                subscribe('emsPendingReports', d => ({docId:d.id, ...d.data()}), rows => { appData.emsPendingReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); if(canFireReviewNow)renderFireReview();else renderPersonalNotifications();refreshDutyDashboard(); },emsPendingRef);
             }
 
             // 值勤狀態只依打卡資料判定；不再輪詢 users，也不再使用網站在線心跳。
@@ -3545,20 +3591,22 @@ async function republishAnnouncement(id) {
             // 網站版本資訊即時同步：版本集合變更後，全站自動套用最新發布版本。
             try {
                 const unsubSiteVersions = fm.onSnapshot(fm.collection(db, 'siteVersions'), snap => {
+                    ntpcMarkSyncSuccess('siteVersions',snap.size);
                     appData.siteVersions = snap.docs.map(d => ({docId:d.id, ...d.data()}));
                     renderSiteVersionUI();
                     if (currentUser && getEffectiveRole(currentUser)==='admin' && !document.getElementById('admin-sub-site-versions')?.classList.contains('hidden')) renderAdminSiteVersions();
-                }, err => console.warn('網站版本資訊即時監聽失敗：', err));
+                }, err => {ntpcMarkSyncError('siteVersions',err);console.warn('網站版本資訊即時監聽失敗：', err);});
                 realtimeUnsubscribers.push(unsubSiteVersions);
             } catch(e) { console.warn('建立網站版本資訊監聽失敗：', e); }
 
             // 網站公告即時同步：只在公告新增／修改／刪除時更新，避免每 5~10 秒整批讀取。
             try {
                 const unsubAnnouncements = fm.onSnapshot(fm.collection(db, 'announcements'), snap => {
+                    ntpcMarkSyncSuccess('announcements',snap.size);
                     appData.announcements = snap.docs.map(d => ({docId:d.id, ...d.data()}));
                     renderAdminAnnouncements();
                     renderSiteAnnouncements();
-                }, err => console.warn('網站公告即時監聽失敗：', err));
+                }, err => {ntpcMarkSyncError('announcements',err);console.warn('網站公告即時監聽失敗：', err);});
                 realtimeUnsubscribers.push(unsubAnnouncements);
             } catch(e) { console.warn('建立網站公告即時監聽失敗：', e); }
         }
@@ -3788,7 +3836,7 @@ async function republishAnnouncement(id) {
         }
 
         function switchAdminSubTab(sub){
-            const tabs=['users','announcements','site-versions','clock','logs','storage','memo','overview','online','devices','feedback','issues','academy','jail-rules','erlc','discord-webhooks'];
+            const tabs=['users','announcements','site-versions','clock','logs','storage','duty-alerts','notification-alerts','sync-health','memo','overview','online','devices','feedback','issues','academy','jail-rules','erlc','discord-webhooks'];
             const academyOnly = !!currentUser && getEffectiveRole(currentUser) !== 'admin' && hasUserPermission(currentUser,'academyInstructor');
             const allowed = !academyOnly || sub === 'academy';
             tabs.forEach(x=>{
@@ -3811,6 +3859,9 @@ async function republishAnnouncement(id) {
             if(sub==='feedback' && getEffectiveRole(currentUser)==='admin') renderAdminFeedback();
             if(sub==='issues' && getEffectiveRole(currentUser)==='admin') renderFAQIssues();
             if(sub==='storage' && getEffectiveRole(currentUser)==='admin') renderAdminStorage();
+            if(sub==='duty-alerts' && getEffectiveRole(currentUser)==='admin') renderAdminDutyAlerts();
+            if(sub==='notification-alerts' && getEffectiveRole(currentUser)==='admin') renderAdminNotificationAlerts();
+            if(sub==='sync-health' && getEffectiveRole(currentUser)==='admin') renderAdminSyncHealth();
             if(sub==='users' && getEffectiveRole(currentUser)==='admin') renderAdminUsers();
             if(sub==='logs' && getEffectiveRole(currentUser)==='admin') renderAdminLogs();
             if(sub==='academy' && canAccessManagementCenter()) renderAdminAcademyCodes();
@@ -4694,7 +4745,7 @@ async function republishAnnouncement(id) {
             const policeLimitedEdit=isPoliceUser()&&!isTotalManagementUser()&&(type==='citizen'||type==='vehicles')&&!!id;
             const canCreate=policeLimitedEdit ? true : ((type==='citizen'||type==='vehicles')?isTotalManagementUser():(isPoliceUser()||isTotalManagementUser())); if(!canCreate){showToast('目前帳號沒有建立此類資料的權限。','warning','權限不足');return;}
             let existing=(type==='citizen'?appData.citizenRecords:type==='vehicles'?appData.vehicleRecords:appData.wantedRecords).find(x=>String(x.docId||x.id)===String(id));
-            if(type==='wanted'&&!existing) existing=(appData.wantedPendingRecords||[]).find(x=>String(x.docId||x.id)===String(id));
+            if(type==='wanted'&&!existing) existing=(appData.wantedPendingRecords||[]).find(x=>String(x.docId)===String(id)||String(x.id)===String(id));
             if(type==='wanted'&&existing&&existing.reviewStatus==='rejected'&&existing.createdByAccount!==currentUser.account&&!isTotalManagementUser()){showToast('只有原發布帳號或管理中心可以修改退件的通緝申請。','warning','權限不足');return;}
             document.getElementById('lookup-post-type').value=type;document.getElementById('lookup-post-id').value=existing?(existing.docId||existing.id):'';
             document.getElementById('lookup-post-title').textContent=`${existing?'編輯':'建立'}${lookupTypeLabel(type)}資料`;
@@ -4755,7 +4806,7 @@ async function republishAnnouncement(id) {
             const list=type==='citizen'?appData.citizenRecords:type==='vehicles'?appData.vehicleRecords:appData.wantedRecords;
             let existing=list.find(x=>String(x.docId||x.id)===String(id));
             let existingPending=null;
-            if(type==='wanted'&&!existing) existingPending=(appData.wantedPendingRecords||[]).find(x=>String(x.docId||x.id)===String(id));
+            if(type==='wanted'&&!existing) existingPending=(appData.wantedPendingRecords||[]).find(x=>String(x.docId)===String(id)||String(x.id)===String(id));
             if(existingPending) existing=existingPending;
             const col=(type==='wanted' && !existingPending && !id)?'wantedPendingRecords':(type==='wanted' && existingPending?'wantedPendingRecords':approvedCol);
             let data={};
@@ -5493,10 +5544,10 @@ async function republishAnnouncement(id) {
             ? `<div class="bg-slate-900 border border-rose-500/25 rounded-2xl p-6 shadow-xl space-y-4"><div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-300 border border-rose-500/20 font-mono">${r.id||r.docId||'--'}</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">EMS待審核</span><h4 class="text-base font-bold text-white">${r.patient||'EMS救護出勤報告'}</h4></div><span class="text-xs text-slate-400">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">填寫人</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div><div><span class="text-slate-500 block">派遣類別</span><span class="font-medium text-slate-200">${r.dispatchCategory||'--'}</span></div></div><p class="text-sm text-slate-300 line-clamp-4">${r.treatment||'--'}</p><div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800"><button type="button" onclick="viewPendingEMSReportDetail('${r.id||r.docId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]">檢視完整 EMS</button><button type="button" onclick="approveEMSPendingReport('${r.id||r.docId}')" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs min-h-[44px]">審核完畢並送出</button><button type="button" onclick="openRejectEMSPending('${r.id||r.docId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]">退件</button></div></div>`
             : `<div class="bg-slate-900 border border-red-500/20 rounded-2xl p-6 shadow-xl space-y-4"><div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 font-mono">${r.caseId||'--'}</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">消防待審核</span><h4 class="text-base font-bold text-white">${r.title||'未命名案件'}</h4></div><span class="text-xs text-slate-400">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">寄件人</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div><div><span class="text-slate-500 block">寄件帳號</span><span class="font-mono text-cyan-400">${r.registeredByAccount||'--'}</span></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">所犯罪名／違反條例</span><span class="font-semibold text-rose-300">${(r.violations||[]).join('、')||'未選擇'}</span></div><div><span class="text-slate-500 block">總監獄時間</span><span class="font-semibold text-amber-300">${formatJailMinutes(r.jailMinutes)}${r.organizedCrime?'（組織犯罪 +⅓）':''}</span></div></div><p class="text-sm text-slate-300 line-clamp-4">${r.content||''}</p><div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800"><button type="button" onclick="viewPendingFireReportDetail('${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]">檢視完整案件</button><button type="button" onclick="approveFirePendingReport('${r.caseId}')" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs min-h-[44px]">審核完畢並送出</button><button type="button" onclick="openRejectFirePending('${r.caseId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]">退件</button></div></div>`;}).join('');
         }
-        function viewPendingEMSReportDetail(id){const r=(appData.emsPendingReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r)return;const fields=[['主訴',r.chiefComplaint],['派遣類別',r.dispatchCategory],['傷患RP名稱 / ID',r.patient],['出勤單位 / 車輛',r.unitVehicle],['GCS評分 E',r.gcsE],['派遣時間',r.dispatchTime],['抵達時間',r.arrivalTime],['離開時間',r.leaveTime],['到院時間',r.hospitalTime],['返隊時間',r.returnTime],['填寫人',`${r.authorName||'--'} (${r.authorId||'--'})`],['建立時間',r.time||formatDateTime(r.timestamp)]];document.getElementById('ems-detail-id').textContent=r.id||r.docId;document.getElementById('ems-detail-title').textContent=`${r.patient||'傷患'} 的 EMS 待審報告`;document.getElementById('ems-detail-fields').innerHTML=fields.map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${escapeHtml(k)}</span><span class="text-sm text-slate-200 break-words">${escapeHtml(v||'--')}</span></div>`).join('');document.getElementById('ems-detail-treatment').textContent=r.treatment||'--';renderEMSRemarkHistory(r);const actionHost=document.getElementById('ems-detail-action-bar');if(actionHost)actionHost.innerHTML=`<button type="button" onclick="closeModal('modal-ems-detail');approveEMSPendingReport('${r.id||r.docId}')" class="px-3 py-2 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">審核完畢並送出</button><button type="button" onclick="closeModal('modal-ems-detail');openRejectEMSPending('${r.id||r.docId}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">退件</button>`;document.getElementById('modal-ems-detail').classList.remove('hidden');}
+        function viewPendingEMSReportDetail(id){const r=(appData.emsPendingReports||[]).find(x=>String(x.docId)===String(id)||String(x.id)===String(id));if(!r)return;const fields=[['主訴',r.chiefComplaint],['派遣類別',r.dispatchCategory],['傷患RP名稱 / ID',r.patient],['出勤單位 / 車輛',r.unitVehicle],['GCS評分 E',r.gcsE],['派遣時間',r.dispatchTime],['抵達時間',r.arrivalTime],['離開時間',r.leaveTime],['到院時間',r.hospitalTime],['返隊時間',r.returnTime],['填寫人',`${r.authorName||'--'} (${r.authorId||'--'})`],['建立時間',r.time||formatDateTime(r.timestamp)]];document.getElementById('ems-detail-id').textContent=r.id||r.docId;document.getElementById('ems-detail-title').textContent=`${r.patient||'傷患'} 的 EMS 待審報告`;document.getElementById('ems-detail-fields').innerHTML=fields.map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${escapeHtml(k)}</span><span class="text-sm text-slate-200 break-words">${escapeHtml(v||'--')}</span></div>`).join('');document.getElementById('ems-detail-treatment').textContent=r.treatment||'--';renderEMSRemarkHistory(r);const actionHost=document.getElementById('ems-detail-action-bar');if(actionHost)actionHost.innerHTML=`<button type="button" onclick="closeModal('modal-ems-detail');approveEMSPendingReport('${r.id||r.docId}')" class="px-3 py-2 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">審核完畢並送出</button><button type="button" onclick="closeModal('modal-ems-detail');openRejectEMSPending('${r.id||r.docId}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">退件</button>`;document.getElementById('modal-ems-detail').classList.remove('hidden');}
         async function approveEMSPendingReport(id){
             if(!canReviewFireReports()){showToast('只有消防高層、高階成員與管理中心可以審核 EMS 報告。','warning','權限不足');return;}
-            const r=(appData.emsPendingReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r)return;
+            const r=(appData.emsPendingReports||[]).find(x=>String(x.docId)===String(id)||String(x.id)===String(id));if(!r)return;
             const now=Date.now(),shared={...r,reviewStatus:'approved',reviewedAt:now,reviewedBy:currentUser.account};
             delete shared.rejectionReason;delete shared.docId; // 前端文件 ID 不寫回正式資料，避免覆蓋實際 Firestore 文件 ID
             try{
@@ -5504,6 +5555,8 @@ async function republishAnnouncement(id) {
                 const batch=fm.writeBatch(db);
                 batch.set(fm.doc(db,'emsReports',finalDocId),shared);
                 batch.delete(fm.doc(db,'emsPendingReports',pendingDocId));
+                const recipient=r.registeredByAccount||r.authorId;
+                batch.set(fm.doc(db,'reportNotifications',ntpcReviewNoticeId('ems',id)),ntpcReviewNotice('ems',id,recipient,'approved','EMS報告審核完成',`EMS報告 ${id} 已經消防高層審核完畢並正式送出。`,now));
                 await batch.commit();
                 const approved={...shared,docId:finalDocId};
                 appData.emsReports=[approved,...(appData.emsReports||[]).filter(x=>String(x.docId||x.id)!==finalDocId)];
@@ -5511,9 +5564,7 @@ async function republishAnnouncement(id) {
                 renderFireReview();renderEMSReports();renderPersonalNotifications();renderMyProfile();refreshDutyDashboard();
                 try{
                     await removePendingReportNotifications(id,r.registeredByAccount||r.authorId);
-                    const recipient=r.registeredByAccount||r.authorId;
-                    const n={type:'report',department:'fire',caseId:id,recipientAccount:recipient,recipientAccountNormalized:String(recipient||'').trim().toLowerCase(),status:'approved',title:'EMS報告審核完成',message:`EMS報告 ${id} 已經消防高層審核完畢並正式送出。`,timestamp:now,read:false};
-                    await fm.setDoc(fm.doc(fm.collection(db,'reportNotifications')),n);
+                    // 核准通知已包含在上方批次提交，這裡只清理舊的待審提醒。
                 }catch(noteError){console.warn('EMS報告已歸檔，但通知同步失敗：',noteError);}
                 try{await logAdminAction('EMS報告消防高層審核完畢並送出',id);}catch(logError){console.warn('EMS報告歸檔成功，稽核寫入失敗：',logError);}
                 showSubmitSuccessAnimation('EMS審核完成','EMS報告已直接進入共享資料庫，無須刷新網站。');
@@ -5531,6 +5582,7 @@ async function republishAnnouncement(id) {
                 const batch=fm.writeBatch(db);
                 batch.set(fm.doc(db,'fireReports',finalDocId),shared);
                 batch.delete(fm.doc(db,'firePendingReports',pendingDocId));
+                batch.set(fm.doc(db,'reportNotifications',ntpcReviewNoticeId('fire',caseId)),ntpcReviewNotice('fire',caseId,r.registeredByAccount,'approved','消防案件已審核完畢',`消防案件 ${caseId} 已經高層審核完畢並正式送出。`,now));
                 await batch.commit(); // 正式資料建立和待審刪除同時成功，避免只完成其中一個
                 const approved={...shared,docId:finalDocId};
                 appData.fireReports=[approved,...(appData.fireReports||[]).filter(x=>String(x.docId||x.caseId)!==finalDocId)];
@@ -5539,8 +5591,7 @@ async function republishAnnouncement(id) {
                 // onSnapshot 將再次同步權威雲端狀態；以下通知失敗也不能把已審核的案件說成審核失敗。
                 try{
                     await removePendingReportNotifications(caseId,r.registeredByAccount);
-                    const n={type:'report',department:'fire',caseId,recipientAccount:r.registeredByAccount,recipientAccountNormalized:String(r.registeredByAccount||'').trim().toLowerCase(),status:'approved',title:'消防案件已審核完畢',message:`消防案件 ${caseId} 已經高層審核完畢並正式送出。`,timestamp:now,read:false};
-                    await fm.setDoc(fm.doc(fm.collection(db,'reportNotifications')),n);
+                    // 核准通知已包含在上方批次提交，這裡只清理舊的待審提醒。
                 }catch(noteError){console.warn('消防案件已正式歸檔，但通知更新失敗：',noteError);}
                 try{await logAdminAction('消防案件審核完畢並送出',caseId);}catch(logError){console.warn('消防案件已歸檔，紀錄寫入失敗：',logError);}
                 showSubmitSuccessAnimation('審核完成','消防案件已直接進入共享資料庫，無須刷新網站。');
@@ -5596,33 +5647,41 @@ async function republishAnnouncement(id) {
             try{
                 const now=Date.now(), base={...r,reviewStatus:status,reviewedAt:now,reviewedBy:currentUser.account,updatedAt:now};
                 if(status==='rejected')base.rejectionReason=reason; else delete base.rejectionReason;
+                const recipient=base.registeredByAccount||base.authorId;
+                const label=dept==='ems'?'EMS報告':'案件';
+                const notice=ntpcReviewNotice(dept,id,recipient,status,status==='approved'?`${label}審核完成`:status==='rejected'?`${label}遭退件`:`${label}重新進入審核`,status==='approved'?`${label} ${id} 已由高層重新確認為「通過」。`:status==='rejected'?`${label} ${id} 已由高層重新確認為「退件」：${reason}`:`${label} ${id} 已重新調整為「待審核」，等待高層審核。`,now);
                 if(status==='approved'){
                     const sourcePendingDocId = p ? await resolveReportDocId(pendingCol,p,id) : '';
                     const targetReportDocId = a ? await resolveReportDocId(reportCol,a,id) : (p ? (await resolveReportDocId(pendingCol,p,id)) : id);
-                    await fm.setDoc(fm.doc(db,reportCol,targetReportDocId),base);
-                    if(p && sourcePendingDocId) await fm.deleteDoc(fm.doc(db,pendingCol,sourcePendingDocId));
+                    const changeBatch=fm.writeBatch(db);
+                    const savedBase={...base};delete savedBase.docId;
+                    changeBatch.set(fm.doc(db,reportCol,targetReportDocId),savedBase);
+                    if(p && sourcePendingDocId)changeBatch.delete(fm.doc(db,pendingCol,sourcePendingDocId));
+                    changeBatch.set(fm.doc(db,'reportNotifications',ntpcReviewNoticeId(dept,id)),notice);
+                    await changeBatch.commit();
                     appData[reportCol]=[{docId:targetReportDocId,...base},...reportList.filter(x=>String(x.caseId||x.id||x.docId)!==id)];
                     appData[pendingCol]=pendingList.filter(x=>String(x.caseId||x.id||x.docId)!==id);
                 }else{
                     const targetPendingDocId = p ? await resolveReportDocId(pendingCol,p,id) : id;
                     const sourceReportDocId = a ? await resolveReportDocId(reportCol,a,id) : '';
-                    await fm.setDoc(fm.doc(db,pendingCol,targetPendingDocId),base);
-                    if(a && sourceReportDocId) await fm.deleteDoc(fm.doc(db,reportCol,sourceReportDocId));
+                    const changeBatch=fm.writeBatch(db);
+                    const savedBase={...base};delete savedBase.docId;
+                    changeBatch.set(fm.doc(db,pendingCol,targetPendingDocId),savedBase);
+                    if(a && sourceReportDocId)changeBatch.delete(fm.doc(db,reportCol,sourceReportDocId));
+                    changeBatch.set(fm.doc(db,'reportNotifications',ntpcReviewNoticeId(dept,id)),notice);
+                    await changeBatch.commit();
                     appData[pendingCol]=[{docId:targetPendingDocId,...base},...pendingList.filter(x=>String(x.caseId||x.id||x.docId)!==id)];
                     appData[reportCol]=reportList.filter(x=>String(x.caseId||x.id||x.docId)!==id);
                 }
-                await removePendingReportNotifications(id,base.registeredByAccount||base.authorId);
-                const recipient=base.registeredByAccount||base.authorId, label=dept==='ems'?'EMS報告':'案件';
-                const n={type:'report',department:dept==='police'?'police':'fire',caseId:id,recipientAccount:recipient,recipientAccountNormalized:String(recipient||'').trim().toLowerCase(),status,title:status==='approved'?`${label}審核完成`:status==='rejected'?`${label}遭退件`:`${label}重新進入審核`,message:status==='approved'?`${label} ${id} 已由高層重新確認為「通過」。`:status==='rejected'?`${label} ${id} 已由高層重新確認為「退件」：${reason}`:`${label} ${id} 已重新調整為「待審核」，等待高層審核。`,timestamp:now,read:false};
-                const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); /* 通知由 onSnapshot 回填，避免審核後本地插入與即時監聽重複。 */
-                await logAdminAction((dept==='ems'?'EMS':dept==='fire'?'消防':'警用')+'編輯案件審核狀況',id);
+                try{await removePendingReportNotifications(id,recipient);}catch(e){ntpcMarkSyncError('審核狀況提醒清理',e);}
+                try{await logAdminAction((dept==='ems'?'EMS':dept==='fire'?'消防':'警用')+'編輯案件審核狀況',id);}catch(e){ntpcMarkSyncError('審核狀況稽核',e);}
                 closeModal('modal-edit-review-status'); renderPersonalNotifications(); renderMyProfile(); renderPoliceReview(); renderFireReview(); renderPoliceReports(); renderFireReports(); renderEMSReports();
                 showSubmitSuccessAnimation('審核狀況已更新',`案件 ${id} 已改為「${status==='approved'?'通過':status==='rejected'?'退件':'待審核'}」。`);
             }catch(e){showToast('更新審核狀況失敗：'+e.message,'error','操作失敗');}
         }
 
         function viewPendingWantedDetail(id){
-            const r=(appData.wantedPendingRecords||[]).find(x=>String(x.docId||x.id)===String(id)); if(!r)return;
+            const r=(appData.wantedPendingRecords||[]).find(x=>String(x.docId)===String(id)||String(x.id)===String(id)); if(!r)return;
             const c=document.getElementById('lookup-detail-content');
             document.getElementById('lookup-detail-title').textContent='通緝申請審核資料';
             c.innerHTML=`<div class="mb-4 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm font-semibold">通緝申請｜待警察高層審核</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4">${[['被通緝人RP名稱',r.name],['證件末五碼',r.id5],['通緝原因',r.reason],['所違反條例',r.law],['發布單位',r.publishUnit||r.department],['發布帳號',r.createdByAccount],['送件時間',formatDateTime(r.submittedAt||r.timestamp)]].map(([k,v])=>`<div class="bg-slate-950 rounded-xl p-4"><span class="text-xs text-slate-500 block">${escapeHtml(k)}</span><span class="text-slate-200">${escapeHtml(v||'--')}</span></div>`).join('')}</div>`;
@@ -5630,21 +5689,23 @@ async function republishAnnouncement(id) {
         }
         async function approveWantedPending(id){
             if(!canReviewPoliceReports()){showToast('只有警察高層、高階成員與管理中心可以審核通緝申請。','warning','權限不足');return;}
-            const r=(appData.wantedPendingRecords||[]).find(x=>String(x.docId||x.id)===String(id)); if(!r)return;
+            const r=(appData.wantedPendingRecords||[]).find(x=>String(x.docId)===String(id)||String(x.id)===String(id));if(!r)return;
             try{
-                const now=Date.now(), shared={...r,reviewStatus:'approved',reviewedAt:now,reviewedBy:currentUser.account,updatedAt:now,discordDmStatus:'pending',discordNotifyRequestedAt:now,discordDmError:'',discordDmSentAt:0,discordUserId:'',discordNickname:'',discordMatchStatus:'pending'}; delete shared.rejectionReason;
-                const pendingId=r.docId||r.id||id; const targetId=r.id&&String(r.id)!==String(pendingId)?r.id:pendingId;
-                await fm.setDoc(fm.doc(db,'wantedRecords',targetId),shared);
-                await fm.deleteDoc(fm.doc(db,'wantedPendingRecords',pendingId));
-                appData.wantedRecords.unshift({docId:targetId,...shared});
-                appData.wantedPendingRecords=appData.wantedPendingRecords.filter(x=>String(x.docId||x.id)!==String(id));
-                await removePendingReportNotifications(id,r.createdByAccount);
-                const n={type:'wanted',department:'police',caseId:id,recipientAccount:r.createdByAccount,recipientAccountNormalized:String(r.createdByAccount||'').trim().toLowerCase(),status:'approved',title:'通緝申請審核完成',message:`${r.name||'通緝申請'} 已經警察高層審核通過，正式進入通緝資料庫。`,timestamp:now,read:false};
-                const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); /* 通知由 onSnapshot 回填，避免審核後本地插入與即時監聽重複。 */
-                await logAdminAction('通緝申請警察高層審核通過',id,`被通緝人：${r.name||''}；發布單位：${r.publishUnit||r.department||''}`);
-                closeModal('modal-lookup-detail'); renderPoliceReview(); renderLookupSystems(); renderPersonalNotifications(); renderMyProfile();
+                const now=Date.now(),shared={...r,reviewStatus:'approved',reviewedAt:now,reviewedBy:currentUser.account,updatedAt:now,discordDmStatus:'pending',discordNotifyRequestedAt:now,discordDmError:'',discordDmSentAt:0,discordUserId:'',discordNickname:'',discordMatchStatus:'pending'};
+                delete shared.rejectionReason;delete shared.docId;
+                const pendingId=String(r.docId||r.id||id),targetId=String(r.id&&String(r.id)!==pendingId?r.id:pendingId);
+                const batch=fm.writeBatch(db);
+                batch.set(fm.doc(db,'wantedRecords',targetId),shared);
+                batch.delete(fm.doc(db,'wantedPendingRecords',pendingId));
+                batch.set(fm.doc(db,'reportNotifications',ntpcReviewNoticeId('wanted',id)),ntpcReviewNotice('wanted',id,r.createdByAccount,'approved','通緝申請審核完成',`${r.name||'通緝申請'} 已經警察高層審核通過，正式進入通緝資料庫。`,now));
+                await batch.commit();
+                appData.wantedRecords=[{docId:targetId,...shared},...appData.wantedRecords.filter(x=>String(x.docId||x.id)!==targetId)];
+                appData.wantedPendingRecords=appData.wantedPendingRecords.filter(x=>String(x.docId||x.id)!==pendingId);
+                try{await removePendingReportNotifications(id,r.createdByAccount);}catch(e){ntpcMarkSyncError('通緝待審通知清理',e);}
+                try{await logAdminAction('通緝申請警察高層審核通過',id,`被通緝人：${r.name||''}；發布單位：${r.publishUnit||r.department||''}`);}catch(e){ntpcMarkSyncError('通緝審核稽核',e);}
+                closeModal('modal-lookup-detail');renderPoliceReview();renderLookupSystems();renderPersonalNotifications();renderMyProfile();refreshDutyDashboard();
                 showSubmitSuccessAnimation('通緝審核完成','通緝申請已審核通過並正式進入通緝資料庫。');
-            }catch(e){showToast('通緝審核失敗：'+e.message,'error','操作失敗');}
+            }catch(e){ntpcMarkSyncError('通緝審核',e);showToast('通緝審核失敗：'+e.message,'error','操作失敗');}
         }
 
         function renderPoliceReview(){
@@ -5667,14 +5728,30 @@ async function republishAnnouncement(id) {
             document.getElementById('detail-case-badge').textContent=r.caseId||'--'; document.getElementById('detail-title').textContent=r.title||'未命名案件'; document.getElementById('detail-author').textContent=`${r.authorName||'--'} (${r.authorId||'--'})`; const reg=document.getElementById('detail-registered-account'); if(reg)reg.textContent=getRegisteredAccount(r); document.getElementById('detail-suspect-name').textContent=r.suspectName||'--'; document.getElementById('detail-suspect-id').textContent=r.suspectId||'--'; document.getElementById('detail-suspect-vehicle').textContent=r.suspectVehicle||'--'; document.getElementById('detail-suspect-name-wrap').classList.toggle('hidden',dept!=='police'); document.getElementById('detail-suspect-id-wrap').classList.toggle('hidden',dept!=='police'); document.getElementById('detail-suspect-vehicle-wrap').classList.toggle('hidden',dept!=='police'); document.getElementById('detail-police-extra-wrap').classList.toggle('hidden',dept!=='police'); document.getElementById('detail-postal-code').textContent=r.postalCode||'未填'; document.getElementById('detail-command').textContent=r.command||'未填'; document.getElementById('detail-support-units').textContent=(r.supportUnits||[]).join('、')||'無'; document.getElementById('detail-time').textContent=r.time||formatDateTime(r.timestamp); document.getElementById('detail-content').textContent=r.content||''; const rr=getReportRemarks(r),dh=document.getElementById('detail-remark'); dh.innerHTML=rr.length?rr.map(x=>`<div class="mb-3"><span class="text-amber-400 font-semibold">${x.authorName||'長官'}</span><span class="text-slate-500 ml-2">${x.time||formatDateTime(x.timestamp)}</span><div class="mt-1 text-slate-300 whitespace-pre-wrap">${x.text||''}</div></div>`).join(''):'尚未有長官批示。'; const links=getReportVideoLinks(r).map(safeHttpUrl).filter(Boolean),vw=document.getElementById('detail-video-wrapper'),vb=document.getElementById('detail-video-links'); if(links.length){vw.classList.remove('hidden');vb.innerHTML=links.map((url,i)=>`<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-400 hover:underline">影片 ${i+1}</a>`).join('');}else{vw.classList.add('hidden');vb.innerHTML='';} const bar=document.getElementById('detail-action-bar'); if(bar){const reviewAllowed=dept==='fire'?canReviewFireReports():canReviewPoliceReports();bar.innerHTML=isPending&&reviewAllowed?`<button type="button" onclick="${dept==='fire'?`approveFirePendingReport('${r.caseId}')`:`approvePolicePendingReport('${r.caseId}')`};closeModal('modal-report-detail')" class="px-3 py-2 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">審核完畢並送出</button><button type="button" onclick="${dept==='fire'?`openRejectFirePending('${r.caseId}')`:`openRejectPolicePending('${r.caseId}')`};closeModal('modal-report-detail')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">退件</button>`:'';} document.getElementById('modal-report-detail').classList.remove('hidden');
         }
         async function approvePolicePendingReport(caseId){
-            if(!canReviewPoliceReports()){showToast('只有警察高層、高階成員與管理中心可以審核案件。','warning','權限不足');return;} const r=(appData.policePendingReports||[]).find(x=>x.caseId===caseId); if(!r)return;
-            try{ const shared={...r,reviewStatus:'approved',reviewedAt:Date.now(),reviewedBy:currentUser.account}; delete shared.rejectionReason; const finalDocId=await resolveReportDocId('policeReports',r,caseId); const pendingDocId=await resolveReportDocId('policePendingReports',r,caseId); await fm.setDoc(fm.doc(db,'policeReports',finalDocId),shared); await fm.deleteDoc(fm.doc(db,'policePendingReports',pendingDocId)); appData.policePendingReports=appData.policePendingReports.filter(x=>x.caseId!==caseId); await removePendingReportNotifications(caseId,r.registeredByAccount);const n={type:'report',caseId,recipientAccount:r.registeredByAccount,recipientAccountNormalized:String(r.registeredByAccount||'').trim().toLowerCase(),status:'approved',title:'案件已審核完畢',message:`案件 ${caseId} 已經高層審核完畢並正式送出。`,timestamp:Date.now(),read:false}; const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); /* 通知由 onSnapshot 回填，避免審核後本地插入與即時監聽重複。 */
-                await logAdminAction('審核案件完畢並送出',caseId); renderPoliceReview(); renderPoliceReports(); renderMyProfile(); showSubmitSuccessAnimation('審核完成','案件已審核完畢並同步至共享案件報告庫。'); }catch(e){showToast('審核送出失敗：'+e.message,'error','操作失敗');}
+            if(!canReviewPoliceReports()){showToast('只有警察高層、高階成員與管理中心可以審核案件。','warning','權限不足');return;}
+            const r=(appData.policePendingReports||[]).find(x=>String(x.caseId)===String(caseId));if(!r)return;
+            try{
+                const now=Date.now(),shared={...r,reviewStatus:'approved',reviewedAt:now,reviewedBy:currentUser.account};
+                delete shared.rejectionReason;delete shared.docId;
+                const finalId=await resolveReportDocId('policeReports',r,caseId);
+                const pendingId=await resolveReportDocId('policePendingReports',r,caseId);
+                const batch=fm.writeBatch(db);
+                batch.set(fm.doc(db,'policeReports',finalId),shared);
+                batch.delete(fm.doc(db,'policePendingReports',pendingId));
+                batch.set(fm.doc(db,'reportNotifications',ntpcReviewNoticeId('police',caseId)),ntpcReviewNotice('police',caseId,r.registeredByAccount,'approved','案件已審核完畢',`案件 ${caseId} 已經高層審核完畢並正式送出。`,now));
+                await batch.commit();
+                appData.policePendingReports=appData.policePendingReports.filter(x=>String(x.caseId)!==String(caseId));
+                appData.policeReports=[{docId:finalId,...shared},...appData.policeReports.filter(x=>String(x.caseId)!==String(caseId))];
+                try{await removePendingReportNotifications(caseId,r.registeredByAccount);}catch(e){ntpcMarkSyncError('警察待審通知清理',e);}
+                try{await logAdminAction('審核案件完畢並送出',caseId);}catch(e){ntpcMarkSyncError('警察審核稽核',e);}
+                renderPoliceReview();renderPoliceReports();renderMyProfile();refreshDutyDashboard();
+                showSubmitSuccessAnimation('審核完成','案件已審核完畢並同步至共享案件報告庫。');
+            }catch(e){ntpcMarkSyncError('警察案件審核',e);showToast('審核送出失敗：'+e.message,'error','操作失敗');}
         }
         function openRejectPolicePending(caseId){ if(!canReviewPoliceReports()){showToast('只有警察高層與管理中心可以退件。','warning','權限不足');return;} document.getElementById('review-reject-case-id').value=caseId; document.getElementById('review-reject-dept').value='police'; document.getElementById('review-reject-reason').value=''; document.getElementById('modal-review-reject').classList.remove('hidden'); }
         async function deleteLookupPendingRecord(type,id){
             if(type!=='wanted'||!currentUser)return;
-            const r=(appData.wantedPendingRecords||[]).find(x=>String(x.docId||x.id)===String(id));
+            const r=(appData.wantedPendingRecords||[]).find(x=>String(x.docId)===String(id)||String(x.id)===String(id));
             if(!r||r.createdByAccount!==currentUser.account&&!isTotalManagementUser()){showToast('只能移除自己發布的退件通緝申請。','warning','權限不足');return;}
             if(!(await showConfirm('確定要移除這筆退件通緝申請嗎？','移除退件申請','確定移除')))return;
             try{await fm.deleteDoc(fm.doc(db,'wantedPendingRecords',r.docId||id));appData.wantedPendingRecords=appData.wantedPendingRecords.filter(x=>String(x.docId||x.id)!==String(id));renderPersonalNotifications();renderPoliceReview();showToast('退件通緝申請已移除。','success','移除完成');}catch(e){showToast('移除失敗：'+e.message,'error','操作失敗');}
@@ -5685,8 +5762,37 @@ async function republishAnnouncement(id) {
             document.getElementById('review-reject-case-id').value=id; document.getElementById('review-reject-dept').value='wanted'; document.getElementById('review-reject-reason').value=''; document.getElementById('modal-review-reject').classList.remove('hidden');
         }
 
-        async function rejectPolicePendingReport(){const caseId=document.getElementById('review-reject-case-id').value;const dept=document.getElementById('review-reject-dept').value||'police';const reason=document.getElementById('review-reject-reason').value.trim();const canReview=dept==='fire'||dept==='ems'?canReviewFireReports():canReviewPoliceReports();if(!canReview){showToast('權限不足。','warning','權限不足');return;}if(!reason){showToast('請填寫退件原因。','warning','退件原因必填');return;}const source=dept==='fire'?appData.firePendingReports:dept==='ems'?appData.emsPendingReports:dept==='wanted'?appData.wantedPendingRecords:appData.policePendingReports;const r=(source||[]).find(x=>String(x.caseId||x.id||x.docId)===String(caseId));if(!r)return;try{const col=dept==='fire'?'firePendingReports':dept==='ems'?'emsPendingReports':dept==='wanted'?'wantedPendingRecords':'policePendingReports';const patch={reviewStatus:'rejected',rejectionReason:reason,reviewedAt:Date.now(),reviewedBy:currentUser.account,updatedAt:Date.now()};await fm.updateDoc(fm.doc(db,col,r.docId||r.caseId||r.id),patch);Object.assign(r,patch);await removePendingReportNotifications(caseId,r.registeredByAccount||r.authorId);const title=dept==='wanted'?'通緝申請遭退件':dept==='ems'?'EMS報告遭退件':dept==='fire'?'消防案件遭退件':'案件遭退件';const recipient=r.registeredByAccount||r.authorId||r.createdByAccount;const n={type:dept==='wanted'?'wanted':'report',department:'police',caseId,recipientAccount:recipient,recipientAccountNormalized:String(recipient||'').trim().toLowerCase(),status:'rejected',title,message:`${dept==='wanted'?'通緝申請':dept==='ems'?'EMS報告':`案件 ${caseId}`} 已退件：${reason}`,timestamp:Date.now(),read:false};const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);/* 通知由 onSnapshot 回填，避免審核後本地插入與即時監聽重複。 */await logAdminAction((dept==='ems'?'EMS':dept==='fire'?'消防':'警用')+'退件案件報告',caseId,reason);closeModal('modal-review-reject');if(dept==='ems'||dept==='fire')renderFireReview();else renderPoliceReview();if(dept==='wanted'){renderLookupSystems();}renderPersonalNotifications();showToast('案件已退件，寄件人可重新編輯送件。','success','退件完成');}catch(e){showToast('退件失敗：'+e.message,'error','操作失敗');}}
-        
+        async function rejectPolicePendingReport(){
+            const caseId=document.getElementById('review-reject-case-id').value;
+            const dept=document.getElementById('review-reject-dept').value||'police';
+            const reason=document.getElementById('review-reject-reason').value.trim();
+            const allowed=dept==='fire'||dept==='ems'?canReviewFireReports():canReviewPoliceReports();
+            if(!allowed){showToast('權限不足。','warning','權限不足');return;}
+            if(!reason){showToast('請填寫退件原因。','warning','退件原因必填');return;}
+            const col=dept==='fire'?'firePendingReports':dept==='ems'?'emsPendingReports':dept==='wanted'?'wantedPendingRecords':'policePendingReports';
+            const source=appData[col]||[];
+            const r=source.find(x=>String(x.caseId||x.id||x.docId)===String(caseId));if(!r)return;
+            const now=Date.now(),patch={reviewStatus:'rejected',rejectionReason:reason,reviewedAt:now,reviewedBy:currentUser.account,updatedAt:now};
+            const label=dept==='wanted'?'通緝申請':dept==='ems'?'EMS報告':dept==='fire'?'消防案件':'案件';
+            const recipient=r.registeredByAccount||r.createdByAccount||r.authorId;
+            const message=`${label} ${caseId} 已退件：${reason}`;
+            const n=ntpcReviewNotice(dept,caseId,recipient,'rejected',`${label}遭退件`,message,now);
+            try{
+                const batch=fm.writeBatch(db);
+                batch.update(fm.doc(db,col,r.docId||r.caseId||r.id),patch);
+                batch.set(fm.doc(db,'reportNotifications',ntpcReviewNoticeId(dept,caseId)),n);
+                await batch.commit();
+                Object.assign(r,patch);
+                try{await removePendingReportNotifications(caseId,recipient);}catch(e){ntpcMarkSyncError('退件待審通知清理',e);}
+                try{await logAdminAction((dept==='ems'?'EMS':dept==='fire'?'消防':dept==='wanted'?'通緝':'警用')+'退件案件報告',caseId,reason);}catch(e){ntpcMarkSyncError('退件稽核紀錄',e);}
+                closeModal('modal-review-reject');
+                if(dept==='ems'||dept==='fire')renderFireReview();else renderPoliceReview();
+                if(dept==='wanted')renderLookupSystems();
+                renderPersonalNotifications();refreshDutyDashboard();
+                showToast('案件已退件，寄件人可重新編輯送件。','success','退件完成');
+            }catch(e){ntpcMarkSyncError('案件退件',e);showToast('退件失敗：'+e.message,'error','操作失敗');}
+        }
+
         // 案件列表統一依建立／送出時間由新到舊排序；舊資料若缺少數字時間，則嘗試解析 time 字串。
         function getReportSortTimestamp(report={}) {
             for (const value of [report.submittedAt, report.timestamp, report.registeredAt, report.createdAt, report.updatedAt]) {
@@ -7310,13 +7416,159 @@ async function republishAnnouncement(id) {
             const categoryList=document.getElementById('storage-category-list');
             if(categoryList){categoryList.innerHTML=groups.map(g=>{const rows=g.lists.flatMap(list=>list||[]);const bytes=rows.reduce((sum,item)=>sum+Math.max(1024,estimateJsonBytes(item)),0);const percent=approxBytes>0?(bytes/approxBytes)*100:0;return `<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><div class="flex items-center justify-between gap-3"><div class="flex items-center gap-2"><i class="fa-solid ${g.icon} text-purple-400"></i><span class="font-semibold text-slate-200">${g.label}</span></div><span class="text-xs text-slate-400">${rows.length.toLocaleString()} 筆</span></div><div class="flex items-center justify-between mt-2 text-[11px]"><span class="text-slate-500">估算占用 ${formatBytes(bytes)}</span><span class="text-purple-400 font-mono">${percent.toFixed(2)}%</span></div><div class="w-full bg-slate-900 rounded-full h-1.5 mt-2 overflow-hidden"><div class="bg-purple-500 h-full rounded-full" style="width:${Math.min(100,percent)}%"></div></div></div>`;}).join('');}
             const usedTextEl=document.getElementById('storage-used-text'),percentTextEl=document.getElementById('storage-percent-text'),progressEl=document.getElementById('storage-progress-bar'),docsEl=document.getElementById('storage-docs-count'),freeEl=document.getElementById('storage-free-text');
-            if(usedTextEl)usedTextEl.textContent=`當前已使用：約 ${formatBytes(approxBytes)}`;
-            if(percentTextEl){percentTextEl.textContent=`${percentText}%`;percentTextEl.title=`依目前載入資料估算：${payloadBytes.toLocaleString()} bytes 文件內容`;}
-            if(progressEl)progressEl.style.width=`${Math.max(percentNumber,totalDocs>0?0.5:0)}%`;
+            if(usedTextEl)usedTextEl.textContent=`已同步內容估計：約 ${formatBytes(approxBytes)}`;
+            if(percentTextEl){percentTextEl.textContent='資料估算';percentTextEl.title=`依目前載入資料估算：${payloadBytes.toLocaleString()} bytes 文件內容；不能推算 Firebase 專案整體容量`;}
+            if(progressEl){progressEl.style.width='0%';progressEl.title='未取得 Firebase 專案實際配額，不顯示可能誤導的容量比例';}
             if(docsEl)docsEl.textContent=totalDocs;
-            if(freeEl)freeEl.textContent=`${freeMb.toFixed(1)} MB`;
+            if(freeEl)freeEl.textContent='請至 Firebase Console';
         }
     
+
+/* V1.9.3：管理中心低讀取監控／審核一致性支援。僅依現有快取運算，開面板不額外訂閱集合。 */
+const ntpcSyncHealth={lastSuccess:0,events:{},errors:[],startedAt:Date.now()};
+function ntpcMarkSyncSuccess(name,count){
+    ntpcSyncHealth.lastSuccess=Date.now();ntpcSyncHealth.events[name]={at:Date.now(),count:Number(count)||0};
+}
+function ntpcMarkSyncError(name,error){
+    const msg=String(error?.message||error||'未知錯誤').slice(0,300);
+    ntpcSyncHealth.errors.unshift({at:Date.now(),name:String(name),message:msg});
+    ntpcSyncHealth.errors=ntpcSyncHealth.errors.slice(0,15);
+    if(document.getElementById('admin-sub-sync-health')&&!document.getElementById('admin-sub-sync-health').classList.contains('hidden'))renderAdminSyncHealth();
+}
+function ntpcReviewNoticeId(dept,caseId){
+    const safe=encodeURIComponent(String(caseId||'')).replace(/%/g,'_');
+    return `review-${dept}-${safe.slice(0,350)}`;
+}
+function ntpcReviewNotice(dept,caseId,recipient,status,title,message,at=Date.now()){
+    const acct=String(recipient||'').trim();
+    return {type:dept==='wanted'?'wanted':'report',department:dept==='fire'||dept==='ems'?'fire':'police',caseId:String(caseId),recipientAccount:acct,recipientAccountNormalized:acct.toLowerCase(),status,title,message,timestamp:at,read:false};
+}
+function ntpcMaybeRenderAdminStorage(){
+    if(getEffectiveRole(currentUser)==='admin'&&!document.getElementById('admin-sub-storage')?.classList.contains('hidden'))renderAdminStorage();
+}
+function ntpcRenderOpenAdminMonitorPanels(){
+    if(getEffectiveRole(currentUser)!=='admin')return;
+    if(!document.getElementById('admin-sub-duty-alerts')?.classList.contains('hidden'))renderAdminDutyAlerts();
+    if(!document.getElementById('admin-sub-notification-alerts')?.classList.contains('hidden'))renderAdminNotificationAlerts();
+    if(!document.getElementById('admin-sub-sync-health')?.classList.contains('hidden'))renderAdminSyncHealth();
+}
+function ntpcEscMonitor(value){return escapeHtml(String(value??''));}
+function ntpcDutyAlertRows(sources,now=Date.now()){
+    const alerts=[],deptMap={police:'警察',fire:'消防',admin:'管理中心'};
+    for(const [dept,records] of Object.entries(sources)){
+        const people=new Map();
+        for(const r of records||[]){
+            const key=String(r.account||r.staffNumber||r.managementId||r.name||'').trim().toLowerCase();
+            const t=getClockTimestamp(r);
+            if(!key||!(t>0)||!['上班','下班'].includes(r.status))continue;
+            if(!people.has(key))people.set(key,[]);
+            people.get(key).push({r,t});
+        }
+        for(const rows of people.values()){
+            rows.sort((a,b)=>a.t-b.t);
+            let active=null;
+            for(let i=0;i<rows.length;i++){
+                const current=rows[i],last=rows[i-1];
+                if(last&&last.r.status===current.r.status){
+                    alerts.push({dept,type:'duplicate',r:current.r,t:current.t,note:`連續兩張「${current.r.status}」卡，上一張：${formatDateTime(last.t)}`});
+                }
+                if(current.r.status==='上班'){
+                    // 第二張上班不覆蓋第一張未結束的起始卡，避免異常被隱藏。
+                    if(!active)active=current;
+                }else{
+                    if(!active)alerts.push({dept,type:'orphan',r:current.r,t:current.t,note:'找不到對應的上班卡（也可能是歷史資料未載入）'});
+                    else active=null;
+                }
+            }
+            if(active&&now-active.t>18*3600000)alerts.push({dept,type:'long',r:active.r,t:active.t,note:`尚未下班，已約 ${((now-active.t)/3600000).toFixed(1)} 小時`});
+        }
+    }
+    return alerts.sort((a,b)=>b.t-a.t);
+}
+function renderAdminDutyAlerts(){
+    if(!currentUser||getEffectiveRole(currentUser)!=='admin')return;
+    const h=document.getElementById('duty-alert-list'),summary=document.getElementById('duty-alert-summary');if(!h)return;
+    const dept=document.getElementById('duty-alert-dept')?.value||'all',type=document.getElementById('duty-alert-type')?.value||'all';
+    const all=ntpcDutyAlertRows({police:appData.policeClocks,fire:appData.fireClocks,admin:appData.adminClocks});
+    const filtered=all.filter(x=>(dept==='all'||x.dept===dept)&&(type==='all'||x.type===type)).slice(0,120);
+    if(summary)summary.textContent=`找到 ${filtered.length} 筆顯示項目${all.length>120?'（最多顯示 120 筆）':''}；請人工核對後再編輯，原始雲端資料不會被自動變更。`;
+    h.innerHTML=filtered.length?filtered.map(x=>{
+        const id=String(x.r.docId||x.r.id||'');
+        const btn=id?`<button type="button" data-duty-review-dept="${ntpcEscMonitor(x.dept)}" data-duty-review-id="${ntpcEscMonitor(id)}" class="shrink-0 bg-blue-600/20 text-blue-300 px-3 py-2 rounded-lg text-xs">編輯打卡</button>`:'';
+        return `<div class="bg-slate-950 border border-amber-500/20 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2"><div><div class="text-sm text-white font-semibold">${ntpcEscMonitor(({police:'警察',fire:'消防',admin:'管理中心'})[x.dept])}｜${ntpcEscMonitor(x.r.name||x.r.account||'未知人員')}</div><div class="text-xs text-slate-400 mt-1">${ntpcEscMonitor(x.r.account||x.r.staffNumber||x.r.managementId||'--')}｜${ntpcEscMonitor(formatDateTime(x.t))}</div><div class="text-xs text-amber-300 mt-1">${ntpcEscMonitor(x.note)}</div></div>${btn}</div>`;
+    }).join(''):'<div class="text-sm text-slate-500 text-center py-7">目前沒有符合篩選的異常打卡。</div>';
+}
+document.addEventListener('click',e=>{
+    const btn=e.target.closest?.('[data-duty-review-id]');if(!btn)return;
+    if(getEffectiveRole(currentUser)!=='admin')return;
+    openEditClockModal(btn.dataset.dutyReviewDept,btn.dataset.dutyReviewId);
+});
+let ntpcRecentAdminNotifications=[],ntpcNoticeLoadedAt=0;
+async function loadRecentAdminNotifications(){
+    if(getEffectiveRole(currentUser)!=='admin'||!db||!fm)return;
+    const btn=document.getElementById('alert-load-notices'),hint=document.getElementById('notification-alert-load-status');
+    if(btn)btn.disabled=true;
+    if(hint)hint.textContent='讀取最近 100 則通知中（會產生一次性 Firestore 讀取）…';
+    try{
+        const q=fm.query(fm.collection(db,'reportNotifications'),fm.orderBy('timestamp','desc'),fm.limit(100));
+        const snap=await fm.getDocs(q);
+        ntpcRecentAdminNotifications=snap.docs.map(d=>({docId:d.id,...d.data()}));ntpcNoticeLoadedAt=Date.now();
+        if(hint)hint.textContent=`已載入 ${ntpcRecentAdminNotifications.length} 則最近通知，查詢於 ${formatDateTime(ntpcNoticeLoadedAt)} 完成；不會持續背景監聽。`;
+        renderAdminNotificationAlerts();ntpcMarkSyncSuccess('通知異常人工查詢',snap.size);
+    }catch(e){ntpcMarkSyncError('全站近期通知查詢',e);if(hint)hint.textContent='查詢失敗：'+String(e.message||e)+'（可能缺少 Firestore 讀取權限）';}
+    finally{if(btn)btn.disabled=false;}
+}
+function ntpcNotificationAlertRows(now=Date.now()){
+    const alerts=[];
+    const pending=[['警務',appData.policePendingReports],['消防',appData.firePendingReports],['EMS',appData.emsPendingReports],['通緝',appData.wantedPendingRecords]];
+    for(const [dept,records] of pending){
+        for(const r of records||[]){
+            if(r.reviewStatus!=='pending')continue;
+            const t=Number(r.submittedAt||r.createdAt||r.timestamp||0);
+            if(t>0&&now-t>24*3600000)alerts.push({kind:'review',title:`${dept}待審逾期`,id:r.caseId||r.id||r.docId,detail:`已等待 ${Math.floor((now-t)/3600000)} 小時`,t});
+        }
+    }
+    for(const r of appData.wantedRecords||[]){
+        if(r.reviewStatus!=='approved'||!isWantedActive(r))continue;
+        const status=String(r.discordDmStatus||'not_requested');
+        const t=Number(r.discordNotifyRequestedAt||r.reviewedAt||0);
+        if(['failed','not_found','match_failed'].includes(status))alerts.push({kind:'discord',title:'通緝私訊失敗／無法比對',id:r.docId||r.id,detail:r.discordDmError||status,t,status});
+        else if(['pending','processing'].includes(status)&&t>0&&now-t>10*60000)alerts.push({kind:'discord',title:'Discord 等待逾 10 分鐘',id:r.docId||r.id,detail:`目前狀態：${status}；請檢查 Bot 是否在線`,t,status});
+    }
+    if(ntpcNoticeLoadedAt){
+        for(const n of ntpcRecentAdminNotifications){
+            if(!['failed','error'].includes(String(n.status||'').toLowerCase()))continue;
+            alerts.push({kind:'notice',title:'通知記錄失敗',id:n.caseId||n.docId,detail:n.message||n.error||'通知狀態失敗',t:Number(n.timestamp||0)});
+        }
+    }
+    return alerts.sort((a,b)=>b.t-a.t);
+}
+function renderAdminNotificationAlerts(){
+    if(getEffectiveRole(currentUser)!=='admin')return;
+    const h=document.getElementById('notification-alert-list'),s=document.getElementById('notification-alert-summary');if(!h)return;
+    const all=ntpcNotificationAlertRows();
+    if(s)s.textContent=`依目前資料偵測 ${all.length} 項提醒；「Discord 已發送」必須以 Bot 寫回 sent 為準。`;
+    h.innerHTML=all.length?all.slice(0,100).map(a=>{
+        const canRetry=a.kind==='discord'&&a.status!=='processing'&&a.id;
+        const action=canRetry?`<button type="button" data-alert-wanted-id="${ntpcEscMonitor(a.id)}" class="rounded-lg bg-indigo-600/20 px-3 py-2 text-xs text-indigo-200">排入 Bot 重試</button>`:'';
+        return `<div class="bg-slate-950 border border-rose-500/20 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3"><div class="min-w-0"><div class="text-sm font-semibold text-white">${ntpcEscMonitor(a.title)}｜${ntpcEscMonitor(a.id)}</div><div class="text-xs text-slate-400 mt-1 break-words">${ntpcEscMonitor(a.detail)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEscMonitor(formatDateTime(a.t))}</div></div>${action}</div>`;
+    }).join(''):'<div class="text-sm text-slate-500 text-center py-7">目前沒有偵測到需要人工處理的審核或 Discord 通知異常。</div>';
+}
+document.addEventListener('click',e=>{
+    const button=e.target.closest?.('[data-alert-wanted-id]');if(!button)return;
+    if(getEffectiveRole(currentUser)!=='admin')return;
+    requestWantedDiscordDm(button.getAttribute('data-alert-wanted-id'));
+});
+function renderAdminSyncHealth(){
+    if(getEffectiveRole(currentUser)!=='admin')return;
+    const h=document.getElementById('sync-health-metrics'),errors=document.getElementById('sync-health-errors');if(!h)return;
+    const v=[['瀏覽器網路',navigator.onLine?'已連線（瀏覽器判斷）':'離線'],['Firebase 初始化',db&&fm?'完成':'尚未就緒'],['本頁監聽器',`${realtimeUnsubscribers.length} 個`],['最近快照同步',ntpcSyncHealth.lastSuccess?formatDateTime(ntpcSyncHealth.lastSuccess):'尚未收到'],['目前已同步集合',`${Object.keys(ntpcSyncHealth.events).length} 個`],['開啟本頁時間',formatDateTime(ntpcSyncHealth.startedAt)]];
+    h.innerHTML=v.map(([title,value])=>`<div class="bg-slate-950 border border-slate-800 p-3 rounded-xl"><div class="text-xs text-slate-500">${ntpcEscMonitor(title)}</div><div class="text-sm text-white font-semibold mt-1">${ntpcEscMonitor(value)}</div></div>`).join('');
+    if(errors)errors.innerHTML=ntpcSyncHealth.errors.length?ntpcSyncHealth.errors.map(x=>`<div class="rounded-lg bg-red-500/5 border border-red-500/15 p-2 text-xs"><span class="text-rose-300">${ntpcEscMonitor(x.name)}</span>　<span class="text-slate-500">${ntpcEscMonitor(formatDateTime(x.at))}</span><div class="mt-1 text-slate-400 break-words">${ntpcEscMonitor(x.message)}</div></div>`).join(''):'<div class="text-sm text-slate-500">本次瀏覽器工作階段尚未捕捉到同步錯誤。</div>';
+}
+window.addEventListener('online',()=>{if(getEffectiveRole(currentUser)==='admin')renderAdminSyncHealth();});
+window.addEventListener('offline',()=>{if(getEffectiveRole(currentUser)==='admin')renderAdminSyncHealth();});
+
 /* ================= V1.8.2 勤務中心與通知穩定層 ================= */
 function ntpcEsc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 function ntpcDutyRowsForAccount(accountValue){
