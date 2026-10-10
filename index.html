@@ -910,7 +910,7 @@
                                 <button type="button" id="police-clocks-refresh-btn" class="min-h-[42px] px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition touch-manipulation"><i class="fa-solid fa-rotate mr-1"></i>刷新</button>
                             </div>
                         </div>
-                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
                             <div>
                                 <label class="block text-xs text-slate-400 mb-1.5">日期</label>
                                 <input type="date" id="police-clocks-date-filter" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
@@ -923,10 +923,18 @@
                                     <option value="下班">只看下班卡</option>
                                 </select>
                             </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1.5">紀錄檢查</label>
+                                <select id="police-clocks-anomaly-filter" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
+                                    <option value="all">所有紀錄</option>
+                                    <option value="abnormal">只看異常打卡</option>
+                                </select>
+                            </div>
                             <div class="flex items-end">
                                 <button type="button" id="police-clocks-date-clear" class="w-full min-h-[42px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2.5 rounded-xl text-xs transition">清除篩選</button>
                             </div>
                         </div>
+                        <p id="police-clocks-anomaly-summary" class="mt-3 text-xs text-amber-300/80" aria-live="polite"></p>
                     </div>
                     <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
                         <table class="w-full text-left border-collapse text-sm">
@@ -2708,10 +2716,17 @@ const loginOpenBtn = document.getElementById('login-modal-open-btn');
             if (policeClockDateFilter) policeClockDateFilter.addEventListener('change', renderPoliceClocks);
             const policeClockStatusFilter = document.getElementById('police-clocks-status-filter');
             if (policeClockStatusFilter) policeClockStatusFilter.addEventListener('change', renderPoliceClocks);
+            const policeClockAnomalyFilter = document.getElementById('police-clocks-anomaly-filter');
+            if (policeClockAnomalyFilter) policeClockAnomalyFilter.addEventListener('change', () => {
+                // 異常篩選預設跨日期搜尋，避免只看到今天而遺漏歷史異常。
+                if (policeClockAnomalyFilter.value === 'abnormal' && policeClockDateFilter) policeClockDateFilter.value = '';
+                renderPoliceClocks();
+            });
             const policeClockClear = document.getElementById('police-clocks-date-clear');
             if (policeClockClear) policeClockClear.addEventListener('click', () => {
-                if (policeClockDateFilter) policeClockDateFilter.value = localDateKey(Date.now());
+                if (policeClockDateFilter) policeClockDateFilter.value = '';
                 if (policeClockStatusFilter) policeClockStatusFilter.value = 'all';
+                if (policeClockAnomalyFilter) policeClockAnomalyFilter.value = 'all';
                 renderPoliceClocks();
             });
             const adminClockDateFilter = document.getElementById('admin-clocks-date-filter');
@@ -2846,14 +2861,6 @@ const loginOpenBtn = document.getElementById('login-modal-open-btn');
             const searchEMSInput = document.getElementById('search-ems-report');
             if (searchEMSInput) searchEMSInput.addEventListener('input', renderEMSReports);
 
-            const policeDateFilter = document.getElementById('police-clocks-date-filter');
-            if (policeDateFilter && !policeDateFilter.value) policeDateFilter.value = localDateKey(Date.now());
-            if (policeDateFilter) policeDateFilter.addEventListener('change', renderPoliceClocks);
-            const policeDateClear = document.getElementById('police-clocks-date-clear');
-            if (policeDateClear) policeDateClear.addEventListener('click', () => {
-                if (policeDateFilter) policeDateFilter.value = localDateKey(Date.now());
-                renderPoliceClocks();
-            });
 
             const fireDateFilter = document.getElementById('fire-clocks-date-filter');
             if (fireDateFilter && !fireDateFilter.value) fireDateFilter.value = localDateKey(Date.now());
@@ -2945,7 +2952,7 @@ const loginOpenBtn = document.getElementById('login-modal-open-btn');
         let announcementTimer=null,announcementIndex=0;
 const dutyCountCache={police:0,fire:0,admin:0};
 const dutyStatusCache={police:new Map(),fire:new Map(),admin:new Map()};
-function buildLatestDutyMap(rows){const latest=new Map();(rows||[]).forEach(r=>{const key=String(r.account||r.name||r.id||'').trim().toLowerCase();if(!key)return;const old=latest.get(key);if(!old||Number(r.timestamp||0)>Number(old.timestamp||0))latest.set(key,r);});return latest;}
+function buildLatestDutyMap(rows){const latest=new Map();(rows||[]).forEach(r=>{const key=String(r.account||r.staffNumber||r.name||r.id||'').trim().toLowerCase();if(!key)return;const old=latest.get(key);if(!old||getClockTimestamp(r)>getClockTimestamp(old))latest.set(key,r);});return latest;}
 function recalculateDutyStatusCache(){
     const sources={police:appData?.policeClocks||[],fire:appData?.fireClocks||[],admin:appData?.adminClocks||[]};
     Object.keys(sources).forEach(dept=>{const latest=buildLatestDutyMap(sources[dept]);dutyStatusCache[dept]=latest;dutyCountCache[dept]=[...latest.values()].filter(r=>r.status==='上班').length;});
@@ -3481,6 +3488,7 @@ async function republishAnnouncement(id) {
                 appData.policeClocks = rows;
                 recalculateDutyStatusCache();
                 renderPoliceClocks(); // 即時更新警務打卡紀錄清單
+                if (!document.getElementById('police-duty-details-modal')?.classList.contains('hidden')) renderPoliceDutyDetails();
                 renderAdminOverview(); // 即時更新警察當前值勤人數
                 refreshDutyDashboard();
                 if (document.getElementById('admin-sub-online') && !document.getElementById('admin-sub-online').classList.contains('hidden')) renderAdminOnlineUsers();
@@ -3835,6 +3843,14 @@ async function republishAnnouncement(id) {
             document.getElementById('app-confirm-ok')?.addEventListener('click',()=>finishConfirm(true));
             document.getElementById('police-duty-details-btn')?.addEventListener('click',openPoliceDutyDetails);
             document.getElementById('police-duty-details-close')?.addEventListener('click',closePoliceDutyDetails);
+            document.getElementById('police-clocks-tbody')?.addEventListener('click',event=>{
+                const btn=event.target.closest('[data-delete-police-clock]');
+                if(btn)deleteClockRecord('police',btn.dataset.deletePoliceClock);
+            });
+            document.getElementById('police-duty-details-list')?.addEventListener('click', event => {
+                const button = event.target.closest('[data-delete-police-duty-clock]');
+                if (button) deletePoliceActiveClock(button.dataset.deletePoliceDutyClock);
+            });
             document.getElementById('police-duty-details-modal')?.addEventListener('click',event=>{if(event.target?.id==='police-duty-details-modal')closePoliceDutyDetails();});
             document.addEventListener('keydown',event=>{if(event.key==='Escape')closePoliceDutyDetails();});
             document.getElementById('app-confirm-cancel')?.addEventListener('click',()=>finishConfirm(false));
@@ -3961,12 +3977,12 @@ async function republishAnnouncement(id) {
             ];
             let totalMinutes = 0;
             ['police', 'fire'].forEach(dept => {
-                const clocks = allClocks.filter(c => c.dept === dept && String(c.account || '').toLowerCase() === String(account || '').toLowerCase()).sort((a,b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
+                const clocks = allClocks.filter(c => c.dept === dept && String(c.account || '').toLowerCase() === String(account || '').toLowerCase()).sort((a,b) => getClockTimestamp(a) - getClockTimestamp(b));
                 let onDuty = null;
                 clocks.forEach(c => {
-                    if (c.status === '上班') onDuty = Number(c.timestamp || 0) || null;
+                    if (c.status === '上班') onDuty = getClockTimestamp(c) || null;
                     else if (c.status === '下班' && onDuty) {
-                        const diff = Number(c.timestamp || 0) - onDuty;
+                        const diff = getClockTimestamp(c) - onDuty;
                         if (diff > 0) totalMinutes += diff / 60000;
                         onDuty = null;
                     }
@@ -4593,7 +4609,7 @@ async function republishAnnouncement(id) {
             const clockList = dept === 'police' ? (appData.policeClocks || []) : (appData.fireClocks || []);
             const myLatestClock = [...clockList]
                 .filter(c => String(c.account || '').trim() === String(currentUser.account || '').trim())
-                .sort((a,b) => Number(b.timestamp || 0) - Number(a.timestamp || 0))[0];
+                .sort((a,b) => getClockTimestamp(b) - getClockTimestamp(a))[0];
             const statusEl = document.getElementById('clock-status');
             if (statusEl) statusEl.value = myLatestClock?.status === '上班' ? '下班' : '上班';
             // 每次開啟打卡視窗都依目前最新紀錄重新決定預設狀態：上班後下一張固定預設下班。
@@ -5780,6 +5796,10 @@ async function republishAnnouncement(id) {
         function getReportVideoLinks(r) { return Array.isArray(r?.videoLinks) ? r.videoLinks.filter(Boolean) : (r?.videoLink ? [r.videoLink] : []); }
         function canRemarkReport(dept) { if(!currentUser)return false; if(currentUser.role==='admin')return true; return userHasUnit(dept)&&(currentUser.role==='high'||currentUser.role==='senior'); }
         function canManageClockRecords(){ return !!currentUser&&currentUser.role==='admin'; }
+        // 只擴充警察打卡的刪除權限；消防及其他紀錄編輯仍按原本管理處權限。
+        function canDeletePoliceClockRecord(){ const role=getEffectiveRole(currentUser); return !!currentUser && (role==='admin' || (role==='high' && userHasUnit('police'))); }
+        function canDeleteClockRecord(dept){ return dept==='police' ? canDeletePoliceClockRecord() : canManageClockRecords(); }
+
 
         function viewReportDetail(dept, caseId) {
             const list=dept==='police'?appData.policeReports:appData.fireReports;
@@ -5979,8 +5999,31 @@ async function republishAnnouncement(id) {
             if(editType.endsWith('-clock')){
                 const dept=editType.split('-')[0],list=dept==='police'?appData.policeClocks:appData.fireClocks,c=list.find(x=>String(x.docId||x.id)===String(idKey));
                 if(!canManageClockRecords()||!c){showToast('管理處權限不足。','warning','權限不足');return;}
-                const clockChanges={account:document.getElementById('edit-clock-account').value.trim(),staffNumber:c.staffNumber||'',name:document.getElementById('edit-clock-name').value.trim(),status:document.getElementById('edit-clock-status').value.trim(),vehicle:document.getElementById('edit-clock-vehicle').value.trim(),time:document.getElementById('edit-clock-time').value.trim(),remark:document.getElementById('edit-clock-remark').value.trim()};
-                try{await fm.updateDoc(fm.doc(db,dept==='police'?'policeClocks':'fireClocks',c.docId||c.id),clockChanges);Object.assign(c,clockChanges);await logAdminAction('編輯打卡紀錄',`${dept}:${c.docId||c.id}`,`人員：${c.name||'--'}；狀態：${c.status||'--'}；時間：${c.time||'--'}。`);closeModal('modal-edit');dept==='police'?renderPoliceClocks():renderFireClocks();recalculateDutyStatusCache();renderAdminOverview();showToast('打卡紀錄已更新。','success','更新成功');}catch(e){showToast('更新失敗：'+e.message,'error','操作失敗');}
+                const timeValue=document.getElementById('edit-clock-time').value;
+                const editedTimestamp=parseClockDateTime(timeValue);
+                if(!Number.isFinite(editedTimestamp)||editedTimestamp<=0){showToast('請填寫有效的打卡日期與時間。','warning','時間格式錯誤');return;}
+                const newStatus=document.getElementById('edit-clock-status').value;
+                if(!['上班','下班'].includes(newStatus)){showToast('請選擇有效的打卡類型。','warning','資料錯誤');return;}
+                const isRetro=/\(補打卡\)/.test(String(c.time||''));
+                const clockChanges={account:document.getElementById('edit-clock-account').value.trim(),staffNumber:c.staffNumber||'',name:document.getElementById('edit-clock-name').value.trim(),status:newStatus,vehicle:document.getElementById('edit-clock-vehicle').value.trim(),time:formatDateTime(editedTimestamp)+(isRetro?' (補打卡)':''),timestamp:editedTimestamp,remark:document.getElementById('edit-clock-remark').value.trim()};
+                try{
+                    await fm.updateDoc(fm.doc(db,dept==='police'?'policeClocks':'fireClocks',c.docId||c.id),clockChanges);
+                    Object.assign(c,clockChanges); // 雲端成功後才更新本機，日期、排序及值勤狀態皆依新 timestamp。
+                    try{await logAdminAction('編輯打卡紀錄',`${dept}:${c.docId||c.id}`,`人員：${c.name||'--'}；狀態：${c.status||'--'}；時間：${c.time||'--'}。`);}catch(auditErr){console.warn('打卡變更已儲存，但操作稽核寫入失敗',auditErr);}
+                    closeModal('modal-edit');recalculateDutyStatusCache();
+                    // 主動切換至編輯後日期，確保跨日編輯完成後能立即看見該張卡。
+                    const dateInput=document.getElementById(`${dept}-clocks-date-filter`);
+                    if(dateInput)dateInput.value=localDateKey(editedTimestamp);
+                    if(dept==='police'){
+                        const statusInput=document.getElementById('police-clocks-status-filter');
+                        const anomalyInput=document.getElementById('police-clocks-anomaly-filter');
+                        if(statusInput)statusInput.value='all';
+                        if(anomalyInput)anomalyInput.value='all';
+                    }
+                    dept==='police'?renderPoliceClocks():renderFireClocks();
+                    if(dept==='police'&&!document.getElementById('police-duty-details-modal')?.classList.contains('hidden'))renderPoliceDutyDetails();
+                    renderAdminOverview();showToast('打卡紀錄及歸屬日期已更新。','success','更新成功');
+                }catch(e){showToast('更新失敗：'+e.message,'error','操作失敗');}
                 return;
             }
 
@@ -6062,15 +6105,47 @@ async function republishAnnouncement(id) {
             }
         }
 
+        // 兼容 datetime-local、既有 YYYY/MM/DD、補打卡字樣、Firestore Timestamp。
+        function parseClockDateTime(value){
+            const input=String(value??'').replace(/\s*\(補打卡\)\s*/g,'').trim();
+            if(!input)return NaN;
+            const match=input.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+            if(match){
+                const [y,mo,d,h,mi,se]=match.slice(1).map(Number);
+                const date=new Date(y,mo-1,d,h,mi,se||0);
+                if(date.getFullYear()!==y||date.getMonth()!==mo-1||date.getDate()!==d||date.getHours()!==h||date.getMinutes()!==mi||date.getSeconds()!==(se||0))return NaN;
+                return date.getTime();
+            }
+            const parsed=Date.parse(input);
+            return Number.isFinite(parsed)?parsed:NaN;
+        }
         function getClockTimestamp(clock={}){
-            const raw=clock.timestamp??clock.createdAt??clock.updatedAt;
-            const n=Number(raw);
-            if(Number.isFinite(n)&&n>0)return n<1e12?n*1000:n;
-            const rawParsed=Date.parse(String(raw||''));
-            if(Number.isFinite(rawParsed))return rawParsed;
-            const t=String(clock.time||'').replace(/\s*\(補打卡\)\s*/g,'').trim();
-            const parsed=Date.parse(t);
-            return Number.isFinite(parsed)?parsed:0;
+            const raw=clock.timestamp;
+            let stamp=0;
+            if(raw && typeof raw.toMillis==='function')stamp=raw.toMillis();
+            else if(raw instanceof Date)stamp=raw.getTime();
+            else {
+                const n=Number(raw);
+                if(raw!==undefined&&raw!==null&&String(raw).trim()!==''&&Number.isFinite(n)&&n>0)stamp=n<1e12?n*1000:n;
+            }
+            const fromTime=parseClockDateTime(clock.time);
+            // 修復舊版只更改 time 文字卻沒有同步 timestamp 的既有紀錄（不在讀取時寫入雲端）。
+            // 遇到明顯不一致（超過一分鐘），優先採用編輯後的文字時間；下次手動編輯會正式同步 timestamp。
+            if(Number.isFinite(fromTime) && (!stamp || Math.abs(fromTime-stamp)>60000))return fromTime;
+            if(stamp>0)return stamp;
+            const created=clock.createdAt;
+            if(created && typeof created.toMillis==='function')return created.toMillis();
+            const fromCreated=parseClockDateTime(created);
+            return Number.isFinite(fromCreated)?fromCreated:0;
+        }
+        function clockEditDateTimeLocal(clock={}){
+            // 舊版只更新 time 未更新 timestamp，編輯時優先呈現卡上顯示的日期供管理員修正。
+            const fromText=parseClockDateTime(clock.time);
+            const ts=Number.isFinite(fromText)?fromText:getClockTimestamp(clock);
+            if(!ts)return '';
+            const d=new Date(ts);
+            const pad=n=>String(n).padStart(2,'0');
+            return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
         }
         function localDateKey(timestamp){const d=new Date(Number(timestamp||0));if(!Number.isFinite(d.getTime()))return '';return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
         function formatDutyElapsed(startTimestamp, now=Date.now()) {
@@ -6091,7 +6166,9 @@ async function republishAnnouncement(id) {
                 const startText=start?new Date(start).toLocaleString('zh-TW',{hour12:false}):'時間不明';
                 const name=escapeHtml(row.name||'未提供姓名'), number=escapeHtml(row.staffNumber||row.account||'未提供編號');
                 const elapsed=start?formatDutyElapsed(start):'無法計算';
-                return `<div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 flex items-start justify-between gap-3"><div class="min-w-0"><div class="font-semibold text-white">${name}</div><div class="text-xs text-slate-400 mt-1">員警編號／帳號：${number}</div><div class="text-xs text-slate-500 mt-1">上班打卡：${escapeHtml(startText)}</div></div><div class="shrink-0 text-right"><div class="text-[10px] text-emerald-300">已執勤</div><div class="font-bold text-emerald-400">${elapsed}</div></div></div>`;
+                const recordId=String(row.docId||row.id||'');
+                const canRemove=canDeletePoliceClockRecord() && recordId;
+                return `<div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 flex items-start justify-between gap-3"><div class="min-w-0"><div class="font-semibold text-white">${name}</div><div class="text-xs text-slate-400 mt-1">員警編號／帳號：${number}</div><div class="text-xs text-slate-500 mt-1">上班打卡：${escapeHtml(startText)}</div></div><div class="shrink-0 text-right"><div class="text-[10px] text-emerald-300">已執勤</div><div class="font-bold text-emerald-400">${elapsed}</div>${canRemove?`<button type="button" data-delete-police-duty-clock="${escapeHtml(recordId)}" class="mt-2 px-2.5 py-1.5 rounded-lg bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 text-xs"><i class="fa-solid fa-trash-can mr-1"></i>刪除此上班卡</button>`:''}</div></div>`;
             }).join('');
         }
         function openPoliceDutyDetails() {
@@ -6104,10 +6181,47 @@ async function republishAnnouncement(id) {
             if(modal){modal.classList.add('hidden');modal.classList.remove('flex');}
         }
 
+        async function deletePoliceActiveClock(clockId){
+            if(!canDeletePoliceClockRecord()){showToast('只有管理中心或警務高層可刪除這張打卡紀錄。','warning','權限不足');return;}
+            const active=[...buildLatestDutyMap(appData.policeClocks||[]).values()].find(row=>String(row.docId||row.id)===String(clockId)&&row.status==='上班');
+            if(!active){showToast('此員警的最新值勤狀態已變更，請重新整理名單。','warning','資料已更新');renderPoliceDutyDetails();return;}
+            await deleteClockRecord('police',clockId,true);
+        }
+
+        // 依每位員警的打卡時間順序檢查相鄰兩張上班或下班卡。
+        // 將兩張卡都標示為異常，方便高層追查並選擇要移除哪一筆。
+        function findPoliceClockAnomalies(rows){
+            const groups=new Map(),warnings=new Map();
+            for(const clock of (rows||[])){
+                const identity=String(clock.account||clock.staffNumber||clock.name||'').trim().toLowerCase();
+                if(!identity)continue;
+                if(!groups.has(identity))groups.set(identity,[]);
+                groups.get(identity).push(clock);
+            }
+            for(const clocks of groups.values()){
+                clocks.sort((a,b)=>getClockTimestamp(a)-getClockTimestamp(b));
+                for(let i=1;i<clocks.length;i++){
+                    const previous=clocks[i-1],current=clocks[i];
+                    if(['上班','下班'].includes(current.status)&&current.status===previous.status){
+                        const message=current.status==='上班'?'連續兩張上班卡':'連續兩張下班卡';
+                        for(const record of [previous,current]){
+                            const found=warnings.get(record)||new Set();
+                            found.add(message);warnings.set(record,found);
+                        }
+                    }
+                }
+            }
+            return warnings;
+        }
+
         function renderPoliceClocks() {
             const tbody = document.getElementById('police-clocks-tbody');
-            const dateFilter = document.getElementById('police-clocks-date-filter')?.value || localDateKey(Date.now());
+            const dateFilter = document.getElementById('police-clocks-date-filter')?.value ?? localDateKey(Date.now());
             const statusFilter = document.getElementById('police-clocks-status-filter')?.value || 'all';
+            const anomalyFilter = document.getElementById('police-clocks-anomaly-filter')?.value || 'all';
+            const anomalies=findPoliceClockAnomalies(appData.policeClocks||[]);
+            const summary=document.getElementById('police-clocks-anomaly-summary');
+            if(summary)summary.textContent=anomalies.size?`偵測到 ${anomalies.size} 張可能異常的警務打卡紀錄（連續上班／連續下班），可選擇「只看異常打卡」跨日期查看。`:'目前未偵測到連續上班／連續下班卡。';
             const countEl = document.getElementById('police-current-duty-count');
             if (!tbody) return;
 
@@ -6117,6 +6231,7 @@ async function republishAnnouncement(id) {
             const filtered = (appData.policeClocks || []).filter(c => {
                 if (dateFilter && localDateKey(getClockTimestamp(c)) !== dateFilter) return false;
                 if (statusFilter !== 'all' && String(c.status || '') !== statusFilter) return false;
+                if (anomalyFilter === 'abnormal' && !anomalies.has(c)) return false;
                 return true;
             }).sort((a,b) => getClockTimestamp(b) - getClockTimestamp(a));
 
@@ -6131,12 +6246,13 @@ async function republishAnnouncement(id) {
                 tr.className = "hover:bg-slate-800/40 transition";
                 tr.innerHTML = `
                     <td class="p-4 font-medium text-white">${escapeHtml(c.name || '--')} (${escapeHtml(c.staffNumber || c.account || '--')})</td>
-                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${c.status === '上班' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">${escapeHtml(c.status || '--')}</span></td>
+                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${c.status === '上班' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">${escapeHtml(c.status || '--')}</span>${anomalies.has(c)?`<div class="mt-2 text-[11px] text-amber-300"><i class="fa-solid fa-triangle-exclamation mr-1"></i>${escapeHtml([...anomalies.get(c)].join('、'))}</div>`:''}</td>
                     <td class="p-4 text-slate-300 font-mono">${escapeHtml(c.vehicle || '無')}</td>
-                    <td class="p-4 text-slate-300 text-xs">${escapeHtml(c.time || formatDateTime(c.timestamp))}</td>
+                    <td class="p-4 text-slate-300 text-xs">${escapeHtml(formatDateTime(getClockTimestamp(c),c.time||'--'))}</td>
                     <td class="p-4 text-slate-400 text-xs">${escapeHtml(c.remark || '無')}</td>
                     <td class="p-4 text-right">
                         ${canManageClockRecords() ? `<div class="flex gap-2 justify-end"><button type="button" onclick="openEditClockModal('police', '${String(c.docId || c.id || '').replace(/'/g, "\\'")}')" class="min-h-[40px] px-2.5 py-1 bg-slate-800 text-slate-200 rounded-lg text-xs">編輯</button><button type="button" onclick="deleteClockRecord('police', '${String(c.docId || c.id || '').replace(/'/g, "\\'")}')" class="min-h-[40px] px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button></div>` : ''}
+                        ${!canManageClockRecords() && canDeletePoliceClockRecord() ? `<button type="button" data-delete-police-clock="${escapeHtml(String(c.docId||c.id||''))}" class="min-h-[40px] px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button>`:''}
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -6176,9 +6292,10 @@ async function republishAnnouncement(id) {
             });
         }
 
-        async function deleteClockRecord(dept, clockId) {
-            if (!canManageClockRecords()) { showToast('只有管理處可以刪除打卡紀錄。','warning','權限不足'); return; }
-            if (!(await showConfirm('確定要刪除這筆打卡紀錄嗎？', '刪除打卡紀錄', '確定刪除'))) return;
+        async function deleteClockRecord(dept, clockId, fromDutyList=false) {
+            if (!canDeleteClockRecord(dept)) { showToast('權限不足：無法刪除打卡紀錄。','warning','權限不足'); return; }
+            const prompt=fromDutyList?'確定永久刪除這位員警目前「上班」的打卡卡片嗎？刪除後會重新依剩餘紀錄計算執勤狀態，無法復原。':'確定永久刪除這筆打卡紀錄嗎？刪除後無法復原。';
+            if (!(await showConfirm(prompt, '刪除打卡紀錄', '確定刪除'))) return;
             const collectionName = dept === 'police' ? 'policeClocks' : 'fireClocks';
             try {
                 await fm.deleteDoc(fm.doc(db, collectionName, clockId));
@@ -6186,19 +6303,37 @@ async function republishAnnouncement(id) {
                 const deletedClock = clockList.find(x => String(x.docId || x.id) === String(clockId));
                 if (dept === 'police') appData.policeClocks = appData.policeClocks.filter(x => String(x.docId || x.id) !== String(clockId));
                 else appData.fireClocks = appData.fireClocks.filter(x => String(x.docId || x.id) !== String(clockId));
-                await logAdminAction('刪除打卡紀錄', `${dept}:${clockId}`,
-                    `單位：${dept === 'police' ? '警察' : '消防'}；人員：${deletedClock?.name || '--'}；狀態：${deletedClock?.status || '--'}；時間：${deletedClock?.time || '--'}。`);
+                try{await logAdminAction('刪除打卡紀錄', `${dept}:${clockId}`,
+                    `單位：${dept === 'police' ? '警察' : '消防'}；人員：${deletedClock?.name || '--'}；狀態：${deletedClock?.status || '--'}；時間：${deletedClock?.time || '--'}。`);}catch(auditErr){console.warn('打卡紀錄已刪除，但稽核寫入失敗',auditErr);}
 
                 if (dept === 'police') renderPoliceClocks();
                 else renderFireClocks();
                 recalculateDutyStatusCache(); renderAdminOverview();
+                if(dept==='police')renderPoliceDutyDetails();
                 showSubmitSuccessAnimation('移除成功', '打卡紀錄已成功移除。');
             } catch (e) {
                 showToast('刪除失敗：' + e.message, 'error', '操作失敗');
             }
         }
 
-        function openEditClockModal(dept,id){if(!canManageClockRecords()){showToast('只有管理處可以編輯打卡紀錄。','warning','權限不足');return;}const c=(dept==='police'?appData.policeClocks:appData.fireClocks).find(x=>String(x.id||x.docId)===String(id));if(!c)return;document.getElementById('edit-type').value=dept+'-clock';document.getElementById('edit-id-key').value=c.docId||c.id;document.getElementById('edit-modal-title').textContent='編輯打卡紀錄';document.getElementById('edit-fields-container').innerHTML=`<input id="edit-clock-account" value="${c.account||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input id="edit-clock-name" value="${c.name||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input id="edit-clock-status" value="${c.status||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input id="edit-clock-vehicle" value="${c.vehicle||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input id="edit-clock-time" value="${c.time||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><textarea id="edit-clock-remark" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white">${c.remark||''}</textarea>`;document.getElementById('modal-edit').classList.remove('hidden');}
+        function openEditClockModal(dept,id){
+            if(!canManageClockRecords()){showToast('只有管理處可以編輯打卡紀錄。','warning','權限不足');return;}
+            const c=(dept==='police'?appData.policeClocks:appData.fireClocks).find(x=>String(x.docId||x.id)===String(id));
+            if(!c)return;
+            document.getElementById('edit-type').value=dept+'-clock';
+            document.getElementById('edit-id-key').value=c.docId||c.id;
+            document.getElementById('edit-modal-title').textContent='編輯打卡紀錄';
+            const e=v=>escapeHtml(v||'');
+            document.getElementById('edit-fields-container').innerHTML=`
+                <label class="block text-xs text-slate-400">登入帳號<input id="edit-clock-account" value="${e(c.account)}" class="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"></label>
+                <label class="block text-xs text-slate-400">RP 名稱<input id="edit-clock-name" value="${e(c.name)}" class="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"></label>
+                <label class="block text-xs text-slate-400">打卡狀態<select id="edit-clock-status" class="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><option value="上班" ${c.status==='上班'?'selected':''}>上班</option><option value="下班" ${c.status==='下班'?'selected':''}>下班</option></select></label>
+                <label class="block text-xs text-slate-400">執勤車輛編號<input id="edit-clock-vehicle" value="${e(c.vehicle)}" class="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"></label>
+                <label class="block text-xs text-slate-400">打卡日期與時間<input id="edit-clock-time" type="datetime-local" step="60" value="${clockEditDateTimeLocal(c)}" class="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white" required></label>
+                <label class="block text-xs text-slate-400">長官備註<textarea id="edit-clock-remark" class="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white">${e(c.remark)}</textarea></label>
+                <p class="text-xs text-amber-300/90">修改日期後，這張卡將移到新日期的篩選結果，值勤狀態與時數也會重新計算。</p>`;
+            document.getElementById('modal-edit').classList.remove('hidden');
+        }
 
         function calculateMemberHours(dept) {
             const memberEl = document.getElementById(`${dept}-calc-member`);
@@ -7001,8 +7136,8 @@ async function republishAnnouncement(id) {
 /* ================= V1.8.2 勤務中心與通知穩定層 ================= */
 function ntpcEsc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 function ntpcDutyRowsForCurrentUser(){if(!currentUser)return [];const key=String(currentUser.account||'').toLowerCase();return [...(appData.policeClocks||[]),...(appData.fireClocks||[]),...(appData.adminClocks||[])].filter(c=>String(c.account||c.userAccount||'').toLowerCase()===key).sort((a,b)=>getClockTimestamp(b)-getClockTimestamp(a));}
-function ntpcDutyHoursSince(startMs){const mine=ntpcDutyRowsForCurrentUser().filter(c=>Number(c.timestamp||c.time||0)>=startMs);const groups={};mine.forEach(c=>{const key=c.shiftId||c.clockGroup||c.id||`${c.account}-${new Date(getClockTimestamp(c)).toDateString()}`;(groups[key]??=[]).push(c);});let total=0;Object.values(groups).forEach(g=>{g.sort((a,b)=>getClockTimestamp(a)-getClockTimestamp(b));for(let i=0;i+1<g.length;i+=2){const a=getClockTimestamp(g[i]),b=getClockTimestamp(g[i+1]);if(b>a)total+=b-a;}});return total/3600000;}
-function renderDashRecentDuty(){const h=document.getElementById('dash-recent-duty');if(!h)return;const rows=ntpcDutyRowsForCurrentUser().slice(0,10);h.innerHTML=rows.length?rows.map(c=>{const status=String(c.status||c.action||c.type||'');const label=/上班|上班打卡|clock.?in/i.test(status)?'上班':/下班|下班打卡|clock.?out/i.test(status)?'下班':(c.status||c.action||'值勤紀錄');const unit=c.unit==='fire'||c.department==='fire'?'消防':c.unit==='admin'||c.department==='admin'?'管理':'警察';return `<div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3 flex items-center justify-between gap-3"><div><div class="text-sm font-semibold text-white">${ntpcEsc(unit)} ／ ${ntpcEsc(label)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(formatDateTime(c.timestamp||c.time,c.time))}</div></div><span class="text-[11px] px-2 py-1 rounded-full bg-slate-800 text-slate-300">${ntpcEsc(c.dutyNumber||c.managementId||c.staffNumber||currentUser.account||'--')}</span></div>`}).join(''):'<div class="text-sm text-slate-500 py-5 text-center md:col-span-2">目前沒有勤務打卡紀錄。</div>';}
+function ntpcDutyHoursSince(startMs){const mine=ntpcDutyRowsForCurrentUser().filter(c=>getClockTimestamp(c)>=startMs);const groups={};mine.forEach(c=>{const key=c.shiftId||c.clockGroup||c.id||`${c.account}-${new Date(getClockTimestamp(c)).toDateString()}`;(groups[key]??=[]).push(c);});let total=0;Object.values(groups).forEach(g=>{g.sort((a,b)=>getClockTimestamp(a)-getClockTimestamp(b));for(let i=0;i+1<g.length;i+=2){const a=getClockTimestamp(g[i]),b=getClockTimestamp(g[i+1]);if(b>a)total+=b-a;}});return total/3600000;}
+function renderDashRecentDuty(){const h=document.getElementById('dash-recent-duty');if(!h)return;const rows=ntpcDutyRowsForCurrentUser().slice(0,10);h.innerHTML=rows.length?rows.map(c=>{const status=String(c.status||c.action||c.type||'');const label=/上班|上班打卡|clock.?in/i.test(status)?'上班':/下班|下班打卡|clock.?out/i.test(status)?'下班':(c.status||c.action||'值勤紀錄');const unit=c.unit==='fire'||c.department==='fire'?'消防':c.unit==='admin'||c.department==='admin'?'管理':'警察';return `<div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3 flex items-center justify-between gap-3"><div><div class="text-sm font-semibold text-white">${ntpcEsc(unit)} ／ ${ntpcEsc(label)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(formatDateTime(getClockTimestamp(c),c.time))}</div></div><span class="text-[11px] px-2 py-1 rounded-full bg-slate-800 text-slate-300">${ntpcEsc(c.dutyNumber||c.managementId||c.staffNumber||currentUser.account||'--')}</span></div>`}).join(''):'<div class="text-sm text-slate-500 py-5 text-center md:col-span-2">目前沒有勤務打卡紀錄。</div>';}
 function ntpcCurrentMonthHours(){if(!currentUser)return 0;const start=new Date();start.setDate(1);start.setHours(0,0,0,0);const mine=[...(appData.policeClocks||[]),...(appData.fireClocks||[]),...(appData.adminClocks||[])].filter(c=>String(c.account||c.userAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&getClockTimestamp(c)>=start.getTime());let total=0;const groups={};mine.forEach(c=>{const key=c.shiftId||c.clockGroup||c.id||`${c.account}-${new Date(getClockTimestamp(c)).toDateString()}`;(groups[key]??=[]).push(c);});Object.values(groups).forEach(g=>{g.sort((a,b)=>getClockTimestamp(a)-getClockTimestamp(b));for(let i=0;i+1<g.length;i+=2){const a=getClockTimestamp(g[i]),b=getClockTimestamp(g[i+1]);if(b>a)total+=b-a;}});return Math.round(total/360000)/10;}
 function refreshDutyDashboard(){if(!document.getElementById('tab-dashboard'))return;const online=getCurrentDutyCount();const pending=(appData.policePendingReports||[]).length+(appData.firePendingReports||[]).length+(appData.emsPendingReports||[]).length+(appData.wantedPendingRecords||[]).length;const noti=currentUser?(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&!n.read).length:0;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};set('dash-online',online);set('dash-pending',pending);set('dash-notifications',noti);set('dash-hours',ntpcCurrentMonthHours().toFixed(1)+' h');set('dash-week-hours',currentUser?ntpcDutyHoursSince(Date.now()-7*24*60*60*1000).toFixed(1)+' h':'--');set('dash-total-hours',currentUser?ntpcDutyHoursSince(0).toFixed(1)+' h':'--');const work=document.getElementById('dash-my-work');if(work){const mine=(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser?.account||'').toLowerCase()&&!n.read).slice(0,8);work.innerHTML=mine.length?mine.map(n=>`<div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800"><div class="text-sm text-white">${ntpcEsc(n.title||'案件通知')}</div><div class="text-xs text-slate-500 mt-1">${ntpcEsc(n.message||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有待處理通知。</div>';}renderDashRecentDuty();renderDashSystemStatus();renderDashAnnouncements();renderDashHandover();renderDashManagementWork();}
 function renderDashSystemStatus(){
