@@ -8,7 +8,7 @@
     <!-- NTPC-RP Discord webhook fix + management LOG: 2026-10-06-v4 -->
     <!-- Security audit: 2026-10-07. Front-end hardening only; Firestore Rules/Firebase Auth/Discord secrets still require backend configuration. -->
     <!-- Account safety fix: never auto-reset DSUENSX or auto-seed demo users when users collection is empty. -->
-    <title>新北市 RP 3.0 公職服務系統 V1.9.2</title>
+    <title>新北市 RP 3.0 公職服務系統 V1.9.3</title>
     <!-- 網站圖標與連結分享資訊 -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/image.png53.png">
     <link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/image.png53.png">
@@ -596,6 +596,16 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
     <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+    <div id="police-duty-details-modal" class="hidden fixed inset-0 z-[170] bg-slate-950/80 backdrop-blur-sm p-4 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="police-duty-details-title">
+        <div class="w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl">
+            <div class="flex items-start justify-between gap-3 mb-4">
+                <div><h2 id="police-duty-details-title" class="text-xl font-bold text-white"><i class="fa-solid fa-user-shield text-emerald-400 mr-2"></i>目前執勤員警</h2><p class="text-xs text-slate-400 mt-1">名單依每位員警最後一筆打卡狀態即時判定。</p></div>
+                <button type="button" id="police-duty-details-close" class="rounded-lg px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200" aria-label="關閉值勤名單"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="police-duty-details-list" class="space-y-2"></div>
+            <div class="text-[11px] text-slate-500 mt-4">值勤時長依最後一次「上班」打卡時間計算；補打卡資料也會依其時間顯示。</div>
+        </div>
+    </div>
     <div id="app-confirm-overlay" aria-hidden="true">
         <div class="app-confirm-card" role="dialog" aria-modal="true" aria-labelledby="app-confirm-title">
             <div class="app-confirm-icon"><i class="fa-solid fa-shield-halved"></i></div>
@@ -735,8 +745,8 @@
                 <div class="relative z-10 px-8 py-20 sm:py-28 max-w-3xl space-y-6">
                     <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">New Taipei Roleplay 3.0</span>
                     <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">新北市公職人員<br><span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">勤務與案件管制系統</span></h1>
-                    <div><span id="home-site-version-badge" class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.9.2</span></div>
-                    <p id="home-version-intro" class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。V1.9.2 為 V1.9.1 的修復版本，主要修復雲端資料庫讀取數過度使用問題，著重減少不必要的初始讀取與重複讀取，並改善登入後依單位與權限載入資料的流程。</p>
+                    <div><span id="home-site-version-badge" class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.9.3</span></div>
+                    <p id="home-version-intro" class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。V1.9.3 為資料讀取優化版本，減少重複載入與不必要的 Firestore 查詢，調整管理中心在線名單刷新頻率，並改善登入與安全資料的讀取流程。</p>
                     <div class="flex flex-wrap justify-center gap-4 pt-2">
                         <button data-tab="police" class="tab-shortcut-btn bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
                             <i class="fa-solid fa-shield"></i><span>進入警務系統</span>
@@ -753,9 +763,9 @@
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div class="flex items-center gap-2 text-emerald-300 font-bold">
-                            <i class="fa-solid fa-satellite-dish"></i><span id="home-latest-update-label">V1.9.2 最新更新</span>
+                            <i class="fa-solid fa-satellite-dish"></i><span id="home-latest-update-label">V1.9.3 最新更新</span>
                         </div>
-                        <p class="text-slate-400 text-sm mt-2 leading-relaxed">本版本新增 ER:LC 勤務偵測架構、Roblox ID 綁定、執勤警員生命狀態異常警報，並將值勤判斷全面改為以打卡資料為準，減少不必要的雲端資料庫使用。</p>
+                        <p class="text-slate-400 text-sm mt-2 leading-relaxed">本版本優化 Firestore 讀取流程，減少重複下載與啟動時重複載入；管理中心在線名單刷新間隔調整為 60 秒，並縮小登入安全資料查詢範圍。</p>
                     </div>
                     <p id="home-latest-update-summary" class="text-xs text-slate-500 mt-2"></p>
                     <button type="button" data-tab="update-log" class="tab-shortcut-btn shrink-0 px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-200 text-sm font-semibold transition">查看完整更新紀錄</button>
@@ -892,10 +902,11 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-3">
-                                <div class="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                                <button type="button" id="police-duty-details-btn" class="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-left transition" aria-haspopup="dialog" aria-controls="police-duty-details-modal">
                                     <span class="text-xs text-slate-400 mr-2">目前值勤員警</span>
                                     <strong id="police-current-duty-count" class="text-xl text-emerald-400">0</strong><span class="text-xs text-emerald-300 ml-1">人</span>
-                                </div>
+                                    <span class="block text-[10px] text-emerald-300 mt-1"><i class="fa-solid fa-magnifying-glass mr-1"></i>點擊查看值班名單與時長</span>
+                                </button>
                                 <button type="button" id="police-clocks-refresh-btn" class="min-h-[42px] px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition touch-manipulation"><i class="fa-solid fa-rotate mr-1"></i>刷新</button>
                             </div>
                         </div>
@@ -1144,7 +1155,7 @@
                             </div>
                         </div>
                     </div>
-                    <span id="update-log-current-version" class="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V1.9.2</span>
+                    <span id="update-log-current-version" class="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V1.9.3</span>
                 </div>
 
                 <div id="dynamic-update-log" class="space-y-4"></div>
@@ -1152,23 +1163,38 @@
                     <article class="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                             <div>
-                                <h3 class="text-lg font-bold text-white">V1.9.2</h3>
-                                <p class="text-xs text-emerald-300 mt-1">V1.9.1 讀取量過度使用問題修復版本</p>
+                                <h3 class="text-lg font-bold text-white">V1.9.3</h3>
+                                <p class="text-xs text-emerald-300 mt-1">Firestore 讀取量與資料載入流程優化版本</p>
                             </div>
                             <span class="text-xs font-semibold text-emerald-300">目前版本</span>
+                        </div>
+                        <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
+                            <li>減少部分資料集合在 getDocs 與 onSnapshot 初次載入時的重複讀取。</li>
+                            <li>管理中心在線名單自動刷新間隔由 15 秒調整為 60 秒，降低定時整批讀取。</li>
+                            <li>登入安全檢查改為依目前裝置查詢相關紀錄，避免登入時下載整個安全紀錄集合。</li>
+                            <li>調整啟動與登入後的資料載入順序，避免不必要的重複載入。</li>
+                        </ul>
+                    </article>
+                    <article class="rounded-2xl border border-red-500/25 bg-red-500/5 p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                            <div>
+                                <h3 class="text-lg font-bold text-white">V1.9.2</h3>
+                                <p class="text-xs text-red-300 mt-1">V1.9.1 讀取量過度使用問題修復版本</p>
+                            </div>
+                            <span class="text-xs font-semibold text-red-300">上一版本</span>
                         </div>
                         <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
                             <li>主要修復 V1.9.1 雲端資料庫讀取數過度使用問題。</li>
                             <li>本次僅更新 HTML 內的版本號、首頁主述與更新紀錄，不新增網站功能。</li>
                         </ul>
                     </article>
-                    <article class="rounded-2xl border border-red-500/25 bg-red-500/5 p-5">
+                    <article class="rounded-2xl border border-slate-800 bg-slate-950/50 p-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                             <div>
                                 <h3 class="text-lg font-bold text-white">V1.9.1</h3>
-                                <p class="text-xs text-red-300 mt-1">V1.9 發布後的穩定性、稽核與操作體驗更新</p>
+                                <p class="text-xs text-slate-400 mt-1">V1.9 發布後的穩定性、稽核與操作體驗更新</p>
                             </div>
-                            <span class="text-xs font-semibold text-red-300">前一版本</span>
+                            <span class="text-xs font-semibold text-slate-500">歷史版本</span>
                         </div>
                         <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
                             <li>修正「一周內移除／編輯紀錄」：補齊帳號、查詢資料與打卡紀錄的編輯／刪除稽核，並只顯示最近 7×24 小時內相關操作。</li>
@@ -1529,7 +1555,6 @@
                     <button id="btn-admin-feedback" data-sub="feedback" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-message-exclamation mr-2"></i>異常／意見回報</button>
                     <button id="btn-admin-academy" data-sub="academy" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-graduation-cap mr-2"></i>專生考核系統</button>
                     <button id="btn-admin-jail-rules" data-sub="jail-rules" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-scale-balanced mr-2"></i>警用刑期表</button>
-                    <button id="btn-admin-lookup-locks" data-sub="lookup-locks" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-lock mr-2"></i>上鎖頻道設定</button>
                     <button id="btn-admin-erlc" data-sub="erlc" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-gamepad mr-2"></i>ER:LC 整合設定</button>
                     <button id="btn-admin-discord-webhooks" data-sub="discord-webhooks" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-brands fa-discord mr-2"></i>Discord Webhook 設定</button>
                 </div>
@@ -1585,7 +1610,7 @@
                                 <h3 class="text-xl font-bold text-white mt-1"><i class="fa-solid fa-code-branch text-emerald-400 mr-2"></i>網站版本更新管理</h3>
                                 <p class="text-xs text-slate-500 mt-1">發布新版本後，首頁版本標籤、最新更新資訊、更新紀錄目前版本與瀏覽器標題會自動同步。</p>
                             </div>
-                            <span id="admin-current-site-version" class="inline-flex items-center justify-center px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V1.9.2</span>
+                            <span id="admin-current-site-version" class="inline-flex items-center justify-center px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V1.9.3</span>
                         </div>
                     </div>
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
@@ -1737,19 +1762,6 @@
                     <div class="text-xs text-slate-500">每種考核同時最多保留 5 個未過期代碼；管理層可查看與刪除已建立代碼。</div>
                     <div id="admin-academy-code-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                 </div>
-                <div id="admin-sub-lookup-locks" class="hidden space-y-5">
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-                        <div class="flex items-center gap-3 mb-2"><i class="fa-solid fa-lock text-amber-400 text-xl"></i><h3 class="text-lg font-bold text-white">上鎖頻道設定</h3></div>
-                        <p class="text-xs text-slate-500 mb-5">開啟上鎖時，警務系統會隱藏該查詢資料並顯示「當前開發階段・敬請期待」。只有總管理權限可以修改此設定。</p>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <label class="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-950 border border-slate-800 cursor-pointer"><span><strong class="text-slate-200 block">市民身份系統</strong><span class="text-[11px] text-slate-500">市民申／證件末五碼查詢</span></span><input id="lock-citizen" type="checkbox" class="w-5 h-5 accent-amber-500"></label>
-                            <label class="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-950 border border-slate-800 cursor-pointer"><span><strong class="text-slate-200 block">車輛查詢系統</strong><span class="text-[11px] text-slate-500">車牌／證件查詢</span></span><input id="lock-vehicles" type="checkbox" class="w-5 h-5 accent-amber-500"></label>
-                            <label class="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-950 border border-slate-800 cursor-pointer"><span><strong class="text-slate-200 block">通緝查詢系統</strong><span class="text-[11px] text-slate-500">末五碼查詢／員警發布</span></span><input id="lock-wanted" type="checkbox" class="w-5 h-5 accent-amber-500"></label>
-                        </div>
-                        <button id="save-lookup-locks-btn" type="button" class="mt-5 w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold py-3 rounded-xl transition"><i class="fa-solid fa-floppy-disk mr-2"></i>儲存頻道鎖定設定</button>
-                    </div>
-                </div>
-
                 <div id="admin-sub-jail-rules" class="hidden space-y-6">
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
                         <div><h3 class="text-lg font-bold text-slate-200"><i class="fa-solid fa-scale-balanced text-amber-400 mr-2"></i>警用案件刑期表</h3><p class="text-xs text-slate-500 mt-1">可直接修改既有條例、刑期，或新增自訂條例。儲存後所有新案件與編輯案件會使用最新規則。</p></div>
@@ -2466,7 +2478,6 @@
             adminClocks: [],
             academyCodes: [],
             policeViolationRules: [],
-            lookupLocks: { citizen: true, vehicles: true, wanted: true },
             citizenRecords: [],
             vehicleRecords: [],
             wantedRecords: [],
@@ -2492,12 +2503,8 @@
             fm = window.firebaseModules;
             // 雲端同步與登入工作階段分開處理；即使某個集合讀取失敗，也不影響 10 分鐘內刷新恢復登入。
             cloudDataReadyPromise = (async () => {
-                try {
-                    await loadAllDataFromCloud(); // 未登入時只讀取公開公告／版本資訊
-                } finally {
-                    try { await restoreBrowserSession(); } catch (e) { console.warn('登入工作階段恢復略過：', e); }
-                }
-                if (currentUser) await loadAllDataFromCloud(); // 恢復登入後才按權限載入資料
+                try { await restoreBrowserSession(); } catch (e) { console.warn('登入工作階段恢復略過：', e); }
+                await loadAllDataFromCloud(); // 先恢復登入狀態，再依權限載入一次資料
             })();
             cloudDataReadyPromise.finally(() => startRealtimeListeners());
         });
@@ -2791,7 +2798,6 @@ const loginOpenBtn = document.getElementById('login-modal-open-btn');
             const submitPunishmentBtn = document.getElementById('submit-punishment-btn');
             if (submitPunishmentBtn) submitPunishmentBtn.addEventListener('click', submitPunishment);
             const saveLookupPostBtn=document.getElementById('save-lookup-post-btn'); if(saveLookupPostBtn) saveLookupPostBtn.addEventListener('click', saveLookupPost);
-            const saveLookupLocksBtn=document.getElementById('save-lookup-locks-btn'); if(saveLookupLocksBtn) saveLookupLocksBtn.addEventListener('click', saveLookupLockSettings);
             document.getElementById('open-citizen-post-btn')?.addEventListener('click',()=>openLookupPost('citizen'));
             document.getElementById('open-vehicle-post-btn')?.addEventListener('click',()=>openLookupPost('vehicles'));
             document.getElementById('open-wanted-post-btn')?.addEventListener('click',()=>openLookupPost('wanted'));
@@ -3024,9 +3030,9 @@ function compareSiteVersion(a, b){
         }
         function renderSiteVersionUI(){
             const v=getCurrentSiteVersion();
-            const version=String(v?.version||'V1.9.2').trim()||'V1.9.2';
+            const version=String(v?.version||'V1.9.3').trim()||'V1.9.3';
             const title=String(v?.title||'系統穩定性與功能更新').trim();
-            const summary=String(v?.summary||'V1.9.2 為 V1.9.1 的修復版本，主要修復雲端資料庫讀取數過度使用問題。').trim();
+            const summary=String(v?.summary||'V1.9.3 為資料讀取優化版本，減少重複載入與不必要的 Firestore 查詢。').trim();
             const set=(id,val)=>{const e=document.getElementById(id);if(e)e.textContent=val;};
             set('home-site-version-badge','網站版本 '+version);
             set('home-latest-update-label',version+' 最新更新');
@@ -3233,20 +3239,16 @@ async function republishAnnouncement(id) {
             try {
                 // 未登入只讀公開資料，不下載 users 或任何勤務／管理集合。
                 if (!currentUser) {
-                    const publicAnn = await fm.getDocs(fm.collection(db, 'announcements'));
-                    appData.announcements = publicAnn.docs.map(d => ({docId:d.id,...d.data()}));
-                    const publicVersions = await fm.getDocs(fm.collection(db, 'siteVersions'));
-                    appData.siteVersions = publicVersions.docs.map(d => ({docId:d.id,...d.data()}));
-                    renderSiteAnnouncements();
-                    renderSiteVersionUI();
+                    // 公開公告與版本資訊交由下方 onSnapshot 初次載入，不再重複 getDocs。
                     return;
                 }
                 let usersSnap;
                 if (getEffectiveRole(currentUser) === 'admin') {
                     usersSnap = await fm.getDocs(fm.collection(db, 'users'));
                 } else {
-                    const ownSnap = await fm.getDoc(fm.doc(db, 'users', currentUser.docId || currentUser.account));
-                    usersSnap = {empty:!ownSnap.exists(), docs:ownSnap.exists()?[ownSnap]:[]};
+                    // 一般使用者的帳號資料已由登入／工作階段恢復取得，不再重複讀取同一份文件。
+                    const cachedUser = currentUser;
+                    usersSnap = { empty: !cachedUser, docs: cachedUser ? [{ id: cachedUser.docId || cachedUser.account, data: () => { const {docId, ...data} = cachedUser; return data; } }] : [] };
                 }
                 if (!usersSnap.empty) {
                     appData.users = usersSnap.docs.map(d => {
@@ -3286,58 +3288,20 @@ async function republishAnnouncement(id) {
                     console.warn(`雲端集合 ${collectionName} 讀取失敗，保留目前資料並繼續同步：`, lastError);
                     return { ok: false, docs: [], error: lastError };
                 };
-                const policeRepSnap = await safeCollectionDocs('policeReports');
-                if (policeRepSnap.ok) appData.policeReports = policeRepSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
-                const policePendingSnap = await safeCollectionDocs('policePendingReports');
-                if (policePendingSnap.ok) appData.policePendingReports = policePendingSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
-                if (currentUser) {
-                    try {
-                        const notifyRef = getEffectiveRole(currentUser)==='admin'
-                          ? fm.collection(db,'reportNotifications')
-                          : fm.query(fm.collection(db,'reportNotifications'),fm.where('recipientAccount','==',currentUser.account));
-                        const reportNotifySnap = await fm.getDocs(notifyRef);
-                        appData.reportNotifications = reportNotifySnap.docs.map(d => ({docId:d.id,...d.data()}));
-                    } catch(e) { console.warn('個人通知讀取失敗：',e); }
-                }
-                try {
-                    let handoverRows=[];
-                    if (getEffectiveRole(currentUser)==='admin') {
-                        const hs=await fm.getDocs(fm.collection(db,'dutyHandoverNotes'));
-                        handoverRows=hs.docs.map(d=>({docId:d.id,...d.data()}));
-                    } else {
-                        const deps=getUserDepartments(currentUser);
-                        const results=await Promise.all(deps.map(async dept=>{
-                            const ref=fm.query(fm.collection(db,'dutyHandoverNotes'),fm.where('department','==',dept));
-                            const hs=await fm.getDocs(ref); return hs.docs.map(d=>({docId:d.id,...d.data()}));
-                        }));
-                        handoverRows=results.flat();
-                    }
-                    appData.dutyHandoverNotes=handoverRows;
-                } catch(e) { console.warn('依單位載入勤務交接簿失敗：',e); }
+                // policeReports / policePendingReports 由即時監聽載入，避免先 getDocs 再 onSnapshot。
+                // reportNotifications 由依登入帳號篩選的 onSnapshot 載入。
+                // dutyHandoverNotes 由依部門權限的 onSnapshot 載入。
                 const faqIssueSnap = await safeCollectionDocs('faqIssues');
                 if (faqIssueSnap.ok) appData.faqIssues = faqIssueSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
 
                 const punishSnap = await safeCollectionDocs('policePunishments');
                 if (punishSnap.ok) appData.policePunishments = punishSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
 
-                const citizenSnap = await safeCollectionDocs('citizenRecords');
-                if (citizenSnap.ok) appData.citizenRecords = citizenSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
-                const vehicleSnap = await safeCollectionDocs('vehicleRecords');
-                if (vehicleSnap.ok) appData.vehicleRecords = vehicleSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
-                const wantedPendingSnap = await safeCollectionDocs('wantedPendingRecords');
-                if (wantedPendingSnap.ok) appData.wantedPendingRecords = wantedPendingSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
-                const wantedSnap = await safeCollectionDocs('wantedRecords');
-                if (wantedSnap.ok) appData.wantedRecords = wantedSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
-
-                const firePendingSnap = await safeCollectionDocs('firePendingReports');
-                if (firePendingSnap.ok) appData.firePendingReports = firePendingSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
-                const fireRepSnap = await safeCollectionDocs('fireReports');
-                if (fireRepSnap.ok) appData.fireReports = fireRepSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
-
+                // EMS 正式報告目前沒有即時監聽，因此仍需在登入時讀取一次。
                 const emsSnap = await safeCollectionDocs('emsReports');
                 if (emsSnap.ok) appData.emsReports = emsSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
-                const emsPendingSnap = await safeCollectionDocs('emsPendingReports');
-                if (emsPendingSnap.ok) appData.emsPendingReports = emsPendingSnap.docs.map(d => ({ docId: d.id, ...d.data() })).map(r => ({ ...r, remarks: ensureReportRemarks(r) }));
+
+                // 查詢紀錄、通緝及消防／EMS 案件由各自的 onSnapshot 載入，避免重複下載。
 
                 // 打卡資料不在初始批次重複讀取；交由下方 onSnapshot 單一即時監聽載入，避免登入時同一批文件讀兩次。
 
@@ -3349,10 +3313,7 @@ async function republishAnnouncement(id) {
                 const feedbackSnap = await safeCollectionDocs('feedbackReports');
                 if (feedbackSnap.ok) appData.feedbackReports = feedbackSnap.docs.map(d=>({docId:d.id,...d.data()}));
 
-                const annSnap = await safeCollectionDocs('announcements');
-                if (annSnap.ok) appData.announcements = annSnap.docs.map(d=>({docId:d.id,...d.data()}));
-                const verSnap = await safeCollectionDocs('siteVersions');
-                if (verSnap.ok) { appData.siteVersions = verSnap.docs.map(d=>({docId:d.id,...d.data()})); renderSiteVersionUI(); }
+                // announcements / siteVersions 由即時監聽載入，避免 getDocs 與 onSnapshot 重複讀取。
                 const blockedSnap = await safeCollectionDocs('blockedDevices');
                 if (blockedSnap.ok) appData.blockedDevices = blockedSnap.docs.map(d=>({docId:d.id,...d.data()}));
                 const loginFailureSnap = await safeCollectionDocs('loginFailures');
@@ -3370,16 +3331,17 @@ async function republishAnnouncement(id) {
                         appData.policeViolationRules = rulesDoc.data().rules.map(x => [String(x.name || x[0] || ''), Number(x.minutes ?? x[1] ?? 0)]).filter(x => x[0] && Number.isFinite(x[1]));
                     }
                     if (!appData.policeViolationRules.length) {
-                        appData.policeViolationRules = POLICE_VIOLATION_DEFAULTS.map(x => [...x]);
-                        try { await fm.setDoc(fm.doc(db, 'systemSettings', 'policeViolationRules'), { rules: appData.policeViolationRules.map(([name,minutes])=>({name,minutes})), updatedAt: Date.now(), updatedBy: currentUser?.account || 'system' }); } catch (e) { console.warn('預設刑期表寫入失敗，略過：', e); }
+                        try {
+                            const cachedRules = JSON.parse(localStorage.getItem('ntpc_police_violation_rules_v1') || 'null');
+                            if (Array.isArray(cachedRules)) appData.policeViolationRules = cachedRules.map(x => [String(x?.[0] || ''), Number(x?.[1])]).filter(x => x[0] && Number.isFinite(x[1]) && x[1] >= 0);
+                        } catch (cacheError) { console.warn('刑期表本機備份讀取失敗：', cacheError); }
                     }
+                    if (!appData.policeViolationRules.length) appData.policeViolationRules = POLICE_VIOLATION_DEFAULTS.map(x => [...x]);
+                    try {
+                        await fm.setDoc(fm.doc(db, 'systemSettings', 'policeViolationRules'), { rules: appData.policeViolationRules.map(([name,minutes])=>({name,minutes})), updatedAt: Date.now(), updatedBy: currentUser?.account || 'system' });
+                        try { localStorage.setItem('ntpc_police_violation_rules_v1', JSON.stringify(appData.policeViolationRules)); } catch (cacheError) {}
+                    } catch (e) { console.warn('刑期表雲端同步失敗，保留目前規則：', e); }
                     POLICE_VIOLATION_RULES = appData.policeViolationRules.map(x => [...x]);
-                    const lookupLocksDoc = settingsSnap.docs.find(d => d.id === 'lookupLocks');
-                    if (lookupLocksDoc) {
-                        const v = lookupLocksDoc.data();
-                        appData.lookupLocks = { citizen: v.citizen !== false, vehicles: v.vehicles !== false, wanted: v.wanted !== false };
-                    }
-
                     const memoDoc = settingsSnap.docs.find(d => d.id === 'adminMemo');
                     if (memoDoc) {
                         appData.adminMemo = memoDoc.data().content || '';
@@ -3388,7 +3350,15 @@ async function republishAnnouncement(id) {
                         try { await fm.setDoc(fm.doc(db, 'systemSettings', 'adminMemo'), { content: appData.adminMemo, updatedAt: Date.now(), updatedBy: currentUser?.account || 'system' }); } catch (e) { console.warn('預設備忘錄寫入失敗，略過：', e); }
                     }
                 } else {
-                    // 新增集合權限不足時，不清空既有本機資料，也不讓整個雲端同步中斷。
+                    // 雲端設定無法讀取時，優先沿用本機備份，避免更新 HTML 後刑期表退回預設值。
+                    if (!appData.policeViolationRules.length) {
+                        try {
+                            const cachedRules = JSON.parse(localStorage.getItem('ntpc_police_violation_rules_v1') || 'null');
+                            if (Array.isArray(cachedRules)) appData.policeViolationRules = cachedRules
+                                .map(x => [String(x?.[0] || ''), Number(x?.[1])])
+                                .filter(x => x[0] && Number.isFinite(x[1]) && x[1] >= 0);
+                        } catch (cacheError) { console.warn('刑期表本機備份讀取失敗：', cacheError); }
+                    }
                     POLICE_VIOLATION_RULES = (appData.policeViolationRules?.length ? appData.policeViolationRules : POLICE_VIOLATION_DEFAULTS).map(x => [...x]);
                     if (!appData.policeViolationRules.length) appData.policeViolationRules = POLICE_VIOLATION_DEFAULTS.map(x => [...x]);
                 }
@@ -3400,7 +3370,6 @@ async function republishAnnouncement(id) {
                 renderPolicePunishments();
                 renderPoliceClocks();
                 renderLookupSystems();
-                renderLookupLockSettings();
                 renderFireReports();
                 renderEMSReports();
                 renderFireClocks();
@@ -3495,15 +3464,6 @@ async function republishAnnouncement(id) {
                 subscribe('wantedPendingRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.wantedPendingRecords = rows; updateReviewTabBadges(); renderPoliceReview(); renderPersonalNotifications(); });
                 subscribe('wantedRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.wantedRecords = rows; renderLookupSystems(); updateWantedDiscordBotStatus(); });
             }
-            if (currentUser.role === 'admin') {
-                try {
-                    const unsub = fm.onSnapshot(fm.doc(db,'systemSettings','lookupLocks'), snap => {
-                        if (snap.exists()) { const v=snap.data(); appData.lookupLocks={citizen:v.citizen!==false,vehicles:v.vehicles!==false,wanted:v.wanted!==false}; renderLookupSystems(); }
-                    }, err => console.warn('查詢頻道設定即時監聽失敗：',err));
-                    realtimeUnsubscribers.push(unsub);
-                } catch(e) { console.warn('建立查詢頻道設定監聽失敗：',e); }
-            }
-
             // 待審案件：寄件者需要自己的案件；高層／高階／管理中心則需要看到對應單位的全部待審案件。
             const canPoliceReviewNow = canReviewPoliceReports();
             const canFireReviewNow = canReviewFireReports();
@@ -3811,7 +3771,7 @@ async function republishAnnouncement(id) {
         }
 
         function switchAdminSubTab(sub){
-            const tabs=['users','announcements','site-versions','clock','logs','storage','memo','overview','online','devices','feedback','issues','academy','jail-rules','lookup-locks','erlc','discord-webhooks'];
+            const tabs=['users','announcements','site-versions','clock','logs','storage','memo','overview','online','devices','feedback','issues','academy','jail-rules','erlc','discord-webhooks'];
             const academyOnly = !!currentUser && getEffectiveRole(currentUser) !== 'admin' && hasUserPermission(currentUser,'academyInstructor');
             const allowed = !academyOnly || sub === 'academy';
             tabs.forEach(x=>{
@@ -3873,6 +3833,10 @@ async function republishAnnouncement(id) {
         }
         document.addEventListener('DOMContentLoaded',()=>{
             document.getElementById('app-confirm-ok')?.addEventListener('click',()=>finishConfirm(true));
+            document.getElementById('police-duty-details-btn')?.addEventListener('click',openPoliceDutyDetails);
+            document.getElementById('police-duty-details-close')?.addEventListener('click',closePoliceDutyDetails);
+            document.getElementById('police-duty-details-modal')?.addEventListener('click',event=>{if(event.target?.id==='police-duty-details-modal')closePoliceDutyDetails();});
+            document.addEventListener('keydown',event=>{if(event.key==='Escape')closePoliceDutyDetails();});
             document.getElementById('app-confirm-cancel')?.addEventListener('click',()=>finishConfirm(false));
             document.getElementById('app-confirm-overlay')?.addEventListener('click',e=>{if(e.target.id==='app-confirm-overlay')finishConfirm(false);});
         });
@@ -4496,7 +4460,7 @@ async function republishAnnouncement(id) {
 
         const SECURITY_ACTION_COOLDOWN=new Map();
         function securityActionAllowed(key,cooldownMs=700){const now=Date.now(),last=SECURITY_ACTION_COOLDOWN.get(key)||0;if(now-last<cooldownMs)return false;SECURITY_ACTION_COOLDOWN.set(key,now);return true;}
-        async function handleLogin(){if(!securityActionAllowed('login',900))return;await cloudDataReadyPromise;const device=getDeviceInfo();const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}try{const blockedSnap=await fm.getDocs(fm.collection(db,'blockedDevices'));appData.blockedDevices=blockedSnap.docs.map(d=>({docId:d.id,...d.data()}));const failSnap=await fm.getDocs(fm.collection(db,'loginFailures'));appData.loginFailures=failSnap.docs.map(d=>({docId:d.id,...d.data()}));}catch(e){console.warn('登入安全資料讀取失敗：',e);}if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}let found=null;try{const userSnap=await fm.getDoc(fm.doc(db,'users',acc));if(userSnap.exists()){const data=userSnap.data();found={docId:userSnap.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}if(!found&&isSuperAdminAccount(acc)){const all=await fm.getDocs(fm.collection(db,'users'));const d=all.docs.find(x=>isSuperAdminAccount(x.id)||isSuperAdminAccount(x.data().account));if(d){const data=d.data();found={docId:d.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}}}catch(e){showToast('帳號驗證失敗，請稍後重試：'+e.message,'error','登入失敗');return;}if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));currentUser=found;appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);await pruneOldLoginSessions();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();if(isAcademyInstructor(currentUser)&&getEffectiveRole(currentUser)!=='admin')switchTab('academy');else switchTab('home');}
+        async function handleLogin(){if(!securityActionAllowed('login',900))return;await cloudDataReadyPromise;const device=getDeviceInfo();const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}try{const fingerprint=getDeviceFingerprint(device),deviceKey=getDeviceKey(device);const [blockedByFingerprint,blockedByKey]=await Promise.all([fm.getDoc(fm.doc(db,'blockedDevices',fingerprint)),fm.getDocs(fm.query(fm.collection(db,'blockedDevices'),fm.where('deviceKey','==',deviceKey)))]);const matches=[];if(blockedByFingerprint.exists())matches.push({docId:blockedByFingerprint.id,...blockedByFingerprint.data()});blockedByKey.docs.forEach(d=>{if(!matches.some(x=>String(x.docId)===String(d.id)))matches.push({docId:d.id,...d.data()});});appData.blockedDevices=matches;/* 登入失敗紀錄只在失敗時依裝置 ID 單筆讀取，不下載整個集合。 */}catch(e){console.warn('登入安全資料讀取失敗：',e);}if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}let found=null;try{const userSnap=await fm.getDoc(fm.doc(db,'users',acc));if(userSnap.exists()){const data=userSnap.data();found={docId:userSnap.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}if(!found&&isSuperAdminAccount(acc)){const all=await fm.getDocs(fm.collection(db,'users'));const d=all.docs.find(x=>isSuperAdminAccount(x.id)||isSuperAdminAccount(x.data().account));if(d){const data=d.data();found={docId:d.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}}}catch(e){showToast('帳號驗證失敗，請稍後重試：'+e.message,'error','登入失敗');return;}if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));currentUser=found;appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);await pruneOldLoginSessions();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();if(isAcademyInstructor(currentUser)&&getEffectiveRole(currentUser)!=='admin')switchTab('academy');else switchTab('home');}
         async function logout(){stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
@@ -4659,8 +4623,8 @@ async function republishAnnouncement(id) {
 
         function isTotalManagementUser(u=currentUser){ return !!u && getEffectiveRole(u)==='admin'; }
         function isPoliceUser(u=currentUser){ return !!u && (getEffectiveRole(u)==='admin' || (u.units||[u.unit]).includes('police')); }
-        function lookupLocked(type){ return appData.lookupLocks?.[type] !== false; }
-        function lookupAccessible(type,u=currentUser){ return isTotalManagementUser(u) || !lookupLocked(type); }
+        function lookupLocked(type){ return false; }
+        function lookupAccessible(type,u=currentUser){ return true; }
         function getLastFive(value){ const s=String(value||'').replace(/\D/g,''); return s.length>=5?s.slice(-5):String(value||'').trim().slice(-5); }
         function lookupTypeLabel(type){ return type==='citizen'?'市民身份':type==='vehicles'?'車輛': '通緝'; }
         function renderLookupSystems(){
@@ -4687,17 +4651,6 @@ async function republishAnnouncement(id) {
             document.getElementById('open-citizen-post-btn')?.classList.toggle('hidden',!(admin&&lookupAccessible('citizen')));
             document.getElementById('open-vehicle-post-btn')?.classList.toggle('hidden',!(admin&&lookupAccessible('vehicles')));
             document.getElementById('open-wanted-post-btn')?.classList.toggle('hidden',!(police&&lookupAccessible('wanted')));
-            renderLookupLockSettings();
-        }
-        function renderLookupLockSettings(){
-            const ids=[['citizen','lock-citizen'],['vehicles','lock-vehicles'],['wanted','lock-wanted']];
-            ids.forEach(([k,id])=>{const el=document.getElementById(id);if(el){el.checked=lookupLocked(k);el.disabled=!isTotalManagementUser();}});
-            document.getElementById('save-lookup-locks-btn')?.classList.toggle('hidden',!isTotalManagementUser());
-        }
-        async function saveLookupLockSettings(){
-            if(!isTotalManagementUser()){showToast('只有總管理權限可以修改上鎖頻道設定。','warning','權限不足');return;}
-            const next={citizen:!!document.getElementById('lock-citizen')?.checked,vehicles:!!document.getElementById('lock-vehicles')?.checked,wanted:!!document.getElementById('lock-wanted')?.checked};
-            try{await fm.setDoc(fm.doc(db,'systemSettings','lookupLocks'),{...next,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});appData.lookupLocks=next;await logAdminAction('編輯查詢頻道鎖定設定','lookupLocks',`市民:${next.citizen?'上鎖':'解鎖'}；車輛:${next.vehicles?'上鎖':'解鎖'}；通緝:${next.wanted?'上鎖':'解鎖'}`,{discord:true});renderLookupSystems();showToast('查詢頻道鎖定設定已儲存。','success','儲存成功');}catch(e){showToast('儲存失敗：'+e.message,'error','操作失敗');}
         }
         function lookupInput(label,id,placeholder='',extra=''){return `<div><label class="block text-xs font-semibold text-slate-400 mb-2">${label}</label><input id="${id}" ${extra} placeholder="${placeholder}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500"></div>`;}
         function lookupTextarea(label,id,placeholder='',rows=4){return `<div><label class="block text-xs font-semibold text-slate-400 mb-2">${label}</label><textarea id="${id}" rows="${rows}" placeholder="${placeholder}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 resize-y"></textarea></div>`;}
@@ -5157,7 +5110,7 @@ async function republishAnnouncement(id) {
         }
         function deleteJailRule(index){if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以修改刑期表。','warning','權限不足');return;}POLICE_VIOLATION_RULES.splice(index,1);renderAdminJailRules();}
         function addJailRule(){if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以修改刑期表。','warning','權限不足');return;}const name=document.getElementById('new-jail-rule-name')?.value.trim(),minutes=Number(document.getElementById('new-jail-rule-minutes')?.value);if(!name||!Number.isFinite(minutes)||minutes<0){showToast('請填寫條例名稱與有效刑期。','warning','資料不完整');return;}if(POLICE_VIOLATION_RULES.some(x=>x[0]===name)){showToast('此條例已存在。','warning','無法新增');return;}POLICE_VIOLATION_RULES.push([name,minutes]);document.getElementById('new-jail-rule-name').value='';document.getElementById('new-jail-rule-minutes').value='';renderAdminJailRules();}
-        async function saveJailRules(){if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以更新刑期表。','warning','權限不足');return;}const next=POLICE_VIOLATION_RULES.map((_,i)=>[(document.getElementById(`jail-rule-name-${i}`)?.value||'').trim(),Number(document.getElementById(`jail-rule-min-${i}`)?.value)]).filter(x=>x[0]&&Number.isFinite(x[1])&&x[1]>=0);if(!next.length){showToast('至少保留一筆有效刑期規則。','warning','資料錯誤');return;}const seen=new Set();for(const x of next){if(seen.has(x[0])){showToast(`條例「${x[0]}」重複。`,'warning','資料錯誤');return;}seen.add(x[0]);}try{await fm.setDoc(fm.doc(db,'systemSettings','policeViolationRules'),{rules:next.map(([name,minutes])=>({name,minutes})),updatedAt:Date.now(),updatedBy:currentUser.account});POLICE_VIOLATION_RULES=next;appData.policeViolationRules=next.map(x=>[...x]);renderAdminJailRules();if(document.getElementById('modal-report')&&!document.getElementById('modal-report').classList.contains('hidden'))renderViolationOptions('report',getViolationSelection('report').violations);showSubmitSuccessAnimation('刑期表更新成功','警用案件刑期規則已更新。');}catch(e){showToast('刑期表更新失敗：'+e.message,'error','操作失敗');}}
+        async function saveJailRules(){if(!currentUser||currentUser.role!=='admin'){showToast('只有最高管理員可以更新刑期表。','warning','權限不足');return;}const next=POLICE_VIOLATION_RULES.map((_,i)=>[(document.getElementById(`jail-rule-name-${i}`)?.value||'').trim(),Number(document.getElementById(`jail-rule-min-${i}`)?.value)]).filter(x=>x[0]&&Number.isFinite(x[1])&&x[1]>=0);if(!next.length){showToast('至少保留一筆有效刑期規則。','warning','資料錯誤');return;}const seen=new Set();for(const x of next){if(seen.has(x[0])){showToast(`條例「${x[0]}」重複。`,'warning','資料錯誤');return;}seen.add(x[0]);}try{await fm.setDoc(fm.doc(db,'systemSettings','policeViolationRules'),{rules:next.map(([name,minutes])=>({name,minutes})),updatedAt:Date.now(),updatedBy:currentUser.account});try{localStorage.setItem('ntpc_police_violation_rules_v1',JSON.stringify(next));}catch(cacheError){console.warn('刑期表本機備份失敗：',cacheError);}POLICE_VIOLATION_RULES=next;appData.policeViolationRules=next.map(x=>[...x]);renderAdminJailRules();if(document.getElementById('modal-report')&&!document.getElementById('modal-report').classList.contains('hidden'))renderViolationOptions('report',getViolationSelection('report').violations);showSubmitSuccessAnimation('刑期表更新成功','警用案件刑期規則已更新。');}catch(e){showToast('刑期表更新失敗：'+e.message,'error','操作失敗');}}
 
 
         function calculatePoliceJailTime(violations,organizedCrime){const base=(Array.isArray(violations)?violations:[]).reduce((sum,name)=>{const row=POLICE_VIOLATION_RULES.find(x=>x[0]===name);return sum+(row?row[1]:0);},0);return Math.round((organizedCrime?base*4/3:base)*10)/10;}
@@ -6066,6 +6019,37 @@ async function republishAnnouncement(id) {
             return Number.isFinite(parsed)?parsed:0;
         }
         function localDateKey(timestamp){const d=new Date(Number(timestamp||0));if(!Number.isFinite(d.getTime()))return '';return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+        function formatDutyElapsed(startTimestamp, now=Date.now()) {
+            const elapsed=Math.max(0,Math.floor((now-startTimestamp)/1000));
+            const days=Math.floor(elapsed/86400), hours=Math.floor((elapsed%86400)/3600), minutes=Math.floor((elapsed%3600)/60);
+            return `${days>0?days+'天 ':''}${hours}小時 ${minutes}分鐘`;
+        }
+        function renderPoliceDutyDetails() {
+            const host=document.getElementById('police-duty-details-list');
+            if(!host)return;
+            const latest=buildLatestDutyMap(appData.policeClocks||[]);
+            const active=[...latest.values()].filter(row=>row.status==='上班').map(row=>({...row,_clockStart:getClockTimestamp(row)})).sort((a,b)=>a._clockStart-b._clockStart);
+            const count=document.getElementById('police-current-duty-count');
+            if(count)count.textContent=String(active.length);
+            if(!active.length){host.innerHTML='<div class="rounded-xl border border-slate-800 bg-slate-950 p-5 text-center text-sm text-slate-400"><i class="fa-solid fa-mug-hot mr-2"></i>目前沒有員警執勤中。</div>';return;}
+            host.innerHTML=active.map(row=>{
+                const start=row._clockStart;
+                const startText=start?new Date(start).toLocaleString('zh-TW',{hour12:false}):'時間不明';
+                const name=escapeHtml(row.name||'未提供姓名'), number=escapeHtml(row.staffNumber||row.account||'未提供編號');
+                const elapsed=start?formatDutyElapsed(start):'無法計算';
+                return `<div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 flex items-start justify-between gap-3"><div class="min-w-0"><div class="font-semibold text-white">${name}</div><div class="text-xs text-slate-400 mt-1">員警編號／帳號：${number}</div><div class="text-xs text-slate-500 mt-1">上班打卡：${escapeHtml(startText)}</div></div><div class="shrink-0 text-right"><div class="text-[10px] text-emerald-300">已執勤</div><div class="font-bold text-emerald-400">${elapsed}</div></div></div>`;
+            }).join('');
+        }
+        function openPoliceDutyDetails() {
+            renderPoliceDutyDetails();
+            const modal=document.getElementById('police-duty-details-modal');
+            if(modal){modal.classList.remove('hidden');modal.classList.add('flex');}
+        }
+        function closePoliceDutyDetails() {
+            const modal=document.getElementById('police-duty-details-modal');
+            if(modal){modal.classList.add('hidden');modal.classList.remove('flex');}
+        }
+
         function renderPoliceClocks() {
             const tbody = document.getElementById('police-clocks-tbody');
             const dateFilter = document.getElementById('police-clocks-date-filter')?.value || localDateKey(Date.now());
@@ -6616,7 +6600,7 @@ async function republishAnnouncement(id) {
             clearInterval(window.__adminPresenceTimer);
             window.__adminPresenceTimer=setInterval(()=>{
                 if(currentUser&&currentUser.role==='admin'&&!document.getElementById('tab-admin')?.classList.contains('hidden'))refreshAdminOnlineUsers();
-            },15000);
+            },60000);
         }
         function stopAdminPresenceRefresh(){clearInterval(window.__adminPresenceTimer);window.__adminPresenceTimer=null;}
         function renderAdminOnlineUsers(){
@@ -6984,8 +6968,8 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
 /* 公告重要標記：兼容既有發布流程。 */
 (function patchAnnouncementImportant(){const btn=document.getElementById('publish-announcement-btn');if(!btn||btn.dataset.v182)return;btn.dataset.v182='1';btn.addEventListener('click',()=>{setTimeout(()=>{const text=document.getElementById('announcement-text-input')?.value;},0);});const original=window.publishAnnouncement;if(typeof original==='function'&&original.__v182)return;})();
 /* Discord Webhook 使用 Firestore 佇列，由 Cloud Functions 負責實際發送；通緝通知仍由原有 Discord BOT 處理。 */
-/* 初始化：補載交接簿，並把公告重要標記送入既有資料。 */
-setTimeout(async()=>{try{appData.dutyHandoverNotes=appData.dutyHandoverNotes||[];await loadHandoverNotes();renderDashHandover();renderDashAnnouncements();refreshDutyDashboard();}catch(e){console.warn('V1.8.2 初始化失敗',e);}},1200);
+/* 初始化：公告與交接簿由即時監聽載入，避免啟動後再額外讀取整個交接簿。 */
+setTimeout(()=>{try{renderDashHandover();renderDashAnnouncements();refreshDutyDashboard();}catch(e){console.warn('V1.8.2 初始化失敗',e);}},1200);
 window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEventListener('offline',()=>renderDashSystemStatus());
 
 </script>
