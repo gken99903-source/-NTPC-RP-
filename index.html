@@ -3004,7 +3004,7 @@ function renderAdminClocks(){
                 }
                 return true;
             }).sort((a,b)=>getClockTimestamp(b)-getClockTimestamp(a));
-            t.innerHTML=rows.length?rows.map(c=>`<tr><td class="p-4 font-medium text-white">${escapeHtml(c.name||'--')} (${escapeHtml(c.account||'--')})</td><td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs ${c.status==='上班'?'bg-emerald-500/10 text-emerald-400':'bg-rose-500/10 text-rose-400'}">${escapeHtml(c.status||'--')}</span></td><td class="p-4 text-slate-300 text-xs">${escapeHtml(c.time||formatDateTime(getClockTimestamp(c)))}</td><td class="p-4 text-slate-400 text-xs">${escapeHtml(c.remark||'無')}</td><td class="p-4 text-right"><button onclick="deleteAdminClock('${String(c.docId||c.id||'').replace(/'/g,"\\'")}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button></td></tr>`).join(''):'<tr><td colspan="5" class="p-6 text-center text-slate-500">此日期或人員沒有符合的管理中心打卡紀錄。</td></tr>';
+            t.innerHTML=rows.length?rows.map(c=>`<tr><td class="p-4 font-medium text-white">${escapeHtml(c.name||'--')} (${escapeHtml(c.account||'--')})</td><td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs ${c.status==='上班'?'bg-emerald-500/10 text-emerald-400':'bg-rose-500/10 text-rose-400'}">${escapeHtml(c.status||'--')}</span></td><td class="p-4 text-slate-300 text-xs">${escapeHtml(c.time||formatDateTime(getClockTimestamp(c)))}</td><td class="p-4 text-slate-400 text-xs">${escapeHtml(c.remark||'無')}</td><td class="p-4 text-right"><button type="button" onclick="openEditClockModal('admin', '${String(c.docId||c.id||'').replace(/'/g,"\\'")}')" class="px-2.5 py-1 bg-slate-800 text-slate-200 rounded-lg text-xs mr-2">編輯</button><button onclick="deleteAdminClock('${String(c.docId||c.id||'').replace(/'/g,"\\'")}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button></td></tr>`).join(''):'<tr><td colspan="5" class="p-6 text-center text-slate-500">此日期或人員沒有符合的管理中心打卡紀錄。</td></tr>';
         }
 
 function openAdminClockModal(status){if(!currentUser||currentUser.role!=='admin'){showToast('管理中心打卡僅限最高管理員。','warning','權限不足');return;}document.getElementById('admin-clock-status').value=status;document.getElementById('admin-clock-remark').value='';document.getElementById('admin-clock-user-preview').textContent=`${currentUser.name} (${currentUser.account})`;document.getElementById('modal-admin-clock').classList.remove('hidden');}
@@ -3476,18 +3476,18 @@ async function republishAnnouncement(id) {
             if (currentUser.role === 'admin' || userHasUnit('police')) {
                 subscribe('citizenRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.citizenRecords = rows; renderLookupSystems(); renderAdminStorage(); });
                 subscribe('vehicleRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.vehicleRecords = rows; renderLookupSystems(); renderAdminStorage(); });
-                subscribe('wantedPendingRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.wantedPendingRecords = rows; updateReviewTabBadges(); renderPoliceReview(); renderPersonalNotifications(); });
+                subscribe('wantedPendingRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.wantedPendingRecords = rows; updateReviewTabBadges(); renderPoliceReview(); renderPersonalNotifications(); refreshDutyDashboard(); });
                 subscribe('wantedRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.wantedRecords = rows; renderLookupSystems(); updateWantedDiscordBotStatus(); });
             }
             // 待審案件：寄件者需要自己的案件；高層／高階／管理中心則需要看到對應單位的全部待審案件。
             const canPoliceReviewNow = canReviewPoliceReports();
             const canFireReviewNow = canReviewFireReports();
             if (canPoliceReviewNow || userHasUnit('police')) {
-                subscribe('policePendingReports', d => ({docId:d.id, ...d.data()}), rows => { appData.policePendingReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); });
+                subscribe('policePendingReports', d => ({docId:d.id, ...d.data()}), rows => { appData.policePendingReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); refreshDutyDashboard(); });
             }
             if (canFireReviewNow || userHasUnit('fire')) {
-                subscribe('firePendingReports', d => ({docId:d.id, ...d.data()}), rows => { appData.firePendingReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); });
-                subscribe('emsPendingReports', d => ({docId:d.id, ...d.data()}), rows => { appData.emsPendingReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); });
+                subscribe('firePendingReports', d => ({docId:d.id, ...d.data()}), rows => { appData.firePendingReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); refreshDutyDashboard(); });
+                subscribe('emsPendingReports', d => ({docId:d.id, ...d.data()}), rows => { appData.emsPendingReports = rows.map(r => ({...r, remarks:ensureReportRemarks(r)})); refreshDutyDashboard(); });
             }
 
             // 值勤狀態只依打卡資料判定；不再輪詢 users，也不再使用網站在線心跳。
@@ -3988,25 +3988,8 @@ async function republishAnnouncement(id) {
         }
 
         function calculateUserTotalDutyHours(account) {
-            const allClocks = [
-                ...(appData.policeClocks || []).map(x => ({ ...x, dept: 'police' })),
-                ...(appData.fireClocks || []).map(x => ({ ...x, dept: 'fire' }))
-            ];
-            let totalMinutes = 0;
-            ['police', 'fire'].forEach(dept => {
-                const clocks = allClocks.filter(c => c.dept === dept && String(c.account || '').toLowerCase() === String(account || '').toLowerCase()).sort((a,b) => getClockTimestamp(a) - getClockTimestamp(b));
-                let onDuty = null;
-                clocks.forEach(c => {
-                    if (c.status === '上班') onDuty = getClockTimestamp(c) || null;
-                    else if (c.status === '下班' && onDuty) {
-                        const diff = getClockTimestamp(c) - onDuty;
-                        if (diff > 0) totalMinutes += diff / 60000;
-                        onDuty = null;
-                    }
-                });
-                if (onDuty && Date.now() > onDuty) totalMinutes += (Date.now() - onDuty) / 60000;
-            });
-            return (totalMinutes / 60).toFixed(1);
+            // 個人資料頁與勤務中心共用同一套值勤配對規則（包含管理中心打卡）。
+            return ntpcDutyHoursForAccount(account,0).toFixed(1);
         }
 
         function getUserReportCount(account) {
@@ -6164,7 +6147,7 @@ async function republishAnnouncement(id) {
             const idKey=document.getElementById('edit-id-key').value;
 
             if(editType.endsWith('-clock')){
-                const dept=editType.split('-')[0],list=dept==='police'?appData.policeClocks:appData.fireClocks,c=list.find(x=>String(x.docId||x.id)===String(idKey));
+                const dept=editType.split('-')[0],list=dept==='police'?appData.policeClocks:dept==='fire'?appData.fireClocks:dept==='admin'?appData.adminClocks:[],c=(list||[]).find(x=>String(x.docId||x.id)===String(idKey));
                 if(!canManageClockRecords()||!c){showToast('管理處權限不足。','warning','權限不足');return;}
                 const timeValue=document.getElementById('edit-clock-time').value;
                 const editedTimestamp=parseClockDateTime(timeValue);
@@ -6172,9 +6155,9 @@ async function republishAnnouncement(id) {
                 const newStatus=document.getElementById('edit-clock-status').value;
                 if(!['上班','下班'].includes(newStatus)){showToast('請選擇有效的打卡類型。','warning','資料錯誤');return;}
                 const isRetro=/\(補打卡\)/.test(String(c.time||''));
-                const clockChanges={account:document.getElementById('edit-clock-account').value.trim(),staffNumber:c.staffNumber||'',name:document.getElementById('edit-clock-name').value.trim(),status:newStatus,vehicle:document.getElementById('edit-clock-vehicle').value.trim(),time:formatDateTime(editedTimestamp)+(isRetro?' (補打卡)':''),timestamp:editedTimestamp,remark:document.getElementById('edit-clock-remark').value.trim()};
+                const clockChanges={account:document.getElementById('edit-clock-account').value.trim(),staffNumber:c.staffNumber||'',name:document.getElementById('edit-clock-name').value.trim(),status:newStatus,vehicle:document.getElementById('edit-clock-vehicle')?.value.trim()??c.vehicle??'',time:formatDateTime(editedTimestamp)+(isRetro?' (補打卡)':''),timestamp:editedTimestamp,remark:document.getElementById('edit-clock-remark').value.trim()};
                 try{
-                    await fm.updateDoc(fm.doc(db,dept==='police'?'policeClocks':'fireClocks',c.docId||c.id),clockChanges);
+                    await fm.updateDoc(fm.doc(db,dept==='police'?'policeClocks':dept==='fire'?'fireClocks':'adminClocks',c.docId||c.id),clockChanges);
                     Object.assign(c,clockChanges); // 雲端成功後才更新本機，日期、排序及值勤狀態皆依新 timestamp。
                     try{await logAdminAction('編輯打卡紀錄',`${dept}:${c.docId||c.id}`,`人員：${c.name||'--'}；狀態：${c.status||'--'}；時間：${c.time||'--'}。`);}catch(auditErr){console.warn('打卡變更已儲存，但操作稽核寫入失敗',auditErr);}
                     closeModal('modal-edit');recalculateDutyStatusCache();
@@ -6187,7 +6170,8 @@ async function republishAnnouncement(id) {
                         if(statusInput)statusInput.value='all';
                         if(anomalyInput)anomalyInput.value='all';
                     }
-                    dept==='police'?renderPoliceClocks():renderFireClocks();
+                    if(dept==='police')renderPoliceClocks();else if(dept==='fire')renderFireClocks();else renderAdminClocks();
+                    refreshDutyDashboard();
                     if(dept==='police'&&!document.getElementById('police-duty-details-modal')?.classList.contains('hidden'))renderPoliceDutyDetails();
                     renderAdminOverview();showToast('打卡紀錄及歸屬日期已更新。','success','更新成功');
                 }catch(e){showToast('更新失敗：'+e.message,'error','操作失敗');}
@@ -6515,18 +6499,20 @@ async function republishAnnouncement(id) {
         }
 
         function openEditClockModal(dept,id){
-            if(!canManageClockRecords()){showToast('只有管理處可以編輯打卡紀錄。','warning','權限不足');return;}
-            const c=(dept==='police'?appData.policeClocks:appData.fireClocks).find(x=>String(x.docId||x.id)===String(id));
+            if(!canManageClockRecords()){showToast('只有管理中心可以編輯打卡紀錄。','warning','權限不足');return;}
+            if(!['police','fire','admin'].includes(dept))return;
+            const list=dept==='police'?appData.policeClocks:dept==='fire'?appData.fireClocks:appData.adminClocks;
+            const c=(list||[]).find(x=>String(x.docId||x.id)===String(id));
             if(!c)return;
             document.getElementById('edit-type').value=dept+'-clock';
             document.getElementById('edit-id-key').value=c.docId||c.id;
-            document.getElementById('edit-modal-title').textContent='編輯打卡紀錄';
-            const e=v=>escapeHtml(v||'');
+            document.getElementById('edit-modal-title').textContent='編輯'+(dept==='admin'?'管理中心':'')+'打卡紀錄';
+            const e=v=>escapeHtml(v??'');
             document.getElementById('edit-fields-container').innerHTML=`
                 <label class="block text-xs text-slate-400">登入帳號<input id="edit-clock-account" value="${e(c.account)}" class="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"></label>
                 <label class="block text-xs text-slate-400">RP 名稱<input id="edit-clock-name" value="${e(c.name)}" class="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"></label>
                 <label class="block text-xs text-slate-400">打卡狀態<select id="edit-clock-status" class="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><option value="上班" ${c.status==='上班'?'selected':''}>上班</option><option value="下班" ${c.status==='下班'?'selected':''}>下班</option></select></label>
-                <label class="block text-xs text-slate-400">執勤車輛編號<input id="edit-clock-vehicle" value="${e(c.vehicle)}" class="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"></label>
+                ${dept==='admin'?'':`<label class="block text-xs text-slate-400">執勤車輛編號<input id="edit-clock-vehicle" value="${e(c.vehicle)}" class="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"></label>`}
                 <label class="block text-xs text-slate-400">打卡日期與時間<input id="edit-clock-time" type="datetime-local" step="60" value="${clockEditDateTimeLocal(c)}" class="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white" required></label>
                 <label class="block text-xs text-slate-400">長官備註<textarea id="edit-clock-remark" class="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white">${e(c.remark)}</textarea></label>
                 <p class="text-xs text-amber-300/90">修改日期後，這張卡將移到新日期的篩選結果，值勤狀態與時數也會重新計算。</p>`;
@@ -7333,11 +7319,59 @@ async function republishAnnouncement(id) {
     
 /* ================= V1.8.2 勤務中心與通知穩定層 ================= */
 function ntpcEsc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
-function ntpcDutyRowsForCurrentUser(){if(!currentUser)return [];const key=String(currentUser.account||'').toLowerCase();return [...(appData.policeClocks||[]),...(appData.fireClocks||[]),...(appData.adminClocks||[])].filter(c=>String(c.account||c.userAccount||'').toLowerCase()===key).sort((a,b)=>getClockTimestamp(b)-getClockTimestamp(a));}
-function ntpcDutyHoursSince(startMs){const mine=ntpcDutyRowsForCurrentUser().filter(c=>getClockTimestamp(c)>=startMs);const groups={};mine.forEach(c=>{const key=c.shiftId||c.clockGroup||c.id||`${c.account}-${new Date(getClockTimestamp(c)).toDateString()}`;(groups[key]??=[]).push(c);});let total=0;Object.values(groups).forEach(g=>{g.sort((a,b)=>getClockTimestamp(a)-getClockTimestamp(b));for(let i=0;i+1<g.length;i+=2){const a=getClockTimestamp(g[i]),b=getClockTimestamp(g[i+1]);if(b>a)total+=b-a;}});return total/3600000;}
+function ntpcDutyRowsForAccount(accountValue){
+    const account=String(accountValue||'').trim().toLowerCase();
+    if(!account)return [];
+    return [...(appData.policeClocks||[]).map(c=>({...c,__dutyDepartment:'police'})),...(appData.fireClocks||[]).map(c=>({...c,__dutyDepartment:'fire'})),...(appData.adminClocks||[]).map(c=>({...c,__dutyDepartment:'admin'}))]
+        .filter(c=>String(c.account||c.userAccount||'').trim().toLowerCase()===account&&getClockTimestamp(c)>0)
+        .sort((a,b)=>getClockTimestamp(b)-getClockTimestamp(a));
+}
+function ntpcDutyRowsForCurrentUser(){return currentUser?ntpcDutyRowsForAccount(currentUser.account):[];}
+// 時數必須以同一人、同一部門的「上班→下班」事件配對；不可用每張卡片的 id 分組。
+// 跨日或跨週／月的值勤採重疊區間計算，未下班的班次累計至現在；重複上班或孤立下班不虛構時數。
+function ntpcDutyHoursForAccount(account,startMs=0,endMs=Date.now()){
+    if(!account)return 0;
+    const now=Date.now(),start=Math.max(0,Number(startMs)||0),end=Math.min(now,Number(endMs)||now);
+    if(end<=start)return 0;
+    const rows=ntpcDutyRowsForAccount(account);
+    const departments=['police','fire','admin'];
+    let totalMs=0;
+    for(const dept of departments){
+        const events=rows.filter(c=>c.__dutyDepartment===dept).sort((a,b)=>getClockTimestamp(a)-getClockTimestamp(b));
+        let clockIn=null;
+        for(const c of events){
+            const ts=getClockTimestamp(c),status=String(c.status||c.action||c.type||'').trim();
+            if(!Number.isFinite(ts)||ts<=0||ts>now)continue;
+            if(status==='上班'||status==='上班打卡'){
+                if(clockIn===null)clockIn=ts; // 連續上班視為異常，不以第二張蓋掉首張
+            }else if(status==='下班'||status==='下班打卡'){
+                if(clockIn!==null){totalMs+=Math.max(0,Math.min(ts,end)-Math.max(clockIn,start));clockIn=null;}
+            }
+        }
+        if(clockIn!==null)totalMs+=Math.max(0,end-Math.max(clockIn,start));
+    }
+    return totalMs/3600000;
+}
+function ntpcDutyHoursInRange(startMs=0,endMs=Date.now()){return currentUser?ntpcDutyHoursForAccount(currentUser.account,startMs,endMs):0;}
+function ntpcDutyHoursSince(startMs){return ntpcDutyHoursInRange(startMs);}
+function ntpcCurrentMonthHours(){
+    if(!currentUser)return 0;
+    const start=new Date();start.setDate(1);start.setHours(0,0,0,0);
+    return ntpcDutyHoursInRange(start.getTime());
+}
+function ntpcCurrentWeekHours(){
+    if(!currentUser)return 0;
+    const monday=new Date();monday.setHours(0,0,0,0);monday.setDate(monday.getDate()-(monday.getDay()+6)%7);
+    return ntpcDutyHoursInRange(monday.getTime());
+}
+function ntpcCountPendingReports(rows){return (rows||[]).filter(r=>String(r.reviewStatus||'').toLowerCase()==='pending').length;}
 function renderDashRecentDuty(){const h=document.getElementById('dash-recent-duty');if(!h)return;const rows=ntpcDutyRowsForCurrentUser().slice(0,10);h.innerHTML=rows.length?rows.map(c=>{const status=String(c.status||c.action||c.type||'');const label=/上班|上班打卡|clock.?in/i.test(status)?'上班':/下班|下班打卡|clock.?out/i.test(status)?'下班':(c.status||c.action||'值勤紀錄');const unit=c.unit==='fire'||c.department==='fire'?'消防':c.unit==='admin'||c.department==='admin'?'管理':'警察';return `<div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3 flex items-center justify-between gap-3"><div><div class="text-sm font-semibold text-white">${ntpcEsc(unit)} ／ ${ntpcEsc(label)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(formatDateTime(getClockTimestamp(c),c.time))}</div></div><span class="text-[11px] px-2 py-1 rounded-full bg-slate-800 text-slate-300">${ntpcEsc(c.dutyNumber||c.managementId||c.staffNumber||currentUser.account||'--')}</span></div>`}).join(''):'<div class="text-sm text-slate-500 py-5 text-center md:col-span-2">目前沒有勤務打卡紀錄。</div>';}
-function ntpcCurrentMonthHours(){if(!currentUser)return 0;const start=new Date();start.setDate(1);start.setHours(0,0,0,0);const mine=[...(appData.policeClocks||[]),...(appData.fireClocks||[]),...(appData.adminClocks||[])].filter(c=>String(c.account||c.userAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&getClockTimestamp(c)>=start.getTime());let total=0;const groups={};mine.forEach(c=>{const key=c.shiftId||c.clockGroup||c.id||`${c.account}-${new Date(getClockTimestamp(c)).toDateString()}`;(groups[key]??=[]).push(c);});Object.values(groups).forEach(g=>{g.sort((a,b)=>getClockTimestamp(a)-getClockTimestamp(b));for(let i=0;i+1<g.length;i+=2){const a=getClockTimestamp(g[i]),b=getClockTimestamp(g[i+1]);if(b>a)total+=b-a;}});return Math.round(total/360000)/10;}
-function refreshDutyDashboard(){if(!document.getElementById('tab-dashboard'))return;const online=getCurrentDutyCount();const pending=(appData.policePendingReports||[]).length+(appData.firePendingReports||[]).length+(appData.emsPendingReports||[]).length+(appData.wantedPendingRecords||[]).length;const noti=currentUser?(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&!n.read).length:0;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};set('dash-online',online);set('dash-pending',pending);set('dash-notifications',noti);set('dash-hours',ntpcCurrentMonthHours().toFixed(1)+' h');set('dash-week-hours',currentUser?ntpcDutyHoursSince(Date.now()-7*24*60*60*1000).toFixed(1)+' h':'--');set('dash-total-hours',currentUser?ntpcDutyHoursSince(0).toFixed(1)+' h':'--');const work=document.getElementById('dash-my-work');if(work){const mine=(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser?.account||'').toLowerCase()&&!n.read).slice(0,8);work.innerHTML=mine.length?mine.map(n=>`<div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800"><div class="text-sm text-white">${ntpcEsc(n.title||'案件通知')}</div><div class="text-xs text-slate-500 mt-1">${ntpcEsc(n.message||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有待處理通知。</div>';}renderDashRecentDuty();renderDashSystemStatus();renderDashAnnouncements();renderDashHandover();renderDashManagementWork();}
+function ntpcRefreshDutyHourLabels(){
+    if(!currentUser)return;
+    const labels=[['dash-hours',ntpcCurrentMonthHours()],['dash-week-hours',ntpcCurrentWeekHours()],['dash-total-hours',ntpcDutyHoursSince(0)]];
+    labels.forEach(([id,hours])=>{const el=document.getElementById(id);if(el)el.textContent=hours.toFixed(1)+' h';});
+}
+function refreshDutyDashboard(){if(!document.getElementById('tab-dashboard'))return;const online=getCurrentDutyCount();const pending=ntpcCountPendingReports(appData.policePendingReports)+ntpcCountPendingReports(appData.firePendingReports)+ntpcCountPendingReports(appData.emsPendingReports)+ntpcCountPendingReports(appData.wantedPendingRecords);const noti=currentUser?(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase()&&!n.read).length:0;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};set('dash-online',online);set('dash-pending',pending);set('dash-notifications',noti);ntpcRefreshDutyHourLabels();const work=document.getElementById('dash-my-work');if(work){const mine=(appData.reportNotifications||[]).filter(n=>String(n.recipientAccountNormalized||n.recipientAccount||'').toLowerCase()===String(currentUser?.account||'').toLowerCase()&&!n.read).slice(0,8);work.innerHTML=mine.length?mine.map(n=>`<div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800"><div class="text-sm text-white">${ntpcEsc(n.title||'案件通知')}</div><div class="text-xs text-slate-500 mt-1">${ntpcEsc(n.message||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有待處理通知。</div>';}renderDashRecentDuty();renderDashSystemStatus();renderDashAnnouncements();renderDashHandover();renderDashManagementWork();}
 function renderDashSystemStatus(){
     const h=document.getElementById('dash-system-status');if(!h)return;
     const online=navigator.onLine,firebaseOk=!!db&&!!fm,realtimeOk=Array.isArray(realtimeUnsubscribers)&&realtimeUnsubscribers.length>0;
@@ -7369,7 +7403,7 @@ async function loadHandoverNotes(){if(!db||!fm)return;try{const snap=await fm.ge
 /* FAQ 找不到答案：建立問題單，不直接暴露管理資料。 */
 async function renderFAQIssues(){const h=document.getElementById('admin-faq-issues-list');if(!h)return;const rows=(appData.faqIssues||[]).slice().sort((a,b)=>Number(b.timestamp||0)-Number(a.timestamp||0));h.innerHTML=rows.length?rows.map(x=>`<div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800"><div class="flex flex-wrap justify-between gap-2"><div class="text-sm text-white">${ntpcEsc(x.name||x.account||'未知使用者')} <span class="text-xs text-slate-500">(${ntpcEsc(x.account||'--')})</span></div><span class="text-xs ${x.status==='closed'?'text-emerald-400':'text-amber-400'}">${x.status==='closed'?'已處理':'待處理'}</span></div><div class="text-sm text-slate-300 mt-2 whitespace-pre-wrap">${ntpcEsc(x.text)}</div><div class="text-[11px] text-slate-500 mt-2">${ntpcEsc(x.time||formatDateTime(x.timestamp))}</div><div class="mt-3 flex gap-2">${x.status!=='closed'?`<button onclick="closeFAQIssue('${ntpcEsc(x.docId||x.id)}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs">標記已處理</button>`:''}</div></div>`).join(''):'<div class="text-center py-8 text-slate-500">目前沒有問題回報。</div>';}
 async function closeFAQIssue(id){if(!currentUser||getEffectiveRole(currentUser)!=='admin'||!db||!fm)return;try{await fm.updateDoc(fm.doc(db,'faqIssues',id),{status:'closed',closedAt:Date.now(),closedBy:currentUser.account});const x=(appData.faqIssues||[]).find(a=>(a.docId||a.id)===id);if(x)Object.assign(x,{status:'closed',closedAt:Date.now(),closedBy:currentUser.account});renderFAQIssues();showToast('問題單已標記處理。','success','操作完成');}catch(e){showToast('更新問題單失敗：'+e.message,'error','操作失敗');}}
-function renderDashManagementWork(){const card=document.getElementById('dash-management-work-card'),h=document.getElementById('dash-management-work');if(!card||!h)return;const can=!!currentUser&&canAccessManagementCenter();card.classList.toggle('hidden',!can);if(!can)return;const items=[['警察案件待審',appData.policePendingReports?.length||0,'police'],['消防／EMS待審', (appData.firePendingReports?.length||0)+(appData.emsPendingReports?.length||0),'fire'],['通緝待審',appData.wantedPendingRecords?.length||0,'police'],['帳號協助單',appData.faqIssues?.filter(x=>x.status!=='closed').length||0,'admin'],['異常回報',appData.feedbackReports?.length||0,'admin']];h.innerHTML=items.map(x=>`<div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800"><span class="text-sm text-slate-200">${x[0]}</span><span class="font-bold ${x[1]?'text-amber-400':'text-emerald-400'}">${x[1]}</span></div>`).join('');}
+function renderDashManagementWork(){const card=document.getElementById('dash-management-work-card'),h=document.getElementById('dash-management-work');if(!card||!h)return;const can=!!currentUser&&canAccessManagementCenter();card.classList.toggle('hidden',!can);if(!can)return;const items=[['警察案件待審',ntpcCountPendingReports(appData.policePendingReports),'police'],['消防／EMS待審',ntpcCountPendingReports(appData.firePendingReports)+ntpcCountPendingReports(appData.emsPendingReports),'fire'],['通緝待審',ntpcCountPendingReports(appData.wantedPendingRecords),'police'],['帳號協助單',appData.faqIssues?.filter(x=>x.status!=='closed').length||0,'admin'],['異常回報',appData.feedbackReports?.length||0,'admin']];h.innerHTML=items.map(x=>`<div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800"><span class="text-sm text-slate-200">${x[0]}</span><span class="font-bold ${x[1]?'text-amber-400':'text-emerald-400'}">${x[1]}</span></div>`).join('');}
 function openFAQIssueModal(){if(!currentUser){showToast('請先登入後再提交問題。','warning','需要登入');return;}const nameEl=document.getElementById('faq-issue-account-preview');if(nameEl)nameEl.textContent=`${currentUser.name||'使用者'} (${currentUser.account})`;const input=document.getElementById('faq-issue-text');if(input)input.value='';document.getElementById('modal-faq-issue')?.classList.remove('hidden');setTimeout(()=>document.getElementById('faq-issue-text')?.focus(),80);}
 async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登入後再提交問題。','warning','需要登入');return;}const input=document.getElementById('faq-issue-text'),text=String(input?.value||'').trim();if(!text){showToast('請先描述你遇到的問題。','error','內容未填寫');input?.focus();return;}if(text.length>1000){showToast('問題內容最多 1000 字。','warning','內容過長');return;}const btn=document.getElementById('submit-faq-issue-btn');if(btn?.classList.contains('is-busy-action'))return;btn?.classList.add('is-busy-action');try{const now=Date.now(),id='FAQ-'+now+'-'+Math.random().toString(36).slice(2,7),obj={id,account:currentUser.account,name:currentUser.name||'',text:text.slice(0,1000),timestamp:now,time:formatDateTime(now),status:'open'};await fm.setDoc(fm.doc(db,'faqIssues',id),obj);appData.faqIssues.unshift({docId:id,...obj});closeModal('modal-faq-issue');await logAdminAction('提交常見問題協助單',id,text,{discord:false});renderFAQIssues();renderDashManagementWork();showSubmitSuccessAnimation('問題提交成功','問題已送至管理中心，管理人員可以查看。');}catch(e){showToast('提交失敗：'+e.message,'error','操作失敗');}finally{btn?.classList.remove('is-busy-action');}}
 /* 公告重要標記：兼容既有發布流程。 */
@@ -7377,6 +7411,8 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
 /* Discord Webhook 使用 Firestore 佇列，由 Cloud Functions 負責實際發送；通緝通知仍由原有 Discord BOT 處理。 */
 /* 初始化：公告與交接簿由即時監聽載入，避免啟動後再額外讀取整個交接簿。 */
 setTimeout(()=>{try{renderDashHandover();renderDashAnnouncements();refreshDutyDashboard();}catch(e){console.warn('V1.8.2 初始化失敗',e);}},1200);
+// 只刷新時數文字，無 Firebase 請求；正在執勤者可每分鐘看到最新統計。
+setInterval(()=>{const pane=document.getElementById('tab-dashboard');if(currentUser&&pane&&!pane.classList.contains('hidden'))ntpcRefreshDutyHourLabels();},60000);
 window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEventListener('offline',()=>renderDashSystemStatus());
 
 </script>
