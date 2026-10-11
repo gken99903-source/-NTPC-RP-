@@ -4774,7 +4774,7 @@ async function republishAnnouncement(id) {
 
                 html+=lookupInput('車輛型號','lookup-model','例如：Toyota Crown');
                 html+='<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">'+lookupInput('車輛所有人（非必填）','lookup-owner','輸入證件末五碼後自動帶入RP名稱，可不填')+lookupInput('證件末五碼','lookup-id5','請輸入5碼數字','maxlength="5" inputmode="numeric"')+'</div>';
-                html+='<p class="text-[11px] text-slate-500 -mt-2"><i class="fa-solid fa-wand-magic-sparkles mr-1 text-cyan-400"></i>輸入5碼證件末五碼後，系統會自動從市民身份資料帶入對應RP名稱；若查無市民資料，RP名稱可留白。</p>';
+                html+='<p class="text-[11px] text-slate-500 -mt-2"><i class="fa-solid fa-wand-magic-sparkles mr-1 text-cyan-400"></i>輸入5碼證件末五碼後，系統僅從未掛死亡證明的市民資料自動帶入RP名稱；查無符合資料時可留白。</p>';
                 html+=lookupInput('車牌','lookup-plate','例如：ABC-1234');html+=lookupInput('車色','lookup-color','例如：黑色');html+=lookupTextarea('備注','lookup-note','可填寫車輛備注或其他補充資訊，多行內容可直接換行',4);html+='<label class="flex items-center gap-3 p-3 rounded-xl border border-red-500/20 bg-red-500/5 text-sm text-red-300"><input type="checkbox" id="lookup-decommissioned" class="w-4 h-4">註銷牌照／已註銷</label>';
                 }
             }else{
@@ -4792,7 +4792,7 @@ async function republishAnnouncement(id) {
                 const syncVehicleOwner=()=>{
                     const id5=String(idEl?.value||'').replace(/\D/g,'').slice(0,5); if(idEl)idEl.value=id5;
                     if(!ownerEl)return;
-                    const citizen=(appData.citizenRecords||[]).find(r=>getLastFive(r.id5)===id5);
+                    const citizen=id5.length===5?(appData.citizenRecords||[]).find(r=>!r.deceased&&getLastFive(r.id5)===id5):null;
                     if(citizen?.name){ownerEl.value=citizen.name;ownerEl.dataset.autoFilled='1';ownerEl.classList.add('border-cyan-500/60');}
                     else if(ownerEl.dataset.autoFilled==='1'){ownerEl.value='';ownerEl.dataset.autoFilled='0';ownerEl.classList.remove('border-cyan-500/60');}
                 };
