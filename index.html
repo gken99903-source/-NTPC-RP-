@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; media-src 'self' https://raw.githubusercontent.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://placehold.co; connect-src 'self' https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; upgrade-insecure-requests">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; media-src 'self' https://raw.githubusercontent.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://placehold.co; connect-src 'self' https://*.workers.dev https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; upgrade-insecure-requests">
     <!-- NTPC-RP Discord webhook fix + management LOG: 2026-10-06-v4 -->
     <!-- Security audit: 2026-10-07. Front-end hardening only; Firestore Rules/Firebase Auth/Discord secrets still require backend configuration. -->
     <!-- Account safety fix: never auto-reset DSUENSX or auto-seed demo users when users collection is empty. -->
@@ -1869,39 +1869,24 @@
                 </div>
                 <div id="admin-sub-discord-webhooks" class="hidden space-y-6">
                     <div class="bg-slate-900 border border-indigo-500/20 rounded-2xl p-6 shadow-xl">
-                        <div class="flex items-start justify-between gap-4 flex-wrap">
-                            <div>
-                                <h3 class="text-lg font-bold text-white"><i class="fa-brands fa-discord text-indigo-400 mr-2"></i>Discord Webhook 設定</h3>
-                                <p class="text-xs text-slate-500 mt-1">設定不同資料類型要轉達到的 Discord Webhook 頻道。</p>
-                            </div>
-                            <span class="text-xs px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20"><i class="fa-solid fa-shield-halved mr-1"></i>Webhook 不會寫入 HTML</span>
+                        <h3 class="text-lg font-bold text-white"><i class="fa-brands fa-discord text-indigo-400 mr-2"></i>Discord 即時 Webhook 通知</h3>
+                        <p class="text-sm text-slate-400 mt-2">使用 Cloudflare Worker 直接轉送網站操作 LOG，不需 Discord Bot 定時讀取 Firestore。Discord Webhook 網址與 Firebase 服務帳號只保存在 Cloudflare 私密設定。</p>
+                        <div class="mt-5">
+                            <label for="discord-worker-url-input" class="block text-sm font-semibold text-indigo-300 mb-2">Cloudflare Worker 網址（可公開，並非 Webhook 金鑰）</label>
+                            <input id="discord-worker-url-input" type="url" autocomplete="off" spellcheck="false" placeholder="https://ntpc-rp-log.你的子網域.workers.dev" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-blue-500">
+                            <p class="text-xs text-slate-500 mt-2">Worker 建立後，把它的 workers.dev 網址貼上並儲存一次；所有網站使用者共用此設定，不需每台電腦單獨設定。</p>
                         </div>
-                        <div class="mt-5 grid grid-cols-1 gap-4">
-                            <div class="rounded-2xl border border-blue-500/15 bg-blue-500/5 p-4">
-                                <label class="block text-xs font-semibold text-blue-300 mb-2"><i class="fa-solid fa-building-shield mr-1"></i>警察案件報告 Webhook</label>
-                                <input id="discord-webhook-police-input" type="password" autocomplete="new-password" placeholder="https://discord.com/api/webhooks/..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-blue-500">
-                                <p id="discord-webhook-police-status" class="text-[11px] text-slate-500 mt-2">尚未確認設定狀態</p>
-                            </div>
-                            <div class="rounded-2xl border border-red-500/15 bg-red-500/5 p-4">
-                                <label class="block text-xs font-semibold text-red-300 mb-2"><i class="fa-solid fa-fire-extinguisher mr-1"></i>消防案件報告 Webhook</label>
-                                <input id="discord-webhook-fire-input" type="password" autocomplete="new-password" placeholder="https://discord.com/api/webhooks/..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-red-500">
-                                <p id="discord-webhook-fire-status" class="text-[11px] text-slate-500 mt-2">尚未確認設定狀態</p>
-                            </div>
-                            <div class="rounded-2xl border border-purple-500/15 bg-purple-500/5 p-4">
-                                <label class="block text-xs font-semibold text-purple-300 mb-2"><i class="fa-solid fa-shield-halved mr-1"></i>管理中心 LOG Webhook</label>
-                                <input id="discord-webhook-admin-input" type="password" autocomplete="new-password" placeholder="https://discord.com/api/webhooks/..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-purple-500">
-                                <p id="discord-webhook-admin-status" class="text-[11px] text-slate-500 mt-2">尚未確認設定狀態</p>
-                            </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5 text-xs">
+                            <div class="rounded-xl bg-slate-950 border border-slate-800 p-3"><div class="font-semibold text-blue-300">警務案件通知</div><div id="discord-webhook-police-status" class="mt-2 text-slate-400">等待檢查 Worker</div></div>
+                            <div class="rounded-xl bg-slate-950 border border-slate-800 p-3"><div class="font-semibold text-red-300">消防／EMS 案件</div><div id="discord-webhook-fire-status" class="mt-2 text-slate-400">等待檢查 Worker</div></div>
+                            <div class="rounded-xl bg-slate-950 border border-slate-800 p-3"><div class="font-semibold text-purple-300">管理中心 LOG</div><div id="discord-webhook-admin-status" class="mt-2 text-slate-400">等待檢查 Worker</div></div>
                         </div>
-                        <div class="mt-5 rounded-xl border border-amber-500/10 bg-amber-500/5 p-4 text-xs text-slate-400 leading-relaxed">
-                            <i class="fa-solid fa-circle-info text-amber-400 mr-1"></i>
-                            網站只把 Webhook 設定寫入 Firebase；實際 Discord 發送由後端通知服務處理，避免把 Webhook URL 放進 GitHub Pages 前端。請勿把 Webhook URL 貼到公開程式碼或截圖中。
+                        <p class="text-xs text-amber-300/90 mt-4">本方案只在新增操作紀錄時呼叫 Worker；Worker 仍需讀取該筆 Firestore 紀錄並寫回結果，但不會固定輪詢。原本的通緝私訊仍由 Discord Bot 處理。</p>
+                        <div class="flex flex-wrap gap-2 mt-5">
+                            <button type="button" onclick="saveDiscordWebhookSettings()" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-floppy-disk mr-2"></i>儲存 Worker 網址</button>
+                            <button type="button" onclick="testDiscordWebhookQueue()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-paper-plane mr-2"></i>實際測試管理中心 LOG</button>
                         </div>
-                        <div class="mt-5 flex flex-wrap gap-2">
-                            <button type="button" onclick="saveDiscordWebhookSettings()" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>儲存 Discord 設定</button>
-                            <button type="button" onclick="testDiscordWebhookQueue()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl px-5 py-3 text-sm font-semibold"><i class="fa-solid fa-paper-plane mr-2"></i>測試 Discord 通知</button>
-                        </div>
-                        <div id="discord-webhook-config-status" class="mt-4 text-xs text-slate-500">尚未讀取設定狀態。</div>
+                        <div id="discord-webhook-config-status" class="mt-4 text-xs text-slate-400" role="status">尚未檢查 Worker 設定。</div>
                     </div>
                 </div>
                 <div id="admin-sub-overview" class="hidden space-y-6">
@@ -5327,102 +5312,150 @@ async function republishAnnouncement(id) {
         function getViolationSelection(prefix='report'){return updateViolationJailTotal(prefix);}
 
 
-        // Discord 通知改採「Firestore 通知佇列 → 後端服務 → Discord Webhook」。
-        // GitHub Pages 不直接讀取或發送 Webhook URL，避免把 Webhook 機密暴露給一般使用者。
-        async function enqueueDiscordNotification(type, payload={}) {
-            if(!currentUser && type !== 'case') return {ok:false, disabled:true};
+        // Discord 即時轉送：無 cron/輪詢；送到 Worker 的只有既存 Firestore 文件 ID。
+        // Worker 必須在伺服器端檢驗 Firestore 來源；絕不可將 Webhook URL 或憑證寫進 HTML。
+        window.__ntpcDiscordRelayConfig = window.__ntpcDiscordRelayConfig || {url:'',loaded:false,promise:null};
+        function normalizeDiscordRelayURL(input){
+            const value=String(input||'').trim();
+            if(!value)return '';
             try{
-                const ref=fm.doc(fm.collection(db,'discordNotificationQueue'));
-                const queueObj={
+                const url=new URL(value);
+                if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash)return '';
+                if(!url.hostname.endsWith('.workers.dev'))return '';
+                return url.origin;
+            }catch(_){return '';}
+        }
+        async function getDiscordRelayWorkerUrl(force=false){
+            const state=window.__ntpcDiscordRelayConfig;
+            if(force){state.loaded=false;state.promise=null;}
+            if(state.loaded)return state.url;
+            if(state.promise)return state.promise;
+            state.promise=(async()=>{
+                const snap=await fm.getDoc(fm.doc(db,'systemSettings','discordWebhooks'));
+                state.url=normalizeDiscordRelayURL(snap.exists()?snap.data()?.workerUrl:'');
+                state.loaded=true;
+                return state.url;
+            })();
+            try{return await state.promise;}finally{state.promise=null;}
+        }
+        async function getRelayHealth(url){
+            const ctrl=new AbortController();
+            const timer=setTimeout(()=>ctrl.abort(),7500);
+            try{
+                const response=await fetch(`${url}/health`,{method:'GET',cache:'no-store',signal:ctrl.signal});
+                if(!response.ok)throw new Error(`Worker HTTP ${response.status}`);
+                const data=await response.json();
+                if(data.ok!==true)throw new Error('Worker 未啟用');
+                return data;
+            }finally{clearTimeout(timer);}
+        }
+        async function enqueueDiscordNotification(type,payload={}){
+            if(!currentUser && type!=='case')return {ok:false,disabled:true};
+            let workerUrl='';
+            try{workerUrl=await getDiscordRelayWorkerUrl();}
+            catch(e){return {ok:false,error:e};}
+            if(!workerUrl)return {ok:false,error:new Error('尚未設定 Cloudflare Worker 網址')};
+            let ref;
+            try{
+                ref=fm.doc(fm.collection(db,'discordNotificationQueue'));
+                await fm.setDoc(ref,{
                     type:String(type||'').trim(),
-                    payload:payload && typeof payload==='object' ? payload : {},
+                    payload:payload&&typeof payload==='object'?payload:{},
                     createdAt:Date.now(),
                     createdByAccount:currentUser?.account||'system',
                     createdByName:currentUser?.name||'系統',
-                    status:'pending',
-                    attempts:0
-                };
-                await fm.setDoc(ref,queueObj);
-                return {ok:true,id:ref.id};
+                    status:'pending',attempts:0
+                });
+            }catch(e){console.warn('建立 Discord 通知紀錄失敗：',e);return {ok:false,error:e};}
+            // Worker 只收取文件 ID，不接受由瀏覽器直送的 LOG 文字或 Webhook 網址。
+            try{
+                const controller=new AbortController();
+                const timer=setTimeout(()=>controller.abort(),17000);
+                let response,data;
+                try{
+                    response=await fetch(`${workerUrl}/dispatch`,{
+                        method:'POST',headers:{'Content-Type':'application/json'},
+                        body:JSON.stringify({id:ref.id}),cache:'no-store',signal:controller.signal
+                    });
+                    data=await response.json();
+                }finally{clearTimeout(timer);}
+                return {ok:true,id:ref.id,delivered:response.ok&&data?.status==='sent',status:data?.status||'error',message:data?.message||`Worker HTTP ${response.status}`};
             }catch(e){
-                console.warn('Discord 通知佇列建立失敗：',e);
-                return {ok:false,error:e};
+                console.warn('Discord Webhook 未確認送達：',e?.message||e);
+                return {ok:true,id:ref.id,delivered:false,status:'uncertain',message:'無法確認 Worker 回應，請先查看 Discord 頻道，再人工核對；不要直接重送。'};
             }
         }
-
-        function sendDiscordCaseNotification(department, report) {
+        function sendDiscordCaseNotification(department,report){
             const dept=department==='ems'?'ems':department==='fire'?'fire':'police';
-            return enqueueDiscordNotification('case',{department:dept,report:JSON.parse(JSON.stringify(report||{}))});
+            return enqueueDiscordNotification('case',{department:dept,report:JSON.parse(JSON.stringify(report||{}))}).then(result=>{if(!result?.delivered)console.warn('案件已送出，但 Discord 通知未確認送達：',result?.message||result?.error?.message||result?.status);return result;});
         }
-
-        // 相容舊版通緝流程：目前 Discord Webhook 僅負責「警察案件／消防案件／管理中心 LOG」，
-        // 通緝申請不應因舊版 Discord 函式不存在而中斷 Firestore 寫入。
-        function sendDiscordWantedNotification() {
-            return Promise.resolve({ok:false,disabled:true,reason:'wanted webhook not configured'});
+        function sendDiscordWantedNotification(){
+            return Promise.resolve({ok:false,disabled:true,reason:'通緝私訊由 Discord Bot 處理'});
         }
-
-        function sendManagementDiscordLog(action,target,detail='',options={}) {
-            const operator=currentUser ? {account:currentUser.account||'',name:currentUser.name||''} : {account:'system',name:'系統自動處理'};
+        function sendManagementDiscordLog(action,target,detail='',options={}){
+            const operator=currentUser?{account:currentUser.account||'',name:currentUser.name||''}:{account:'system',name:'系統自動處理'};
             return enqueueDiscordNotification('adminLog',{action:String(action||''),target:String(target||''),detail:String(detail||''),operator,mentionRole:!!options?.mentionRole});
         }
-
-        window.__ntpcDiscordStatusCache = window.__ntpcDiscordStatusCache || {data:null, fetchedAt:0, promise:null};
+        window.__ntpcDiscordStatusCache=window.__ntpcDiscordStatusCache||{data:null,fetchedAt:0,promise:null};
         async function getDiscordWebhookStatus(force=false){
             const cache=window.__ntpcDiscordStatusCache;
-            if(!force && cache.data && Date.now()-cache.fetchedAt<60000) return cache.data;
-            if(!force && cache.promise) return cache.promise;
-            cache.promise=(async()=>{const snap=await fm.getDoc(fm.doc(db,'systemSettings','discordWebhookStatus'));const data=snap.exists?(snap.data()||{}):{};cache.data=data;cache.fetchedAt=Date.now();return data;})();
+            if(!force&&cache.data&&Date.now()-cache.fetchedAt<60000)return cache.data;
+            if(!force&&cache.promise)return cache.promise;
+            cache.promise=(async()=>{
+                const snap=await fm.getDoc(fm.doc(db,'systemSettings','discordWebhookStatus'));
+                const d=snap.exists()?(snap.data()||{}):{};
+                cache.data=d;cache.fetchedAt=Date.now();return d;
+            })();
             try{return await cache.promise;}finally{cache.promise=null;}
         }
         function discordStatusLabel(d,key){
-            if(d[key]!==true) return '<span class="text-slate-500">⚪ 尚未設定 Webhook</span>';
+            if(d[key]!==true)return '<span class="text-slate-500">⚪ Worker 尚未設定此類別 Webhook</span>';
             const result=String(d[`${key}LastResult`]||'');
-            if(result==='success') return `<span class="text-emerald-400">🟢 已設定｜最近發送成功</span><span class="block text-slate-500 mt-1">${d[`${key}LastSuccessAt`]?escapeHtml(formatDateTime(d[`${key}LastSuccessAt`])):''}</span>`;
-            if(result==='failed') return `<span class="text-rose-400">🔴 已設定｜最近發送失敗</span><span class="block text-rose-300/80 mt-1 break-words">${escapeHtml(String(d[`${key}LastError`]||'未提供錯誤原因').slice(0,220))}</span>`;
-            return '<span class="text-amber-300">🟡 已設定｜尚無後端成功回報</span>';
+            if(result==='success')return `<span class="text-emerald-400">🟢 最近發送成功</span><span class="block text-slate-500 mt-1">${d[`${key}LastSuccessAt`]?escapeHtml(formatDateTime(d[`${key}LastSuccessAt`])):''}</span>`;
+            if(result==='failed')return `<span class="text-rose-400">🔴 最近發送失敗</span><span class="block text-rose-300/80 mt-1 break-words">${escapeHtml(String(d[`${key}LastError`]||'未提供錯誤原因').slice(0,160))}</span>`;
+            return '<span class="text-amber-300">🟡 已設定｜尚無成功發送紀錄</span>';
         }
         async function renderDiscordWebhookSettings(){
-            if(!currentUser||getEffectiveRole(currentUser)!=='admin') return;
-            const status=document.getElementById('discord-webhook-config-status');
+            if(!currentUser||getEffectiveRole(currentUser)!=='admin')return;
+            const el=document.getElementById('discord-webhook-config-status');
             try{
-                const d=await getDiscordWebhookStatus();
-                const map=[['police','discord-webhook-police-status'],['fire','discord-webhook-fire-status'],['adminLog','discord-webhook-admin-status']];
-                map.forEach(([key,id])=>{const el=document.getElementById(id);if(el)el.innerHTML=discordStatusLabel(d,key);});
-                if(status) status.textContent=`狀態資料更新：${d.updatedAt?formatDateTime(d.updatedAt):'尚無後端回報'}${d.updatedBy?` ／ 設定帳號：${escapeHtml(d.updatedBy)}`:''}。已設定不代表已成功送達，請以「最近發送結果」為準。`;
-            }catch(e){if(status)status.textContent='設定狀態讀取失敗：'+e.message;}
+                const url=await getDiscordRelayWorkerUrl();
+                const input=document.getElementById('discord-worker-url-input');
+                if(input)input.value=url||'';
+                if(!url){if(el)el.textContent='尚未設定 Worker。請先將 worker.js 部署到 Cloudflare，並貼上 workers.dev 網址。';return;}
+                const [health,status]=await Promise.all([getRelayHealth(url),getDiscordWebhookStatus()]);
+                const mappings=[['police','discord-webhook-police-status'],['fire','discord-webhook-fire-status'],['adminLog','discord-webhook-admin-status']];
+                mappings.forEach(([key,id])=>{
+                    const node=document.getElementById(id);
+                    if(node)node.innerHTML=discordStatusLabel({...status,[key]:!!health.webhooks?.[key]},key);
+                });
+                if(el)el.textContent=`Worker 已連線：${url}。${health.firebaseConfigured?'Firebase 金鑰已設定':'⚠️ Firebase 金鑰尚未設定'}。`;
+            }catch(e){if(el)el.textContent='無法確認 Worker 狀態：'+e.message;}
         }
-
         async function saveDiscordWebhookSettings(){
-            if(!currentUser||getEffectiveRole(currentUser)!=='admin'){showToast('只有管理中心可以設定 Discord Webhook。','warning','權限不足');return;}
-            const police=String(document.getElementById('discord-webhook-police-input')?.value||'').trim();
-            const fire=String(document.getElementById('discord-webhook-fire-input')?.value||'').trim();
-            const adminLog=String(document.getElementById('discord-webhook-admin-input')?.value||'').trim();
-            const urlRe=/^https:\/\/(?:discord\.com|discordapp\.com)\/api\/webhooks\/\d+\/[A-Za-z0-9._-]+(?:\?.*)?$/;
-            for(const [label,value] of [['警察案件報告',police],['消防案件報告',fire],['管理中心 LOG',adminLog]]){
-                if(value && !urlRe.test(value)){showToast(`${label} Webhook URL 格式不正確。`,'warning','設定錯誤');return;}
-            }
+            if(!currentUser||getEffectiveRole(currentUser)!=='admin'){showToast('只有管理中心可以設定通知 Worker。','warning','權限不足');return;}
+            const url=normalizeDiscordRelayURL(document.getElementById('discord-worker-url-input')?.value||'');
+            if(!url){showToast('請輸入有效的 HTTPS workers.dev 網址。','warning','設定錯誤');return;}
             try{
-                await fm.setDoc(fm.doc(db,'systemSettings','discordWebhooks'),{police,fire,adminLog,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:false});
-                await fm.setDoc(fm.doc(db,'systemSettings','discordWebhookStatus'),{police:!!police,fire:!!fire,adminLog:!!adminLog,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});
+                // 覆寫原本可能存有敏感 Discord Webhook URL 的文件，只保留公開 Worker 位址。
+                await fm.setDoc(fm.doc(db,'systemSettings','discordWebhooks'),{workerUrl:url,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:false});
+                window.__ntpcDiscordRelayConfig={url,loaded:true,promise:null};
                 window.__ntpcDiscordStatusCache={data:null,fetchedAt:0,promise:null};
-                document.getElementById('discord-webhook-police-input').value='';
-                document.getElementById('discord-webhook-fire-input').value='';
-                document.getElementById('discord-webhook-admin-input').value='';
                 await renderDiscordWebhookSettings();
-                showToast('Discord Webhook 設定已儲存。','success','儲存成功');
-            }catch(e){showToast('Discord Webhook 設定儲存失敗：'+e.message,'error','操作失敗');}
+                showToast('Worker 網址已儲存；舊版 Firestore Webhook URL 欄位已覆寫。','success','設定完成');
+            }catch(e){showToast('設定儲存失敗：'+e.message,'error','操作失敗');}
         }
-
         async function testDiscordWebhookQueue(){
             if(!currentUser||getEffectiveRole(currentUser)!=='admin'){showToast('只有管理中心可以測試 Discord 通知。','warning','權限不足');return;}
-            try{
-                const result=await enqueueDiscordNotification('test',{operator:{account:currentUser.account||'',name:currentUser.name||''},createdAt:Date.now()});
-                if(!result.ok) throw result.error||new Error('無法建立通知佇列');
-                showToast('測試通知已加入 Discord 送出佇列，請稍候確認頻道。','success','測試已送出');
-                setTimeout(()=>{window.__ntpcDiscordStatusCache={data:null,fetchedAt:0,promise:null};renderDiscordWebhookSettings();renderDashSystemStatus();},5000);
-            }catch(e){showToast('測試通知建立失敗：'+e.message,'error','操作失敗');}
+            const el=document.getElementById('discord-webhook-config-status');
+            if(el)el.textContent='測試中：正在建立 Firestore 通知紀錄並呼叫 Cloudflare Worker……';
+            const result=await enqueueDiscordNotification('test',{operator:{account:currentUser.account||'',name:currentUser.name||''},createdAt:Date.now()});
+            let message='';
+            if(result.delivered){message='✅ Discord 已收到測試訊息（已完成傳送）。';showToast(message,'success','測試成功');}
+            else{message=`❌ Webhook 未確認送達：${result.message||result.error?.message||result.status||'未知錯誤'}。請確認 Cloudflare Secrets、Firestore 配額與 Discord 頻道。`;showToast(message,'warning','測試未通過');}
+            if(el)el.textContent=message;
+            window.__ntpcDiscordStatusCache={data:null,fetchedAt:0,promise:null};
         }
-
 
         async function submitReport() {
             if (window.__ntpcReportSubmitting) { showToast('案件正在送出，請勿重複點擊。','warning','請稍候'); return; }
@@ -7403,7 +7436,7 @@ async function republishAnnouncement(id) {
             // 管理中心 LOG 成功寫入 Firestore 後，同步建立 Discord 通知佇列。
             try {
                 const discordResult = await sendManagementDiscordLog(actionText, target, detail, options);
-                if (!discordResult?.ok) console.warn('管理中心 LOG Discord 佇列建立失敗：', discordResult?.error || discordResult);
+                if (!discordResult?.delivered) console.warn('管理中心 LOG 未確認送達 Discord：', discordResult?.message || discordResult?.error || discordResult);
             } catch (discordError) {
                 console.warn('管理中心 LOG Discord 通知建立失敗：', discordError);
             }
