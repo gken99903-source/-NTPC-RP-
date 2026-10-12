@@ -613,7 +613,7 @@
                 <button type="button" id="police-duty-details-close" class="rounded-lg px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200" aria-label="關閉值勤名單"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="police-duty-details-list" class="space-y-2"></div>
-            <div class="text-[11px] text-slate-500 mt-4">值勤時長依最後一次「上班」打卡時間計算；補打卡資料也會依其時間顯示。</div>
+            <div class="text-[11px] text-slate-500 mt-4">值勤時長依最後一次「上班」打卡時間計算；管理中心可協助新增「下班」卡，原上班紀錄會保留，協助人員則記錄於下班卡備註。</div>
         </div>
     </div>
     <div id="app-confirm-overlay" aria-hidden="true">
@@ -641,8 +641,8 @@
     <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center space-x-3 cursor-pointer" id="logo-home-btn">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-red-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                    <i class="fa-solid fa-shield-halved text-white text-lg"></i>
+                <div class="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 shadow-lg shadow-blue-500/20">
+                    <img src="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/A3258911-D5A9-4109-9055-AA54BD1933E5.png" alt="新北市 RP 品牌圖標" class="w-full h-full object-cover" loading="eager" decoding="async">
                 </div>
                 <div>
                     <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-blue-400 to-red-400 bg-clip-text text-transparent">新北市 RP 3.0</h1>
@@ -3920,8 +3920,10 @@ async function republishAnnouncement(id) {
                 if(btn)deleteClockRecord('police',btn.dataset.deletePoliceClock);
             });
             document.getElementById('police-duty-details-list')?.addEventListener('click', event => {
-                const button = event.target.closest('[data-delete-police-duty-clock]');
-                if (button) deletePoliceActiveClock(button.dataset.deletePoliceDutyClock);
+                const assistButton = event.target.closest('[data-assist-police-duty-clock]');
+                if (assistButton) { assistPoliceDutyClockOut(assistButton.dataset.assistPoliceDutyClock); return; }
+                const deleteButton = event.target.closest('[data-delete-police-duty-clock]');
+                if (deleteButton) deletePoliceActiveClock(deleteButton.dataset.deletePoliceDutyClock);
             });
             document.getElementById('police-duty-details-modal')?.addEventListener('click',event=>{if(event.target?.id==='police-duty-details-modal')closePoliceDutyDetails();});
             document.addEventListener('keydown',event=>{if(event.key==='Escape')closePoliceDutyDetails();});
@@ -6069,6 +6071,8 @@ async function republishAnnouncement(id) {
         function getReportVideoLinks(r) { return Array.isArray(r?.videoLinks) ? r.videoLinks.filter(Boolean) : (r?.videoLink ? [r.videoLink] : []); }
         function canRemarkReport(dept) { if(!currentUser)return false; if(currentUser.role==='admin')return true; return userHasUnit(dept)&&(currentUser.role==='high'||currentUser.role==='senior'); }
         function canManageClockRecords(){ return !!currentUser&&currentUser.role==='admin'; }
+        // 協助下班屬管理中心的勤務管理操作；不開放給僅有「警專教官」頁面權限的帳號。
+        function canAssistPoliceClockOut(){return !!currentUser && getEffectiveRole(currentUser)==='admin';}
         // 只擴充警察打卡的刪除權限；消防及其他紀錄編輯仍按原本管理處權限。
         function canDeletePoliceClockRecord(){ const role=getEffectiveRole(currentUser); return !!currentUser && (role==='admin' || (role==='high' && userHasUnit('police'))); }
         function canDeleteFireClockRecord(){ const role=getEffectiveRole(currentUser); return !!currentUser && (role==='admin' || (role==='high' && userHasUnit('fire'))); }
@@ -6443,7 +6447,8 @@ async function republishAnnouncement(id) {
                 const elapsed=start?formatDutyElapsed(start):'無法計算';
                 const recordId=String(row.docId||row.id||'');
                 const canRemove=canDeletePoliceClockRecord() && recordId;
-                return `<div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 flex items-start justify-between gap-3"><div class="min-w-0"><div class="font-semibold text-white">${name}</div><div class="text-xs text-slate-400 mt-1">員警編號／帳號：${number}</div><div class="text-xs text-slate-500 mt-1">上班打卡：${escapeHtml(startText)}</div></div><div class="shrink-0 text-right"><div class="text-[10px] text-emerald-300">已執勤</div><div class="font-bold text-emerald-400">${elapsed}</div>${canRemove?`<button type="button" data-delete-police-duty-clock="${escapeHtml(recordId)}" class="mt-2 px-2.5 py-1.5 rounded-lg bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 text-xs"><i class="fa-solid fa-trash-can mr-1"></i>刪除此上班卡</button>`:''}</div></div>`;
+                const canAssist=canAssistPoliceClockOut() && recordId;
+                return `<div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 flex items-start justify-between gap-3"><div class="min-w-0"><div class="font-semibold text-white">${name}</div><div class="text-xs text-slate-400 mt-1">員警編號／帳號：${number}</div><div class="text-xs text-slate-500 mt-1">上班打卡：${escapeHtml(startText)}</div></div><div class="shrink-0 text-right"><div class="text-[10px] text-emerald-300">已執勤</div><div class="font-bold text-emerald-400">${elapsed}</div><div class="mt-2 flex flex-col items-end gap-1.5">${canAssist?`<button type="button" data-assist-police-duty-clock="${escapeHtml(recordId)}" class="px-2.5 py-1.5 rounded-lg bg-blue-500/15 text-blue-200 hover:bg-blue-500/25 text-xs"><i class="fa-solid fa-arrow-right-from-bracket mr-1"></i>協助打卡下班</button>`:''}${canRemove?`<button type="button" data-delete-police-duty-clock="${escapeHtml(recordId)}" class="px-2.5 py-1.5 rounded-lg bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 text-xs"><i class="fa-solid fa-trash-can mr-1"></i>刪除此上班卡</button>`:''}</div></div></div>`;
             }).join('');
         }
         function openPoliceDutyDetails() {
@@ -6454,6 +6459,61 @@ async function republishAnnouncement(id) {
         function closePoliceDutyDetails() {
             const modal=document.getElementById('police-duty-details-modal');
             if(modal){modal.classList.add('hidden');modal.classList.remove('flex');}
+        }
+
+        const policeAssistedClockOutBusy=new Set();
+        async function assistPoliceDutyClockOut(clockId){
+            if(!canAssistPoliceClockOut()){showToast('只有管理中心管理員可以協助員警下班。','warning','權限不足');return;}
+            const sourceId=String(clockId||'').trim();
+            if(!sourceId||sourceId.includes('/')||policeAssistedClockOutBusy.has(sourceId))return;
+            const findActive=()=>[...buildLatestDutyMap(appData.policeClocks||[]).values()]
+                .find(row=>String(row.docId||row.id||'')===sourceId&&row.status==='上班');
+            const startCard=findActive();
+            if(!startCard){showToast('這位員警目前已不是執勤狀態，請以最新資料為準。','warning','值勤狀態已變更');renderPoliceDutyDetails();return;}
+            const targetAccount=String(startCard.account||'').trim();
+            if(!targetAccount){showToast('這張上班卡缺少登入帳號，請先由管理中心補齊資料。','warning','無法確認人員');return;}
+            const clockInTime=getClockTimestamp(startCard);
+            if(!Number.isFinite(clockInTime)||clockInTime<=0||clockInTime>=Date.now()){
+                showToast('上班打卡時間不正確，請先編輯原始紀錄。','warning','打卡時間錯誤');return;
+            }
+            if(!(await showConfirm(`確定替 ${startCard.name||targetAccount}（${startCard.staffNumber||targetAccount}）打卡下班嗎？\n系統將保留上班卡、另建下班卡，並在備註標示協助人員。`,'協助員警下班','確定協助下班')))return;
+            if(!canAssistPoliceClockOut())return;
+            policeAssistedClockOutBusy.add(sourceId);
+            try{
+                if(!findActive())throw new Error('這位員警已經下班或打卡狀態有變動，未新增紀錄。');
+                // 僅在管理員按下確認時查詢該員警的紀錄，不增加平時 Firestore 輪詢。
+                const remoteSnapshot=await fm.getDocs(fm.query(fm.collection(db,'policeClocks'),fm.where('account','==',targetAccount)));
+                const remoteRows=remoteSnapshot.docs.map(d=>({docId:d.id,...d.data()}));
+                const latestRemote=buildLatestDutyMap(remoteRows).get(targetAccount.toLowerCase());
+                if(!latestRemote||latestRemote.status!=='上班'||String(latestRemote.docId||latestRemote.id)!==sourceId){
+                    throw new Error('雲端打卡狀態已變更，請重新開啟執勤名單確認。');
+                }
+                const now=Date.now();
+                if(now<=getClockTimestamp(latestRemote))throw new Error('上班時間晚於下班時間，請先修正上班卡。');
+                const actorAccount=String(currentUser.account||'').trim();
+                const actorName=String(currentUser.name||actorAccount||'管理人員').trim();
+                const name=String(latestRemote.name||startCard.name||'').trim();
+                const id='CLK-ASSIST-'+sourceId;
+                const remark=`管理中心協助下班：${actorName}（帳號：${actorAccount}）`;
+                const newClock={id,account:targetAccount,staffNumber:String(latestRemote.staffNumber||startCard.staffNumber||''),name,
+                    status:'下班',vehicle:String(latestRemote.vehicle||'無'),time:formatDateTime(now),timestamp:now,remark,
+                    assistedByAccount:actorAccount,assistedByName:actorName,assistedAt:now,assistedForClockId:sourceId};
+                const startRef=fm.doc(db,'policeClocks',sourceId),outRef=fm.doc(db,'policeClocks',id);
+                // 固定下班卡 ID + 交易檢查，防止不同管理員重複替同一張上班卡建立下班紀錄。
+                await fm.runTransaction(db,async transaction=>{
+                    const startSnap=await transaction.get(startRef);
+                    const outSnap=await transaction.get(outRef);
+                    if(!startSnap.exists()||startSnap.data()?.status!=='上班')throw new Error('上班卡已被移除或變更，請重新整理。');
+                    if(outSnap.exists())throw new Error('這張上班卡已經有人協助下班，不會重複建立。');
+                    transaction.set(outRef,newClock);
+                });
+                // 與 onSnapshot 一樣以文件 ID 去重，立即更新視窗；雲端監聽稍後會以實際資料覆蓋。
+                if(!(appData.policeClocks||[]).some(row=>String(row.docId||row.id)===id))appData.policeClocks.push({docId:id,...newClock});
+                recalculateDutyStatusCache();renderPoliceClocks();renderPoliceDutyDetails();renderAdminOverview();refreshDutyDashboard();
+                try{await logAdminAction('管理中心協助員警打卡下班',id,`協助者：${actorName}（${actorAccount}）；被協助員警：${name}（${targetAccount}）；原上班卡：${sourceId}；下班時間：${newClock.time}。`);}catch(auditErr){console.warn('已協助下班，但稽核紀錄寫入失敗',auditErr);}
+                showToast(`已協助 ${name||targetAccount} 下班；下班卡備註記錄：${actorName}。`,'success','協助下班成功');
+            }catch(error){showToast('協助下班失敗：'+error.message,'error','操作失敗');}
+            finally{policeAssistedClockOutBusy.delete(sourceId);}
         }
 
         async function deletePoliceActiveClock(clockId){
