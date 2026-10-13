@@ -883,7 +883,7 @@
                 </div>
 
                 <div id="police-sub-review" class="hidden space-y-5">
-                    <div class="flex flex-wrap items-center gap-2 rounded-xl border border-blue-500/20 bg-slate-900/50 p-3"><button type="button" id="load-police-review-reports-btn" onclick="loadCaseReportsOnDemand('police-review')" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:brightness-110"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理警務待審案件</button><span id="manual-load-police-review-status" class="text-xs text-slate-400">尚未載入；登入不自動讀取資料庫。</span></div>
+                    <div class="flex flex-wrap items-center gap-2 rounded-xl border border-blue-500/20 bg-slate-900/50 p-3"><button type="button" id="load-police-review-reports-btn" onclick="loadCaseReportsOnDemand('police-review')" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:brightness-110"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理警務待審案件</button><span id="manual-load-police-review-status" class="text-xs text-slate-400">高層待審案件即時偵測中；退件歷史可手動重新整理。</span></div>
                     <div class="bg-slate-900 border border-blue-500/20 rounded-2xl p-6 shadow-xl">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-stamp text-blue-400 mr-2"></i>高層審核系統</h3><p class="text-xs text-slate-500 mt-1">僅警察高層、高階成員與管理中心可審核；案件在核准前不會進入共享案件報告庫。</p></div>
@@ -1090,7 +1090,7 @@
 
 
                 <div id="fire-sub-review" class="hidden space-y-5">
-                    <div class="flex flex-wrap items-center gap-2 rounded-xl border border-red-500/20 bg-slate-900/50 p-3"><button type="button" id="load-fire-review-reports-btn" onclick="loadCaseReportsOnDemand('fire-review')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:brightness-110"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理消防／EMS 待審案件</button><span id="manual-load-fire-review-status" class="text-xs text-slate-400">尚未載入；登入不自動讀取資料庫。</span></div>
+                    <div class="flex flex-wrap items-center gap-2 rounded-xl border border-red-500/20 bg-slate-900/50 p-3"><button type="button" id="load-fire-review-reports-btn" onclick="loadCaseReportsOnDemand('fire-review')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:brightness-110"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理消防／EMS 待審案件</button><span id="manual-load-fire-review-status" class="text-xs text-slate-400">高層消防／EMS 待審案件即時偵測中。</span></div>
                     <div class="bg-slate-900 border border-red-500/20 rounded-2xl p-6 shadow-xl">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-stamp text-red-400 mr-2"></i>消防案件高層審核系統</h3><p class="text-xs text-slate-500 mt-1">僅消防高層、高階成員與管理中心可審核；案件核准前不會進入共享消防案件報告庫。</p></div>
@@ -1207,7 +1207,8 @@
                             <li>登入安全檢查改為依目前裝置查詢相關紀錄，避免登入時下載整個安全紀錄集合。</li>
                             <li>調整啟動與登入後的資料載入順序，避免不必要的重複載入。</li>
                             <li>徹底修復網站 Discord Webhook LOG 發送失敗問題：管理中心／警務／消防／EMS 通知由 Cloudflare Worker 驗證佇列、即時轉送與回寫送達狀態，不需 Bot 定時輪詢 LOG。</li>
-                            <li>登入裝置紀錄與警察／消防／EMS 正式、待審案件改為按鈕手動讀取及重新整理，不再登入就下載整個集合。</li>
+                            <li>登入裝置紀錄與警察／消防／EMS 正式案件維持按鈕手動載入；一般成員案件查詢也按需讀取。</li>
+                            <li>新增單位高層待審案件即時偵測：警務高層僅同步警務待審、消防高層僅同步消防／EMS 待審；同步更新個人通知及審核數量，不掃描正式案件。</li>
                             <li>勤務交接簿依警察／消防分開顯示，離開勤務中心不持續監聽；管理中心共同備忘錄仍為獨立資料。</li>
                             <li>管理中心在線名單只在在線分頁及網頁可見時定期更新，避免背景重複下載使用者名單。</li>
                         </ul>
@@ -3448,14 +3449,16 @@ async function republishAnnouncement(id) {
             }
         }
 
-        // V1.9.3：案件與登入紀錄皆由按鈕手動讀取，不隨登入或重啟建立監聽。
+        // V1.9.3：正式案件與登入紀錄只依手動按鈕讀取；單位高層的待審案件另設限定範圍即時監聽。
         const manualReadState={loginSessions:false,cases:{},busy:new Set()};
         function resetManualReadFlags(){
             manualReadState.loginSessions=false;manualReadState.cases={};manualReadState.busy.clear();
             const status=document.getElementById('login-sessions-load-status');if(status)status.textContent='尚未查詢登入紀錄。';
             ['police','fire','ems','police-review','fire-review'].forEach(kind=>{
                 const el=document.getElementById(`manual-load-${kind}-status`);
-                if(el)el.textContent='尚未載入；登入不自動讀取資料庫。';
+                if(el)el.textContent=(kind==='police-review'&&canReviewPoliceReports())||(kind==='fire-review'&&canReviewFireReports())
+                    ?'高層待審即時偵測中；退件歷史可手動載入。'
+                    :'尚未載入；登入不自動讀取資料庫。';
             });
             if(typeof handoverState!=='undefined'){
                 handoverState.loaded.clear();handoverState.loading.clear();
@@ -3524,7 +3527,7 @@ async function republishAnnouncement(id) {
                 for(const result of results){appData[result.collection]=result.rows;ntpcMarkSyncSuccess(result.collection+'（手動）',result.size);}
                 manualReadState.cases[kind]=true;
                 const total=results.reduce((sum,x)=>sum+x.size,0);
-                if(status)status.textContent=`已載入 ${total} 筆｜${formatDateTime(Date.now())}（只有再次按下才重新查詢）`;
+                if(status)status.textContent=`已載入 ${total} 筆｜${formatDateTime(Date.now())}${kind.endsWith('-review')&&((kind==='police-review'&&canReviewPoliceReports())||(kind==='fire-review'&&canReviewFireReports()))?'（待審會自動同步，退件歷史須手動重新整理）':'（只有再次按下才重新查詢）'}`;
                 if(kind==='police')renderPoliceReports();
                 if(kind==='fire')renderFireReports();
                 if(kind==='ems')renderEMSReports();
@@ -3535,6 +3538,59 @@ async function republishAnnouncement(id) {
                 return true;
             }catch(e){if(status)status.textContent='讀取失敗：'+e.message;ntpcMarkSyncError(kind+'（手動）',e);showToast('案件讀取失敗：'+e.message,'error','讀取失敗');return false;}
             finally{manualReadState.busy.delete(kind);if(btn)btn.disabled=false;}
+        }
+
+        // 單位高層待審即時監聽：只查 reviewStatus=pending；初次載入僅讀取目前待審文件，之後由變更快照更新。
+        // 消防與 EMS 各一個篩選監聽，警務只監聽警務；一般成員不建立這些監聽。
+        // 「個人通知」已能從這些待審快取建立高層審核卡片，因此不再額外建立另一個通知集合。
+        function startUnitReviewerPendingListeners(){
+            if(!currentUser || !db || !fm) return;
+            const accountAtSubscribe=String(currentUser.account||'');
+            const groups=[];
+            if(canReviewPoliceReports()) groups.push({kind:'police-review',collections:['policePendingReports']});
+            if(canReviewFireReports()) groups.push({kind:'fire-review',collections:['firePendingReports','emsPendingReports']});
+            groups.forEach(group=>{
+                const ready=new Set();
+                for(const name of group.collections){
+                    let initialSnapshot=true;
+                    try{
+                        const ref=fm.query(fm.collection(db,name),fm.where('reviewStatus','==','pending'));
+                        const unsubscribe=fm.onSnapshot(ref,snapshot=>{
+                            if(!currentUser || String(currentUser.account||'')!==accountAtSubscribe)return;
+                            const pending=snapshot.docs.map(d=>({docId:d.id,...d.data(),remarks:ensureReportRemarks(d.data())}));
+                            // 保留原本手動載入的退件紀錄，僅替換待審部分，不影響舊案件的審核歷史。
+                            const other=(appData[name]||[]).filter(r=>String(r.reviewStatus||'')!=='pending');
+                            appData[name]=[...other,...pending];
+                            ntpcMarkSyncSuccess(name+'（高層待審即時）',snapshot.size);
+                            ready.add(name);
+                            if(ready.size===group.collections.length)manualReadState.cases[group.kind]=true;
+                            const total=group.collections.reduce((n,c)=>n+(appData[c]||[]).filter(r=>r.reviewStatus==='pending').length,0);
+                            const status=document.getElementById('manual-load-'+group.kind+'-status');
+                            if(status){status.textContent=ready.size===group.collections.length
+                                ?`待審即時同步中｜目前 ${total} 件（退件歷史可按按鈕手動載入）`
+                                :'待審案件同步中...';}
+                            if(group.kind==='police-review')renderPoliceReview();
+                            else renderFireReview();
+                            updateReviewTabBadges();renderPersonalNotifications();refreshDutyDashboard();
+                            if(typeof ntpcRenderOpenAdminMonitorPanels==='function')ntpcRenderOpenAdminMonitorPanels();
+                            if(!initialSnapshot && document.visibilityState==='visible'){
+                                const added=snapshot.docChanges().filter(change=>change.type==='added' && !change.doc.metadata.hasPendingWrites).length;
+                                if(added>0)showToast(`收到 ${added} 筆新的${group.kind==='police-review'?'警務':'消防／EMS'}待審案件，已更新個人通知。`,'info','新案件待審');
+                            }
+                            initialSnapshot=false;
+                        },err=>{
+                            ntpcMarkSyncError(name+'（高層待審即時）',err);
+                            const status=document.getElementById('manual-load-'+group.kind+'-status');
+                            if(status)status.textContent='即時偵測失敗，可按載入按鈕手動查詢：'+(err?.message||err);
+                            console.warn('待審案件即時監聽失敗：'+name,err);
+                        });
+                        realtimeUnsubscribers.push(unsubscribe);
+                    }catch(err){
+                        ntpcMarkSyncError(name+'（高層待審即時）',err);
+                        console.warn('無法建立待審監聽：'+name,err);
+                    }
+                }
+            });
         }
 
         // 即時資料同步：不再每 10 秒整批讀取 Firestore。
@@ -3606,8 +3662,9 @@ async function republishAnnouncement(id) {
                 subscribe('wantedPendingRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.wantedPendingRecords = rows; updateReviewTabBadges(); if(canReviewPoliceReports())renderPoliceReview(); renderPersonalNotifications(); refreshDutyDashboard(); },wantedPendingRef);
                 subscribe('wantedRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.wantedRecords = rows; renderLookupSystems(); updateWantedDiscordBotStatus(); });
             }
-            // 待審警務、消防及 EMS 案件也不在登入時訂閱；各高層審核頁按按鈕才查詢。
-            // 正在審核的案件仍由原有提交／審核函式即時更新本地快取。
+            // 待審案件只對有審核權限的單位建立 reviewStatus=pending 監聽，非高層維持手動查詢。
+            // 正式案件／退件歷史不進行背景監聽，仍可由按鈕手動載入。
+            startUnitReviewerPendingListeners();
 
             // 值勤狀態只依打卡資料判定；不再輪詢 users，也不再使用網站在線心跳。
             // onSnapshot 只在打卡資料新增／修改／刪除時觸發，平時不做輪詢。
