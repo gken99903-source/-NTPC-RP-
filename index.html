@@ -1011,9 +1011,9 @@
                     </div>
                     <div id="citizen-unlocked-view" class="hidden space-y-4">
                         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-                            <div class="flex flex-col sm:flex-row justify-between gap-3 sm:items-center"><div><div class="flex flex-wrap items-center gap-3"><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-id-card text-blue-400 mr-2"></i>市民身份查詢</h3><span id="citizen-total-count" class="inline-flex items-center px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs font-semibold"><i class="fa-solid fa-users mr-1.5"></i>當前所有市民：0 人</span></div><p class="text-xs text-slate-500 mt-1">使用證件末五碼查詢市民資料；管理中心可建立與編輯資料。</p></div><button id="open-citizen-post-btn" type="button" class="hidden bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold"><i class="fa-solid fa-plus mr-2"></i>建立市民資料</button></div>
+                            <div class="flex flex-col sm:flex-row justify-between gap-3 sm:items-center"><div><div class="flex flex-wrap items-center gap-3"><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-id-card text-blue-400 mr-2"></i>市民身份查詢</h3><span id="citizen-total-count" class="inline-flex items-center px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs font-semibold"><i class="fa-solid fa-users mr-1.5"></i>市民資料：按查詢讀取</span></div><p class="text-xs text-slate-500 mt-1">市民資料不在登入時下載；輸入姓名開頭或證件末五碼再按查詢，保險標籤僅管理中心可修改。</p></div><button id="open-citizen-post-btn" type="button" class="hidden bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold"><i class="fa-solid fa-plus mr-2"></i>建立市民資料</button></div>
                             <div class="flex flex-col sm:flex-row gap-2 mt-4"><input id="citizen-search-input" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono" placeholder="輸入關鍵字（姓名／證件末五碼／生日等）"><select id="citizen-deceased-filter" class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white sm:w-48"><option value="all">死亡證明：全部</option><option value="alive">不顯示死亡證明</option><option value="deceased">只顯示死亡證明</option></select><button id="citizen-search-btn" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl text-sm">查詢</button></div>
-                        </div><div id="citizen-results" class="grid grid-cols-1 gap-4"></div>
+                        </div><div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500"><span id="citizen-lookup-status">登入時不讀取市民資料，按「查詢」才會連線。</span><button type="button" id="citizen-full-search-btn" class="px-2 py-1 rounded-lg border border-amber-500/30 text-amber-300 hover:bg-amber-500/10">進階包含搜尋（需讀取整份市民資料）</button></div><div id="citizen-results" class="grid grid-cols-1 gap-4"></div>
                     </div>
                 </div>
 
@@ -1023,7 +1023,7 @@
                         <h3 class="text-2xl font-bold text-white">車輛查詢系統</h3><p class="text-slate-400">當前開發階段 敬請期待</p>
                     </div>
                     <div id="vehicles-unlocked-view" class="hidden space-y-4">
-                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl"><div class="flex flex-col sm:flex-row justify-between gap-3 sm:items-center"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-car-side text-cyan-400 mr-2"></i>車輛查詢系統</h3><p class="text-xs text-slate-500 mt-1">可使用車牌或證件末五碼查詢。</p></div><button id="open-vehicle-post-btn" type="button" class="hidden bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold"><i class="fa-solid fa-plus mr-2"></i>建立車輛資料</button></div><div class="flex gap-2 mt-4"><input id="vehicle-search-input" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white" placeholder="輸入關鍵字（車牌／車主／證件末五碼／型號／車色）"><button id="vehicle-search-btn" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl text-sm">查詢</button></div></div><div id="vehicle-results" class="grid grid-cols-1 gap-4"></div>
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl"><div class="flex flex-col sm:flex-row justify-between gap-3 sm:items-center"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-car-side text-cyan-400 mr-2"></i>車輛查詢系統</h3><p class="text-xs text-slate-500 mt-1">按查詢才讀取資料；可使用車牌、車主、證件末五碼或車輛型號開頭查詢，未投保顯示紅字。</p></div><button id="open-vehicle-post-btn" type="button" class="hidden bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold"><i class="fa-solid fa-plus mr-2"></i>建立車輛資料</button></div><div class="flex gap-2 mt-4"><input id="vehicle-search-input" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white" placeholder="輸入關鍵字（車牌／車主／證件末五碼／型號／車色）"><button id="vehicle-search-btn" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl text-sm">查詢</button></div><div class="flex flex-wrap items-center justify-between gap-2 mt-2 text-xs text-slate-500"><span id="vehicle-lookup-status">登入時不讀取車輛資料，按「查詢」才會連線。</span><button type="button" id="vehicle-full-search-btn" class="px-2 py-1 rounded-lg border border-amber-500/30 text-amber-300 hover:bg-amber-500/10">進階包含搜尋（需讀取整份車輛資料）</button></div></div><div id="vehicle-results" class="grid grid-cols-1 gap-4"></div>
                     </div>
                 </div>
 
@@ -2867,11 +2867,11 @@ const loginOpenBtn = document.getElementById('login-modal-open-btn');
             document.getElementById('open-citizen-post-btn')?.addEventListener('click',()=>openLookupPost('citizen'));
             document.getElementById('open-vehicle-post-btn')?.addEventListener('click',()=>openLookupPost('vehicles'));
             document.getElementById('open-wanted-post-btn')?.addEventListener('click',()=>openLookupPost('wanted'));
-            document.getElementById('citizen-search-btn')?.addEventListener('click',searchCitizenRecords);document.getElementById('citizen-deceased-filter')?.addEventListener('change',searchCitizenRecords);
-            document.getElementById('vehicle-search-btn')?.addEventListener('click',searchVehicleRecords);
+            document.getElementById('citizen-search-btn')?.addEventListener('click',()=>loadLookupOnDemand('citizen'));document.getElementById('citizen-full-search-btn')?.addEventListener('click',()=>loadLookupOnDemand('citizen',true));document.getElementById('citizen-deceased-filter')?.addEventListener('change',searchCitizenRecords);
+            document.getElementById('vehicle-search-btn')?.addEventListener('click',()=>loadLookupOnDemand('vehicles'));document.getElementById('vehicle-full-search-btn')?.addEventListener('click',()=>loadLookupOnDemand('vehicles',true));
             document.getElementById('wanted-search-btn')?.addEventListener('click',searchWantedRecords);
-            document.getElementById('citizen-search-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')searchCitizenRecords();});
-            document.getElementById('vehicle-search-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')searchVehicleRecords();});
+            document.getElementById('citizen-search-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')loadLookupOnDemand('citizen');});
+            document.getElementById('vehicle-search-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')loadLookupOnDemand('vehicles');});
             document.getElementById('wanted-search-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')searchWantedRecords();});
 
             const submitReportBtn = document.getElementById('submit-report-btn');
@@ -3452,6 +3452,7 @@ async function republishAnnouncement(id) {
         // V1.9.3：正式案件與登入紀錄只依手動按鈕讀取；單位高層的待審案件另設限定範圍即時監聽。
         const manualReadState={loginSessions:false,cases:{},busy:new Set()};
         function resetManualReadFlags(){
+            resetLookupDemandState();
             manualReadState.loginSessions=false;manualReadState.cases={};manualReadState.busy.clear();
             const status=document.getElementById('login-sessions-load-status');if(status)status.textContent='尚未查詢登入紀錄。';
             ['police','fire','ems','police-review','fire-review'].forEach(kind=>{
@@ -3656,8 +3657,8 @@ async function republishAnnouncement(id) {
 
             // V1.9.3：正式警務、消防及 EMS 報告不在登入時訂閱，改由按鈕 getDocs 讀取。
             if (currentUser.role === 'admin' || userHasUnit('police')) {
-                subscribe('citizenRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.citizenRecords = rows; renderLookupSystems(); ntpcMaybeRenderAdminStorage(); });
-                subscribe('vehicleRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.vehicleRecords = rows; renderLookupSystems(); ntpcMaybeRenderAdminStorage(); });
+                // 市民、車輛不在登入時訂閱整批集合，只有手動查詢才使用 getDocs。
+                // 保險資料隨查詢文件載入，編輯後以本機結果刷新；不另建保險監聽。
                 const wantedPendingRef=canReviewPoliceReports()?null:fm.query(fm.collection(db,'wantedPendingRecords'),fm.where('createdByAccount','==',currentUser.account));
                 subscribe('wantedPendingRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.wantedPendingRecords = rows; updateReviewTabBadges(); if(canReviewPoliceReports())renderPoliceReview(); renderPersonalNotifications(); refreshDutyDashboard(); },wantedPendingRef);
                 subscribe('wantedRecords', d => ({docId:d.id, ...d.data()}), rows => { appData.wantedRecords = rows; renderLookupSystems(); updateWantedDiscordBotStatus(); });
@@ -4828,9 +4829,47 @@ async function republishAnnouncement(id) {
         function lookupAccessible(type,u=currentUser){ return true; }
         function getLastFive(value){ const s=String(value||'').replace(/\D/g,''); return s.length>=5?s.slice(-5):String(value||'').trim().slice(-5); }
         function lookupTypeLabel(type){ return type==='citizen'?'市民身份':type==='vehicles'?'車輛': '通緝'; }
+        // 保險系統：未設定的舊資料及所有新建車輛，皆視為「未持有保險」。
+        const NTPC_VEHICLE_INSURANCE_TYPES = Object.freeze(['汽車保險','摩托保險','大客車保險','公務車保險']);
+        function ntpcInsuranceValue(type,record){
+            if(type==='citizen')return record?.healthInsurance===true?'健康保險':'';
+            if(type==='vehicles')return NTPC_VEHICLE_INSURANCE_TYPES.includes(record?.vehicleInsurance)?record.vehicleInsurance:'';
+            return '';
+        }
+        function ntpcInsuranceBadge(type,record){
+            const label=ntpcInsuranceValue(type,record);
+            return label
+                ? `<span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 text-xs font-semibold text-emerald-300"><i class="fa-solid fa-shield-heart"></i>${escapeHtml(label)}｜已持有保險</span>`
+                : '<span class="inline-flex items-center gap-1 rounded-full bg-red-500/10 border border-red-500/30 px-2.5 py-1 text-xs font-bold text-red-400"><i class="fa-solid fa-triangle-exclamation"></i>未持有保險</span>';
+        }
+        function ntpcInsuranceHistoryHtml(record){
+            const history=Array.isArray(record?.insuranceHistory)?record.insuranceHistory:[];
+            if(!history.length)return '<div class="text-xs text-slate-500 mt-2">尚無保險標籤異動紀錄。</div>';
+            return `<div class="space-y-2 mt-3">${[...history].reverse().map(h=>`<div class="text-xs text-slate-300 py-2 border-b border-slate-800 last:border-0"><span class="text-cyan-300">${escapeHtml(formatDateTime(h.at))}</span>｜${escapeHtml(h.account||'--')}（${escapeHtml(h.by||'--')}）<div class="mt-1 text-slate-400">${escapeHtml(h.from||'未持有保險')} → <span class="text-white">${escapeHtml(h.to||'未持有保險')}</span></div></div>`).join('')}</div>`;
+        }
+        function ntpcInsuranceEditorHtml(type){
+            if(!isTotalManagementUser())return '';
+            if(type==='citizen')return '<div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4"><div class="font-bold text-sm text-emerald-300 mb-2"><i class="fa-solid fa-shield-heart mr-2"></i>健康保險標籤（僅管理中心可變更）</div><label class="flex items-center gap-3 text-sm text-slate-200"><input id="lookup-health-insurance" type="checkbox" class="w-4 h-4 accent-emerald-500">已持有健康保險</label><p class="text-xs text-red-300 mt-2">未勾選將顯示紅字「未持有保險」。異動將永久記錄在此市民資料內。</p></div>';
+            if(type==='vehicles')return `<div class="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4"><label for="lookup-vehicle-insurance" class="block font-bold text-sm text-cyan-300 mb-2"><i class="fa-solid fa-shield-halved mr-2"></i>車輛保險標籤（僅管理中心可變更）</label><select id="lookup-vehicle-insurance" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white"><option value="">未持有保險（預設）</option>${NTPC_VEHICLE_INSURANCE_TYPES.map(x=>`<option value="${x}">${x}</option>`).join('')}</select><p class="text-xs text-slate-400 mt-2">每輛車僅選一種保險。新增車輛預設未持有保險，異動會留下紀錄。</p></div>`;
+            return '';
+        }
+        function ntpcInsuranceChangeData(type,existing,newValue,now){
+            const oldValue=ntpcInsuranceValue(type,existing);
+            const normalized=type==='citizen'?(newValue==='健康保險'?'健康保險':''):(NTPC_VEHICLE_INSURANCE_TYPES.includes(newValue)?newValue:'');
+            const update=type==='citizen'?{healthInsurance:!!normalized}:{vehicleInsurance:normalized};
+            if(normalized!==oldValue){
+                update.insuranceHistory=[...(Array.isArray(existing?.insuranceHistory)?existing.insuranceHistory:[]),{
+                    at:now,account:String(currentUser?.account||''),by:String(currentUser?.name||currentUser?.account||''),from:oldValue,to:normalized
+                }];
+                update.insuranceUpdatedAt=now;
+                update.insuranceUpdatedByAccount=String(currentUser?.account||'');
+            }
+            return {update,oldValue,newValue:normalized,changed:normalized!==oldValue};
+        }
+
         function renderLookupSystems(){
             const citizenCount=document.getElementById('citizen-total-count');
-            if(citizenCount) citizenCount.innerHTML=`<i class="fa-solid fa-users mr-1.5"></i>當前所有市民：${(appData.citizenRecords||[]).length} 人`;
+            if(citizenCount) citizenCount.innerHTML=`<i class="fa-solid fa-magnifying-glass mr-1.5"></i>${lookupDemandState.citizen.loaded?'本次查詢：'+lookupDemandState.citizen.rows.length+' 筆':'按查詢才讀取'}`;
             const map=[['citizen','citizen'],['vehicles','vehicles'],['wanted','wanted']];
             map.forEach(([type,key])=>{
                 const accessible=lookupAccessible(type);
@@ -4847,6 +4886,9 @@ async function republishAnnouncement(id) {
                 }
                 if(accessible && type==='wanted') searchWantedRecords();
             });
+            // 只從上次手動查詢的結果重新繪製，不向 Firestore 發送任何背景查詢。
+            if(document.getElementById('citizen-search-input')?.value?.trim() || document.getElementById('citizen-deceased-filter')?.value==='deceased')searchCitizenRecords();
+            if(document.getElementById('vehicle-search-input')?.value?.trim())searchVehicleRecords();
             const admin=isTotalManagementUser();
             const police=isPoliceUser();
             document.getElementById('open-citizen-post-btn')?.classList.toggle('hidden',!(admin&&lookupAccessible('citizen')));
@@ -4873,6 +4915,7 @@ async function republishAnnouncement(id) {
                 }else{
                 html+=lookupInput('RP名稱','lookup-name','例如：王小明');
                 html+=lookupInput('證件末五碼','lookup-id5','請輸入5碼數字','maxlength="5" inputmode="numeric"');
+                html+=ntpcInsuranceEditorHtml('citizen');
                 html+='<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">'+lookupInput('性別','lookup-gender','例如：男／女／其他')+lookupInput('生日','lookup-birthday','請輸入生日，例如：2000-01-01','type="text" maxlength="10" inputmode="numeric" autocomplete="bday"')+'</div>';
                 html+='<div><label class="block text-xs font-semibold text-slate-400 mb-2">駕照狀況（非必填）</label><div class="grid grid-cols-1 sm:grid-cols-3 gap-2"><label class="p-3 rounded-xl border border-slate-800 bg-slate-950 text-sm"><input type="checkbox" id="license-car" class="mr-2">小客車駕照</label><label class="p-3 rounded-xl border border-slate-800 bg-slate-950 text-sm"><input type="checkbox" id="license-heavy" class="mr-2">大客車/大貨車駕照</label><label class="p-3 rounded-xl border border-slate-800 bg-slate-950 text-sm"><input type="checkbox" id="license-boat" class="mr-2">船隻駕照</label></div><p class="text-[11px] text-slate-500 mt-2">未勾選任何項目時顯示「無」。</p></div>';
                 html+=lookupTextarea('備注','lookup-note','可填寫其他補充資訊，多行內容可直接換行',4);html+='<label class="flex items-center gap-3 p-3 rounded-xl border border-red-500/20 bg-red-500/5 text-sm text-red-300"><input type="checkbox" id="lookup-deceased" class="w-4 h-4">死亡證明／已死亡</label>';
@@ -4883,6 +4926,7 @@ async function republishAnnouncement(id) {
                     html+='<div><label class="block text-xs font-semibold text-slate-400 mb-2">新增備註</label><textarea id="lookup-police-note" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500" placeholder="輸入要新增的車輛備註"></textarea></div>';
                 }else{
 
+                html+=ntpcInsuranceEditorHtml('vehicles');
                 html+=lookupInput('車輛型號','lookup-model','例如：Toyota Crown');
                 html+='<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">'+lookupInput('車輛所有人（非必填）','lookup-owner','輸入證件末五碼後自動帶入RP名稱，可不填')+lookupInput('證件末五碼','lookup-id5','請輸入5碼數字','maxlength="5" inputmode="numeric"')+'</div>';
                 html+='<p class="text-[11px] text-slate-500 -mt-2"><i class="fa-solid fa-wand-magic-sparkles mr-1 text-cyan-400"></i>輸入5碼證件末五碼後，系統僅從未掛死亡證明的市民資料自動帶入RP名稱；查無符合資料時可留白。</p>';
@@ -4893,21 +4937,33 @@ async function republishAnnouncement(id) {
             }
             document.getElementById('lookup-post-fields').innerHTML=html;
             if(existing){
-                if(type==='citizen'){document.getElementById('lookup-name').value=existing.name||'';document.getElementById('lookup-id5').value=existing.id5||'';document.getElementById('lookup-gender').value=existing.gender||'';document.getElementById('lookup-birthday').value=existing.birthday||'';const ls=existing.licenses||[];document.getElementById('license-car').checked=ls.includes('小客車駕照');document.getElementById('license-heavy').checked=ls.includes('大客車/大貨車駕照');document.getElementById('license-boat').checked=ls.includes('船隻駕照');document.getElementById('lookup-note').value=existing.note||'';document.getElementById('lookup-deceased').checked=!!existing.deceased;}
-                if(type==='vehicles'){document.getElementById('lookup-model').value=existing.model||'';document.getElementById('lookup-owner').value=existing.owner||'';document.getElementById('lookup-id5').value=existing.id5||'';document.getElementById('lookup-plate').value=existing.plate||'';document.getElementById('lookup-color').value=existing.color||'';document.getElementById('lookup-note').value=existing.note||'';document.getElementById('lookup-decommissioned').checked=!!existing.decommissioned;}
+                if(type==='citizen'){for(const [key,value] of [['lookup-name',existing.name||''],['lookup-id5',existing.id5||''],['lookup-gender',existing.gender||''],['lookup-birthday',existing.birthday||''],['lookup-note',existing.note||'']]){const field=document.getElementById(key);if(field)field.value=value;}const ls=existing.licenses||[];for(const [key,license] of [['license-car','小客車駕照'],['license-heavy','大客車/大貨車駕照'],['license-boat','船隻駕照']]){const field=document.getElementById(key);if(field)field.checked=ls.includes(license);}const deceased=document.getElementById('lookup-deceased');if(deceased)deceased.checked=!!existing.deceased;}
+                if(type==='vehicles'){for(const [key,value] of [['lookup-model',existing.model||''],['lookup-owner',existing.owner||''],['lookup-id5',existing.id5||''],['lookup-plate',existing.plate||''],['lookup-color',existing.color||''],['lookup-note',existing.note||'']]){const field=document.getElementById(key);if(field)field.value=value;}const decommissioned=document.getElementById('lookup-decommissioned');if(decommissioned)decommissioned.checked=!!existing.decommissioned;}
                 if(type==='wanted'){document.getElementById('lookup-name').value=existing.name||'';document.getElementById('lookup-id5').value=existing.id5||'';document.getElementById('lookup-reason').value=existing.reason||'';document.getElementById('lookup-law').value=existing.law||'';document.getElementById('lookup-publish-unit').value=existing.publishUnit||existing.department||getPolicePunishmentDepartment(currentUser)||'';document.getElementById('lookup-wanted-status').value=isWantedActive(existing)?'active':'returned';}
             }
+            if(type==='citizen'){const el=document.getElementById('lookup-health-insurance');if(el)el.checked=!!existing?.healthInsurance;}
+            if(type==='vehicles'){const el=document.getElementById('lookup-vehicle-insurance');if(el)el.value=ntpcInsuranceValue('vehicles',existing);}
             if(type==='wanted'&&!existing){const el=document.getElementById('lookup-publish-unit');if(el)el.value=getPolicePunishmentDepartment(currentUser)||'';}
             if(type==='vehicles'){
                 const idEl=document.getElementById('lookup-id5'), ownerEl=document.getElementById('lookup-owner');
-                const syncVehicleOwner=()=>{
+                let lastOwnerLookup='',ownerLookupToken=0;
+                const syncVehicleOwner=async()=>{
                     const id5=String(idEl?.value||'').replace(/\D/g,'').slice(0,5); if(idEl)idEl.value=id5;
                     if(!ownerEl)return;
-                    const citizen=id5.length===5?(appData.citizenRecords||[]).find(r=>!r.deceased&&getLastFive(r.id5)===id5):null;
-                    if(citizen?.name){ownerEl.value=citizen.name;ownerEl.dataset.autoFilled='1';ownerEl.classList.add('border-cyan-500/60');}
-                    else if(ownerEl.dataset.autoFilled==='1'){ownerEl.value='';ownerEl.dataset.autoFilled='0';ownerEl.classList.remove('border-cyan-500/60');}
+                    if(id5.length!==5){lastOwnerLookup='';ownerLookupToken++;return;}
+                    if(lastOwnerLookup===id5)return;
+                    lastOwnerLookup=id5;
+                    const token=++ownerLookupToken;
+                    try{
+                        // 在管理員實際輸入完整 5 碼時才讀取該筆市民，不查整個市民集合。
+                        const snap=await fm.getDocs(fm.query(fm.collection(db,'citizenRecords'),fm.where('id5','==',id5)));
+                        if(token!==ownerLookupToken||!idEl?.isConnected||String(idEl.value)!==id5)return;
+                        const citizen=snap.docs.map(d=>({docId:d.id,...d.data()})).find(r=>!r.deceased);
+                        if(citizen?.name){ownerEl.value=citizen.name;ownerEl.dataset.autoFilled='1';ownerEl.classList.add('border-cyan-500/60');}
+                        else if(ownerEl.dataset.autoFilled==='1'){ownerEl.value='';ownerEl.dataset.autoFilled='0';ownerEl.classList.remove('border-cyan-500/60');}
+                    }catch(err){console.warn('按需查詢車主資料失敗：',err);lastOwnerLookup='';}
                 };
-                idEl?.addEventListener('input',syncVehicleOwner); idEl?.addEventListener('change',syncVehicleOwner); syncVehicleOwner();
+                idEl?.addEventListener('input',syncVehicleOwner); idEl?.addEventListener('change',syncVehicleOwner); if(idEl?.value?.length===5)syncVehicleOwner();
             }
             document.getElementById('modal-lookup-post').classList.remove('hidden');
         }
@@ -4958,6 +5014,7 @@ async function republishAnnouncement(id) {
                     document.getElementById('modal-lookup-post').classList.add('hidden');
                 }catch(e){showToast('更新失敗：'+e.message,'error','操作失敗');}return;
             }
+            let insuranceAudit=null;
             if(type==='citizen'){
                 const name=document.getElementById('lookup-name').value.trim(),id5=document.getElementById('lookup-id5').value.trim(),gender=document.getElementById('lookup-gender').value.trim(),birthday=document.getElementById('lookup-birthday').value,note=document.getElementById('lookup-note')?.value.trim()||'',deceased=!!document.getElementById('lookup-deceased')?.checked,licenses=[];
                 if(document.getElementById('license-car')?.checked)licenses.push('小客車駕照');
@@ -4965,16 +5022,23 @@ async function republishAnnouncement(id) {
                 if(document.getElementById('license-boat')?.checked)licenses.push('船隻駕照');
                 if(!name||!/^[0-9]{5}$/.test(id5)||!gender||!birthday){showToast('請完整填寫RP名稱、證件末五碼、性別與生日。','warning','資料不完整');return;}
                 data={name,id5,gender,birthday,licenses,note,deceased,updatedAt:now,cloudSyncedAt:now,updatedByAccount:currentUser.account,updatedByName:currentUser.name};
+                insuranceAudit=ntpcInsuranceChangeData('citizen',existing,document.getElementById('lookup-health-insurance')?.checked?'健康保險':'',now);
+                Object.assign(data,insuranceAudit.update);
                 if(existing&&String(existing.name||'')!==name){data.nameHistory=[...(existing.nameHistory||[]),{from:existing.name||'',to:name,at:now,by:currentUser.name||currentUser.account}];}
                 const oldLicenses=new Set(existing?.licenses||[]),newLicenses=licenses.filter(x=>!oldLicenses.has(x));
                 if(newLicenses.length){data.licenseHistory=[...(existing?.licenseHistory||[]),{licenses:newLicenses,at:now,by:currentUser.name||currentUser.account,account:currentUser.account}];}
                 if(!existing){data.createdAt=now;data.createdByAccount=currentUser.account;data.createdByName=currentUser.name;if(licenses.length){data.licenseHistory=[{licenses:[...licenses],at:now,by:currentUser.name||currentUser.account,account:currentUser.account}];}}
             }else if(type==='vehicles'){
                 const model=document.getElementById('lookup-model').value.trim(),ownerInput=document.getElementById('lookup-owner').value.trim(),id5=document.getElementById('lookup-id5').value.trim(),plate=document.getElementById('lookup-plate').value.trim(),color=document.getElementById('lookup-color').value.trim(),note=document.getElementById('lookup-note')?.value.trim()||'',decommissioned=!!document.getElementById('lookup-decommissioned')?.checked;
-                const linkedCitizen=(appData.citizenRecords||[]).find(r=>getLastFive(r.id5)===id5);
+                let linkedCitizen=(appData.citizenRecords||[]).find(r=>!r.deceased&&getLastFive(r.id5)===id5);
+                if(!linkedCitizen&&/^[0-9]{5}$/.test(id5)){
+                    try{const ownerSnap=await fm.getDocs(fm.query(fm.collection(db,'citizenRecords'),fm.where('id5','==',id5)));linkedCitizen=ownerSnap.docs.map(d=>({docId:d.id,...d.data()})).find(r=>!r.deceased)||null;}catch(e){console.warn('車主名稱查詢失敗，保留手動輸入內容：',e);}
+                }
                 const owner=linkedCitizen?.name||ownerInput;
                 if(!model||!/^[0-9]{5}$/.test(id5)||!plate||!color){showToast('請填寫車輛型號、證件末五碼、車牌與車色。RP名稱非必填，輸入證件末五碼後會自動帶入。','warning','資料不完整');return;}
                 data={model,owner,id5,plate,color,note,decommissioned,updatedAt:now,cloudSyncedAt:now,updatedByAccount:currentUser.account,updatedByName:currentUser.name};
+                insuranceAudit=ntpcInsuranceChangeData('vehicles',existing,document.getElementById('lookup-vehicle-insurance')?.value||'',now);
+                Object.assign(data,insuranceAudit.update);
                 if(!existing){data.createdAt=now;data.createdByAccount=currentUser.account;data.createdByName=currentUser.name;}
             }else{
                 const name=document.getElementById('lookup-name').value.trim(),id5=document.getElementById('lookup-id5').value.trim(),reason=document.getElementById('lookup-reason').value.trim(),law=document.getElementById('lookup-law').value.trim(),publishUnit=document.getElementById('lookup-publish-unit').value.trim();
@@ -4988,6 +5052,9 @@ async function republishAnnouncement(id) {
                 const docId=existing?(existing.docId||existing.id):`${type}-${now}-${Math.random().toString(36).slice(2,8)}`;
                 const writeData={...(existing||{}),...data,createdByAccount:existing?.createdByAccount||currentUser.account,createdByName:existing?.createdByName||currentUser.name};
                 await fm.setDoc(fm.doc(db,col,docId),writeData,{merge:true});
+                if(insuranceAudit?.changed){
+                    await logAdminAction(`編輯${lookupTypeLabel(type)}保險標籤`,docId,`管理員：${currentUser.account}；${insuranceAudit.oldValue||'未持有保險'} → ${insuranceAudit.newValue||'未持有保險'}`,{discord:true});
+                }
                 if(type==='wanted'){
                     const targetList=col==='wantedPendingRecords'?appData.wantedPendingRecords:appData.wantedRecords;
                     if(existing){Object.assign(existing,{docId,...writeData});}
@@ -5005,7 +5072,8 @@ async function republishAnnouncement(id) {
                             const latestNameChange=data.nameHistory[data.nameHistory.length-1];
                             const oldName=String(latestNameChange.from||'');
                             const newName=String(latestNameChange.to||data.name||'');
-                            const changedVehicles=(appData.vehicleRecords||[]).filter(v=>getLastFive(v.id5)===getLastFive(data.id5));
+                            const relatedSnap=await fm.getDocs(fm.query(fm.collection(db,'vehicleRecords'),fm.where('id5','==',data.id5)));
+                            const changedVehicles=relatedSnap.docs.map(d=>({docId:d.id,...d.data()}));
                             if(oldName!==newName&&changedVehicles.length){
                                 await Promise.all(changedVehicles.map(async v=>{
                                     const vehicleDocId=v.docId||v.id||'';
@@ -5013,6 +5081,8 @@ async function republishAnnouncement(id) {
                                     const vehicleUpdate={owner:newName,updatedAt:now,cloudSyncedAt:now,updatedByAccount:currentUser.account,updatedByName:currentUser.name};
                                     await fm.setDoc(fm.doc(db,'vehicleRecords',vehicleDocId),vehicleUpdate,{merge:true});
                                     Object.assign(v,vehicleUpdate);
+                                    lookupDemandRemember('vehicles',[v]);
+                                    lookupDemandUpdateLocal('vehicles',v);
                                 }));
                                 await logAdminAction('市民改名同步更新車輛擁有人',docId,`證件末五碼 ${data.id5}：${oldName} → ${newName}，同步更新 ${changedVehicles.length} 筆車輛資料`,{discord:true});
                             }
@@ -5021,9 +5091,139 @@ async function republishAnnouncement(id) {
                     }
                     else list.unshift({docId,...data,createdByAccount:currentUser.account,createdByName:currentUser.name});
                 }
-                closeModal('modal-lookup-post');renderLookupSystems();if(type==='citizen'){const el=document.getElementById('citizen-search-input');if(el)el.value=data.id5||existing?.id5||'';searchCitizenRecords();}if(type==='vehicles'){const el=document.getElementById('vehicle-search-input');if(el)el.value=data.plate||existing?.plate||'';searchVehicleRecords();}if(type==='wanted'){const el=document.getElementById('wanted-search-input');if(el)el.value=data.id5||existing?.id5||'';searchWantedRecords();}showToast(type==='wanted'?(existingPending?'通緝申請已重新送審。':existing?'通緝資料已更新，狀態已同步雲端。':'通緝申請已送出，等待警察高層審核。'):`${existing?'修改':'建立'}${lookupTypeLabel(type)}資料成功，已同步雲端資料庫。`,'success',type==='wanted'?(existingPending?'重新送審成功':existing?'更新成功':'送審成功'):'雲端同步成功');
+                closeModal('modal-lookup-post');renderLookupSystems();if(type==='citizen'){const el=document.getElementById('citizen-search-input');if(el)el.value=data.id5||existing?.id5||'';lookupDemandUpdateLocal('citizen',list.find(x=>String(x.docId||x.id)===String(docId)));lookupDemandState.citizen.key=lookupDemandKey('citizen');searchCitizenRecords();}if(type==='vehicles'){const el=document.getElementById('vehicle-search-input');if(el)el.value=data.plate||existing?.plate||'';lookupDemandUpdateLocal('vehicles',list.find(x=>String(x.docId||x.id)===String(docId)));lookupDemandState.vehicles.key=lookupDemandKey('vehicles');searchVehicleRecords();}if(type==='wanted'){const el=document.getElementById('wanted-search-input');if(el)el.value=data.id5||existing?.id5||'';searchWantedRecords();}showToast(type==='wanted'?(existingPending?'通緝申請已重新送審。':existing?'通緝資料已更新，狀態已同步雲端。':'通緝申請已送出，等待警察高層審核。'):`${existing?'修改':'建立'}${lookupTypeLabel(type)}資料成功，已同步雲端資料庫。`,'success',type==='wanted'?(existingPending?'重新送審成功':existing?'更新成功':'送審成功'):'雲端同步成功');
             }catch(e){showToast('雲端寫入失敗：'+e.message,'error','操作失敗');}
         }
+        // V1.9.3 查詢按需讀取：不在登入時下載 citizenRecords / vehicleRecords，
+        // 普通查詢只讀取符合索引前綴的資料；備註或中間字元請使用手動的進階包含搜尋。
+        const lookupDemandState={
+            citizen:{key:'',loaded:false,rows:[],busy:false},
+            vehicles:{key:'',loaded:false,rows:[],busy:false}
+        };
+        let lookupDemandEpoch=0;
+        const LOOKUP_ON_DEMAND_LIMIT=80;
+        function lookupDemandKey(type){
+            const q=lookupKeyword(document.getElementById(type==='citizen'?'citizen-search-input':'vehicle-search-input')?.value||'');
+            return type==='citizen'?`${q}|${document.getElementById('citizen-deceased-filter')?.value||'all'}`:q;
+        }
+        function lookupDemandPrompt(type){
+            const isCitizen=type==='citizen';
+            const keyword=lookupKeyword(document.getElementById(isCitizen?'citizen-search-input':'vehicle-search-input')?.value||'');
+            return `<div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-8 text-center text-slate-500"><i class="fa-solid fa-magnifying-glass text-2xl mb-2"></i><div>${keyword?'搜尋條件已更新，請按「查詢」取得資料。':'輸入關鍵字後按「查詢」才會讀取雲端資料。'}</div><div class="text-xs mt-1">常用查詢使用資料庫索引；需要備註或中間字元請使用進階包含搜尋。</div></div>`;
+        }
+        function resetLookupDemandState(){
+            lookupDemandEpoch++;
+            for(const type of ['citizen','vehicles']){
+                Object.assign(lookupDemandState[type],{key:'',loaded:false,rows:[],busy:false});
+                const btn=document.getElementById(type==='citizen'?'citizen-search-btn':'vehicle-search-btn'); if(btn)btn.disabled=false;
+                const full=document.getElementById(type==='citizen'?'citizen-full-search-btn':'vehicle-full-search-btn'); if(full)full.disabled=false;
+                const status=document.getElementById(type==='citizen'?'citizen-lookup-status':'vehicle-lookup-status'); if(status)status.textContent='登入時不讀取資料，按「查詢」才會連線。';
+                const result=document.getElementById(type==='citizen'?'citizen-results':'vehicle-results');if(result)result.innerHTML=lookupDemandPrompt(type);
+            }
+        }
+        function lookupDemandRemember(type,rows){
+            const target=type==='citizen'?'citizenRecords':'vehicleRecords';
+            const old=new Map((appData[target]||[]).map(r=>[String(r.docId||r.id),r]));
+            for(const r of rows){old.set(String(r.docId||r.id),r);}
+            // 同次登入只暫存已按需載入的文件，不會將集合整批訂閱到記憶體。
+            appData[target]=[...old.values()];
+        }
+        function lookupDemandUpdateLocal(type,record){
+            if(!record)return;
+            const state=lookupDemandState[type];
+            if(!state||!state.loaded)return;
+            const id=String(record.docId||record.id||'');
+            const ix=state.rows.findIndex(x=>String(x.docId||x.id)===id);
+            if(ix>=0)state.rows[ix]=record;
+            else if(type==='citizen'?recordMatchesCitizen(record,lookupKeyword(document.getElementById('citizen-search-input')?.value||'')):
+                lookupTextMatch([record.model,record.owner,record.id5,record.plate,record.color,record.note,record.createdByAccount,record.createdByName],lookupKeyword(document.getElementById('vehicle-search-input')?.value||'')))state.rows.unshift(record);
+        }
+        async function lookupDemandLinksForCitizens(rows,epoch){
+            // 只讀取本次找到的市民名下車輛，不再事先下載全體車輛。
+            const ids=[...new Set(rows.map(r=>getLastFive(r.id5)).filter(id=>id?.length===5))];
+            if(!ids.length)return;
+            const collected=[];
+            for(let i=0;i<ids.length;i+=30){
+                const chunk=ids.slice(i,i+30);
+                const snap=await fm.getDocs(fm.query(fm.collection(db,'vehicleRecords'),fm.where('id5','in',chunk)));
+                collected.push(...snap.docs.map(d=>({docId:d.id,...d.data()})));
+                if(epoch!==lookupDemandEpoch||!currentUser)return;
+            }
+            if(epoch===lookupDemandEpoch&&currentUser)lookupDemandRemember('vehicles',collected);
+        }
+        async function lookupDemandIndexedDocs(type,q,filter){
+            const col=type==='citizen'?'citizenRecords':'vehicleRecords';
+            const fields=type==='citizen'?['id5','name','birthday','gender']:['id5','plate','owner','model','color'];
+            const candidates=[q];
+            if(/[a-z]/i.test(q))for(const variant of [q.toUpperCase(),q.toLowerCase()])if(!candidates.includes(variant))candidates.push(variant);
+            // 避免在空條件時誤下載全部；只有選擇「只顯示死亡證明」才允許無關鍵字查詢。
+            if(!q&&type==='citizen'&&filter==='deceased'){
+                const snap=await fm.getDocs(fm.query(fm.collection(db,col),fm.where('deceased','==',true),fm.limit(LOOKUP_ON_DEMAND_LIMIT)));
+                return {rows:snap.docs.map(d=>({docId:d.id,...d.data()})),truncated:snap.size>=LOOKUP_ON_DEMAND_LIMIT};
+            }
+            if(!q)return {rows:[],truncated:false};
+            const probes=[];
+            if(/^\d{5}$/.test(q)){
+                // 完整五碼可直接以單一精確查詢取得資料，不必額外查詢無關欄位。
+                const snap=await fm.getDocs(fm.query(fm.collection(db,col),fm.where('id5','==',q)));
+                return {rows:snap.docs.map(d=>({docId:d.id,...d.data()})),truncated:false};
+            }
+            if(/^\d+$/.test(q))probes.push(fm.query(fm.collection(db,col),fm.where('id5','>=',q),fm.where('id5','<=',q+'\uf8ff'),fm.limit(LOOKUP_ON_DEMAND_LIMIT)));
+            for(const field of fields.filter(f=>f!=='id5'))for(const word of candidates){
+                probes.push(fm.query(fm.collection(db,col),fm.where(field,'>=',word),fm.where(field,'<=',word+'\uf8ff'),fm.limit(LOOKUP_ON_DEMAND_LIMIT)));
+            }
+            const results=await Promise.allSettled(probes.map(query=>fm.getDocs(query)));
+            const rows=new Map(); let failed=0,truncated=false,lastError=null;
+            for(const result of results){
+                if(result.status==='rejected'){failed++;lastError=result.reason;continue;}
+                if(result.value.size>=LOOKUP_ON_DEMAND_LIMIT)truncated=true;
+                for(const doc of result.value.docs)rows.set(doc.id,{docId:doc.id,...doc.data()});
+            }
+            if(failed===results.length)throw lastError||new Error('所有資料庫查詢均失敗');
+            if(failed)console.warn(`按需查詢 ${col} 有 ${failed} 個索引條件失敗，其他結果仍顯示。`,lastError);
+            return {rows:[...rows.values()],truncated,partial:failed>0};
+        }
+        async function loadLookupOnDemand(type,full=false){
+            if(!lookupAccessible(type)||!currentUser||!fm||!db)return;
+            if(type!=='citizen'&&type!=='vehicles')return;
+            const state=lookupDemandState[type];if(state.busy)return;
+            const q=lookupKeyword(document.getElementById(type==='citizen'?'citizen-search-input':'vehicle-search-input')?.value||'');
+            const filter=type==='citizen'?document.getElementById('citizen-deceased-filter')?.value||'all':'all';
+            if(!q&&!(type==='citizen'&&filter==='deceased'&&!full)){
+                showToast('請先輸入查詢條件，避免讀取整個資料庫。','warning','請輸入條件');return;
+            }
+            const epoch=lookupDemandEpoch, key=lookupDemandKey(type),account=currentUser.account;
+            state.busy=true;
+            const btn=document.getElementById(type==='citizen'?'citizen-search-btn':'vehicle-search-btn');
+            const fullBtn=document.getElementById(type==='citizen'?'citizen-full-search-btn':'vehicle-full-search-btn');
+            const status=document.getElementById(type==='citizen'?'citizen-lookup-status':'vehicle-lookup-status');
+            if(btn)btn.disabled=true;if(fullBtn)fullBtn.disabled=true;
+            if(status)status.textContent=full?'進階搜尋：依照要求讀取完整集合中...':'正在從 Firestore 查詢符合條件的資料...';
+            try{
+                const col=type==='citizen'?'citizenRecords':'vehicleRecords';
+                const result=full?{rows:(await fm.getDocs(fm.collection(db,col))).docs.map(d=>({docId:d.id,...d.data()})),truncated:false}:await lookupDemandIndexedDocs(type,q,filter);
+                if(epoch!==lookupDemandEpoch||!currentUser||currentUser.account!==account)return;
+                const rawRows=result.rows.filter(r=>type==='citizen'?(filter==='all'||(filter==='alive'?!r.deceased:!!r.deceased))&&(!q||recordMatchesCitizen(r,q)):
+                    lookupTextMatch([r.model,r.owner,r.id5,r.plate,r.color,r.note,r.createdByAccount,r.createdByName],q));
+                lookupDemandRemember(type,result.rows);
+                state.key=key;state.rows=rawRows;state.loaded=true;
+                if(type==='citizen'){
+                    // 不讓關聯車輛查詢失敗影響主要市民結果。
+                    try{await lookupDemandLinksForCitizens(rawRows,epoch);}catch(linkError){console.warn('本次名下車輛資料讀取失敗，市民查詢仍可使用：',linkError);}
+                }
+                if(epoch!==lookupDemandEpoch||!currentUser||currentUser.account!==account)return;
+                if(status)status.textContent=`本次從雲端查詢到 ${rawRows.length} 筆${full?'（進階包含搜尋）':'（索引搜尋）'}${result.truncated?'；結果可能不完整，請縮小條件':''}${result.partial?'；部分條件失敗':''}。`;
+                renderLookupSystems();
+                if(result.truncated)showToast('符合條件的資料較多，僅顯示部分結果；可縮小條件或改用進階搜尋。','warning','資料筆數提醒');
+            }catch(e){
+                console.error(`${type} 查詢失敗：`,e);
+                if(epoch===lookupDemandEpoch&&status)status.textContent='查詢失敗，請確認網路、Firestore 權限及索引。';
+                if(epoch===lookupDemandEpoch)showToast(`查詢失敗：${e.message||e}`,'error','雲端讀取失敗');
+            }finally{
+                if(epoch===lookupDemandEpoch){state.busy=false;if(btn)btn.disabled=false;if(fullBtn)fullBtn.disabled=false;}
+            }
+        }
+
         function lookupKeyword(value){return String(value??'').trim().toLowerCase();}
         function lookupTextMatch(values,q){if(!q)return false;return values.some(v=>String(v??'').toLowerCase().includes(q));}
         function recordMatchesCitizen(r,q){return lookupTextMatch([r.name,r.id5,r.gender,r.birthday,r.note],q);}
@@ -5046,7 +5246,7 @@ async function republishAnnouncement(id) {
             }).join('');
             return `<div class="mt-4 p-3 rounded-xl bg-red-500/5 border border-red-500/15 text-xs text-red-200"><div class="flex flex-wrap items-center justify-between gap-2 mb-2"><span>相關案件報號：${matched.length} 件</span><span class="text-slate-400">證件末五碼＋RP 姓名一致</span></div>${matched.length?`<div class="space-y-1">${related}</div>`:'<div class="text-slate-500">沒有證件末五碼及 RP 姓名皆一致的案件。</div>'}</div>`;
         }
-        function renderCitizenCard(r){const suspectCases=getCitizenRelatedCases(r);const linkedVehicles=(appData.vehicleRecords||[]).filter(v=>getLastFive(v.id5)===getLastFive(r.id5));const wantedRecords=(appData.wantedRecords||[]).filter(w=>isWantedActive(w)&&getLastFive(w.id5)===getLastFive(r.id5));const isWanted=!r.deceased&&wantedRecords.length>0;const cardBg=isWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.deceased?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><h4 class="text-lg font-bold text-white">${escapeHtml(r.name||'--')}</h4>${isWanted?'<span class="px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>通緝狀態</span>':''}${r.deceased?'<span class="px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-skull-crossbones mr-1"></i>死亡證明</span>':''}</div><p class="text-xs text-slate-500 font-mono">證件末五碼：${escapeHtml(r.id5||'--')}</p><p class="text-xs text-slate-500 mt-1">發布帳號：${escapeHtml(r.createdByAccount||'--')}</p></div><span class="text-xs text-slate-400">${escapeHtml(r.gender||'--')}｜${escapeHtml(r.birthday||'--')}</span></div><div class="mt-4 text-sm text-slate-300"><span class="text-slate-500">駕照狀況：</span>${escapeHtml((r.licenses||[]).length?(r.licenses||[]).join('、'):'無')}</div>${linkedVehicles.length?`<div class="mt-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15 text-sm"><span class="text-xs text-cyan-300 block mb-2">名下車輛（依證件末五碼自動比對）</span><div class="space-y-1">${linkedVehicles.map(v=>`<div class="text-slate-300">${escapeHtml(v.model||'未知型號')}｜車牌：<span class="font-mono text-cyan-300">${escapeHtml(v.plate||'--')}</span></div>`).join('')}</div></div>`:''}${r.note?`<div class="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm"><span class="text-xs text-slate-500 block mb-1">備注</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}<div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-blue-600/15 text-blue-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('citizen','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">編輯</button><button type="button" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="deleteLookupRecord('citizen','${escapeHtml(r.docId||r.id)}')">移除</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">新增備註／修改駕照</button>`:''}</div>${citizenCasesHtml(r,suspectCases)}</div>`;}
+        function renderCitizenCard(r){const suspectCases=getCitizenRelatedCases(r);const linkedVehicles=(appData.vehicleRecords||[]).filter(v=>getLastFive(v.id5)===getLastFive(r.id5));const wantedRecords=(appData.wantedRecords||[]).filter(w=>isWantedActive(w)&&getLastFive(w.id5)===getLastFive(r.id5));const isWanted=!r.deceased&&wantedRecords.length>0;const cardBg=isWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.deceased?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><h4 class="text-lg font-bold text-white">${escapeHtml(r.name||'--')}</h4>${ntpcInsuranceBadge('citizen',r)}${isWanted?'<span class="px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>通緝狀態</span>':''}${r.deceased?'<span class="px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-skull-crossbones mr-1"></i>死亡證明</span>':''}</div><p class="text-xs text-slate-500 font-mono">證件末五碼：${escapeHtml(r.id5||'--')}</p><p class="text-xs text-slate-500 mt-1">發布帳號：${escapeHtml(r.createdByAccount||'--')}</p></div><span class="text-xs text-slate-400">${escapeHtml(r.gender||'--')}｜${escapeHtml(r.birthday||'--')}</span></div><div class="mt-4 text-sm text-slate-300"><span class="text-slate-500">駕照狀況：</span>${escapeHtml((r.licenses||[]).length?(r.licenses||[]).join('、'):'無')}</div>${linkedVehicles.length?`<div class="mt-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15 text-sm"><span class="text-xs text-cyan-300 block mb-2">名下車輛（依證件末五碼自動比對）</span><div class="space-y-1">${linkedVehicles.map(v=>`<div class="text-slate-300">${escapeHtml(v.model||'未知型號')}｜車牌：<span class="font-mono text-cyan-300">${escapeHtml(v.plate||'--')}</span><span class="ml-2">${ntpcInsuranceBadge('vehicles',v)}</span></div>`).join('')}</div></div>`:''}${r.note?`<div class="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm"><span class="text-xs text-slate-500 block mb-1">備注</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}<div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-blue-600/15 text-blue-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('citizen','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">編輯</button><button type="button" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="deleteLookupRecord('citizen','${escapeHtml(r.docId||r.id)}')">移除</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">新增備註／修改駕照</button>`:''}</div>${citizenCasesHtml(r,suspectCases)}</div>`;}
         // 市民搜尋排序：無標籤優先，其次是通緝中的市民，死亡證明永遠置底。
         // 排序只影響畫面，不修改 Firestore 內的原始資料順序。
         function citizenDisplayRank(r){
@@ -5057,8 +5257,20 @@ async function republishAnnouncement(id) {
             return wanted?1:0;
         }
         function sortCitizenSearchResults(records){return [...records].sort((a,b)=>citizenDisplayRank(a)-citizenDisplayRank(b));}
-        function searchCitizenRecords(){if(!lookupAccessible('citizen'))return;const q=lookupKeyword(document.getElementById('citizen-search-input')?.value||'');const filter=document.getElementById('citizen-deceased-filter')?.value||'all';const c=document.getElementById('citizen-results');if(filter==='deceased'){const rows=sortCitizenSearchResults(appData.citizenRecords.filter(r=>!!r.deceased));c.innerHTML=rows.length?rows.map(renderCitizenCard).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">目前沒有死亡證明資料。</div>';return;}if(!q){c.innerHTML='<div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-8 text-center text-slate-500"><i class="fa-solid fa-magnifying-glass text-2xl mb-2"></i><div>請輸入搜尋條件後再查詢</div><div class="text-xs mt-1">「全部」與「不顯示死亡證明」需輸入搜尋條件後才會列出資料。</div></div>';return;}let rows=sortCitizenSearchResults(appData.citizenRecords.filter(r=>{const statusOk=filter==='all'||(filter==='alive'?!r.deceased:true);return statusOk&&recordMatchesCitizen(r,q);}));c.innerHTML=rows.length?rows.map(renderCitizenCard).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">查無符合條件的資料。</div>'; }
-        function searchVehicleRecords(){if(!lookupAccessible('vehicles'))return;const q=lookupKeyword(document.getElementById('vehicle-search-input')?.value||'');const c=document.getElementById('vehicle-results');if(!q){c.innerHTML='<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">請輸入關鍵字。</div>';return;}const rows=appData.vehicleRecords.filter(r=>lookupTextMatch([r.model,r.owner,r.id5,r.plate,r.color,r.note,r.createdByAccount,r.createdByName],q));c.innerHTML=rows.length?rows.map(r=>{const ownerWanted=(appData.wantedRecords||[]).some(w=>isWantedActive(w)&&getLastFive(w.id5)===getLastFive(r.id5));const cardBg=ownerWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.decommissioned?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex items-start justify-between gap-3"><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm flex-1"><div><span class="text-xs text-slate-500 block">車輛型號</span>${escapeHtml(r.model||'--')}</div><div><span class="text-xs text-slate-500 block">車輛所有人</span>${escapeHtml(r.owner||'--')}</div><div><span class="text-xs text-slate-500 block">證件末五碼</span>${escapeHtml(r.id5||'--')}</div><div><span class="text-xs text-slate-500 block">車牌／車色</span>${escapeHtml(r.plate||'--')} / ${escapeHtml(r.color||'--')}</div><div class="sm:col-span-4"><span class="text-xs text-slate-500 block">發布帳號</span>${escapeHtml(r.createdByAccount||'--')}</div>${r.note?`<div class="sm:col-span-4"><span class="text-xs text-slate-500 block">備注</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}</div>${ownerWanted?'<span class="shrink-0 px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>車主通緝中</span>':''}${r.decommissioned?'<span class="shrink-0 px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-ban mr-1"></i>註銷牌照</span>':''}</div><div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-cyan-600/15 text-cyan-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('vehicles','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('vehicles','${escapeHtml(r.docId||r.id)}')">編輯</button><button type="button" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="deleteLookupRecord('vehicles','${escapeHtml(r.docId||r.id)}')">移除</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('vehicles','${escapeHtml(r.docId||r.id)}')">新增備註</button>`:''}</div></div>`}).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">查無資料。</div>';}
+        function searchCitizenRecords(){
+            if(!lookupAccessible('citizen'))return;
+            const c=document.getElementById('citizen-results'); if(!c)return;
+            const q=lookupKeyword(document.getElementById('citizen-search-input')?.value||'');
+            const filter=document.getElementById('citizen-deceased-filter')?.value||'all';
+            const state=lookupDemandState.citizen;
+            if(!state.loaded||state.key!==lookupDemandKey('citizen')){c.innerHTML=lookupDemandPrompt('citizen');return;}
+            const rows=sortCitizenSearchResults(state.rows.filter(r=>{
+                const statusOk=filter==='all'||(filter==='alive'?!r.deceased:!!r.deceased);
+                return statusOk&&(!q||recordMatchesCitizen(r,q));
+            }));
+            c.innerHTML=rows.length?rows.map(renderCitizenCard).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">查無符合條件的資料。可嘗試「進階包含搜尋」。</div>';
+        }
+        function searchVehicleRecords(){if(!lookupAccessible('vehicles'))return;const q=lookupKeyword(document.getElementById('vehicle-search-input')?.value||'');const c=document.getElementById('vehicle-results');if(!c)return;if(!lookupDemandState.vehicles.loaded||lookupDemandState.vehicles.key!==lookupDemandKey('vehicles')){c.innerHTML=lookupDemandPrompt('vehicles');return;}if(!q){c.innerHTML='<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">請輸入關鍵字。</div>';return;}const rows=lookupDemandState.vehicles.rows.filter(r=>lookupTextMatch([r.model,r.owner,r.id5,r.plate,r.color,r.note,r.createdByAccount,r.createdByName],q));c.innerHTML=rows.length?rows.map(r=>{const ownerWanted=(appData.wantedRecords||[]).some(w=>isWantedActive(w)&&getLastFive(w.id5)===getLastFive(r.id5));const cardBg=ownerWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.decommissioned?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex items-start justify-between gap-3"><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm flex-1"><div><span class="text-xs text-slate-500 block">車輛型號</span>${escapeHtml(r.model||'--')}</div><div><span class="text-xs text-slate-500 block">車輛所有人</span>${escapeHtml(r.owner||'--')}</div><div><span class="text-xs text-slate-500 block">證件末五碼</span>${escapeHtml(r.id5||'--')}</div><div><span class="text-xs text-slate-500 block">車牌／車色</span>${escapeHtml(r.plate||'--')} / ${escapeHtml(r.color||'--')}</div><div class="sm:col-span-4"><span class="text-xs text-slate-500 block">保險狀態</span>${ntpcInsuranceBadge('vehicles',r)}</div><div class="sm:col-span-4"><span class="text-xs text-slate-500 block">發布帳號</span>${escapeHtml(r.createdByAccount||'--')}</div>${r.note?`<div class="sm:col-span-4"><span class="text-xs text-slate-500 block">備注</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}</div>${ownerWanted?'<span class="shrink-0 px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>車主通緝中</span>':''}${r.decommissioned?'<span class="shrink-0 px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-ban mr-1"></i>註銷牌照</span>':''}</div><div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-cyan-600/15 text-cyan-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('vehicles','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('vehicles','${escapeHtml(r.docId||r.id)}')">編輯</button><button type="button" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="deleteLookupRecord('vehicles','${escapeHtml(r.docId||r.id)}')">移除</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('vehicles','${escapeHtml(r.docId||r.id)}')">新增備註</button>`:''}</div></div>`}).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">查無資料。</div>';}
         function getWantedDiscordStatusHtml(r){
             const status=String(r.discordDmStatus||'not_requested');
             if(status==='sent') return '<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs"><i class="fa-solid fa-check"></i>已發送</span>';
@@ -5165,20 +5377,23 @@ async function republishAnnouncement(id) {
                     <div class="bg-slate-950 rounded-xl p-4"><span class="text-xs text-slate-500 block">證件末五碼</span><strong class="text-white font-mono">${escapeHtml(r.id5||'--')}</strong></div>
                     <div class="bg-slate-950 rounded-xl p-4"><span class="text-xs text-slate-500 block">性別</span>${escapeHtml(r.gender||'--')}</div>
                     <div class="bg-slate-950 rounded-xl p-4"><span class="text-xs text-slate-500 block">生日</span>${escapeHtml(r.birthday||'--')}</div>
+                    <div class="sm:col-span-2 bg-slate-950 rounded-xl p-4"><span class="text-xs text-slate-500 block mb-1">保險狀態</span>${ntpcInsuranceBadge('citizen',r)}</div>
                     <div class="sm:col-span-2 bg-slate-950 rounded-xl p-4"><span class="text-xs text-slate-500 block">駕照狀況</span>${escapeHtml((r.licenses||[]).length?r.licenses.join('、'):'無')}</div>
                     <div class="sm:col-span-2 bg-slate-950 rounded-xl p-4"><span class="text-xs text-slate-500 block">發布帳號</span><span class="text-slate-200">${escapeHtml(r.createdByAccount||'--')}</span></div>
                     <div class="sm:col-span-2 bg-slate-950 rounded-xl p-4"><span class="text-xs text-slate-500 block">備注</span><span class="text-slate-200 whitespace-pre-wrap">${escapeHtml(r.note||'無')}</span></div>
                 </div>`;
-                if(linkedVehicles.length)html+=`<div class="bg-cyan-500/5 border border-cyan-500/20 rounded-2xl p-5 mt-4"><h4 class="font-bold text-cyan-300 mb-3">名下車輛（自動偵測）</h4><div class="space-y-2">${linkedVehicles.map(v=>`<div class="bg-slate-950 rounded-xl p-3 text-sm"><div class="text-slate-200">車輛型號：${escapeHtml(v.model||'--')}</div><div class="text-cyan-300 font-mono mt-1">車牌：${escapeHtml(v.plate||'--')}</div></div>`).join('')}</div></div>`;
+                if(linkedVehicles.length)html+=`<div class="bg-cyan-500/5 border border-cyan-500/20 rounded-2xl p-5 mt-4"><h4 class="font-bold text-cyan-300 mb-3">名下車輛（自動偵測）</h4><div class="space-y-2">${linkedVehicles.map(v=>`<div class="bg-slate-950 rounded-xl p-3 text-sm"><div class="text-slate-200">車輛型號：${escapeHtml(v.model||'--')}</div><div class="text-cyan-300 font-mono mt-1">車牌：${escapeHtml(v.plate||'--')}</div><div class="mt-2">${ntpcInsuranceBadge('vehicles',v)}</div></div>`).join('')}</div></div>`;
                 else html+='<div class="bg-slate-950 border border-slate-800 rounded-xl p-4 mt-4 text-sm text-slate-500">未偵測到相同證件末五碼的車輛資料。</div>';
                 if(cases.length)html+=`<div class="bg-red-500/5 border border-red-500/20 rounded-2xl p-5 mt-4"><h4 class="font-bold text-red-300 mb-3">曾被登記為嫌疑人（${cases.length} 件）</h4><div class="space-y-3">${cases.map(x=>`<div class="bg-slate-950 rounded-xl p-3"><div class="font-mono text-blue-300">${escapeHtml(x.caseId||'--')}</div><div class="text-sm text-slate-300 mt-1">曾犯／涉及罪刑：${escapeHtml(Array.isArray(x.violations)&&x.violations.length?x.violations.join('、'):(x.content||x.title||'案件未記載條例'))}</div></div>`).join('')}</div></div>`;
                 else html+='<div class="bg-slate-950 border border-slate-800 rounded-xl p-4 mt-4 text-sm text-slate-500">查無曾被登記為嫌疑人的案件。</div>';
                 if((r.nameHistory||[]).length)html+=`<div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 mt-4"><h4 class="font-bold text-slate-200 mb-3">名稱異動紀錄</h4>${r.nameHistory.map(h=>`<div class="text-xs text-slate-400 py-2 border-b border-slate-800 last:border-0">${escapeHtml(formatDateTime(h.at))}｜${escapeHtml(h.from||'--')} → ${escapeHtml(h.to||'--')}｜${escapeHtml(h.by||'--')}</div>`).join('')}</div>`;
                 if((r.licenseHistory||[]).length)html+=`<div class="bg-slate-950 border border-emerald-500/15 rounded-2xl p-5 mt-4"><h4 class="font-bold text-emerald-300 mb-3">駕照發布紀錄</h4>${r.licenseHistory.map(h=>`<div class="text-xs text-slate-400 py-2 border-b border-slate-800 last:border-0">${escapeHtml(formatDateTime(h.at))}｜帳號 ${escapeHtml(h.account||'--')}（${escapeHtml(h.by||h.account||'--')}）${h.action==='移除'?`移除駕照：${escapeHtml((h.licenses||[]).join('、'))}`:`新增駕照：${escapeHtml((h.licenses||[]).join('、'))}`}</div>`).join('')}</div>`;
                 else html+='<div class="bg-slate-950 border border-slate-800 rounded-xl p-4 mt-4 text-sm text-slate-500">尚無駕照異動紀錄。</div>';
+                html+=`<div class="bg-slate-950 border border-cyan-500/20 rounded-2xl p-5 mt-4"><h4 class="font-bold text-cyan-300">保險標籤異動紀錄（管理中心）</h4>${ntpcInsuranceHistoryHtml(r)}</div>`;
                 if((r.noteHistory||[]).length)html+=`<div class="bg-slate-950 border border-amber-500/15 rounded-2xl p-5 mt-4"><h4 class="font-bold text-amber-300 mb-3">備註新增紀錄</h4>${r.noteHistory.map(h=>`<div class="text-xs text-slate-400 py-2 border-b border-slate-800 last:border-0">${escapeHtml(formatDateTime(h.at))}｜${escapeHtml(h.by||h.account||'--')}：${escapeHtml(h.note||'')}</div>`).join('')}</div>`;
             }else if(type==='vehicles'){
-                html=`${r.decommissioned?'<div class="mb-4 bg-red-900/60 border border-red-500/50 rounded-xl p-4 text-red-200 font-bold"><i class="fa-solid fa-ban mr-2"></i>註銷牌照：此車輛牌照已標記為註銷</div>':''}<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">${[['車輛型號',r.model],['車輛所有人',r.owner],['證件末五碼',r.id5],['車牌',r.plate],['車色',r.color],['發布帳號',r.createdByAccount||'--'],['備注',r.note||'無']].map(([k,v])=>`<div class="bg-slate-950 rounded-xl p-4"><span class="text-xs text-slate-500 block">${escapeHtml(k)}</span><span class="text-slate-200">${escapeHtml(v||'--')}</span></div>`).join('')}</div>`;
+                html=`${r.decommissioned?'<div class="mb-4 bg-red-900/60 border border-red-500/50 rounded-xl p-4 text-red-200 font-bold"><i class="fa-solid fa-ban mr-2"></i>註銷牌照：此車輛牌照已標記為註銷</div>':''}<div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div class="sm:col-span-2 bg-slate-950 rounded-xl p-4"><span class="text-xs text-slate-500 block mb-1">保險狀態</span>${ntpcInsuranceBadge('vehicles',r)}</div>${[['車輛型號',r.model],['車輛所有人',r.owner],['證件末五碼',r.id5],['車牌',r.plate],['車色',r.color],['發布帳號',r.createdByAccount||'--'],['備注',r.note||'無']].map(([k,v])=>`<div class="bg-slate-950 rounded-xl p-4"><span class="text-xs text-slate-500 block">${escapeHtml(k)}</span><span class="text-slate-200">${escapeHtml(v||'--')}</span></div>`).join('')}</div>`;
+                html+=`<div class="bg-slate-950 border border-cyan-500/20 rounded-2xl p-5 mt-4"><h4 class="font-bold text-cyan-300">保險標籤異動紀錄（管理中心）</h4>${ntpcInsuranceHistoryHtml(r)}</div>`;
                 if((r.noteHistory||[]).length)html+=`<div class="bg-slate-950 border border-amber-500/15 rounded-2xl p-5 mt-4"><h4 class="font-bold text-amber-300 mb-3">備註新增紀錄</h4>${r.noteHistory.map(h=>`<div class="text-xs text-slate-400 py-2 border-b border-slate-800 last:border-0">${escapeHtml(formatDateTime(h.at))}｜${escapeHtml(h.by||h.account||'--')}：${escapeHtml(h.note||'')}</div>`).join('')}</div>`;
             }else{
                 html=`<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">${[['被通緝人RP名稱',r.name],['證件末五碼',r.id5],['通緝原因',r.reason],['所違反條例',r.law],['發布單位',r.publishUnit||r.department||'--'],['發布帳號',r.createdByAccount||'--']].map(([k,v])=>`<div class="bg-slate-950 rounded-xl p-4"><span class="text-xs text-slate-500 block">${escapeHtml(k)}</span><span class="text-slate-200">${escapeHtml(v||'--')}</span></div>`).join('')}</div>`;
@@ -5187,7 +5402,7 @@ async function republishAnnouncement(id) {
             c.innerHTML=html;
             document.getElementById('modal-lookup-detail').classList.remove('hidden');
         }
-        async function deleteLookupRecord(type,id){if(!lookupAccessible(type)){showToast('此查詢系統目前已上鎖。','warning','功能尚未開放');return;}const canDelete=isTotalManagementUser();if(!canDelete){showToast('目前帳號沒有刪除權限。','warning','權限不足');return;}if(!(await showConfirm(`確定要刪除這筆${lookupTypeLabel(type)}資料嗎？刪除後會寫入管理中心 LOG。`,'刪除資料','確定刪除')))return;const col=type==='citizen'?'citizenRecords':type==='vehicles'?'vehicleRecords':'wantedRecords';try{await fm.deleteDoc(fm.doc(db,col,id));const list=type==='citizen'?appData.citizenRecords:type==='vehicles'?appData.vehicleRecords:appData.wantedRecords;const idx=list.findIndex(x=>String(x.docId||x.id)===String(id));const target=idx>=0?list[idx]:null;if(idx>=0)list.splice(idx,1);await logAdminAction(`刪除${lookupTypeLabel(type)}資料`,id,target?JSON.stringify({name:target.name||target.owner||'',id5:target.id5||''}):'',{discord:true});renderLookupSystems();if(type==='citizen')searchCitizenRecords();if(type==='vehicles')searchVehicleRecords();if(type==='wanted')searchWantedRecords();showToast('資料已從雲端資料庫刪除，並已記錄管理中心 LOG。','success','雲端同步成功');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
+        async function deleteLookupRecord(type,id){if(!lookupAccessible(type)){showToast('此查詢系統目前已上鎖。','warning','功能尚未開放');return;}const canDelete=isTotalManagementUser();if(!canDelete){showToast('目前帳號沒有刪除權限。','warning','權限不足');return;}if(!(await showConfirm(`確定要刪除這筆${lookupTypeLabel(type)}資料嗎？刪除後會寫入管理中心 LOG。`,'刪除資料','確定刪除')))return;const col=type==='citizen'?'citizenRecords':type==='vehicles'?'vehicleRecords':'wantedRecords';try{await fm.deleteDoc(fm.doc(db,col,id));const list=type==='citizen'?appData.citizenRecords:type==='vehicles'?appData.vehicleRecords:appData.wantedRecords;const idx=list.findIndex(x=>String(x.docId||x.id)===String(id));const target=idx>=0?list[idx]:null;if(idx>=0)list.splice(idx,1);if(type==='citizen'||type==='vehicles')lookupDemandState[type].rows=lookupDemandState[type].rows.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction(`刪除${lookupTypeLabel(type)}資料`,id,target?JSON.stringify({name:target.name||target.owner||'',id5:target.id5||''}):'',{discord:true});renderLookupSystems();if(type==='citizen')searchCitizenRecords();if(type==='vehicles')searchVehicleRecords();if(type==='wanted')searchWantedRecords();showToast('資料已從雲端資料庫刪除，並已記錄管理中心 LOG。','success','雲端同步成功');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
 
         function getPolicePunishmentDepartment(user = currentUser) {
             const raw = String(user?.policeDivision || '').trim();
