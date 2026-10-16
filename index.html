@@ -1148,6 +1148,7 @@
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">選擇或輸入隊員</label>
                                 <select id="fire-calc-member" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-red-500"></select>
+                                <p class="mt-1 text-[11px] text-slate-500">隊員名單由已同步的消防打卡紀錄建立。</p>
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">起始年月日 (含)</label>
@@ -2926,7 +2927,7 @@ const loginOpenBtn = document.getElementById('login-modal-open-btn');
             if (policeCalcBtn) policeCalcBtn.addEventListener('click', () => calculateMemberHours('police'));
 
             const fireCalcBtn = document.getElementById('fire-calc-btn');
-            if (fireCalcBtn) fireCalcBtn.addEventListener('click', () => calculateMemberHours('fire'));
+            if (fireCalcBtn) fireCalcBtn.addEventListener('click', calculateFireMemberHours);
             const academyCodeInput = document.getElementById('academy-code-input');
             if (academyCodeInput) academyCodeInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleAcademyCodeLogin(); });
             clearInterval(window.__academyCodeTimer);
@@ -3682,6 +3683,8 @@ async function republishAnnouncement(id) {
                 appData.fireClocks = rows;
                 recalculateDutyStatusCache();
                 renderFireClocks(); // 即時更新消防打卡紀錄清單
+                // 消防高層不會下載所有 users；改由已授權同步的消防打卡紀錄更新隊員選單。
+                populateFireHoursMemberSelect();
                 if (!document.getElementById('fire-duty-details-modal')?.classList.contains('hidden')) renderFireDutyDetails();
                 renderAdminOverview(); // 即時更新消防當前值勤人數
                 refreshDutyDashboard();
@@ -3725,11 +3728,117 @@ async function republishAnnouncement(id) {
             } catch(e) { console.warn('建立網站公告即時監聽失敗：', e); }
         }
 
+        // 消防高層僅載入自己的 users 文件，不能單靠 appData.users 選擇其他消防隊員。
+        // 以既有 fireClocks 快取建立名單：不新增 Firebase 讀取，也不洩漏完整帳號清單。
+        function populateFireHoursMemberSelect() {
+            const select = document.getElementById('fire-calc-member');
+            if (!select) return;
+            const previous = String(select.value || '').trim().toLowerCase();
+            const normalize = v => String(v ?? '').trim().toLowerCase();
+            const roster = new Map();
+            const add = (account, number, name, time = 0) => {
+                const key = normalize(account || number);
+                if (!key) return;
+                const old = roster.get(key);
+                if (!old || time >= old.time) roster.set(key, {
+                    value: String(account || number).trim(),
+                    number: String(number || old?.number || '').trim(),
+                    name: String(name || old?.name || '消防隊員').trim(),
+                    time
+                });
+            };
+            // 管理中心可使用 users 的現有人員；高層則從已載入的消防打卡中補上所有隊員。
+            (appData.users || []).forEach(u => {
+                const units = Array.isArray(u.units) ? u.units : [u.unit];
+                if (units.includes('fire')) add(u.account, u.staffNumber, u.name, 0);
+            });
+            (appData.fireClocks || []).forEach(c => {
+                add(c.account || c.userAccount, c.staffNumber || c.memberNumber || c.number,
+                    c.name, getClockTimestamp(c) || 0);
+            });
+            const people = [...roster.values()].sort((a,b) => a.name.localeCompare(b.name, 'zh-TW'));
+            select.replaceChildren(new Option('-- 請選擇消防隊員 --', ''));
+            for (const person of people) {
+                const title = `${person.name} (${person.number || person.value})`;
+                select.add(new Option(title, person.value));
+            }
+            // Firebase 即時刷新時維持原選擇，避免高層正在設定的查詢被清空。
+            const stillSelected = people.find(p => normalize(p.value) === previous);
+            if (stillSelected) select.value = stillSelected.value;
+        }
+
+        // 消防時數：上班卡可以落在查詢區間之前，依完整打卡紀錄配對後計算與日期區間的交集。
+        function calculateFireMemberHours() {
+            const memberEl = document.getElementById('fire-calc-member');
+            const startInput = document.getElementById('fire-calc-start')?.value;
+            const endInput = document.getElementById('fire-calc-end')?.value;
+            const resultBox = document.getElementById('fire-calc-result');
+            const normalize = v => String(v ?? '').trim().toLowerCase();
+            const selected = normalize(memberEl?.value);
+            if (!selected || !startInput || !endInput) {
+                showToast('請先選擇消防隊員、起始日期與結束日期。', 'warning', '查詢條件不足');
+                return;
+            }
+            const startMs = new Date(`${startInput}T00:00:00`).getTime();
+            const exclusiveEnd = new Date(`${endInput}T00:00:00`);
+            exclusiveEnd.setDate(exclusiveEnd.getDate() + 1);
+            const endMs = Math.min(exclusiveEnd.getTime(), Date.now());
+            if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || startInput > endInput) {
+                showToast('日期格式錯誤，或起始日期晚於結束日期。', 'warning', '查詢條件錯誤');
+                return;
+            }
+            const aliases = new Set([selected]);
+            // 同一位隊員可能在舊打卡使用編號、新打卡使用登入帳號。
+            (appData.users || []).forEach(u => {
+                const ids = [u.account,u.staffNumber,u.memberNumber].map(normalize).filter(Boolean);
+                if (ids.some(id => aliases.has(id))) ids.forEach(id => aliases.add(id));
+            });
+            const all = (appData.fireClocks || []);
+            for (let changed = true; changed;) {
+                changed = false;
+                all.forEach(c => {
+                    const ids = [c.account,c.userAccount,c.staffNumber,c.memberNumber,c.number].map(normalize).filter(Boolean);
+                    if (ids.some(id => aliases.has(id))) ids.forEach(id => {
+                        if (!aliases.has(id)) { aliases.add(id); changed = true; }
+                    });
+                });
+            }
+            const events = all.filter(c => {
+                const ids = [c.account,c.userAccount,c.staffNumber,c.memberNumber,c.number].map(normalize).filter(Boolean);
+                return ids.some(id => aliases.has(id)) && getClockTimestamp(c) > 0;
+            }).sort((a,b) => getClockTimestamp(a) - getClockTimestamp(b));
+            let started = null;
+            let totalMs = 0;
+            let insideCount = 0;
+            for (const c of events) {
+                const ts = getClockTimestamp(c);
+                if (ts >= startMs && ts < exclusiveEnd.getTime()) insideCount++;
+                if (ts > Date.now()) continue;
+                const status = String(c.status || '').trim();
+                if (status === '上班' || status === '上班打卡') {
+                    if (started === null) started = ts;
+                } else if ((status === '下班' || status === '下班打卡') && started !== null) {
+                    totalMs += Math.max(0, Math.min(ts, endMs) - Math.max(started, startMs));
+                    started = null;
+                }
+            }
+            if (started !== null) totalMs += Math.max(0, endMs - Math.max(started, startMs));
+            const registered = (appData.users || []).find(u => [u.account,u.staffNumber].map(normalize).includes(selected));
+            const last = [...events].reverse().find(c => c.name || c.staffNumber);
+            const displayName = registered?.name || last?.name || '消防隊員';
+            const displayId = registered?.staffNumber || last?.staffNumber || memberEl?.value || selected;
+            resultBox?.classList.remove('hidden');
+            document.getElementById('fire-calc-member-name').textContent = `${displayName} (${displayId})`;
+            document.getElementById('fire-calc-total-hours').textContent = `${(totalMs / 3600000).toFixed(1)} 小時`;
+            document.getElementById('fire-calc-details').textContent =
+                `統計區間：${startInput} 至 ${endInput}｜區間內 ${insideCount} 筆打卡；跨日班次計入重疊時數${started !== null ? '；未下班班次截至目前時間' : ''}`;
+        }
+
         function populateMemberSelects() {
-            const fireSelect = document.getElementById('fire-calc-member');
             const punishMemberSelect = document.getElementById('punish-member-select');
 
-            if (fireSelect) fireSelect.innerHTML = '<option value="">-- 請選擇消防隊員 --</option>';
+            // 消防名單由消防打卡紀錄建立；不依賴高層無權整批下載的 users 集合。
+            populateFireHoursMemberSelect();
             if (punishMemberSelect) punishMemberSelect.innerHTML = '<option value="">-- 請選擇被獎懲員警 --</option>';
 
             appData.users.forEach(u => {
@@ -3738,7 +3847,6 @@ async function republishAnnouncement(id) {
                 opt.textContent = `${u.name} (${u.account})`;
                 const units = u.units || [u.unit];
                 
-                if (fireSelect && units.includes('fire')) fireSelect.appendChild(opt.cloneNode(true));
                 if (punishMemberSelect && units.includes('police')) {
                     const punishOpt = opt.cloneNode(true);
                     punishOpt.textContent = `${u.name} (${u.staffNumber || u.account})`;
@@ -3947,6 +4055,7 @@ async function republishAnnouncement(id) {
             const activeBtn = document.getElementById(`btn-fire-${sub}`);
             if (activeBtn) activeBtn.className = "fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white whitespace-nowrap";
             if(sub==='review') renderFireReview();
+            if(sub==='hours') populateFireHoursMemberSelect();
         }
 
         function switchAdminSubTab(sub){
