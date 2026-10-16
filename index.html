@@ -4550,27 +4550,71 @@ async function republishAnnouncement(id) {
             document.getElementById('academy-expiry').textContent = `代碼剩餘：${mins}分 ${String(secs).padStart(2,'0')}秒`;
         }
 
+        // 專生可在未登入網站時以單筆 Firestore 文件驗證考核代碼；不下載管理中心的完整代碼清單。
+        // 注意：Firestore Security Rules 必須允許訪客 get /academyCodes/{code}，但不應允許匿名 list 或寫入。
         async function handleAcademyCodeLogin() {
-            await cloudDataReadyPromise;
             const input = document.getElementById('academy-code-input');
             const status = document.getElementById('academy-code-status');
+            const loginBtn = document.getElementById('academy-code-login-btn');
+            if (loginBtn?.disabled) return;
             const rawCode = String(input?.value || '').trim().toUpperCase();
             const parsed = parseAcademyCode(rawCode);
-            const cloudRow = (appData.academyCodes || []).find(x => String(x.code || '').toUpperCase() === rawCode);
-            if (!parsed || !cloudRow || Number(cloudRow.expiresAt) <= Date.now()) {
-                if (status) status.textContent = '考核代碼無效、格式錯誤或已過期。';
-                showToast('考核代碼無效或已過期。', 'error', '登入失敗');
+            if (!parsed) {
+                if (status) status.textContent = '考核代碼格式錯誤，或代碼已超過 30 分鐘有效期限。';
+                showToast('考核代碼格式錯誤或已過期。', 'error', '登入失敗');
                 return;
             }
-            academyExamSession = parsed;
-            academyExamCache = { policeReports: [], fireReports: [], emsReports: [] };
-            saveAcademySession();
-            saveAcademyCache();
-            if (input) input.value = '';
-            if (status) status.textContent = '';
-            renderAcademySession();
-            renderAcademyCache();
-            showToast(`已進入${parsed.type === 'police' ? '警務' : '消防'}專生考核。`, 'success', '考核登入成功');
+            const buttonText = loginBtn?.textContent;
+            if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = '正在驗證代碼…'; }
+            if (status) status.textContent = '正在向雲端驗證考核代碼…';
+            try {
+                await cloudDataReadyPromise;
+                if (!db || !fm) {
+                    if (status) status.textContent = '雲端服務尚未準備完成，請稍後再試或重新整理網頁。';
+                    showToast('雲端服務尚未準備完成，請稍後再試。', 'warning', '暫時無法驗證');
+                    return;
+                }
+                // 以代碼作為文件 ID 精準讀取，避免未登入時 appData.academyCodes 為空造成誤判。
+                const codeSnapshot = await fm.getDoc(fm.doc(db, 'academyCodes', rawCode));
+                if (!codeSnapshot.exists()) {
+                    if (status) status.textContent = '找不到此考核代碼，可能已被管理員刪除。';
+                    showToast('考核代碼不存在或已被刪除。', 'error', '登入失敗');
+                    return;
+                }
+                const cloudCode = codeSnapshot.data() || {};
+                // 以雲端資料為準，並確認代碼、類型及到期時間與校驗結果一致。
+                if (String(cloudCode.code || '').trim().toUpperCase() !== rawCode ||
+                    cloudCode.type !== parsed.type ||
+                    Number(cloudCode.expiresAt) !== parsed.expiresAt ||
+                    Number(cloudCode.expiresAt) <= Date.now()) {
+                    if (status) status.textContent = '考核代碼資料不符或已過期，請向管理員索取新代碼。';
+                    showToast('考核代碼資料不符或已過期。', 'error', '登入失敗');
+                    return;
+                }
+                academyExamSession = parsed;
+                academyExamCache = { policeReports: [], fireReports: [], emsReports: [] };
+                saveAcademySession();
+                saveAcademyCache();
+                if (input) input.value = '';
+                if (status) status.textContent = '';
+                renderAcademySession();
+                renderAcademyCache();
+                showToast(`已進入${parsed.type === 'police' ? '警務' : '消防'}專生考核。`, 'success', '考核登入成功');
+            } catch (error) {
+                console.warn('專生考核單筆代碼驗證失敗：', error);
+                const msg = String(error?.code || '') + ' ' + String(error?.message || '');
+                const denied = /permission-denied|insufficient permissions/i.test(msg);
+                const offline = /unavailable|network|offline|failed to fetch/i.test(msg);
+                const reason = denied
+                    ? '雲端拒絕訪客查詢考核代碼。請管理員檢查 Firestore academyCodes 的單筆讀取規則。'
+                    : offline
+                        ? '目前無法連線至雲端驗證代碼，請確認網路後重試。'
+                        : '考核代碼驗證暫時失敗，請稍後重試。';
+                if (status) status.textContent = reason;
+                showToast(reason, 'error', '驗證失敗');
+            } finally {
+                if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = buttonText; }
+            }
         }
 
         function logoutAcademySession(silent = false) {
