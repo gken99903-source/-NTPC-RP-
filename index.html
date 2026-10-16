@@ -2145,7 +2145,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><input type="text" id="ems-gcs-e" placeholder="GCS評分 E" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-author" readonly class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-3 text-sm text-slate-400"></div>
                 <textarea id="ems-treatment" rows="4" placeholder="給予處置" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white"></textarea>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><input type="text" id="ems-dispatch-time" placeholder="派遣時間" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-arrival-time" placeholder="抵達時間" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-leave-time" placeholder="離開時間" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-hospital-time" placeholder="到院時間（無後送填 N/A）" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-return-time" placeholder="返隊時間" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"></div>
-                <button id="submit-ems-report-btn" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-medium py-3 rounded-xl">提交EMS救護出勤報告</button>
+                <button type="button" id="submit-ems-report-btn" class="w-full bg-rose-600 hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3 rounded-xl">提交EMS救護出勤報告</button>
             </div>
         </div>
     </div>
@@ -6542,6 +6542,7 @@ async function republishAnnouncement(id) {
             return (appData.emsReports||[]).find(x=>String(x.docId||x.id)===key) || (appData.emsPendingReports||[]).find(x=>String(x.docId||x.id)===key) || null;
         }
         function openEMSReportModal(editId=''){
+            if(emsReportSubmitBusy){showToast('EMS報告正在送出，請稍候完成。','info','處理中');return;}
             const academyMode=!!academyExamSession&&academyExamSession.type==='fire';
             if(!academyMode&&(!currentUser||!userHasUnit('fire'))){showToast('只有消防身分可以使用EMS報告。','warning','權限不足');return;}
             if(currentUser&&isSuspendedUser(currentUser.account)){showToast('你目前於停職調查階段，無法使用EMS報告功能。','warning','停職調查限制');return;}
@@ -6556,34 +6557,57 @@ async function republishAnnouncement(id) {
             document.getElementById('submit-ems-report-btn').textContent=r?'重新送審':'提交EMS救護出勤報告';
             document.getElementById('modal-ems-report').classList.remove('hidden');
         }
+        // EMS 單次送出鎖：防止雙擊／連按重複寫入、重複通知。
+        let emsReportSubmitBusy = false;
         async function submitEMSReport(){
-            const academyMode=!!academyExamSession&&academyExamSession.type==='fire';
-            if(!academyMode&&(!currentUser||!userHasUnit('fire'))){showToast('只有消防身分可以提交EMS報告。','warning','權限不足');return;}
-            if(currentUser&&isSuspendedUser(currentUser.account)){showToast('你目前於停職調查階段，無法使用EMS報告功能。','warning','停職調查限制');return;}
-            const editId=document.getElementById('ems-edit-id').value;
-            const old=academyMode?null:getEMSRecordForEdit(editId);
-            if(old&&String(old.reviewStatus||'')==='pending'){showToast('案件目前正在等待消防高層審核，暫時無法修改。','warning','等待審核');return;}
-            if(old&&!canModifyEMS(old)){showToast('你無法修改這筆EMS報告。','warning','權限不足');return;}
-            const f={chiefComplaint:document.getElementById('ems-chief-complaint').value.trim(),dispatchCategory:document.getElementById('ems-dispatch-category').value.trim(),patient:document.getElementById('ems-patient').value.trim(),unitVehicle:document.getElementById('ems-unit-vehicle').value.trim(),gcsE:document.getElementById('ems-gcs-e').value.trim(),treatment:document.getElementById('ems-treatment').value.trim(),dispatchTime:document.getElementById('ems-dispatch-time').value.trim(),arrivalTime:document.getElementById('ems-arrival-time').value.trim(),leaveTime:document.getElementById('ems-leave-time').value.trim(),hospitalTime:document.getElementById('ems-hospital-time').value.trim(),returnTime:document.getElementById('ems-return-time').value.trim()};
-            if(Object.values(f).some(v=>!v)){showToast('請完整填寫EMS救護出勤報告。','error','資料不完整');return;}
-            const id=old?(old.id||old.docId):generateNextEMSId(),now=Date.now();
-            const obj={...(old||{}),id,...f,authorId:academyMode?'警專專生':(old?.authorId||currentUser.account),authorName:academyMode?'專生考生':(old?.authorName||currentUser.name),registeredByAccount:academyMode?'':(old?.registeredByAccount||currentUser.account),registeredByName:academyMode?'專生考生':(old?.registeredByName||currentUser.name),timestamp:old?.timestamp||now,time:old?.time||formatDateTime(now),updatedAt:now};
-            if(academyMode){academyExamCache.emsReports.unshift(obj);saveAcademyCache();closeModal('modal-ems-report');renderAcademyCache();showSubmitSuccessAnimation('考核 EMS 送出成功',`${id} 已保留於本次瀏覽器快取。`);return;}
+            if(emsReportSubmitBusy)return;
+            const emsModal=document.getElementById('modal-ems-report');
+            if(!emsModal||emsModal.classList.contains('hidden'))return;
+            emsReportSubmitBusy=true; // 必須在第一個 await 前立即上鎖
+            const emsSubmitButton=document.getElementById('submit-ems-report-btn');
+            const previousButtonText=emsSubmitButton?.textContent||'提交EMS救護出勤報告';
+            if(emsSubmitButton){
+                emsSubmitButton.disabled=true;
+                emsSubmitButton.setAttribute('aria-busy','true');
+                emsSubmitButton.textContent='正在送出 EMS 報告，請稍候...';
+            }
             try{
-                const pendingObj={...obj,reviewStatus:'pending',rejectionReason:'',reviewedAt:0,reviewedBy:'',submittedAt:now,updatedAt:now};
-                await fm.setDoc(fm.doc(db,'emsPendingReports',id),pendingObj);
-                if(old&&appData.emsReports.some(x=>String(x.docId||x.id)===String(editId))) await fm.deleteDoc(fm.doc(db,'emsReports',old.docId||old.id));
-                appData.emsPendingReports=appData.emsPendingReports.filter(x=>String(x.docId||x.id)!==String(id));
-                appData.emsPendingReports.unshift({docId:id,...pendingObj});
-                if(old) appData.emsReports=appData.emsReports.filter(x=>String(x.docId||x.id)!==String(editId));
-                await removePendingReportNotifications(id,pendingObj.registeredByAccount);
-                const n={type:'report',department:'fire',caseId:id,recipientAccount:pendingObj.registeredByAccount,recipientAccountNormalized:String(pendingObj.registeredByAccount||'').trim().toLowerCase(),status:'pending',title:old?'EMS報告已重新送件':'EMS報告已送出，等待消防高層審核',message:old?`EMS報告 ${id} 已重新送入消防高層審核。`:`EMS報告 ${id} 已送入消防高層審核系統。`,timestamp:now,read:false};
-                const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); /* 通知由 onSnapshot 回填，避免審核後本地插入與即時監聽重複。 */
-                // EMS 與消防共用消防／EMS Discord Webhook。
-                sendDiscordCaseNotification('ems', pendingObj);
-                await logAdminAction(old?'EMS報告退件後重新送件':'提交EMS報告等待消防高層審核',id);
-                closeModal('modal-ems-report');renderEMSReports();renderFireReview();renderPersonalNotifications();renderMyProfile();showSubmitSuccessAnimation(old?'EMS重新送審成功':'EMS報告送審成功',old?`${id} 已重新送入消防高層審核。`:`${id} 已送入消防高層審核系統。`);
-            }catch(e){showToast('EMS報告送審失敗：'+e.message,'error','操作失敗');}
+                const academyMode=!!academyExamSession&&academyExamSession.type==='fire';
+                if(!academyMode&&(!currentUser||!userHasUnit('fire'))){showToast('只有消防身分可以提交EMS報告。','warning','權限不足');return;}
+                if(currentUser&&isSuspendedUser(currentUser.account)){showToast('你目前於停職調查階段，無法使用EMS報告功能。','warning','停職調查限制');return;}
+                const editId=document.getElementById('ems-edit-id').value;
+                const old=academyMode?null:getEMSRecordForEdit(editId);
+                if(old&&String(old.reviewStatus||'')==='pending'){showToast('案件目前正在等待消防高層審核，暫時無法修改。','warning','等待審核');return;}
+                if(old&&!canModifyEMS(old)){showToast('你無法修改這筆EMS報告。','warning','權限不足');return;}
+                const f={chiefComplaint:document.getElementById('ems-chief-complaint').value.trim(),dispatchCategory:document.getElementById('ems-dispatch-category').value.trim(),patient:document.getElementById('ems-patient').value.trim(),unitVehicle:document.getElementById('ems-unit-vehicle').value.trim(),gcsE:document.getElementById('ems-gcs-e').value.trim(),treatment:document.getElementById('ems-treatment').value.trim(),dispatchTime:document.getElementById('ems-dispatch-time').value.trim(),arrivalTime:document.getElementById('ems-arrival-time').value.trim(),leaveTime:document.getElementById('ems-leave-time').value.trim(),hospitalTime:document.getElementById('ems-hospital-time').value.trim(),returnTime:document.getElementById('ems-return-time').value.trim()};
+                if(Object.values(f).some(v=>!v)){showToast('請完整填寫EMS救護出勤報告。','error','資料不完整');return;}
+                const id=old?(old.id||old.docId):document.getElementById('ems-report-id').value.trim(),now=Date.now();
+                if(!id){showToast('找不到EMS報告編號，請重新開啟填寫視窗。','error','編號錯誤');return;}
+                const obj={...(old||{}),id,...f,authorId:academyMode?'警專專生':(old?.authorId||currentUser.account),authorName:academyMode?'專生考生':(old?.authorName||currentUser.name),registeredByAccount:academyMode?'':(old?.registeredByAccount||currentUser.account),registeredByName:academyMode?'專生考生':(old?.registeredByName||currentUser.name),timestamp:old?.timestamp||now,time:old?.time||formatDateTime(now),updatedAt:now};
+                if(academyMode){academyExamCache.emsReports.unshift(obj);saveAcademyCache();closeModal('modal-ems-report');renderAcademyCache();showSubmitSuccessAnimation('考核 EMS 送出成功',`${id} 已保留於本次瀏覽器快取。`);return;}
+                try{
+                    const pendingObj={...obj,reviewStatus:'pending',rejectionReason:'',reviewedAt:0,reviewedBy:'',submittedAt:now,updatedAt:now};
+                    await fm.setDoc(fm.doc(db,'emsPendingReports',id),pendingObj);
+                    if(old&&appData.emsReports.some(x=>String(x.docId||x.id)===String(editId))) await fm.deleteDoc(fm.doc(db,'emsReports',old.docId||old.id));
+                    appData.emsPendingReports=appData.emsPendingReports.filter(x=>String(x.docId||x.id)!==String(id));
+                    appData.emsPendingReports.unshift({docId:id,...pendingObj});
+                    if(old) appData.emsReports=appData.emsReports.filter(x=>String(x.docId||x.id)!==String(editId));
+                    await removePendingReportNotifications(id,pendingObj.registeredByAccount);
+                    const n={type:'report',department:'fire',caseId:id,recipientAccount:pendingObj.registeredByAccount,recipientAccountNormalized:String(pendingObj.registeredByAccount||'').trim().toLowerCase(),status:'pending',title:old?'EMS報告已重新送件':'EMS報告已送出，等待消防高層審核',message:old?`EMS報告 ${id} 已重新送入消防高層審核。`:`EMS報告 ${id} 已送入消防高層審核系統。`,timestamp:now,read:false};
+                    const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); /* 通知由 onSnapshot 回填，避免審核後本地插入與即時監聽重複。 */
+                    // EMS 與消防共用消防／EMS Discord Webhook。
+                    sendDiscordCaseNotification('ems', pendingObj);
+                    await logAdminAction(old?'EMS報告退件後重新送件':'提交EMS報告等待消防高層審核',id);
+                    closeModal('modal-ems-report');renderEMSReports();renderFireReview();renderPersonalNotifications();renderMyProfile();showSubmitSuccessAnimation(old?'EMS重新送審成功':'EMS報告送審成功',old?`${id} 已重新送入消防高層審核。`:`${id} 已送入消防高層審核系統。`);
+                }catch(e){showToast('EMS報告送審失敗：'+e.message,'error','操作失敗');}
+            }finally{
+                emsReportSubmitBusy=false;
+                if(emsSubmitButton){
+                    emsSubmitButton.disabled=false;
+                    emsSubmitButton.removeAttribute('aria-busy');
+                    emsSubmitButton.textContent=previousButtonText;
+                }
+            }
         }
         function renderEMSRemarkHistory(r){const el=document.getElementById('ems-remark-history');if(!el)return;const rr=getReportRemarks(r);el.innerHTML=rr.length?rr.map(x=>`<div class="rounded-lg border border-slate-800 bg-slate-950/70 p-3"><div class="flex justify-between"><span class="text-xs text-amber-400">${x.authorName||'高層'}</span><span class="text-[11px] text-slate-500">${x.time||formatDateTime(x.timestamp)}</span></div><div class="text-xs text-slate-300 mt-1 whitespace-pre-wrap">${x.text||''}</div></div>`).join(''):'<div class="text-xs text-slate-500">目前尚無高層批示。</div>';}
         function viewEMSReportDetail(id){const r=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r)return;document.getElementById('ems-detail-id').textContent=r.id||r.docId;document.getElementById('ems-detail-title').textContent=`${r.patient||'傷患'} 的EMS救護出勤報告`;const fields=[['主訴',r.chiefComplaint],['派遣類別',r.dispatchCategory],['傷患RP名稱 / ID',r.patient],['出勤單位 / 車輛',r.unitVehicle],['GCS評分 E',r.gcsE],['派遣時間',r.dispatchTime],['抵達時間',r.arrivalTime],['離開時間',r.leaveTime],['到院時間',r.hospitalTime],['返隊時間',r.returnTime],['填寫人',`${r.authorName||'--'} (${r.authorId||'--'})`],['建立時間',r.time||formatDateTime(r.timestamp)]];document.getElementById('ems-detail-fields').innerHTML=fields.map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${escapeHtml(k)}</span><span class="text-sm text-slate-200 break-words">${escapeHtml(v||'--')}</span></div>`).join('');document.getElementById('ems-detail-treatment').textContent=r.treatment||'--';renderEMSRemarkHistory(r);const actionHost=document.getElementById('ems-detail-action-bar');if(actionHost){const a=[];if(canModifyEMS(r))a.push(`<button type="button" onclick="closeModal('modal-ems-detail');openEMSReportModal('${id}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs"><i class="fa-solid fa-pen mr-1"></i>編輯</button>`);if(canModifyEMS(r))a.push(`<button type="button" onclick="deleteEMSReport('${id}'); closeModal('modal-ems-detail')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs"><i class="fa-solid fa-trash mr-1"></i>刪除</button>`);if(currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire'))) )a.push(`<button type="button" onclick="closeModal('modal-ems-detail');openRemarkModal('emsReports','${id}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs"><i class="fa-solid fa-pen-nib mr-1"></i>高層批示</button>`);actionHost.innerHTML=a.join('');}document.getElementById('modal-ems-detail').classList.remove('hidden');}
