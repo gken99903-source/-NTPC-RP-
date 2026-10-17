@@ -4505,8 +4505,10 @@ async function republishAnnouncement(id) {
         }
 
         async function generateAcademyCode(type) {
-            if (!currentUser || currentUser.role !== 'admin') {
-                showToast('只有最高管理員可以生成專生考核代碼。', 'warning', '權限不足');
+            // 使用既有身分權限 helper：最高管理員或已授權的警專教官可生成代碼。
+            // 此處僅授予考核代碼生成權限，不開放管理中心其他操作。
+            if (!isAcademyInstructor(currentUser)) {
+                showToast('只有最高管理員或警專教官可以生成專生考核代碼。', 'warning', '權限不足');
                 return;
             }
             const now = Date.now();
@@ -4528,7 +4530,13 @@ async function republishAnnouncement(id) {
                 renderManagementAcademyCodes();
                 try { navigator.clipboard?.writeText(code); } catch (e) {}
                 showToast(`${type === 'police' ? '警務' : '消防'}考核代碼已生成：${code}`, 'success', '考核代碼生成成功');
-            } catch (e) { showToast('考核代碼生成失敗：' + e.message, 'error', '操作失敗'); }
+            } catch (e) {
+                if (String(e?.code || '').includes('permission-denied')) {
+                    showToast('Firebase 拒絕寫入考核代碼，請管理員檢查 academyCodes 的授權寫入規則。', 'error', '雲端權限不足');
+                } else {
+                    showToast('考核代碼生成失敗：' + e.message, 'error', '操作失敗');
+                }
+            }
         }
 
         function renderAcademyCodeCards(host, rows, management = false) {
@@ -4569,7 +4577,8 @@ async function republishAnnouncement(id) {
             const host = document.getElementById('admin-academy-code-list');
             if (!host) return;
             const rows = (await loadAcademyCodes()).sort((a,b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
-            renderAcademyCodeCards(host, rows, true);
+            // 警專教官可檢視代碼，但刪除權仍依原管理層權限判定。
+            renderAcademyCodeCards(host, rows, isManagementUser());
         }
 
         async function openAcademyCodeManagement() {
