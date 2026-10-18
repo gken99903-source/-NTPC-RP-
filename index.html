@@ -1024,7 +1024,7 @@
                         <h3 class="text-2xl font-bold text-white">車輛查詢系統</h3><p class="text-slate-400">當前開發階段 敬請期待</p>
                     </div>
                     <div id="vehicles-unlocked-view" class="hidden space-y-4">
-                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl"><div class="flex flex-col sm:flex-row justify-between gap-3 sm:items-center"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-car-side text-cyan-400 mr-2"></i>車輛查詢系統</h3><p class="text-xs text-slate-500 mt-1">按查詢才讀取資料；可使用車牌、車主、證件末五碼或車輛型號開頭查詢，未投保顯示紅字。</p></div><button id="open-vehicle-post-btn" type="button" class="hidden bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold"><i class="fa-solid fa-plus mr-2"></i>建立車輛資料</button></div><div class="flex gap-2 mt-4"><input id="vehicle-search-input" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white" placeholder="輸入關鍵字（車牌／車主／證件末五碼／型號／車色）"><button id="vehicle-search-btn" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl text-sm">查詢</button></div><div class="flex flex-wrap items-center justify-between gap-2 mt-2 text-xs text-slate-500"><span id="vehicle-lookup-status">登入時不讀取車輛資料，按「查詢」才會連線。</span><button type="button" id="vehicle-full-search-btn" class="px-2 py-1 rounded-lg border border-amber-500/30 text-amber-300 hover:bg-amber-500/10">進階包含搜尋（需讀取整份車輛資料）</button></div></div><div id="vehicle-results" class="grid grid-cols-1 gap-4"></div>
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl"><div class="flex flex-col sm:flex-row justify-between gap-3 sm:items-center"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-car-side text-cyan-400 mr-2"></i>車輛查詢系統</h3><p class="text-xs text-slate-500 mt-1">按查詢才讀取資料；可用車牌、車主、證件末五碼或車輛型號查詢，輸入純數字（如 666）也能找到 OWO-666；純數字會讀取車輛資料進行比對，未投保顯示紅字。</p></div><button id="open-vehicle-post-btn" type="button" class="hidden bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold"><i class="fa-solid fa-plus mr-2"></i>建立車輛資料</button></div><div class="flex gap-2 mt-4"><input id="vehicle-search-input" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white" placeholder="輸入車牌、車主、證件末五碼、型號或數字（如 666）"><button id="vehicle-search-btn" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl text-sm">查詢</button></div><div class="flex flex-wrap items-center justify-between gap-2 mt-2 text-xs text-slate-500"><span id="vehicle-lookup-status">登入時不讀取車輛資料，按「查詢」才會連線。</span><button type="button" id="vehicle-full-search-btn" class="px-2 py-1 rounded-lg border border-amber-500/30 text-amber-300 hover:bg-amber-500/10">進階包含搜尋（需讀取整份車輛資料）</button></div></div><div id="vehicle-results" class="grid grid-cols-1 gap-4"></div>
                     </div>
                 </div>
 
@@ -5655,7 +5655,7 @@ async function republishAnnouncement(id) {
         function lookupDemandPrompt(type){
             const isCitizen=type==='citizen';
             const keyword=lookupKeyword(document.getElementById(isCitizen?'citizen-search-input':'vehicle-search-input')?.value||'');
-            return `<div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-8 text-center text-slate-500"><i class="fa-solid fa-magnifying-glass text-2xl mb-2"></i><div>${keyword?'搜尋條件已更新，請按「查詢」取得資料。':'輸入關鍵字後按「查詢」才會讀取雲端資料。'}</div><div class="text-xs mt-1">常用查詢使用資料庫索引；需要備註或中間字元請使用進階包含搜尋。</div></div>`;
+            return `<div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-8 text-center text-slate-500"><i class="fa-solid fa-magnifying-glass text-2xl mb-2"></i><div>${keyword?'搜尋條件已更新，請按「查詢」取得資料。':'輸入關鍵字後按「查詢」才會讀取雲端資料。'}</div><div class="text-xs mt-1">一般關鍵字使用資料庫索引；車輛純數字會自動包含搜尋（按下查詢才讀取車輛資料）；其他中間字元請使用進階搜尋。</div></div>`;
         }
         function resetLookupDemandState(){
             lookupDemandEpoch++;
@@ -5708,6 +5708,13 @@ async function republishAnnouncement(id) {
                 return {rows:snap.docs.map(d=>({docId:d.id,...d.data()})),truncated:snap.size>=LOOKUP_ON_DEMAND_LIMIT};
             }
             if(!q)return {rows:[],truncated:false};
+            // 車牌如 OWO-666：Firestore 的前綴索引無法直接找到中間數字。
+            // 僅當使用者主動用「純數字」查詢車輛時，按需讀取車輛集合比對；不在登入時全量讀取，且不影響市民查詢。
+            // 亦涵蓋五碼數字：避免原先 id5 完全相符的快速路徑漏掉車牌中的數字。
+            if(type==='vehicles' && /^\d+$/.test(q)){
+                const snap=await fm.getDocs(fm.collection(db,col));
+                return {rows:snap.docs.map(d=>({docId:d.id,...d.data()})),truncated:false,numericContainsScan:true};
+            }
             const probes=[];
             if(/^\d{5}$/.test(q)){
                 // 完整五碼可直接以單一精確查詢取得資料，不必額外查詢無關欄位。
@@ -5744,7 +5751,7 @@ async function republishAnnouncement(id) {
             const fullBtn=document.getElementById(type==='citizen'?'citizen-full-search-btn':'vehicle-full-search-btn');
             const status=document.getElementById(type==='citizen'?'citizen-lookup-status':'vehicle-lookup-status');
             if(btn)btn.disabled=true;if(fullBtn)fullBtn.disabled=true;
-            if(status)status.textContent=full?'進階搜尋：依照要求讀取完整集合中...':'正在從 Firestore 查詢符合條件的資料...';
+            if(status)status.textContent=full?'進階搜尋：依照要求讀取完整集合中...':(type==='vehicles' && /^\d+$/.test(q)?'數字搜尋：正在按需讀取車輛資料，比對車牌與證件數字...':'正在從 Firestore 查詢符合條件的資料...');
             try{
                 const col=type==='citizen'?'citizenRecords':'vehicleRecords';
                 const result=full?{rows:(await fm.getDocs(fm.collection(db,col))).docs.map(d=>({docId:d.id,...d.data()})),truncated:false}:await lookupDemandIndexedDocs(type,q,filter);
@@ -5758,7 +5765,7 @@ async function republishAnnouncement(id) {
                     try{await lookupDemandLinksForCitizens(rawRows,epoch);}catch(linkError){console.warn('本次名下車輛資料讀取失敗，市民查詢仍可使用：',linkError);}
                 }
                 if(epoch!==lookupDemandEpoch||!currentUser||currentUser.account!==account)return;
-                if(status)status.textContent=`本次從雲端查詢到 ${rawRows.length} 筆${full?'（進階包含搜尋）':'（索引搜尋）'}${result.truncated?'；結果可能不完整，請縮小條件':''}${result.partial?'；部分條件失敗':''}。`;
+                if(status)status.textContent=`本次從雲端查詢到 ${rawRows.length} 筆${full?'（進階包含搜尋）':result.numericContainsScan?'（數字包含搜尋）':'（索引搜尋）'}${result.truncated?'；結果可能不完整，請縮小條件':''}${result.partial?'；部分條件失敗':''}。`;
                 renderLookupSystems();
                 if(result.truncated)showToast('符合條件的資料較多，僅顯示部分結果；可縮小條件或改用進階搜尋。','warning','資料筆數提醒');
             }catch(e){
