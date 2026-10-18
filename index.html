@@ -8,7 +8,7 @@
     <!-- NTPC-RP Discord webhook fix + management LOG: 2026-10-06-v4 -->
     <!-- Security audit: 2026-10-07. Front-end hardening only; Firestore Rules/Firebase Auth/Discord secrets still require backend configuration. -->
     <!-- Account safety fix: never auto-reset DSUENSX or auto-seed demo users when users collection is empty. -->
-    <title>新北市 RP 3.0 公職服務系統 V1.9.3</title>
+    <title>新北市 RP 3.0 公職服務系統 V1.9.4</title>
     <!-- 網站圖標與連結分享資訊 -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
     <link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
@@ -767,8 +767,8 @@
                     <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">New Taipei Roleplay 3.0</span>
                     <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">新北市 RP 3.0<br><span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">虛擬勤務與案件管理系統</span></h1>
                     <p class="text-sm font-medium text-sky-200/90"><i class="fa-solid fa-gamepad mr-2"></i>僅供 ER:LC 遊戲角色扮演使用，非真實政府機關官方網站。</p>
-                    <div><span id="home-site-version-badge" class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.9.3</span></div>
-                    <p id="home-version-intro" class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 官方整合入口。V1.9.3 為資料讀取優化版本，減少重複載入與不必要的 Firestore 查詢，調整管理中心在線名單刷新頻率，並改善登入與安全資料的讀取流程。</p>
+                    <div><span id="home-site-version-badge" class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.9.4</span></div>
+                    <p id="home-version-intro" class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 虛擬公職服務系統。V1.9.4 全面更新 EMS 救護報告五大區塊，優化未運送原因勾選顯示，並強化 EMS 送審的防重複流水號交易。</p>
                     <div class="flex flex-wrap justify-center gap-4 pt-2">
                         <button data-tab="police" class="tab-shortcut-btn bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
                             <i class="fa-solid fa-shield"></i><span>進入警務系統</span>
@@ -785,11 +785,11 @@
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div class="flex items-center gap-2 text-emerald-300 font-bold">
-                            <i class="fa-solid fa-satellite-dish"></i><span id="home-latest-update-label">V1.9.3 最新更新</span>
+                            <i class="fa-solid fa-satellite-dish"></i><span id="home-latest-update-label">V1.9.4 最新更新</span>
                         </div>
                         <p class="text-slate-400 text-sm mt-2 leading-relaxed">本版本優化 Firestore 讀取流程，減少重複下載與啟動時重複載入；管理中心在線名單刷新間隔調整為 60 秒，並縮小登入安全資料查詢範圍。</p>
                     </div>
-                    <p id="home-latest-update-summary" class="text-xs text-slate-500 mt-2"></p>
+                    <p id="home-latest-update-summary" class="text-xs text-slate-500 mt-2">EMS 報告五區塊與防重複編號更新｜未運送原因改為條件顯示，送件時交易配號，避免案件覆寫。</p>
                     <button type="button" data-tab="update-log" class="tab-shortcut-btn shrink-0 px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-200 text-sm font-semibold transition">查看完整更新紀錄</button>
                 </div>
             </div>
@@ -1195,7 +1195,7 @@
                             </div>
                         </div>
                     </div>
-                    <span id="update-log-current-version" class="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V1.9.3</span>
+                    <span id="update-log-current-version" class="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V1.9.4</span>
                 </div>
 
                 <div id="dynamic-update-log" class="space-y-4"></div>
@@ -1203,10 +1203,25 @@
                     <article class="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                             <div>
-                                <h3 class="text-lg font-bold text-white">V1.9.3</h3>
-                                <p class="text-xs text-emerald-300 mt-1">Firestore 讀取量優化、Webhook 轉送與勤務交接分流修復</p>
+                                <h3 class="text-lg font-bold text-white">V1.9.4</h3>
+                                <p class="text-xs text-emerald-300 mt-1">EMS 表單重製、未運送條件顯示與案件流水號防覆寫</p>
                             </div>
                             <span class="text-xs font-semibold text-emerald-300">目前版本</span>
+                        </div>
+                        <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
+                            <li>EMS 救護出勤報告重整為派遣資料、傷病患資料、現場狀況、處置項目及出勤紀錄五大區塊。</li>
+                            <li>未勾選「沒有運送」時隱藏未運送原因；勾選後才選擇未接觸、有接觸或出勤待命及細項。</li>
+                            <li>EMS 案件比照警務案件於送出時使用 Firestore 交易配發流水號，同時建立待審資料，防止多人同時送件造成編號重複或覆寫。</li>
+                            <li>開啟 EMS 表單只顯示預計編號，取消不占用號碼；既有 EMS 報告與歷史編號均予保留。</li>
+                        </ul>
+                    </article>
+                    <article class="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                            <div>
+                                <h3 class="text-lg font-bold text-white">V1.9.3</h3>
+                                <p class="text-xs text-red-300 mt-1">Firestore 讀取量優化、Webhook 轉送與勤務交接分流修復</p>
+                            </div>
+                            <span class="text-xs font-semibold text-red-300">前一版本</span>
                         </div>
                         <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
                             <li>減少部分資料集合在 getDocs 與 onSnapshot 初次載入時的重複讀取。</li>
@@ -1224,9 +1239,9 @@
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                             <div>
                                 <h3 class="text-lg font-bold text-white">V1.9.2</h3>
-                                <p class="text-xs text-red-300 mt-1">V1.9.1 讀取量過度使用問題修復版本</p>
+                                <p class="text-xs text-slate-400 mt-1">V1.9.1 讀取量過度使用問題修復版本</p>
                             </div>
-                            <span class="text-xs font-semibold text-red-300">上一版本</span>
+                            <span class="text-xs font-semibold text-slate-500">歷史版本</span>
                         </div>
                         <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
                             <li>主要修復 V1.9.1 雲端資料庫讀取數過度使用問題。</li>
@@ -1689,7 +1704,7 @@
                                 <h3 class="text-xl font-bold text-white mt-1"><i class="fa-solid fa-code-branch text-emerald-400 mr-2"></i>網站版本更新管理</h3>
                                 <p class="text-xs text-slate-500 mt-1">發布新版本後，首頁版本標籤、最新更新資訊、更新紀錄目前版本與瀏覽器標題會自動同步。</p>
                             </div>
-                            <span id="admin-current-site-version" class="inline-flex items-center justify-center px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V1.9.3</span>
+                            <span id="admin-current-site-version" class="inline-flex items-center justify-center px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V1.9.4</span>
                         </div>
                     </div>
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
@@ -2248,22 +2263,81 @@
     </div>
 
 
-    <div id="modal-ems-report" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[92vh] overflow-y-auto">
-            <div class="flex justify-between items-center"><h3 id="ems-modal-title" class="text-xl font-bold text-white"><i class="fa-solid fa-truck-medical text-rose-400 mr-2"></i>EMS救護出勤報告</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-ems-report"><i class="fa-solid fa-xmark"></i></button></div>
-            <input type="hidden" id="ems-edit-id">
-            <div class="space-y-4">
-                <input type="text" id="ems-report-id" readonly class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 font-mono">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><input type="text" id="ems-chief-complaint" placeholder="主訴" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-dispatch-category" placeholder="派遣類別" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"></div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><input type="text" id="ems-patient" placeholder="傷患RP名稱 / ID" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-unit-vehicle" placeholder="出勤單位 / 車輛" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"></div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><input type="text" id="ems-gcs-e" placeholder="GCS評分 E: V: M:" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-author" readonly class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-3 text-sm text-slate-400"></div>
-                <textarea id="ems-treatment" rows="4" placeholder="給予處置" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white"></textarea>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><input type="text" id="ems-dispatch-time" placeholder="派遣時間" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-arrival-time" placeholder="抵達時間" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-leave-time" placeholder="離開時間" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-hospital-time" placeholder="到院時間（無後送填 N/A）" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><input type="text" id="ems-return-time" placeholder="返隊時間" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"></div>
-                <button type="button" id="submit-ems-report-btn" class="w-full bg-rose-600 hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3 rounded-xl">提交EMS救護出勤報告</button>
-            </div>
+    <!-- EMS 救護出勤報告：V2 五大區塊、依勾選顯示條件欄位 -->
+    <div id="modal-ems-report" class="fixed inset-0 z-50 bg-slate-950/80 hidden flex items-center justify-center p-2 sm:p-4">
+      <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-4xl w-full shadow-2xl max-h-[94dvh] flex flex-col overflow-hidden">
+        <div class="flex justify-between items-center gap-2 px-5 sm:px-7 py-4 border-b border-slate-800 shrink-0">
+          <h3 id="ems-modal-title" class="text-lg sm:text-xl font-bold text-white"><i class="fa-solid fa-truck-medical text-rose-400 mr-2"></i>EMS 救護出勤報告</h3>
+          <button type="button" class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-ems-report" aria-label="關閉 EMS 表單"><i class="fa-solid fa-xmark"></i></button>
         </div>
+        <div class="overflow-y-auto p-4 sm:p-7 space-y-5 overscroll-contain" id="ems-form-scroll"><input type="hidden" id="ems-edit-id">
+<input type="text" id="ems-report-id" readonly class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 font-mono">
+<section class="rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-4">
+    <div><h4 class="font-bold text-rose-300 text-base">一、派遣資料</h4><p class="text-xs text-slate-400 mt-1">派遣與醫院時間沿用舊版單一回答框格式；未運送時先勾選「沒有運送」，再選擇原因。</p></div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">日期</span><input id="ems-duty-date" type="date" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">以勤務當天日期為準</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">出勤單位</span><input id="ems-unit-vehicle" type="text" placeholder="例如：新莊分隊／一般型救護車" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">請填分隊名稱與救護車類別</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">出勤時間</span><input id="ems-dispatch-time" type="text" placeholder="HH:MM" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">救護車出勤時間</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">到達現場時間</span><input id="ems-arrival-time" type="text" placeholder="HH:MM" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">救護車到達現場時間</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">離開現場時間</span><input id="ems-leave-time" type="text" placeholder="HH:MM" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">救護車離開現場時間</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">送達醫院時間</span><input id="ems-hospital-time" type="text" placeholder="HH:MM；未送醫可留空" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">救護車抵達醫院急診檢傷站時間</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">離開醫院時間</span><input id="ems-leave-hospital-time" type="text" placeholder="HH:MM；未送醫可留空" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">救護車離開醫院時間</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">返隊待命時間</span><input id="ems-return-time" type="text" placeholder="HH:MM" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">救護車返抵分隊時間</span></label><label class="block sm:col-span-2"><span class="block text-xs font-semibold text-slate-300 mb-1.5">發生地點</span><input id="ems-incident-location" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block sm:col-span-2"><span class="block text-xs font-semibold text-slate-300 mb-1.5">協同處理單位</span><input id="ems-assisting-units" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">依實際支援單位填寫</span></label><label class="block sm:col-span-2"><span class="block text-xs font-semibold text-slate-300 mb-1.5">送往醫院或地點</span><input id="ems-hospital-destination" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">註記醫療機構名稱；未運送可留空</span></label></div><div class="space-y-2"><label class="inline-flex items-center gap-3 cursor-pointer rounded-xl border border-rose-500/25 bg-slate-950/60 px-4 py-3 text-sm font-semibold text-white"><input id="ems-no-transport" type="checkbox" class="h-4 w-4 accent-rose-500">沒有運送</label><div data-ems-reveal="ems-no-transport" class="hidden space-y-2"><div class="text-sm font-semibold text-white">未運送原因 <span class="text-xs font-normal text-slate-400">（請勾選一個分類及原因）</span></div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
+<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-no-contact" type="checkbox" data-ems-option-group="no-transport" class="h-4 w-4 rounded accent-rose-500">(1) 未接觸</label>
+<div data-ems-reveal="ems-no-contact" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><label class="block text-xs text-slate-300 mb-2">原因選項（A／B／C）</label><select id="ems-no-contact-reason" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><option value="">-- 請選擇原因 --</option><option value="未發現">A. 未發現</option><option value="誤報">B. 誤報</option><option value="中途取消">C. 中途取消</option></select></div>
+
+</div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
+<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-had-contact" type="checkbox" data-ems-option-group="no-transport" class="h-4 w-4 rounded accent-rose-500">(2) 有接觸</label>
+<div data-ems-reveal="ems-had-contact" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><label class="block text-xs text-slate-300 mb-2">原因選項（A／B／C）</label><select id="ems-had-contact-reason" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><option value="">-- 請選擇原因 --</option><option value="拒送">A. 拒送</option><option value="警察處理">B. 警察處理</option><option value="現場死亡">C. 現場死亡</option><option value="其他">D. 其他</option></select></div>
+
+</div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
+<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-standby" type="checkbox" data-ems-option-group="no-transport" class="h-4 w-4 rounded accent-rose-500">(3) 出勤待命</label>
+<div data-ems-reveal="ems-standby" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><label class="block text-xs text-slate-300 mb-2">原因選項（A／B／C）</label><select id="ems-standby-reason" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><option value="">-- 請選擇原因 --</option><option value="火警">A. 火警</option><option value="支援勤務">B. 支援勤務</option></select></div>
+
+</div></div></div>
+    </section><section class="rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-4">
+    <div><h4 class="font-bold text-rose-300 text-base">二、傷病患資料</h4></div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">傷病患姓名</span><input id="ems-patient-name" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">請填遊戲角色設定名稱，勿填真實敏感資料</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">國民身分證</span><input id="ems-patient-id" type="text" placeholder="RP 虛構證件資料" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">僅限 RP 虛構資料；請勿填寫真實身分證字號</span></label><label><span class="block text-xs font-semibold text-slate-300 mb-1.5">性別</span><select id="ems-patient-sex" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><option value="">-- 請選擇 --</option><option>男</option><option>女</option><option>其他／未註明</option></select></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">年齡</span><input id="ems-patient-age" type="number" placeholder="年齡" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label></div>
+    <div class="grid grid-cols-1 gap-4"><label class="block"><span class="block text-xs font-semibold text-slate-300 mb-1.5">GCS 評分 E: V: M:</span><input id="ems-gcs-e" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">同一欄位輸入 E、V、M 的評分；不自動計分</span></label></div>
+    </section><section class="rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-4">
+    <div><h4 class="font-bold text-rose-300 text-base">三、現場狀況</h4><p class="text-xs text-slate-400 mt-1">勾選項目後，才會展開該項對應的 A／B／C 回答框。</p></div>
+    <div class="space-y-2"><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
+<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-nontrauma" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(1) 非創傷</label>
+<div data-ems-reveal="ems-nontrauma" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 填寫症狀</span><textarea id="ems-nontrauma-symptom" rows="2" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></textarea></label></div>
+
+</div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
+<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-trauma" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(2) 創傷</label>
+<div data-ems-reveal="ems-trauma" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 填寫症狀</span><textarea id="ems-trauma-symptom" rows="2" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></textarea></label></div>
+
+</div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
+<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-complaint" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(3) 傷病患主訴</label>
+<div data-ems-reveal="ems-complaint" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">感覺哪裡不舒服？</span><input id="ems-complaint-where" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">感覺怎麼的不舒服？</span><input id="ems-complaint-how" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">大約不舒服有多久了？</span><input id="ems-complaint-duration" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">還有其他地方不舒服嗎？</span><input id="ems-complaint-other" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block sm:col-span-2"><span class="block text-xs font-semibold text-slate-300 mb-1.5">評估頸椎是否損傷？</span><input id="ems-cervical" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">創傷患者適用</span></label></div></div>
+
+</div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
+<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-history" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(4) 傷病患病史</label>
+<div data-ems-reveal="ems-history" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 過去病史</span><input id="ems-past-history" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">未知請填「不清楚」</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">B. 藥物史</span><input id="ems-medication-history" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">未知請填「不清楚」</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">C. 過敏史</span><input id="ems-allergy-history" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">未知請填「不清楚」</span></label></div></div>
+
+</div></div>
+    </section><section class="rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-4">
+    <div><h4 class="font-bold text-rose-300 text-base">四、處置項目</h4></div>
+    <div class="space-y-2"><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
+<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-oxygen" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(1) 氧氣治療</label>
+<div data-ems-reveal="ems-oxygen" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 給氧設備</span><input id="ems-oxygen-device" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">B. 氧氣流量</span><input id="ems-oxygen-flow" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label></div></div>
+
+</div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
+<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-bandaging" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(2) 止血包紮</label>
+<div data-ems-reveal="ems-bandaging" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 使用器材</span><input id="ems-bandaging-equipment" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label></div>
+
+</div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
+<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-wound" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(3) 傷口描述</label>
+<div data-ems-reveal="ems-wound" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 傷口面積</span><input id="ems-wound-area" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">B. 何種傷口</span><input id="ems-wound-type" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label></div></div>
+
+</div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
+<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-medication" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(4) 給藥</label>
+<div data-ems-reveal="ems-medication" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 途徑／劑量</span><input id="ems-medication-route-dose" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label></div>
+
+</div></div>
+    </section><section class="rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-4">
+    <div><h4 class="font-bold text-rose-300 text-base">五、出勤紀錄</h4></div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 出勤人員姓名</span><input id="ems-staff-a" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">B. 出勤人員姓名</span><input id="ems-staff-b" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">C. 出勤人員姓名</span><input id="ems-staff-c" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">D. 出勤人員姓名</span><input id="ems-staff-d" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label></div>
+    </section><div id="ems-legacy-note" class="hidden rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200">此報告為舊版 EMS 格式，原有的派遣類別與舊版處置內容會保留在資料中。編輯時請依新欄位補充資料；未補充的部分不會自動捏造內容。</div>
+<div class="rounded-xl border border-slate-800 bg-slate-950 p-3"><label class="block text-xs text-slate-400 mb-1">填寫人（系統自動填入）</label><input type="text" id="ems-author" readonly class="w-full bg-slate-950/60 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-400"></div>
+<button type="button" id="submit-ems-report-btn" class="w-full bg-rose-600 hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl">提交 EMS 救護出勤報告</button></div>
+      </div>
     </div>
-    <div id="modal-ems-detail" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl max-h-[92vh] overflow-y-auto"><div class="flex justify-between items-center"><h3 id="ems-detail-title" class="text-xl font-bold text-white">EMS救護出勤報告</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-ems-detail"><i class="fa-solid fa-xmark"></i></button></div><span id="ems-detail-id" class="text-xs text-rose-400 font-mono"></span><div id="ems-detail-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4"></div><div class="mt-4"><div class="text-xs text-slate-400 mb-2">給予處置</div><div id="ems-detail-treatment" class="bg-slate-950 border border-slate-800 rounded-xl p-4 whitespace-pre-wrap text-sm text-slate-200"></div></div><div class="mt-4"><div class="text-xs text-slate-400 mb-2">高層批示</div><div id="ems-remark-history" class="space-y-2"></div><div id="ems-detail-action-bar" class="flex flex-wrap gap-2 pt-2"></div></div></div></div>
+    <div id="modal-ems-detail" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl max-h-[92vh] overflow-y-auto"><div class="flex justify-between items-center"><h3 id="ems-detail-title" class="text-xl font-bold text-white">EMS救護出勤報告</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-ems-detail"><i class="fa-solid fa-xmark"></i></button></div><span id="ems-detail-id" class="text-xs text-rose-400 font-mono"></span><div id="ems-detail-fields" class="space-y-4 mt-4"></div><div id="ems-detail-treatment-wrap" class="mt-4"><div class="text-xs text-slate-400 mb-2">舊版給予處置</div><div id="ems-detail-treatment" class="bg-slate-950 border border-slate-800 rounded-xl p-4 whitespace-pre-wrap text-sm text-slate-200"></div></div><div class="mt-4"><div class="text-xs text-slate-400 mb-2">高層批示</div><div id="ems-remark-history" class="space-y-2"></div><div id="ems-detail-action-bar" class="flex flex-wrap gap-2 pt-2"></div></div></div></div>
     <!-- Report Modal -->
     <div id="modal-report" class="mobile-modal-overlay fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="mobile-modal-scroll bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
@@ -3367,15 +3441,20 @@ function compareSiteVersion(a, b){
                 return Number(b?.publishedAt||b?.updatedAt||b?.createdAt||0)-Number(a?.publishedAt||a?.updatedAt||a?.createdAt||0);
             });
         }
+        // 本 HTML 固定內建 V1.9.4。雲端舊版發布紀錄不可覆蓋較新的已部署版本。
+        const NTPC_BUNDLED_SITE_VERSION={
+            version:'V1.9.4',title:'EMS 報告五區塊與防重複編號更新',
+            summary:'V1.9.4 重整 EMS 報告格式、未運送原因改為條件勾選，並以交易避免 EMS 案件流水號重複覆寫。'
+        };
         function getCurrentSiteVersion(){
             const rows=sortSiteVersions((appData.siteVersions||[]).filter(v=>v&&v.active!==false));
-            return rows[0]||null;
+            return rows.length&&compareSiteVersion(rows[0].version,NTPC_BUNDLED_SITE_VERSION.version)>0?rows[0]:NTPC_BUNDLED_SITE_VERSION;
         }
         function renderSiteVersionUI(){
             const v=getCurrentSiteVersion();
-            const version=String(v?.version||'V1.9.3').trim()||'V1.9.3';
+            const version=String(v?.version||'V1.9.4').trim()||'V1.9.4';
             const title=String(v?.title||'系統穩定性與功能更新').trim();
-            const summary=String(v?.summary||'V1.9.3 為資料讀取優化版本，減少重複載入與不必要的 Firestore 查詢。').trim();
+            const summary=String(v?.summary||'V1.9.4 更新 EMS 報告格式並修復案件編號重複風險。').trim();
             const set=(id,val)=>{const e=document.getElementById(id);if(e)e.textContent=val;};
             set('home-site-version-badge','網站版本 '+version);
             set('home-latest-update-label',version+' 最新更新');
@@ -3389,7 +3468,7 @@ function compareSiteVersion(a, b){
         }
         function renderDynamicUpdateLog(){
             const host=document.getElementById('dynamic-update-log'); if(!host)return;
-            const rows=sortSiteVersions((appData.siteVersions||[]).filter(v=>v&&v.active!==false));
+            const rows=sortSiteVersions((appData.siteVersions||[]).filter(v=>v&&v.active!==false&&compareSiteVersion(v.version,NTPC_BUNDLED_SITE_VERSION.version)>0));
             host.innerHTML=rows.length?rows.map((v,i)=>{const details=Array.isArray(v.details)?v.details:(String(v.details||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean));return `<article class="rounded-2xl border ${i===0?'border-emerald-500/30 bg-emerald-500/5':i===1?'border-red-500/25 bg-red-500/5':'border-slate-800 bg-slate-950/60'} p-5"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3"><div><h3 class="text-lg font-bold text-white">${escapeHtml(v.version||'--')}</h3><p class="text-xs ${i===0?'text-emerald-300':i===1?'text-red-300':'text-slate-500'} mt-1">${escapeHtml(v.title||'版本更新')}</p></div><span class="text-xs font-semibold ${i===0?'text-emerald-300':i===1?'text-red-300':'text-slate-500'}">${i===0?'目前版本':i===1?'前一版本':formatDateTime(v.publishedAt||v.createdAt)}</span></div><p class="text-sm text-slate-300 mb-3">${escapeHtml(v.summary||'')}</p>${details.length?`<ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">${details.map(d=>`<li>${escapeHtml(d)}</li>`).join('')}</ul>`:''}</article>`;}).join('') : '';
         }
         function resetSiteVersionForm(){
@@ -5156,9 +5235,7 @@ async function republishAnnouncement(id) {
             if (type === 'EMS') {
                 document.getElementById('ems-detail-id').textContent = r.id || id;
                 document.getElementById('ems-detail-title').textContent = `${r.patient || '傷患'} 的EMS救護出勤報告`;
-                const fields=[['主訴',r.chiefComplaint],['派遣類別',r.dispatchCategory],['傷患 RP 名稱 / ID',r.patient],['出勤單位 / 車輛',r.unitVehicle],['GCS評分 E: V: M:',r.gcsE],['派遣時間',r.dispatchTime],['抵達時間',r.arrivalTime],['離開時間',r.leaveTime],['到院時間',r.hospitalTime],['返隊時間',r.returnTime],['填寫人',`${r.authorName||'專生考生'} (${r.authorId||'警專專生'})`],['建立時間',r.time||formatDateTime(r.timestamp)]];
-                document.getElementById('ems-detail-fields').innerHTML=fields.map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${escapeHtml(k)}</span><span class="text-sm text-slate-200 break-words">${escapeHtml(v||'--')}</span></div>`).join('');
-                document.getElementById('ems-detail-treatment').textContent=r.treatment||'--';
+                renderEMSDetailFields(r);
                 const action=document.getElementById('ems-detail-action-bar'); if(action) action.innerHTML='';
                 document.getElementById('modal-ems-detail').classList.remove('hidden');
                 return;
@@ -6123,13 +6200,13 @@ async function republishAnnouncement(id) {
         }
 
         function ntpcCaseNumberSettings(dept, dateKey = ntpcReportDateKeyTaipei()) {
-            if(dept!=='police' && dept!=='fire') throw new Error('不支援的案件部門。');
+            if(!['police','fire','ems'].includes(dept)) throw new Error('不支援的案件部門。');
             return {
                 dateKey,
-                prefix:`${dept==='police'?'NTPD':'NTFD'}-${dateKey}`,
+                prefix:`${dept==='police'?'NTPD':dept==='fire'?'NTFD':'EMS'}-${dateKey}`,
                 counterRef:fm.doc(db,'caseNumberCounters',`${dept}_${dateKey}`),
-                pendingCollection:dept==='police'?'policePendingReports':'firePendingReports',
-                finalCollection:dept==='police'?'policeReports':'fireReports'
+                pendingCollection:dept==='police'?'policePendingReports':dept==='fire'?'firePendingReports':'emsPendingReports',
+                finalCollection:dept==='police'?'policeReports':dept==='fire'?'fireReports':'emsReports'
             };
         }
 
@@ -6173,7 +6250,7 @@ async function republishAnnouncement(id) {
                         department:dept,dateKey:settings.dateKey,lastSerial:serial,
                         updatedAt:Date.now(),updatedBy:String(currentUser?.account||'')
                     });
-                    transaction.set(targetRef,{...reportObj,caseId});
+                    transaction.set(targetRef,dept==='ems'?{...reportObj,id:caseId,caseId}:{...reportObj,caseId});
                     return caseId;
                 }
                 throw new Error('當日流水號檢查次數過多，請聯絡管理員。');
@@ -6693,10 +6770,10 @@ async function republishAnnouncement(id) {
             if(count)count.textContent=`待審 ${rows.length} 件`; updateReviewTabBadges();
             if(!rows.length){host.innerHTML='<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">目前沒有待審核的消防或 EMS 案件。</div>';return;}
             host.innerHTML=rows.map(r=>{const isEMS=r.__reviewType==='ems';return isEMS
-            ? `<div class="bg-slate-900 border border-rose-500/25 rounded-2xl p-6 shadow-xl space-y-4"><div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-300 border border-rose-500/20 font-mono">${r.id||r.docId||'--'}</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">EMS待審核</span><h4 class="text-base font-bold text-white">${r.patient||'EMS救護出勤報告'}</h4></div><span class="text-xs text-slate-400">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">填寫人</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div><div><span class="text-slate-500 block">派遣類別</span><span class="font-medium text-slate-200">${r.dispatchCategory||'--'}</span></div></div><p class="text-sm text-slate-300 line-clamp-4">${r.treatment||'--'}</p><div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800"><button type="button" onclick="viewPendingEMSReportDetail('${r.id||r.docId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]">檢視完整 EMS</button><button type="button" onclick="approveEMSPendingReport('${r.id||r.docId}')" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs min-h-[44px]">審核完畢並送出</button><button type="button" onclick="openRejectEMSPending('${r.id||r.docId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]">退件</button></div></div>`
+            ? `<div class="bg-slate-900 border border-rose-500/25 rounded-2xl p-6 shadow-xl space-y-4"><div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-300 border border-rose-500/20 font-mono">${r.id||r.docId||'--'}</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">EMS待審核</span><h4 class="text-base font-bold text-white">${r.patient||'EMS救護出勤報告'}</h4></div><span class="text-xs text-slate-400">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">填寫人</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div><div><span class="text-slate-500 block">出勤單位</span><span class="font-medium text-slate-200">${escapeHtml(r.unitVehicle||'--')}</span></div></div><p class="text-sm text-slate-300 line-clamp-4">${escapeHtml(r.emsFormV2?.incidentLocation||r.chiefComplaint||r.treatment||'--')}</p><div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800"><button type="button" onclick="viewPendingEMSReportDetail('${r.id||r.docId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]">檢視完整 EMS</button><button type="button" onclick="approveEMSPendingReport('${r.id||r.docId}')" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs min-h-[44px]">審核完畢並送出</button><button type="button" onclick="openRejectEMSPending('${r.id||r.docId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]">退件</button></div></div>`
             : `<div class="bg-slate-900 border border-red-500/20 rounded-2xl p-6 shadow-xl space-y-4"><div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 font-mono">${r.caseId||'--'}</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">消防待審核</span><h4 class="text-base font-bold text-white">${r.title||'未命名案件'}</h4></div><span class="text-xs text-slate-400">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">寄件人</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div><div><span class="text-slate-500 block">寄件帳號</span><span class="font-mono text-cyan-400">${r.registeredByAccount||'--'}</span></div></div><p class="text-sm text-slate-300 line-clamp-4">${r.content||''}</p><div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800"><button type="button" onclick="viewPendingFireReportDetail('${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]">檢視完整案件</button><button type="button" onclick="approveFirePendingReport('${r.caseId}')" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs min-h-[44px]">審核完畢並送出</button><button type="button" onclick="openRejectFirePending('${r.caseId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]">退件</button></div></div>`;}).join('');
         }
-        function viewPendingEMSReportDetail(id){const r=(appData.emsPendingReports||[]).find(x=>String(x.docId)===String(id)||String(x.id)===String(id));if(!r)return;const fields=[['主訴',r.chiefComplaint],['派遣類別',r.dispatchCategory],['傷患RP名稱 / ID',r.patient],['出勤單位 / 車輛',r.unitVehicle],['GCS評分 E: V: M:',r.gcsE],['派遣時間',r.dispatchTime],['抵達時間',r.arrivalTime],['離開時間',r.leaveTime],['到院時間',r.hospitalTime],['返隊時間',r.returnTime],['填寫人',`${r.authorName||'--'} (${r.authorId||'--'})`],['建立時間',r.time||formatDateTime(r.timestamp)]];document.getElementById('ems-detail-id').textContent=r.id||r.docId;document.getElementById('ems-detail-title').textContent=`${r.patient||'傷患'} 的 EMS 待審報告`;document.getElementById('ems-detail-fields').innerHTML=fields.map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${escapeHtml(k)}</span><span class="text-sm text-slate-200 break-words">${escapeHtml(v||'--')}</span></div>`).join('');document.getElementById('ems-detail-treatment').textContent=r.treatment||'--';renderEMSRemarkHistory(r);const actionHost=document.getElementById('ems-detail-action-bar');if(actionHost)actionHost.innerHTML=`<button type="button" onclick="closeModal('modal-ems-detail');approveEMSPendingReport('${r.id||r.docId}')" class="px-3 py-2 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">審核完畢並送出</button><button type="button" onclick="closeModal('modal-ems-detail');openRejectEMSPending('${r.id||r.docId}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">退件</button>`;document.getElementById('modal-ems-detail').classList.remove('hidden');}
+        function viewPendingEMSReportDetail(id){const r=(appData.emsPendingReports||[]).find(x=>String(x.docId)===String(id)||String(x.id)===String(id));if(!r)return;document.getElementById('ems-detail-id').textContent=r.id||r.docId;document.getElementById('ems-detail-title').textContent=`${r.patient||'傷患'} 的 EMS 待審報告`;renderEMSDetailFields(r);renderEMSRemarkHistory(r);const actionHost=document.getElementById('ems-detail-action-bar');if(actionHost)actionHost.innerHTML=`<button type="button" onclick="closeModal('modal-ems-detail');approveEMSPendingReport('${r.id||r.docId}')" class="px-3 py-2 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">審核完畢並送出</button><button type="button" onclick="closeModal('modal-ems-detail');openRejectEMSPending('${r.id||r.docId}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">退件</button>`;document.getElementById('modal-ems-detail').classList.remove('hidden');}
         async function approveEMSPendingReport(id){
             if(!canReviewFireReports()){showToast('只有消防高層、高階成員與管理中心可以審核 EMS 報告。','warning','權限不足');return;}
             const r=(appData.emsPendingReports||[]).find(x=>String(x.docId)===String(id)||String(x.id)===String(id));if(!r)return;
@@ -7120,6 +7197,141 @@ async function republishAnnouncement(id) {
         }
 
 
+
+        // EMS 新表單只儲存一般純值／布林值到 Firestore；不增加登入時讀取，也不修改舊資料。
+        const EMS_FORM_V2_KEYS = [
+            'dutyDate','unitVehicle','dispatchTime','arrivalTime','leaveTime','hospitalTime','leaveHospitalTime','returnTime',
+            'incidentLocation','assistingUnits','hospitalDestination','notTransported','noTransportGroup','noTransportReason',
+            'patientName','patientId','patientSex','patientAge',
+            'nontrauma','nontraumaSymptom','trauma','traumaSymptom','complaint','complaintWhere','complaintHow','complaintDuration','complaintOther','cervical',
+            'history','pastHistory','medicationHistory','allergyHistory','gcs',
+            'oxygen','oxygenDevice','oxygenFlow','bandaging','bandagingEquipment','wound','woundArea','woundType','medication','medicationRouteDose',
+            'staffA','staffB','staffC','staffD'
+        ];
+        const EMS_FORM_V2_BOOLEAN_KEYS = new Set(['notTransported','nontrauma','trauma','complaint','history','oxygen','bandaging','wound','medication']);
+        const EMS_FORM_V2_IDS = {
+            dutyDate:'ems-duty-date',unitVehicle:'ems-unit-vehicle',dispatchTime:'ems-dispatch-time',arrivalTime:'ems-arrival-time',
+            leaveTime:'ems-leave-time',hospitalTime:'ems-hospital-time',leaveHospitalTime:'ems-leave-hospital-time',returnTime:'ems-return-time',
+            incidentLocation:'ems-incident-location',assistingUnits:'ems-assisting-units',hospitalDestination:'ems-hospital-destination',notTransported:'ems-no-transport',
+            patientName:'ems-patient-name',patientId:'ems-patient-id',patientSex:'ems-patient-sex',patientAge:'ems-patient-age',
+            nontrauma:'ems-nontrauma',nontraumaSymptom:'ems-nontrauma-symptom',trauma:'ems-trauma',traumaSymptom:'ems-trauma-symptom',
+            complaint:'ems-complaint',complaintWhere:'ems-complaint-where',complaintHow:'ems-complaint-how',complaintDuration:'ems-complaint-duration',complaintOther:'ems-complaint-other',cervical:'ems-cervical',
+            history:'ems-history',pastHistory:'ems-past-history',medicationHistory:'ems-medication-history',allergyHistory:'ems-allergy-history',
+            gcs:'ems-gcs-e',oxygen:'ems-oxygen',oxygenDevice:'ems-oxygen-device',oxygenFlow:'ems-oxygen-flow',
+            bandaging:'ems-bandaging',bandagingEquipment:'ems-bandaging-equipment',wound:'ems-wound',woundArea:'ems-wound-area',woundType:'ems-wound-type',
+            medication:'ems-medication',medicationRouteDose:'ems-medication-route-dose',staffA:'ems-staff-a',staffB:'ems-staff-b',staffC:'ems-staff-c',staffD:'ems-staff-d'
+        };
+        function emsLegacyToV2(r={}){
+            if(r.emsFormV2 && typeof r.emsFormV2==='object' && !Array.isArray(r.emsFormV2))return r.emsFormV2;
+            return {
+                dutyDate:r.timestamp?localDateKey(r.timestamp):localDateKey(Date.now()),unitVehicle:r.unitVehicle||'',
+                dispatchTime:r.dispatchTime||'',arrivalTime:r.arrivalTime||'',leaveTime:r.leaveTime||'',hospitalTime:r.hospitalTime||'',returnTime:r.returnTime||'',
+                patientName:r.patient||'',complaint:!!r.chiefComplaint,complaintWhere:r.chiefComplaint||'',gcs:r.gcsE||''
+            };
+        }
+        function syncEMSFormReveals(){
+            const host=document.getElementById('modal-ems-report');if(!host)return;
+            host.querySelectorAll('[data-ems-reveal]').forEach(node=>{
+                const check=document.getElementById(node.getAttribute('data-ems-reveal'));
+                const parentNoTransport=node.closest('[data-ems-reveal="ems-no-transport"]');
+                const visible=!!check?.checked&&(!parentNoTransport||!!document.getElementById('ems-no-transport')?.checked);
+                node.classList.toggle('hidden',!visible);
+                node.querySelectorAll('input, select, textarea').forEach(el=>{el.disabled=!visible;});
+            });
+        }
+        function installEMSFormListeners(){
+            const host=document.getElementById('modal-ems-report');if(!host||host.dataset.emsV2Ready)return;
+            host.dataset.emsV2Ready='1';
+            host.addEventListener('change',e=>{
+                const target=e.target;
+                if(target.matches('input[type="checkbox"][data-ems-option-group="no-transport"]')&&target.checked){
+                    host.querySelectorAll('input[type="checkbox"][data-ems-option-group="no-transport"]').forEach(el=>{
+                        if(el!==target){el.checked=false;const answer=document.getElementById(el.id+'-reason');if(answer)answer.value='';}
+                    });
+                }
+                if(target.id==='ems-no-transport'&&!target.checked){
+                    host.querySelectorAll('input[type="checkbox"][data-ems-option-group="no-transport"]').forEach(el=>{el.checked=false;});
+                    host.querySelectorAll('[data-ems-reveal="ems-no-transport"] select').forEach(el=>{el.value='';});
+                }
+                if(target.matches('input[type="checkbox"]'))syncEMSFormReveals();
+            });
+            syncEMSFormReveals();
+        }
+        function populateEMSFormV2(record){
+            const data=record?emsLegacyToV2(record):{dutyDate:localDateKey(Date.now())};
+            for(const key of EMS_FORM_V2_KEYS){
+                const el=document.getElementById(EMS_FORM_V2_IDS[key]);if(!el)continue;
+                if(el.type==='checkbox')el.checked=!!data[key];
+                else el.value=String(data[key]??'');
+            }
+            const group=String(data.noTransportGroup||'');
+            const noTransport=document.getElementById('ems-no-transport');
+            if(noTransport)noTransport.checked=!!data.notTransported||!!group;
+            const checks={'未接觸':'ems-no-contact','有接觸':'ems-had-contact','出勤待命':'ems-standby'};
+            Object.values(checks).forEach(id=>{
+                const check=document.getElementById(id),answer=document.getElementById(id+'-reason');
+                if(check)check.checked=(checks[group]===id);
+                if(answer)answer.value=(checks[group]===id)?String(data.noTransportReason||''):'';
+            });
+            document.getElementById('ems-legacy-note')?.classList.toggle('hidden',!record||!!record.emsFormV2);
+            syncEMSFormReveals();
+        }
+        function captureEMSFormV2(){
+            const data={};
+            for(const key of EMS_FORM_V2_KEYS){
+                const el=document.getElementById(EMS_FORM_V2_IDS[key]);
+                data[key]=EMS_FORM_V2_BOOLEAN_KEYS.has(key)?!!el?.checked:String(el?.value||'').trim();
+            }
+            const checks=[['未接觸','ems-no-contact'],['有接觸','ems-had-contact'],['出勤待命','ems-standby']];
+            const selected=checks.find(([,id])=>document.getElementById(id)?.checked);
+            data.noTransportGroup=data.notTransported&&selected?selected[0]:'';
+            data.noTransportReason=data.notTransported&&selected?String(document.getElementById(selected[1]+'-reason')?.value||''):'';
+            const subFields={nontrauma:['nontraumaSymptom'],trauma:['traumaSymptom'],complaint:['complaintWhere','complaintHow','complaintDuration','complaintOther','cervical'],history:['pastHistory','medicationHistory','allergyHistory'],oxygen:['oxygenDevice','oxygenFlow'],bandaging:['bandagingEquipment'],wound:['woundArea','woundType'],medication:['medicationRouteDose']};
+            for(const [flag,keys] of Object.entries(subFields))if(!data[flag])keys.forEach(k=>data[k]='');
+            return data;
+        }
+        function emsTreatmentText(data,oldTreatment=''){
+            const notes=[];
+            if(data.oxygen)notes.push('氧氣治療：'+[data.oxygenDevice,data.oxygenFlow].filter(Boolean).join('／'));
+            if(data.bandaging)notes.push('止血包紮：'+(data.bandagingEquipment||'已勾選'));
+            if(data.wound)notes.push('傷口描述：'+[data.woundArea,data.woundType].filter(Boolean).join('／'));
+            if(data.medication)notes.push('給藥：'+(data.medicationRouteDose||'已勾選'));
+            if(oldTreatment&&!notes.includes(oldTreatment))notes.unshift('舊版處置紀錄：'+oldTreatment);
+            return notes.join('\n');
+        }
+        function emsDetailSections(r){
+            const isV2=!!r?.emsFormV2&&typeof r.emsFormV2==='object';
+            const d=emsLegacyToV2(r||{});
+            const cell=(k,v)=>`<div class="rounded-xl border border-slate-800 bg-slate-950 p-3 min-w-0"><span class="block text-[11px] text-slate-500 mb-1">${escapeHtml(k)}</span><div class="text-sm text-slate-200 whitespace-pre-wrap break-words">${escapeHtml(String(v??'').trim()||'--')}</div></div>`;
+            const group=(label,cells)=>`<section class="rounded-2xl border border-slate-800 p-3 sm:p-4"><h4 class="text-sm font-bold text-rose-300 mb-3">${escapeHtml(label)}</h4><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${cells.map(([k,v])=>cell(k,v)).join('')}</div></section>`;
+            if(!isV2){
+                return group('舊版 EMS 報告',[['主訴',r.chiefComplaint],['派遣類別',r.dispatchCategory],['傷患 RP 名稱 / ID',r.patient],['出勤單位 / 車輛',r.unitVehicle],['GCS 評分 E: V: M:',r.gcsE],['出勤時間',r.dispatchTime],['到達現場時間',r.arrivalTime],['離開現場時間',r.leaveTime],['送達醫院時間',r.hospitalTime],['返隊待命時間',r.returnTime],['填寫人',`${r.authorName||'--'} (${r.authorId||'--'})`],['建立時間',r.time||formatDateTime(r.timestamp)]]);
+            }
+            const condition=[];
+            if(d.nontrauma)condition.push(['非創傷／症狀',d.nontraumaSymptom]);
+            if(d.trauma)condition.push(['創傷／症狀',d.traumaSymptom]);
+            if(d.complaint)condition.push(['主訴 A. 哪裡不舒服',d.complaintWhere],['主訴 B. 如何不舒服',d.complaintHow],['主訴 C. 不舒服多久',d.complaintDuration],['主訴 D. 其他不舒服',d.complaintOther],['主訴 E. 頸椎評估',d.cervical]);
+            if(d.history)condition.push(['病史 A. 過去病史',d.pastHistory],['病史 B. 藥物史',d.medicationHistory],['病史 C. 過敏史',d.allergyHistory]);
+            const treatments=[];
+            if(d.oxygen)treatments.push(['氧氣治療／給氧設備',d.oxygenDevice],['氧氣治療／流量',d.oxygenFlow]);
+            if(d.bandaging)treatments.push(['止血包紮／器材',d.bandagingEquipment]);
+            if(d.wound)treatments.push(['傷口描述／面積',d.woundArea],['傷口描述／種類',d.woundType]);
+            if(d.medication)treatments.push(['給藥／途徑及劑量',d.medicationRouteDose]);
+            return [
+                group('一、派遣資料',[['日期',d.dutyDate],['出勤單位',d.unitVehicle],['出勤時間',d.dispatchTime],['到達現場時間',d.arrivalTime],['離開現場時間',d.leaveTime],['送達醫院時間',d.hospitalTime],['離開醫院時間',d.leaveHospitalTime],['返隊待命時間',d.returnTime],['發生地點',d.incidentLocation],['協同處理單位',d.assistingUnits],['送往醫院或地點',d.hospitalDestination],['未運送原因',(d.notTransported||d.noTransportGroup)?`${d.noTransportGroup||'尚未分類'}／${d.noTransportReason||'未選擇項目'}`:'已運送／未勾選']]),
+                group('二、傷病患資料',[['傷病患姓名',d.patientName],['國民身分證（RP 虛構資料）',d.patientId],['性別',d.patientSex],['年齡',d.patientAge],['GCS 評分 E: V: M:',d.gcs]]),
+                group('三、現場狀況',condition.length?condition:[['現場狀況','未勾選']]),
+                group('四、處置項目',treatments.length?treatments:[['處置項目','未勾選']]),
+                group('五、出勤紀錄',[['A. 出勤人員',d.staffA],['B. 出勤人員',d.staffB],['C. 出勤人員',d.staffC],['D. 出勤人員',d.staffD]]),
+                group('登記資料',[['填寫人',`${r.authorName||'--'} (${r.authorId||'--'})`],['建立時間',r.time||formatDateTime(r.timestamp)]])
+            ].join('');
+        }
+        function renderEMSDetailFields(r){
+            const el=document.getElementById('ems-detail-fields');if(el)el.innerHTML=emsDetailSections(r);
+            const legacy=document.getElementById('ems-detail-treatment-wrap');
+            if(legacy)legacy.classList.toggle('hidden',!!r?.emsFormV2);
+            const treatment=document.getElementById('ems-detail-treatment');if(treatment)treatment.textContent=r?.treatment||'--';
+        }
         function generateNextEMSId(d=new Date()){
             const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'),p=`EMS-${y}${m}${day}`;
             let n=0;
@@ -7132,6 +7344,27 @@ async function republishAnnouncement(id) {
             const key=String(editId||'');
             return (appData.emsReports||[]).find(x=>String(x.docId||x.id)===key) || (appData.emsPendingReports||[]).find(x=>String(x.docId||x.id)===key) || null;
         }
+        // EMS 與警消正式案件採用同一個交易式編號機制。預覽不保留號碼。
+        let emsNumberPreviewEpoch=0;
+        let emsNumberPreviewReady=false;
+        async function ntpcPrepareEMSNumber(epoch){
+            const modal=document.getElementById('modal-ems-report');
+            const input=document.getElementById('ems-report-id');
+            const btn=document.getElementById('submit-ems-report-btn');
+            try{
+                const preview=await ntpcPreviewNextCaseNumber('ems');
+                if(epoch!==emsNumberPreviewEpoch||modal?.classList.contains('hidden')||document.getElementById('ems-edit-id')?.value)return;
+                emsNumberPreviewReady=true;
+                if(input)input.value=preview+'（預計，送出時確認）';
+                if(btn){btn.disabled=false;btn.textContent='提交EMS救護出勤報告';}
+            }catch(e){
+                if(epoch!==emsNumberPreviewEpoch||modal?.classList.contains('hidden'))return;
+                emsNumberPreviewReady=false;
+                if(input)input.value='EMS 編號預覽失敗';
+                if(btn){btn.disabled=true;btn.textContent='無法預覽編號，請重新開啟表單';}
+                showToast('EMS 編號預覽失敗：'+(e.message||e),'error','讀取失敗');
+            }
+        }
         function openEMSReportModal(editId=''){
             if(emsReportSubmitBusy){showToast('EMS報告正在送出，請稍候完成。','info','處理中');return;}
             const academyMode=!!academyExamSession&&academyExamSession.type==='fire';
@@ -7140,13 +7373,19 @@ async function republishAnnouncement(id) {
             const r=academyMode?null:getEMSRecordForEdit(editId);
             if(r&&String(r.reviewStatus||'')==='pending'){showToast('案件目前正在等待消防高層審核，暫時無法修改。','warning','等待審核');return;}
             if(r&&!canModifyEMS(r)){showToast('你無法修改這筆EMS報告。','warning','權限不足');return;}
+            const previewEpoch=++emsNumberPreviewEpoch;
+            emsNumberPreviewReady=!!r||academyMode;
             document.getElementById('ems-edit-id').value=r?(r.docId||r.id):'';
-            document.getElementById('ems-report-id').value=r?(r.id||r.docId):generateNextEMSId();
-            for(const [id,key] of Object.entries({'ems-chief-complaint':'chiefComplaint','ems-dispatch-category':'dispatchCategory','ems-patient':'patient','ems-unit-vehicle':'unitVehicle','ems-gcs-e':'gcsE','ems-treatment':'treatment','ems-dispatch-time':'dispatchTime','ems-arrival-time':'arrivalTime','ems-leave-time':'leaveTime','ems-hospital-time':'hospitalTime','ems-return-time':'returnTime'})){document.getElementById(id).value=r?.[key]||'';}
+            document.getElementById('ems-report-id').value=r?(r.id||r.docId):(academyMode?generateNextEMSId():'正在讀取預計編號...');
+            installEMSFormListeners();
+            populateEMSFormV2(r);
             document.getElementById('ems-author').value=academyMode?'專生考生':`${r?.authorName||currentUser.name} (${r?.authorId||currentUser.account})`;
             document.getElementById('ems-modal-title').innerHTML=`<i class="fa-solid fa-truck-medical text-rose-400 mr-2"></i>${r?'修改EMS救護出勤報告':'EMS救護出勤報告'}`;
-            document.getElementById('submit-ems-report-btn').textContent=r?'重新送審':'提交EMS救護出勤報告';
+            const submitBtn=document.getElementById('submit-ems-report-btn');
+            submitBtn.textContent=r?'重新送審':academyMode?'提交EMS救護出勤報告':'正在讀取預計編號...';
+            submitBtn.disabled=!emsNumberPreviewReady;
             document.getElementById('modal-ems-report').classList.remove('hidden');
+            if(!r&&!academyMode)ntpcPrepareEMSNumber(previewEpoch);
         }
         // EMS 單次送出鎖：防止雙擊／連按重複寫入、重複通知。
         let emsReportSubmitBusy = false;
@@ -7167,29 +7406,53 @@ async function republishAnnouncement(id) {
                 if(!academyMode&&(!currentUser||!userHasUnit('fire'))){showToast('只有消防身分可以提交EMS報告。','warning','權限不足');return;}
                 if(currentUser&&isSuspendedUser(currentUser.account)){showToast('你目前於停職調查階段，無法使用EMS報告功能。','warning','停職調查限制');return;}
                 const editId=document.getElementById('ems-edit-id').value;
+                if(!academyMode&&!editId&&!emsNumberPreviewReady){showToast('請等待 EMS 編號預覽完成後再送件。','warning','編號尚未就緒');return;}
                 const old=academyMode?null:getEMSRecordForEdit(editId);
                 if(old&&String(old.reviewStatus||'')==='pending'){showToast('案件目前正在等待消防高層審核，暫時無法修改。','warning','等待審核');return;}
                 if(old&&!canModifyEMS(old)){showToast('你無法修改這筆EMS報告。','warning','權限不足');return;}
-                const f={chiefComplaint:document.getElementById('ems-chief-complaint').value.trim(),dispatchCategory:document.getElementById('ems-dispatch-category').value.trim(),patient:document.getElementById('ems-patient').value.trim(),unitVehicle:document.getElementById('ems-unit-vehicle').value.trim(),gcsE:document.getElementById('ems-gcs-e').value.trim(),treatment:document.getElementById('ems-treatment').value.trim(),dispatchTime:document.getElementById('ems-dispatch-time').value.trim(),arrivalTime:document.getElementById('ems-arrival-time').value.trim(),leaveTime:document.getElementById('ems-leave-time').value.trim(),hospitalTime:document.getElementById('ems-hospital-time').value.trim(),returnTime:document.getElementById('ems-return-time').value.trim()};
-                if(Object.values(f).some(v=>!v)){showToast('請完整填寫EMS救護出勤報告。','error','資料不完整');return;}
-                const id=old?(old.id||old.docId):document.getElementById('ems-report-id').value.trim(),now=Date.now();
-                if(!id){showToast('找不到EMS報告編號，請重新開啟填寫視窗。','error','編號錯誤');return;}
+                const details=captureEMSFormV2();
+                if(!details.dutyDate||!details.unitVehicle||!details.incidentLocation||!Object.keys(details).some(k=>/^staff[A-D]$/.test(k)&&details[k])){
+                    showToast('請至少填寫勤務日期、出勤單位、發生地點及一位出勤人員。','warning','EMS 資料不完整');return;
+                }
+                if(details.notTransported&&(!details.noTransportGroup||!details.noTransportReason)){showToast('已勾選沒有運送，請選擇未運送分類及原因。','warning','資料不完整');return;}
+                const chief=[details.complaintWhere,details.complaintHow,details.complaintDuration,details.complaintOther].filter(Boolean).join('；');
+                const f={
+                    emsFormSchema:2,emsFormV2:details,chiefComplaint:chief||(old?.chiefComplaint||''),
+                    dispatchCategory:details.noTransportGroup||(old?.dispatchCategory||''),patient:details.patientName,
+                    unitVehicle:details.unitVehicle,gcsE:details.gcs,
+                    treatment:emsTreatmentText(details,old&&!old.emsFormV2?old.treatment:''),
+                    dispatchTime:details.dispatchTime,arrivalTime:details.arrivalTime,leaveTime:details.leaveTime,
+                    hospitalTime:details.hospitalTime,returnTime:details.returnTime
+                };
+                // 預覽編號不是真正案件 ID；正式 ID 一定由送件交易決定。
+                const id=old?(old.id||old.docId):(academyMode?document.getElementById('ems-report-id').value.trim():'');
+                const now=Date.now();
+                if((old||academyMode)&&!id){showToast('找不到EMS報告編號，請重新開啟填寫視窗。','error','編號錯誤');return;}
                 const obj={...(old||{}),id,...f,authorId:academyMode?'警專專生':(old?.authorId||currentUser.account),authorName:academyMode?'專生考生':(old?.authorName||currentUser.name),registeredByAccount:academyMode?'':(old?.registeredByAccount||currentUser.account),registeredByName:academyMode?'專生考生':(old?.registeredByName||currentUser.name),timestamp:old?.timestamp||now,time:old?.time||formatDateTime(now),updatedAt:now};
                 if(academyMode){academyExamCache.emsReports.unshift(obj);saveAcademyCache();closeModal('modal-ems-report');renderAcademyCache();showSubmitSuccessAnimation('考核 EMS 送出成功',`${id} 已保留於本次瀏覽器快取。`);return;}
                 try{
-                    const pendingObj={...obj,reviewStatus:'pending',rejectionReason:'',reviewedAt:0,reviewedBy:'',submittedAt:now,updatedAt:now};
-                    await fm.setDoc(fm.doc(db,'emsPendingReports',id),pendingObj);
-                    if(old&&appData.emsReports.some(x=>String(x.docId||x.id)===String(editId))) await fm.deleteDoc(fm.doc(db,'emsReports',old.docId||old.id));
-                    appData.emsPendingReports=appData.emsPendingReports.filter(x=>String(x.docId||x.id)!==String(id));
-                    appData.emsPendingReports.unshift({docId:id,...pendingObj});
-                    if(old) appData.emsReports=appData.emsReports.filter(x=>String(x.docId||x.id)!==String(editId));
-                    await removePendingReportNotifications(id,pendingObj.registeredByAccount);
-                    const n={type:'report',department:'fire',caseId:id,recipientAccount:pendingObj.registeredByAccount,recipientAccountNormalized:String(pendingObj.registeredByAccount||'').trim().toLowerCase(),status:'pending',title:old?'EMS報告已重新送件':'EMS報告已送出，等待消防高層審核',message:old?`EMS報告 ${id} 已重新送入消防高層審核。`:`EMS報告 ${id} 已送入消防高層審核系統。`,timestamp:now,read:false};
-                    const nr=fm.doc(fm.collection(db,'reportNotifications')); await fm.setDoc(nr,n); /* 通知由 onSnapshot 回填，避免審核後本地插入與即時監聽重複。 */
-                    // EMS 與消防共用消防／EMS Discord Webhook。
-                    sendDiscordCaseNotification('ems', pendingObj);
-                    await logAdminAction(old?'EMS報告退件後重新送件':'提交EMS報告等待消防高層審核',id);
-                    closeModal('modal-ems-report');renderEMSReports();renderFireReview();renderPersonalNotifications();renderMyProfile();showSubmitSuccessAnimation(old?'EMS重新送審成功':'EMS報告送審成功',old?`${id} 已重新送入消防高層審核。`:`${id} 已送入消防高層審核系統。`);
+                    let pendingObj={...obj,reviewStatus:'pending',rejectionReason:'',reviewedAt:0,reviewedBy:'',submittedAt:now,updatedAt:now};
+                    // 全新 EMS：領號與建立待審案件在同一 Firestore 交易完成，失敗不占號也不通知。
+                    // 編輯既有 EMS：保留原始編號，不重新配發或覆寫其他案件。
+                    let savedId=id;
+                    if(!old){
+                        savedId=await ntpcCommitReportWithNumber('ems',pendingObj);
+                        pendingObj={...pendingObj,id:savedId,caseId:savedId};
+                    }else{
+                        await fm.setDoc(fm.doc(db,'emsPendingReports',id),pendingObj);
+                        if(appData.emsReports.some(x=>String(x.docId||x.id)===String(editId)))await fm.deleteDoc(fm.doc(db,'emsReports',old.docId||old.id));
+                    }
+                    appData.emsPendingReports=appData.emsPendingReports.filter(x=>String(x.docId||x.id)!==String(savedId));
+                    appData.emsPendingReports.unshift({docId:savedId,...pendingObj});
+                    if(old)appData.emsReports=appData.emsReports.filter(x=>String(x.docId||x.id)!==String(editId));
+                    // 通知為次要操作；案件成功寫入後即使通知故障，也不應提示重新送件。
+                    try{await removePendingReportNotifications(savedId,pendingObj.registeredByAccount);}catch(notificationCleanupError){console.warn('EMS 舊通知清理失敗：',notificationCleanupError);}
+                    const n={type:'report',department:'fire',caseId:savedId,recipientAccount:pendingObj.registeredByAccount,recipientAccountNormalized:String(pendingObj.registeredByAccount||'').trim().toLowerCase(),status:'pending',title:old?'EMS報告已重新送件':'EMS報告已送出，等待消防高層審核',message:old?`EMS報告 ${savedId} 已重新送入消防高層審核。`:`EMS報告 ${savedId} 已送入消防高層審核系統。`,timestamp:now,read:false};
+                    try{const nr=fm.doc(fm.collection(db,'reportNotifications'));await fm.setDoc(nr,n);}catch(notificationError){console.warn('EMS 已儲存，但個人通知未成功：',notificationError);showToast('EMS 案件已儲存，但個人通知失敗。','warning','通知異常');}
+                    // 成功寫入後才允許發 Discord 通知，且通知失敗不視為案件失敗。
+                    try{await sendDiscordCaseNotification('ems',pendingObj);}catch(discordError){console.warn('EMS 已儲存，但 Discord 通知失敗：',discordError);}
+                    try{await logAdminAction(old?'EMS報告退件後重新送件':'提交EMS報告等待消防高層審核',savedId);}catch(logError){console.warn('EMS 案件已儲存，但 LOG 寫入失敗：',logError);}
+                    closeModal('modal-ems-report');renderEMSReports();renderFireReview();renderPersonalNotifications();renderMyProfile();showSubmitSuccessAnimation(old?'EMS重新送審成功':'EMS報告送審成功',old?`${savedId} 已重新送入消防高層審核。`:`${savedId} 已送入消防高層審核系統。`);
                 }catch(e){showToast('EMS報告送審失敗：'+e.message,'error','操作失敗');}
             }finally{
                 emsReportSubmitBusy=false;
@@ -7201,7 +7464,7 @@ async function republishAnnouncement(id) {
             }
         }
         function renderEMSRemarkHistory(r){const el=document.getElementById('ems-remark-history');if(!el)return;const rr=getReportRemarks(r);el.innerHTML=rr.length?rr.map(x=>`<div class="rounded-lg border border-slate-800 bg-slate-950/70 p-3"><div class="flex justify-between"><span class="text-xs text-amber-400">${x.authorName||'高層'}</span><span class="text-[11px] text-slate-500">${x.time||formatDateTime(x.timestamp)}</span></div><div class="text-xs text-slate-300 mt-1 whitespace-pre-wrap">${x.text||''}</div></div>`).join(''):'<div class="text-xs text-slate-500">目前尚無高層批示。</div>';}
-        function viewEMSReportDetail(id){const r=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r)return;document.getElementById('ems-detail-id').textContent=r.id||r.docId;document.getElementById('ems-detail-title').textContent=`${r.patient||'傷患'} 的EMS救護出勤報告`;const fields=[['主訴',r.chiefComplaint],['派遣類別',r.dispatchCategory],['傷患RP名稱 / ID',r.patient],['出勤單位 / 車輛',r.unitVehicle],['GCS評分 E: V: M:',r.gcsE],['派遣時間',r.dispatchTime],['抵達時間',r.arrivalTime],['離開時間',r.leaveTime],['到院時間',r.hospitalTime],['返隊時間',r.returnTime],['填寫人',`${r.authorName||'--'} (${r.authorId||'--'})`],['建立時間',r.time||formatDateTime(r.timestamp)]];document.getElementById('ems-detail-fields').innerHTML=fields.map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${escapeHtml(k)}</span><span class="text-sm text-slate-200 break-words">${escapeHtml(v||'--')}</span></div>`).join('');document.getElementById('ems-detail-treatment').textContent=r.treatment||'--';renderEMSRemarkHistory(r);const actionHost=document.getElementById('ems-detail-action-bar');if(actionHost){const a=[];if(canModifyEMS(r))a.push(`<button type="button" onclick="closeModal('modal-ems-detail');openEMSReportModal('${id}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs"><i class="fa-solid fa-pen mr-1"></i>編輯</button>`);if(canModifyEMS(r))a.push(`<button type="button" onclick="deleteEMSReport('${id}'); closeModal('modal-ems-detail')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs"><i class="fa-solid fa-trash mr-1"></i>刪除</button>`);if(currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire'))) )a.push(`<button type="button" onclick="closeModal('modal-ems-detail');openRemarkModal('emsReports','${id}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs"><i class="fa-solid fa-pen-nib mr-1"></i>高層批示</button>`);actionHost.innerHTML=a.join('');}document.getElementById('modal-ems-detail').classList.remove('hidden');}
+        function viewEMSReportDetail(id){const r=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r)return;document.getElementById('ems-detail-id').textContent=r.id||r.docId;document.getElementById('ems-detail-title').textContent=`${r.patient||'傷患'} 的EMS救護出勤報告`;renderEMSDetailFields(r);renderEMSRemarkHistory(r);const actionHost=document.getElementById('ems-detail-action-bar');if(actionHost){const a=[];if(canModifyEMS(r))a.push(`<button type="button" onclick="closeModal('modal-ems-detail');openEMSReportModal('${id}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs"><i class="fa-solid fa-pen mr-1"></i>編輯</button>`);if(canModifyEMS(r))a.push(`<button type="button" onclick="deleteEMSReport('${id}'); closeModal('modal-ems-detail')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs"><i class="fa-solid fa-trash mr-1"></i>刪除</button>`);if(currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire'))) )a.push(`<button type="button" onclick="closeModal('modal-ems-detail');openRemarkModal('emsReports','${id}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs"><i class="fa-solid fa-pen-nib mr-1"></i>高層批示</button>`);actionHost.innerHTML=a.join('');}document.getElementById('modal-ems-detail').classList.remove('hidden');}
         async function deleteEMSReport(id){const r=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r||!canModifyEMS(r)){showToast('你無權限刪除這筆EMS報告。','warning','權限不足');return;}if(!(await showConfirm('確定要刪除這筆 EMS 救護出勤報告嗎？','刪除 EMS 報告','確定刪除')))return;try{await fm.deleteDoc(fm.doc(db,'emsReports',r.docId||r.id));appData.emsReports=appData.emsReports.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除EMS救護報告',r.id||id);renderEMSReports();renderMyProfile();showToast('EMS救護出勤報告已刪除。','success','刪除成功');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
         function renderEMSReports(){const c=document.getElementById('ems-reports-list');if(!c)return;if(!manualReadState.cases.ems&&!(appData.emsReports||[]).length){c.innerHTML='<div class="rounded-xl bg-slate-900 border border-slate-700 p-6 text-center text-slate-400">尚未查詢 EMS 報告，請先按上方「載入／重新整理 EMS 報告」。</div>';return;}const q=(document.getElementById('search-ems-report')?.value||'').trim().toLowerCase(),arr=(appData.emsReports||[]).filter(r=>!q||[r.id,r.patient,r.authorId,r.authorName,r.dispatchCategory].some(v=>String(v||'').toLowerCase().includes(q))).sort((a,b)=>getReportSortTimestamp(b)-getReportSortTimestamp(a));c.innerHTML=arr.length?'':'<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">尚無EMS報告。</div>';arr.forEach(r=>{const key=r.docId||r.id,card=document.createElement('div');card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4';card.innerHTML=`<div class="flex justify-between gap-3"><span class="text-xs text-rose-400 font-mono">${r.id||key}</span><span class="text-xs text-slate-500">${r.time||'--'}</span></div><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs"><div><span class="text-slate-500 block">主訴</span>${r.chiefComplaint||'--'}</div><div><span class="text-slate-500 block">傷患</span>${r.patient||'--'}</div><div><span class="text-slate-500 block">出勤單位／車輛</span>${r.unitVehicle||'--'}</div><div><span class="text-slate-500 block">填寫人</span>${r.authorName||'--'} (${r.authorId||'--'})</div></div><div class="flex flex-wrap gap-2"><button onclick="viewEMSReportDetail('${key}')" class="px-3 py-2 bg-rose-500/10 text-rose-300 rounded-lg text-xs">檢視</button>${canModifyEMS(r)?`<button onclick="openEMSReportModal('${key}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs">編輯</button><button onclick="deleteEMSReport('${key}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button>`:''}${currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire')))?`<button onclick="openRemarkModal('emsReports','${key}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs">高層批示</button>`:''}${canEditReviewStatus('ems')?`<button onclick="openEditReviewStatus('ems','${key}','approved')" class="px-3 py-2 bg-blue-600/20 text-blue-300 rounded-lg text-xs"><i class="fa-solid fa-stamp mr-1"></i>編輯審核狀況</button>`:''}</div>`;c.appendChild(card);});}
 
