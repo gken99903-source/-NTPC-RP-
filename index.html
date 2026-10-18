@@ -2159,7 +2159,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">被獎懲員警管理編號</label>
-                        <input type="text" id="punish-member-id" placeholder="例如：32377" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 font-mono">
+                        <input type="text" id="punish-member-id" placeholder="例如：32375" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 font-mono">
                     </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2178,7 +2178,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">發布部門</label>
-                    <input type="text" id="punish-department" value="" placeholder="將依發布帳號所屬警察單位自動帶入" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500">
+                    <input type="text" id="punish-department" value="" placeholder="自動帶入，例如：新北市政府警察局新莊分局" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500">
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -4010,6 +4010,7 @@ async function republishAnnouncement(id) {
                 appData.policeClocks = rows;
                 recalculateDutyStatusCache();
                 renderPoliceClocks(); // 即時更新警務打卡紀錄清單
+                populateMemberSelects(); // 同步已登記勤務的其他警員，避免下拉選單只顯示自己
                 if (!document.getElementById('police-duty-details-modal')?.classList.contains('hidden')) renderPoliceDutyDetails();
                 renderAdminOverview(); // 即時更新警察當前值勤人數
                 refreshDutyDashboard();
@@ -4170,36 +4171,60 @@ async function republishAnnouncement(id) {
                 `統計區間：${startInput} 至 ${endInput}｜區間內 ${insideCount} 筆打卡；跨日班次計入重疊時數${started !== null ? '；未下班班次截至目前時間' : ''}`;
         }
 
+        // 警務獎懲安全名單：一般帳號只會讀取自己的 users 文件，因此不能再用
+        // appData.users 當作所有警員名冊。整合「已獲授權讀取」的警務打卡與既有獎懲資料，
+        // 只抽取 RP 姓名、網站帳號和勤務編號，不讀取其他人的密碼／裝置資料。
+        function getPolicePunishmentMemberRoster() {
+            const roster = new Map();
+            const normalize = value => String(value ?? '').trim();
+            const add = (account, name, number, time = 0, priority = 0) => {
+                const acc = normalize(account);
+                if (!acc) return;
+                const key = acc.toLowerCase();
+                const previous = roster.get(key);
+                // 最新打卡優先於舊打卡；有權讀取的 users 正式資料優先於打卡及舊獎懲。
+                if (!previous || priority > previous.priority || (priority === previous.priority && time >= previous.time)) {
+                    roster.set(key, {
+                        account: acc,
+                        name: normalize(name) || previous?.name || acc,
+                        staffNumber: normalize(number) || previous?.staffNumber || '',
+                        time: Number(time) || 0,
+                        priority
+                    });
+                } else if (!previous.staffNumber && normalize(number)) {
+                    previous.staffNumber = normalize(number);
+                }
+            };
+            (appData.policePunishments || []).forEach(p => {
+                if (p.memberAccount) add(p.memberAccount, p.memberName, p.memberId, Number(p.timestamp) || 0, 1);
+            });
+            (appData.policeClocks || []).forEach(c => {
+                if (c.account) add(c.account, c.name, c.staffNumber || c.memberNumber || c.number, Number(c.timestamp) || 0, 2);
+            });
+            (appData.users || []).forEach(u => {
+                const units = Array.isArray(u.units) ? u.units : [u.unit];
+                if (units.includes('police') || getEffectiveRole(u) === 'admin') add(u.account, u.name, u.staffNumber, 0, 3);
+            });
+            return [...roster.values()].sort((a, b) => a.name.localeCompare(b.name, 'zh-TW') || a.account.localeCompare(b.account));
+        }
+
         function populateMemberSelects() {
             const punishMemberSelect = document.getElementById('punish-member-select');
-
-            // 消防名單由消防打卡紀錄建立；不依賴高層無權整批下載的 users 集合。
+            // 消防名單沿用原本打卡紀錄來源。
             populateFireHoursMemberSelect();
-            if (punishMemberSelect) punishMemberSelect.innerHTML = '<option value="">-- 請選擇被獎懲員警 --</option>';
-
-            appData.users.forEach(u => {
-                const opt = document.createElement('option');
-                opt.value = u.account;
-                opt.textContent = `${u.name} (${u.account})`;
-                const units = u.units || [u.unit];
-                
-                if (punishMemberSelect && units.includes('police')) {
-                    const punishOpt = opt.cloneNode(true);
-                    punishOpt.textContent = `${u.name} (${u.staffNumber || u.account})`;
-                    punishMemberSelect.appendChild(punishOpt);
-                }
-            });
-
-            if (punishMemberSelect) {
-                punishMemberSelect.onchange = (e) => {
-                    const selectedAcc = e.target.value;
-                    const foundU = appData.users.find(u => u.account === selectedAcc);
-                    const idInput = document.getElementById('punish-member-id');
-                    if (foundU && idInput) {
-                        idInput.value = foundU.staffNumber || '';
-                    }
-                };
+            if (!punishMemberSelect) return;
+            const previousValue = String(punishMemberSelect.value || '');
+            const roster = getPolicePunishmentMemberRoster();
+            punishMemberSelect.replaceChildren(new Option('-- 請選擇被獎懲員警 --', ''));
+            for (const officer of roster) {
+                punishMemberSelect.add(new Option(`${officer.name} (${officer.staffNumber || officer.account})`, officer.account));
             }
+            if (roster.some(u => u.account === previousValue)) punishMemberSelect.value = previousValue;
+            punishMemberSelect.onchange = () => {
+                const officer = roster.find(u => u.account === punishMemberSelect.value);
+                const input = document.getElementById('punish-member-id');
+                if (input) input.value = officer?.staffNumber || '';
+            };
         }
 
         function switchFAQCategory(category, focusId = '') {
@@ -5927,10 +5952,14 @@ async function republishAnnouncement(id) {
 
         function getPolicePunishmentDepartment(user = currentUser) {
             const raw = String(user?.policeDivision || '').trim();
-            if (!raw) return '';
-            // 只調整新生成的部門名稱，既有雲端歷史紀錄不被覆寫。
-            const division = raw.replace(/^新北市政府警察局/, '').replace(/^新北市\s*RP[｜|\s]*警務[｜|\s]*/, '').trim();
-            return `新北市 RP｜警務${division ? '｜' + division : ''}`;
+            if (!raw) return ''; // 未設定所屬單位（例如總管理處）時，不假設其隸屬某分局。
+            // 兼容先前儲存的 RP 前綴與已含完整警察局名稱的帳號資料，避免重複拼接。
+            const division = raw
+                .replace(/^新北市\s*RP\s*[｜|]?\s*警務\s*[｜|]?\s*/, '')
+                .replace(/^新北市政府警察局\s*[｜|]?\s*/, '')
+                .replace(/^[｜|\s]+/, '').trim();
+            // 分局、偵查隊等使用帳號原有的單位名稱；不自行把「偵查隊」改名為分局。
+            return division ? `新北市政府警察局${division}` : '';
         }
 
         function openPunishModal() {
@@ -5942,6 +5971,7 @@ async function republishAnnouncement(id) {
                 showToast('警用獎懲僅限警務高層、高階成員與管理中心發布。', 'warning', '權限不足');
                 return;
             }
+            populateMemberSelects();
             document.getElementById('punish-author-name').value = currentUser.name;
             document.getElementById('punish-author-position').value = getEffectiveRole(currentUser) === 'admin' ? '系統管理員 / 長官' : getEffectiveRole(currentUser) === 'senior' ? '警務高階成員' : '分局長 / 督察組長';
             const punishDepartmentEl = document.getElementById('punish-department');
@@ -5974,8 +6004,9 @@ async function republishAnnouncement(id) {
             if(!canUsePolicePunishment()){showToast('權限不足：僅警務高層、高階成員與管理中心可發布獎懲。','warning','權限不足');return;}
             const memberId=document.getElementById('punish-member-id').value.trim(),memberAcc=document.getElementById('punish-member-select').value,type=document.getElementById('punish-type').value,items=getSelectedPunishmentItems('punish-item'),department=(document.getElementById('punish-department').value.trim() || getPolicePunishmentDepartment(currentUser)),authorName=document.getElementById('punish-author-name').value.trim(),authorPos=document.getElementById('punish-author-position').value.trim(),reason=document.getElementById('punish-reason').value.trim();
             if(!['reward','punishment'].includes(type)||!items.length){showToast('請先選擇獎懲類型，並至少勾選一個獎懲項目。','warning','資料不完整');return;}
+            if(!memberAcc||!getPolicePunishmentMemberRoster().some(u=>u.account===memberAcc)){showToast('請先從名單選擇被獎懲員警。若未顯示，請確認該員警有警務打卡或獎懲紀錄。','warning','未選擇員警');return;}
             if(!memberId||!reason||!authorName){showToast('請填寫完整獎懲資訊。','error','資料不完整');return;}
-            const now=new Date(),punishId=generateNextPunishmentId(now),foundU=appData.users.find(u=>u.account===memberAcc),resolvedMemberId=memberId||(foundU?.staffNumber||''),newPunish={id:punishId,memberId:resolvedMemberId,memberAccount:memberAcc||'',memberName:foundU?foundU.name:'未知員警',type,items,item:items.join('、'),department,authorName,authorPos,authorAccount:currentUser.account,authorRole:currentUser.role,reason,time:formatDateTime(now.getTime()),timestamp:now.getTime()};
+            const now=new Date(),punishId=generateNextPunishmentId(now),foundU=getPolicePunishmentMemberRoster().find(u=>u.account===memberAcc),resolvedMemberId=memberId||(foundU?.staffNumber||''),newPunish={id:punishId,memberId:resolvedMemberId,memberAccount:memberAcc||'',memberName:foundU?foundU.name:'未知員警',type,items,item:items.join('、'),department,authorName,authorPos,authorAccount:currentUser.account,authorRole:currentUser.role,reason,time:formatDateTime(now.getTime()),timestamp:now.getTime()};
             try{await fm.setDoc(fm.doc(db,'policePunishments',punishId),newPunish);appData.policePunishments.unshift({docId:punishId,...newPunish});closeModal('modal-punishment');renderPolicePunishments();updateAccessLocks();showToast('警用獎懲公告已成功發布。','success','發布成功');}catch(e){showToast('雲端寫入失敗：'+e.message,'error','發布失敗');}
         }
 
@@ -6859,14 +6890,14 @@ async function republishAnnouncement(id) {
         function openEditPunishmentModal(punishId) {
             const p=(appData.policePunishments||[]).find(x=>String(x.id||'')===String(punishId)||String(x.docId||'')===String(punishId));if(!p)return;if(!canModifyPunishment(p)){showToast('權限不足：只有警察高層、管理處或該筆獎懲發布者可以修改。','warning','權限不足');return;}
             document.getElementById('edit-type').value='punishment';document.getElementById('edit-id-key').value=p.docId||p.id;document.getElementById('edit-modal-title').textContent=`修改警用獎懲 (${p.id||p.docId})`;
-            const users=appData.users.filter(u=>(u.units||[u.unit]).includes('police'));
+            const users=getPolicePunishmentMemberRoster();
             const legacyMember=users.find(u=>String(u.staffNumber||'')===String(p.memberId||''));
             const selectedMember=users.find(u=>String(u.account||'')===String(p.memberAccount||'')) || legacyMember || users.find(u=>String(u.account||'')===String(p.memberId||''));
-            const opts=users.map(u=>`<option value="${u.account}" ${selectedMember&&u.account===selectedMember.account?'selected':''}>${u.name} (${u.staffNumber||u.account})</option>`).join(''),type=String(p.type||'punishment')==='reward'?'reward':'punishment';
+            const opts=users.map(u=>`<option value="${escapeHtml(u.account)}" ${selectedMember&&u.account===selectedMember.account?'selected':''}>${escapeHtml(u.name)} (${escapeHtml(u.staffNumber||u.account)})</option>`).join(''),type=String(p.type||'punishment')==='reward'?'reward':'punishment';
             document.getElementById('edit-fields-container').innerHTML=`<div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs text-slate-400 mb-2">被獎懲員警</label><select id="edit-punish-member" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><option value="">-- 請選擇 --</option>${opts}</select></div><div><label class="block text-xs text-slate-400 mb-2">被獎懲員警管理編號</label><input id="edit-punish-member-id" value="${(selectedMember?.staffNumber||p.memberId||'')}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs text-slate-400 mb-2">獎懲類型</label><select id="edit-punish-type" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><option value="reward" ${type==='reward'?'selected':''}>獎勵</option><option value="punishment" ${type==='punishment'?'selected':''}>懲處</option></select></div><div><label class="block text-xs text-slate-400 mb-2">獎懲項目（可複選）</label><div id="edit-punish-item" class="w-full min-h-[48px] bg-slate-950 border border-slate-800 rounded-xl p-3"></div></div></div><div><label class="block text-xs text-slate-400 mb-2">發布部門</label><input id="edit-punish-department" value="${p.department||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><input id="edit-punish-author-name" value="${p.authorName||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"><input id="edit-punish-author-pos" value="${p.authorPos||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div><div><label class="block text-xs text-slate-400 mb-2">獎懲事由說明</label><textarea id="edit-punish-reason" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white">${p.reason||''}</textarea></div>`;
             populatePunishmentItemOptions('edit-punish-item',type,getPunishmentItems(p));document.getElementById('edit-punish-type').addEventListener('change',e=>populatePunishmentItemOptions('edit-punish-item',e.target.value,[]));document.getElementById('edit-punish-member').addEventListener('change',e=>{
                 const selected=e.target.value;
-                const user=appData.users.find(u=>u.account===selected);
+                const user=getPolicePunishmentMemberRoster().find(u=>u.account===selected);
                 document.getElementById('edit-punish-member-id').value=user?.staffNumber||'';
             });document.getElementById('modal-edit').classList.remove('hidden');
         }
@@ -7242,7 +7273,8 @@ async function republishAnnouncement(id) {
                 if(!canModifyPunishment(p)){showToast('權限不足：無法修改這筆獎懲。','warning','權限不足');return;}
                 const memberId=document.getElementById('edit-punish-member-id').value.trim();const memberAcc=document.getElementById('edit-punish-member').value;const type=document.getElementById('edit-punish-type').value;const items=getSelectedPunishmentItems('edit-punish-item');const department=document.getElementById('edit-punish-department').value.trim();const authorName=document.getElementById('edit-punish-author-name').value.trim();const authorPos=document.getElementById('edit-punish-author-pos').value.trim();const reason=document.getElementById('edit-punish-reason').value.trim();
                 if(!memberId||!authorName||!reason||!['reward','punishment'].includes(type)||!items.length){showToast('請完整填寫獎懲類型與至少一個獎懲項目。','warning','資料不完整');return;}
-                const foundU=appData.users.find(u=>u.account===memberAcc)||appData.users.find(u=>String(u.staffNumber||'')===String(memberId));
+                const roster=getPolicePunishmentMemberRoster();
+                const foundU=roster.find(u=>u.account===memberAcc)||roster.find(u=>String(u.staffNumber||'')===String(memberId));
                 const punishmentChanges={memberId,memberAccount:memberAcc||foundU?.account||p.memberAccount||'',memberName:foundU?foundU.name:(p.memberName||'未知員警'),type,items,item:items.join('、'),department,authorName,authorPos,reason,updatedAt:Date.now(),updatedBy:currentUser?.account||''};
                 try{await fm.updateDoc(fm.doc(db,'policePunishments',p.docId||p.id),punishmentChanges);Object.assign(p,punishmentChanges);await logAdminAction('編輯警用獎懲',p.id||p.docId);closeModal('modal-edit');renderPolicePunishments();updateAccessLocks();showToast('警用獎懲修改已成功儲存。','success','修改成功');}catch(e){showToast('更新失敗：'+e.message,'error','修改失敗');}
                 return;
