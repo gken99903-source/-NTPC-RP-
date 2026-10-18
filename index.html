@@ -563,6 +563,10 @@
         .erlc-live-alert.officer{border-color:rgba(248,113,113,.9);background:rgba(127,29,29,.55);animation:erlcFlashOfficer .5s ease-in-out infinite alternate;}
         @keyframes erlcFlash{from{box-shadow:0 0 0 rgba(239,68,68,0)}to{box-shadow:0 0 30px rgba(239,68,68,.45)}}
         @keyframes erlcFlashOfficer{from{box-shadow:0 0 4px rgba(248,113,113,.2)}to{box-shadow:0 0 45px rgba(248,113,113,.9)}}
+        /* 案件編號採用高唯一性的數字識別碼；手機卡片中允許換行，避免超出容器。 */
+        #police-review-list .font-mono, #fire-review-list .font-mono,
+        #police-reports-list .font-mono, #fire-reports-list .font-mono,
+        #tab-notifications .font-mono { overflow-wrap: anywhere; word-break: break-all; }
 </style>
 
     <script type="module">
@@ -2273,6 +2277,7 @@
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件編號</label>
                     <input type="text" id="report-case-id" readonly class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 font-mono cursor-not-allowed">
+                    <p class="text-xs text-slate-500 mt-1">預覽不占用編號；只有成功送出才會正式配號。多人同時操作時，正式編號可能與預覽不同。</p>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -4463,6 +4468,11 @@ async function republishAnnouncement(id) {
         function closeModal(modalId) {
             const m = document.getElementById(modalId);
             if (m) m.classList.add('hidden');
+            // 關閉填寫視窗後，舊的非同步編號預覽不可再填回下次開啟的表單。
+            if(modalId === 'modal-report') {
+                ntpcReportReservationEpoch++;
+                ntpcActiveReportReservation = null;
+            }
         }
 
         let appConfirmResolver = null;
@@ -6017,6 +6027,98 @@ async function republishAnnouncement(id) {
             try{await fm.setDoc(fm.doc(db,'policePunishments',punishId),newPunish);appData.policePunishments.unshift({docId:punishId,...newPunish});closeModal('modal-punishment');renderPolicePunishments();updateAccessLocks();showToast('警用獎懲公告已成功發布。','success','發布成功');}catch(e){showToast('雲端寫入失敗：'+e.message,'error','發布失敗');}
         }
 
+        // 警消正式案件：開啟時只預覽編號；真正「編號 +1」和「建立待審案件」同一交易完成。
+        // 使用者取消／檢查未通過／寫入失敗都不會消耗流水號。預覽號碼可能因別人先送件而變動。
+        let ntpcReportReservationEpoch = 0;
+        let ntpcActiveReportReservation = null;
+
+        function ntpcReportDateKeyTaipei(date = new Date()) {
+            const parts = new Intl.DateTimeFormat('en-US', {
+                timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'
+            }).formatToParts(date);
+            const item = type => parts.find(x => x.type===type)?.value || '';
+            return `${item('year')}${item('month')}${item('day')}`;
+        }
+
+        function ntpcCaseNumberSettings(dept, dateKey = ntpcReportDateKeyTaipei()) {
+            if(dept!=='police' && dept!=='fire') throw new Error('不支援的案件部門。');
+            return {
+                dateKey,
+                prefix:`${dept==='police'?'NTPD':'NTFD'}-${dateKey}`,
+                counterRef:fm.doc(db,'caseNumberCounters',`${dept}_${dateKey}`),
+                pendingCollection:dept==='police'?'policePendingReports':'firePendingReports',
+                finalCollection:dept==='police'?'policeReports':'fireReports'
+            };
+        }
+
+        async function ntpcPreviewNextCaseNumber(dept) {
+            if(!db || !fm?.getDoc) throw new Error('Firebase 尚未就緒，請稍後再開啟報告。');
+            const settings=ntpcCaseNumberSettings(dept);
+            const counterSnap=await fm.getDoc(settings.counterRef);
+            let serial=Math.max(0,Number(counterSnap.exists()?counterSnap.data().lastSerial:0)||0);
+            for(let tries=0;tries<10000;tries++) {
+                serial++;
+                if(!Number.isSafeInteger(serial)) throw new Error('案件流水號已超出有效範圍。');
+                const caseId=`${settings.prefix}${String(serial).padStart(3,'0')}`;
+                const [pending,formal]=await Promise.all([
+                    fm.getDoc(fm.doc(db,settings.pendingCollection,caseId)),
+                    fm.getDoc(fm.doc(db,settings.finalCollection,caseId))
+                ]);
+                if(!pending.exists()&&!formal.exists()) return caseId;
+            }
+            throw new Error('當日流水號檢查次數過多，請聯絡管理員。');
+        }
+
+        // 此交易同時分配正式編號、更新共用計數器及儲存待審案件。
+        // Firestore 會對同時更新計數器的交易進行重試，只有提交成功才消耗編號。
+        async function ntpcCommitReportWithNumber(dept, reportObj) {
+            if(!db || !fm?.runTransaction) throw new Error('Firebase 尚未就緒，無法儲存案件。');
+            // 送件時以臺灣目前日期編號，表單跨午夜時不沿用前一天的預覽。
+            const settings=ntpcCaseNumberSettings(dept);
+            return fm.runTransaction(db,async transaction=>{
+                const counterSnap=await transaction.get(settings.counterRef);
+                let serial=Math.max(0,Number(counterSnap.exists()?counterSnap.data().lastSerial:0)||0);
+                for(let tries=0;tries<10000;tries++) {
+                    serial++;
+                    if(!Number.isSafeInteger(serial)) throw new Error('案件流水號已超出有效範圍。');
+                    const caseId=`${settings.prefix}${String(serial).padStart(3,'0')}`;
+                    const targetRef=fm.doc(db,settings.pendingCollection,caseId);
+                    const formalRef=fm.doc(db,settings.finalCollection,caseId);
+                    const pendingSnap=await transaction.get(targetRef);
+                    const formalSnap=await transaction.get(formalRef);
+                    if(pendingSnap.exists()||formalSnap.exists())continue;
+                    transaction.set(settings.counterRef,{
+                        department:dept,dateKey:settings.dateKey,lastSerial:serial,
+                        updatedAt:Date.now(),updatedBy:String(currentUser?.account||'')
+                    });
+                    transaction.set(targetRef,{...reportObj,caseId});
+                    return caseId;
+                }
+                throw new Error('當日流水號檢查次數過多，請聯絡管理員。');
+            });
+        }
+
+        async function ntpcPrepareReportNumber(dept, requestEpoch){
+            const input=document.getElementById('report-case-id');
+            const btn=document.getElementById('submit-report-btn');
+            try {
+                const preview=await ntpcPreviewNextCaseNumber(dept);
+                const modal=document.getElementById('modal-report');
+                if(requestEpoch!==ntpcReportReservationEpoch || modal?.classList.contains('hidden') || currentActiveDepartmentForReport!==dept) return;
+                ntpcActiveReportReservation={department:dept,caseId:preview,epoch:requestEpoch};
+                if(input)input.value=preview+'（預計，送出時確認）';
+                if(btn){btn.disabled=false;btn.textContent='提交案件報告';}
+            }catch(error){
+                const modal=document.getElementById('modal-report');
+                if(requestEpoch!==ntpcReportReservationEpoch || modal?.classList.contains('hidden'))return;
+                ntpcActiveReportReservation=null;
+                if(input)input.value='無法預覽案件編號，請重開表單';
+                if(btn){btn.disabled=true;btn.textContent='無法預覽案件編號';}
+                console.warn('預覽案件流水號失敗：',error);
+                showToast('無法查詢下一個案件編號：'+(error?.message||'請檢查 Firestore 存取權限後重試。'),'error','案件編號異常');
+            }
+        }
+
         function openReportModal(dept) {
             const academyMode = !!academyExamSession && academyExamSession.type === dept;
             if (!currentUser && !academyMode) {
@@ -6032,8 +6134,12 @@ async function republishAnnouncement(id) {
             const titleEl = document.getElementById('report-modal-title');
             if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-file-pen ${dept === 'police' ? 'text-blue-500' : 'text-red-500'}"></i><span>填寫${dept === 'police' ? '警察' : '消防'}案件報告</span>`;
 
+            const requestEpoch=++ntpcReportReservationEpoch;
+            ntpcActiveReportReservation=null;
             const caseInput = document.getElementById('report-case-id');
-            if (caseInput) caseInput.value = academyMode ? generateAcademyCaseId(dept) : generateNextCaseId(dept);
+            if(caseInput) caseInput.value = academyMode ? generateAcademyCaseId(dept) : '正在查詢預計案件編號…';
+            const submitBtn=document.getElementById('submit-report-btn');
+            if(submitBtn){submitBtn.disabled=!academyMode;submitBtn.textContent=academyMode?'提交案件報告':'正在查詢預計編號…';}
             const reportIdInput = document.getElementById('report-id');
             if (reportIdInput) reportIdInput.value = academyMode ? '警專專生' : (currentUser.staffNumber || currentUser.account);
             const reportAuthorInput = document.getElementById('report-author');
@@ -6065,7 +6171,8 @@ async function republishAnnouncement(id) {
                 });
             }
             const modal=document.getElementById('modal-report');
-            if(modal) modal.classList.remove('hidden');
+            if(modal)modal.classList.remove('hidden');
+            if(!academyMode)void ntpcPrepareReportNumber(dept,requestEpoch);
         }
 
         async function submitClock() {
@@ -6107,26 +6214,12 @@ async function republishAnnouncement(id) {
             finally{window.__clockSubmitting=false;if(btn){btn.disabled=false;btn.classList.remove('is-busy-action');}}
         }
 
-        function generateNextCaseId(dept = currentActiveDepartmentForReport) {
-            const now = new Date();
-            const yyyy = now.getFullYear();
-            const mm = String(now.getMonth() + 1).padStart(2, '0');
-            const dd = String(now.getDate()).padStart(2, '0');
-            const dateKey = `${yyyy}${mm}${dd}`;
-            const prefix = dept === 'police' ? `NTPD-${dateKey}` : `NTFD-${dateKey}`;
-
-            // 警察、消防各自使用獨立流水號：NTPD-YYYYMMDD001 / NTFD-YYYYMMDD001。
-            const reports = dept === 'police' ? (appData.policeReports || []) : (appData.fireReports || []);
-            const pending = dept === 'police' ? (appData.policePendingReports || []) : (appData.firePendingReports || []);
-            const used = new Set();
-            [...reports, ...pending].forEach(report => {
-                const caseId = String(report.caseId || '');
-                const match = caseId.match(new RegExp(`^${prefix}(\\d+)$`));
-                if (match) used.add(Number(match[1]) || 0);
-            });
-            let next = 1;
-            while (used.has(next)) next++;
-            return `${prefix}${String(next).padStart(3, '0')}`;
+        // 確認開表單時的預覽流程完成；真正編號只以 Firestore 送件交易的回傳值為準。
+        function getPreparedReportCaseId(dept){
+            const preview=ntpcActiveReportReservation;
+            if(!preview || preview.department!==dept || preview.epoch!==ntpcReportReservationEpoch)
+                return '';
+            return preview.caseId;
         }
 
         async function renumberDailyCaseReports(dateKey, dept) {
@@ -6392,7 +6485,8 @@ async function republishAnnouncement(id) {
             }
 
             const now = new Date();
-            const caseId = generateNextCaseId(dept);
+            let caseId = academyMode ? (String(document.getElementById('report-case-id')?.value||'').trim()||generateAcademyCaseId(dept)) : '';
+            if(!academyMode && !getPreparedReportCaseId(dept)){showToast('尚未完成案件編號預覽，請關閉報告視窗後重新開啟。','warning','無法送件');return;}
             const videoLinks = [1,2,3].map(n => document.getElementById(`report-video-link-${n}`)?.value.trim()).filter(Boolean);
             if(dept==='police' && !policeJailRulesReady){policeJailRulesUnavailable();return;}
             const violationData = dept === 'police' ? getViolationSelection('report') : {violations:[], organizedCrime:false, jailMinutes:0};
@@ -6445,22 +6539,34 @@ async function republishAnnouncement(id) {
                     reportObj.reviewedBy = '';
                     reportObj.rejectionReason = '';
                     reportObj.submittedAt = now.getTime();
-                    await fm.setDoc(fm.doc(db, collectionName, caseId), reportObj);
+                    // 正式編號只在此時產生；計數器與待審案件同一 Firestore 交易提交。
+                    // 檢查與建立在同一交易內完成，若失敗則兩者都不寫入，因此取消／失敗不占號。
+                    caseId=await ntpcCommitReportWithNumber(dept,reportObj);
+                    reportObj.caseId=caseId;
+                    const visibleCaseInput=document.getElementById('report-case-id');
+                    if(visibleCaseInput)visibleCaseInput.value=caseId;
                     /* 案件送出後交由對應 pending collection 的 onSnapshot 唯一回填，避免本地插入與即時監聽造成重複。 */
                     const deptName = dept === 'police' ? '警局' : '消防局';
                     const notification = { type:'report', department:dept, caseId, recipientAccount:currentUser.account, recipientAccountNormalized:String(currentUser.account||'').trim().toLowerCase(), status:'pending', title:'案件已送出，等待高層審核', message:`案件 ${caseId} 已送入${deptName}高層審核系統。`, timestamp:Date.now(), read:false };
-                    const nref = fm.doc(fm.collection(db,'reportNotifications'));
-                    await fm.setDoc(nref, notification);
-                    /* 個人通知由 reportNotifications onSnapshot 回填，避免本地插入與即時監聽重複。 */
-                    // Firestore 寫入成功後才發送 Discord 案件通知，避免資料庫失敗卻先通知。
-                    sendDiscordCaseNotification(dept, reportObj);
+                    // 通知寫入即使失敗，也不得把已成功儲存的案件顯示成「送件失敗」，以免使用者重送。
+                    let notificationError = null;
+                    try {
+                        const nref = fm.doc(fm.collection(db,'reportNotifications'));
+                        await fm.setDoc(nref, notification);
+                    } catch (noticeError) {
+                        notificationError = noticeError;
+                        console.warn(`案件 ${caseId} 已儲存，但個人通知未能寫入：`,noticeError);
+                    }
+                    // Webhook 使用已提交交易的正式 caseId，避免預覽編號出現在通知中。
+                    sendDiscordCaseNotification(dept, reportObj).catch(err => console.warn('案件已儲存，但 Discord 通知異常：',err));
                     closeModal('modal-report');
                     if(dept==='police'){ renderPoliceReports(); renderPoliceReview(); } else { renderFireReports(); renderFireReview(); }
                     renderMyProfile();
-                    showSubmitSuccessAnimation('案件送出成功', `案件 ${caseId} 已送出，等待${deptName}高層或管理中心審核。`);
+                    showSubmitSuccessAnimation('案件已存入待審資料庫', `案件 ${caseId} 已送出，等待${deptName}高層或管理中心審核。${notificationError?'（個人通知同步異常，請勿重複送件）':''}`);
+                    if(notificationError)showToast(`案件 ${caseId} 已儲存，但個人通知失敗：${notificationError.message||'未知錯誤'}`,'warning','案件已保存');
                 }
             } catch (e) {
-                showToast('提交失敗：' + e.message, 'error', '操作失敗');
+                showToast('案件尚未確認寫入資料庫：' + e.message + '。請先核對案件編號或聯絡管理員，不要連續重送。', 'error', '送件失敗');
             }
         } catch (e) { console.error('案件送出流程異常：', e); showToast('案件送出流程發生異常，請稍後再試。', 'error', '系統異常'); } finally { window.__ntpcReportSubmitting = false; }
         }
@@ -7111,9 +7217,8 @@ async function republishAnnouncement(id) {
                 if (dept === 'police') appData.policeReports = appData.policeReports.filter(x => x.caseId !== caseId);
                 else appData.fireReports = appData.fireReports.filter(x => x.caseId !== caseId);
 
-                // 刪除後自動壓縮該日流水號：001 刪除後 002→001、003→002……
-                const dateMatch = String(caseId).match(/^(?:NTPD|NTFD)-(\d{8})\d+$/) || String(caseId).match(/^REP-(\d{8})\d+$/);
-                if (dateMatch) await renumberDailyCaseReports(dateMatch[1], dept);
+                // 案件編號一經發布就保持不變，刪除其他案件也不能重排流水號。
+                // 否則 Discord 訊息、通知與歷史連結會指向錯誤案件，甚至與其他文件發生編號碰撞。
                 await logAdminAction('刪除案件報告', caseId);
                 if (dept === 'police') renderPoliceReports();
                 else renderFireReports();
