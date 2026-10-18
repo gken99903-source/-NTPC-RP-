@@ -495,9 +495,10 @@
             opacity: 0;
             will-change: opacity;
             visibility: hidden;
+            pointer-events: none;
             transition: opacity .2s ease, visibility .2s ease;
         }
-        #submit-success-animation.show { opacity: 1; visibility: visible; }
+        #submit-success-animation.show { opacity: 1; visibility: visible; pointer-events: auto; }
         .submit-success-card {
             width: min(340px, calc(100vw - 2rem));
             padding: 2rem 1.5rem;
@@ -4306,6 +4307,7 @@ async function republishAnnouncement(id) {
         }
 
         function switchTab(tabId) {
+            hideSubmitSuccessAnimation();
             if (tabId === 'dashboard' && !currentUser) {
                 showToast('勤務中心需要先登入系統。', 'warning', '需要登入');
                 tabId = 'home';
@@ -5184,21 +5186,61 @@ async function republishAnnouncement(id) {
             document.getElementById('modal-report-detail').classList.remove('hidden');
         }
 
-        function showSubmitSuccessAnimation(title='送出成功', message='案件資料已成功送出。') {
+        // 送出成功動畫：離開瀏覽器或頁面時必須取消未執行的影格。
+        // 否則背景分頁的 rAF 延後執行，可能在關閉計時器結束後再度顯示打勾遮罩。
+        let submitSuccessFrame1 = 0;
+        let submitSuccessFrame2 = 0;
+        let submitSuccessToken = 0;
+        let submitSuccessDeadline = 0;
+        function hideSubmitSuccessAnimation() {
+            ++submitSuccessToken; // 使已排程的舊回呼全部失效
+            clearTimeout(window.__submitSuccessTimer);
+            window.__submitSuccessTimer = null;
+            if (submitSuccessFrame1) cancelAnimationFrame(submitSuccessFrame1);
+            if (submitSuccessFrame2) cancelAnimationFrame(submitSuccessFrame2);
+            submitSuccessFrame1 = submitSuccessFrame2 = 0;
+            submitSuccessDeadline = 0;
             const overlay = document.getElementById('submit-success-animation');
-            if (!overlay) return;
+            if (overlay) {
+                overlay.classList.remove('show');
+                overlay.setAttribute('aria-hidden', 'true');
+            }
+        }
+        function showSubmitSuccessAnimation(title='送出成功', message='案件資料已成功送出。') {
+            hideSubmitSuccessAnimation();
+            const overlay = document.getElementById('submit-success-animation');
+            if (!overlay || document.hidden) return;
             const titleEl = document.getElementById('submit-success-title');
             const messageEl = document.getElementById('submit-success-message');
             if (titleEl) titleEl.textContent = title;
             if (messageEl) messageEl.textContent = message;
-            clearTimeout(window.__submitSuccessTimer);
-            overlay.classList.remove('show');
-            // 不使用 offsetWidth 強制同步 reflow，改用下一幀重啟動畫，降低手機掉幀。
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => overlay.classList.add('show'));
+            const token = submitSuccessToken;
+            submitSuccessDeadline = Date.now() + 1450;
+            // 維持原本的兩幀動畫效果；每個影格都確認未逾時、未離開頁面。
+            submitSuccessFrame1 = requestAnimationFrame(() => {
+                submitSuccessFrame1 = 0;
+                if (token !== submitSuccessToken) return;
+                if (document.hidden || Date.now() >= submitSuccessDeadline) { hideSubmitSuccessAnimation(); return; }
+                submitSuccessFrame2 = requestAnimationFrame(() => {
+                    submitSuccessFrame2 = 0;
+                    if (token !== submitSuccessToken) return;
+                    if (document.hidden || Date.now() >= submitSuccessDeadline) { hideSubmitSuccessAnimation(); return; }
+                    overlay.classList.add('show');
+                    overlay.setAttribute('aria-hidden', 'false');
+                });
             });
-            window.__submitSuccessTimer = setTimeout(() => overlay.classList.remove('show'), 1450);
+            window.__submitSuccessTimer = setTimeout(() => {
+                if (token === submitSuccessToken) hideSubmitSuccessAnimation();
+            }, 1450);
         }
+        // App 切背景、分頁還原或返回歷史快取時，不保留過期的成功畫面。
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden || (submitSuccessDeadline && Date.now() >= submitSuccessDeadline)) hideSubmitSuccessAnimation();
+        });
+        window.addEventListener('pagehide', hideSubmitSuccessAnimation);
+        window.addEventListener('pageshow', () => {
+            if (document.getElementById('submit-success-animation')?.classList.contains('show')) hideSubmitSuccessAnimation();
+        });
 
         const SECURITY_ACTION_COOLDOWN=new Map();
         function securityActionAllowed(key,cooldownMs=700){const now=Date.now(),last=SECURITY_ACTION_COOLDOWN.get(key)||0;if(now-last<cooldownMs)return false;SECURITY_ACTION_COOLDOWN.set(key,now);return true;}
