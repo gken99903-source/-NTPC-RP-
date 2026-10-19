@@ -1210,6 +1210,7 @@
                         </div>
                         <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
                             <li>EMS 救護出勤報告重整為派遣資料、傷病患資料、現場狀況、處置項目及出勤紀錄五大區塊。</li>
+                            <li>EMS 受傷部位標記移至第三區現場狀況；第四區依 EMS 平板整合七大處置分類與條件式補充欄位。</li>
                             <li>未勾選「沒有運送」時隱藏未運送原因；勾選後才選擇未接觸、有接觸或出勤待命及細項。</li>
                             <li>EMS 案件比照警務案件於送出時使用 Firestore 交易配發流水號，同時建立待審資料，防止多人同時送件造成編號重複或覆寫。</li>
                             <li>開啟 EMS 表單只顯示預計編號，取消不占用號碼；既有 EMS 報告與歷史編號均予保留。</li>
@@ -2264,7 +2265,62 @@
 
 
     <!-- EMS 救護出勤報告：V2 五大區塊、依勾選顯示條件欄位 -->
-    <div id="modal-ems-report" class="fixed inset-0 z-50 bg-slate-950/80 hidden flex items-center justify-center p-2 sm:p-4">
+    <style>
+    .ems-body-map-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;}
+    @media (min-width: 1280px){.ems-body-map-shell{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}}
+    .ems-body-card{border:1px solid rgba(71,85,105,.8);background:rgba(2,6,23,.55);border-radius:1rem;padding:1rem;}
+    .ems-body-figure{width:100%;max-width:290px;margin:0 auto;display:block;}
+    .ems-body-region{fill:rgba(148,163,184,.14);stroke:rgba(226,232,240,.95);stroke-width:2.2;cursor:pointer;transition:fill .2s ease,transform .2s ease,filter .2s ease;transform-origin:center center;}
+    .ems-body-region:hover{fill:rgba(251,191,36,.3);filter:drop-shadow(0 0 8px rgba(251,191,36,.18));}
+    /* 選取狀態加在 <g data-ems-body-part>，因此只讓該 <g> 內的單一部位閃紅 */
+    [data-ems-body-part].is-selected .ems-body-region,
+    [data-ems-body-part].is-selected .ems-body-region:hover {
+        fill: #ef4444;
+        stroke: #ffe4e6;
+        stroke-width: 3;
+        animation: emsBodyPulse 900ms ease-in-out infinite;
+        filter: drop-shadow(0 0 9px rgba(239,68,68,.65));
+    }
+    [data-ems-body-part]:focus-visible .ems-body-region {outline:none;stroke:#fbbf24;stroke-width:3.5;}
+    .ems-body-chip{display:inline-flex;align-items:center;gap:.35rem;border-radius:999px;border:1px solid rgba(248,113,113,.45);background:rgba(127,29,29,.22);padding:.35rem .7rem;font-size:12px;color:#fecaca;cursor:pointer;}
+    @keyframes emsBodyPulse {
+        0%,100% {fill:#ef4444;stroke:#ffe4e6;filter:drop-shadow(0 0 11px rgba(239,68,68,.85));}
+        50% {fill:rgba(239,68,68,.25);stroke:#fb7185;filter:drop-shadow(0 0 2px rgba(239,68,68,.20));}
+    }
+    @media (prefers-reduced-motion: reduce) {
+        [data-ems-body-part].is-selected .ems-body-region {animation:none;fill:#ef4444;}
+    }
+
+    /* EMS 勤務平板分頁與選項，限 EMS 彈窗使用 */
+    #ems-form-scroll .ems-page-nav{position:sticky;top:-1rem;z-index:15;background:rgba(2,6,23,.97);border:1px solid #334155;border-radius:1rem;padding:.5rem;box-shadow:0 8px 28px rgba(0,0,0,.2);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.3rem;}
+    #ems-form-scroll .ems-page-tab{font-size:clamp(10px,1.5vw,13px);min-height:45px;padding:.45rem .25rem;border-radius:.7rem;color:#cbd5e1;border:1px solid transparent;line-height:1.35;font-weight:650;}
+    #ems-form-scroll .ems-page-tab:hover{background:#1e293b;}
+    #ems-form-scroll .ems-page-tab.is-active{background:rgba(225,29,72,.22);border-color:rgba(251,113,133,.65);color:#ffe4e6;}
+    #ems-form-scroll .ems-page-tab span{display:block;}
+    #ems-form-scroll .ems-tablet-choice{display:flex;align-items:center;gap:.6rem;min-height:50px;border:1px solid #334155;border-radius:.75rem;padding:.65rem .8rem;background:rgba(15,23,42,.9);font-size:.875rem;color:#e2e8f0;cursor:pointer;transition:background .15s,border-color .15s;}
+    #ems-form-scroll .ems-tablet-choice:hover{border-color:#fb7185;background:rgba(136,19,55,.18);}
+    #ems-form-scroll .ems-tablet-choice:has(input:checked){border-color:#fb7185;background:rgba(159,18,57,.3);color:#fff;}
+    #ems-form-scroll .ems-tablet-choice input{width:17px;height:17px;flex-shrink:0;accent-color:#f43f5e;}
+    #ems-form-scroll .ems-triage-main{border:1px solid #475569;border-radius:.85rem;background:rgba(2,6,23,.8);padding:.85rem 1rem;display:flex;gap:.75rem;align-items:center;cursor:pointer;color:#f8fafc;font-size:14px;font-weight:bold;}
+    #ems-form-scroll .ems-triage-main:has(input:checked){border-color:#fb7185;background:rgba(136,19,55,.24);}
+    #ems-form-scroll .ems-triage-main input{width:19px;height:19px;accent-color:#fb7185;}
+    #ems-form-scroll .ems-triage-subtab{border:1px solid #334155;background:#0f172a;color:#cbd5e1;font-size:13px;border-radius:.75rem;padding:.65rem 1rem;font-weight:600;}
+    #ems-form-scroll .ems-triage-subtab.is-active{border-color:#fb7185;background:#881337;color:white;}
+    #ems-form-scroll .ems-triage-panel{padding:.7rem 0;}
+    #ems-form-scroll .ems-triage-detail{border:1px solid rgba(100,116,139,.45);border-radius:12px;background:rgba(2,6,23,.6);padding:12px;}
+    #ems-form-scroll .ems-triage-detail input{display:block;margin-top:8px;width:100%;border:1px solid #475569;background:#020617;color:white;border-radius:10px;padding:10px 12px;}
+    #ems-form-scroll .ems-triage-divider{font-size:12px;color:#94a3b8;padding:4px 2px 8px;border-bottom:1px solid #334155;margin:12px 0;}
+    #ems-form-scroll .ems-page-step{font-size:12px;color:#94a3b8;}
+    #ems-form-scroll .ems-treatment-group{scroll-margin-top:5rem;}
+    #ems-form-scroll .ems-treatment-group:has([data-ems-treatment-choice]:checked){border-color:rgba(251,113,133,.45);}
+    #ems-form-scroll .ems-treatment-detail{display:block;border:1px solid rgba(100,116,139,.48);border-radius:.85rem;background:rgba(2,6,23,.65);padding:.8rem;}
+    #ems-form-scroll .ems-treatment-detail.hidden{display:none!important;}
+    #ems-form-scroll .ems-treatment-detail input{min-height:44px;}
+
+    #ems-form-scroll [data-ems-form-page].hidden{display:none!important;}
+    @media(max-width:390px){#ems-form-scroll .ems-page-nav{gap:2px;padding:4px;}#ems-form-scroll .ems-page-tab{font-size:10px;}}
+</style>
+<div id="modal-ems-report" class="fixed inset-0 z-50 bg-slate-950/80 hidden flex items-center justify-center p-2 sm:p-4">
       <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-4xl w-full shadow-2xl max-h-[94dvh] flex flex-col overflow-hidden">
         <div class="flex justify-between items-center gap-2 px-5 sm:px-7 py-4 border-b border-slate-800 shrink-0">
           <h3 id="ems-modal-title" class="text-lg sm:text-xl font-bold text-white"><i class="fa-solid fa-truck-medical text-rose-400 mr-2"></i>EMS 救護出勤報告</h3>
@@ -2272,7 +2328,15 @@
         </div>
         <div class="overflow-y-auto p-4 sm:p-7 space-y-5 overscroll-contain" id="ems-form-scroll"><input type="hidden" id="ems-edit-id">
 <input type="text" id="ems-report-id" readonly class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 font-mono">
-<section class="rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-4">
+<nav class="ems-page-nav" id="ems-tablet-pages" aria-label="EMS 報告填寫類別">
+  <button type="button" class="ems-page-tab is-active" data-ems-page-tab="dispatch" aria-selected="true"><span>01</span>派遣資料</button>
+  <button type="button" class="ems-page-tab" data-ems-page-tab="patient" aria-selected="false"><span>02</span>傷病患資料</button>
+  <button type="button" class="ems-page-tab" data-ems-page-tab="condition" aria-selected="false"><span>03</span>現場狀況</button>
+  <button type="button" class="ems-page-tab" data-ems-page-tab="treatment" aria-selected="false"><span>04</span>處置項目</button>
+  <button type="button" class="ems-page-tab" data-ems-page-tab="staff" aria-selected="false"><span>05</span>出勤紀錄</button>
+</nav>
+<div id="ems-tablet-page-status" class="ems-page-step" aria-live="polite">第 1／5 頁 · 派遣資料</div>
+<section data-ems-form-page="dispatch" class="rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-4">
     <div><h4 class="font-bold text-rose-300 text-base">一、派遣資料</h4><p class="text-xs text-slate-400 mt-1">派遣與醫院時間沿用舊版單一回答框格式；未運送時先勾選「沒有運送」，再選擇原因。</p></div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">日期</span><input id="ems-duty-date" type="date" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">以勤務當天日期為準</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">出勤單位</span><input id="ems-unit-vehicle" type="text" placeholder="例如：新莊分隊／一般型救護車" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">請填分隊名稱與救護車類別</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">出勤時間</span><input id="ems-dispatch-time" type="text" placeholder="HH:MM" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">救護車出勤時間</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">到達現場時間</span><input id="ems-arrival-time" type="text" placeholder="HH:MM" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">救護車到達現場時間</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">離開現場時間</span><input id="ems-leave-time" type="text" placeholder="HH:MM" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">救護車離開現場時間</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">送達醫院時間</span><input id="ems-hospital-time" type="text" placeholder="HH:MM；未送醫可留空" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">救護車抵達醫院急診檢傷站時間</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">離開醫院時間</span><input id="ems-leave-hospital-time" type="text" placeholder="HH:MM；未送醫可留空" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">救護車離開醫院時間</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">返隊待命時間</span><input id="ems-return-time" type="text" placeholder="HH:MM" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">救護車返抵分隊時間</span></label><label class="block sm:col-span-2"><span class="block text-xs font-semibold text-slate-300 mb-1.5">發生地點</span><input id="ems-incident-location" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block sm:col-span-2"><span class="block text-xs font-semibold text-slate-300 mb-1.5">協同處理單位</span><input id="ems-assisting-units" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">依實際支援單位填寫</span></label><label class="block sm:col-span-2"><span class="block text-xs font-semibold text-slate-300 mb-1.5">送往醫院或地點</span><input id="ems-hospital-destination" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">註記醫療機構名稱；未運送可留空</span></label></div><div class="space-y-2"><label class="inline-flex items-center gap-3 cursor-pointer rounded-xl border border-rose-500/25 bg-slate-950/60 px-4 py-3 text-sm font-semibold text-white"><input id="ems-no-transport" type="checkbox" class="h-4 w-4 accent-rose-500">沒有運送</label><div data-ems-reveal="ems-no-transport" class="hidden space-y-2"><div class="text-sm font-semibold text-white">未運送原因 <span class="text-xs font-normal text-slate-400">（請勾選一個分類及原因）</span></div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
 <label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-no-contact" type="checkbox" data-ems-option-group="no-transport" class="h-4 w-4 rounded accent-rose-500">(1) 未接觸</label>
@@ -2280,28 +2344,44 @@
 
 </div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
 <label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-had-contact" type="checkbox" data-ems-option-group="no-transport" class="h-4 w-4 rounded accent-rose-500">(2) 有接觸</label>
-<div data-ems-reveal="ems-had-contact" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><label class="block text-xs text-slate-300 mb-2">原因選項（A／B／C）</label><select id="ems-had-contact-reason" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><option value="">-- 請選擇原因 --</option><option value="拒送">A. 拒送</option><option value="警察處理">B. 警察處理</option><option value="現場死亡">C. 現場死亡</option><option value="其他">D. 其他</option></select></div>
+<div data-ems-reveal="ems-had-contact" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3">
+    <label for="ems-had-contact-reason" class="block text-xs text-slate-300 mb-2">原因選項（A／B／C／D）</label>
+    <select id="ems-had-contact-reason" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><option value="">-- 請選擇原因 --</option><option value="拒送">A. 拒送</option><option value="警察處理">B. 警察處理</option><option value="現場死亡">C. 現場死亡</option><option value="其他">D. 其他</option></select>
+    <div id="ems-had-contact-other-wrap" class="hidden mt-3">
+        <label for="ems-had-contact-other-reason" class="block text-xs font-semibold text-slate-300 mb-1.5">D. 其他原因說明 <span class="text-rose-400">*</span></label>
+        <textarea id="ems-had-contact-other-reason" rows="3" maxlength="500" placeholder="請詳細說明未運送的其他原因…" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40" disabled></textarea>
+    </div>
+</div>
 
 </div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
 <label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-standby" type="checkbox" data-ems-option-group="no-transport" class="h-4 w-4 rounded accent-rose-500">(3) 出勤待命</label>
 <div data-ems-reveal="ems-standby" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><label class="block text-xs text-slate-300 mb-2">原因選項（A／B／C）</label><select id="ems-standby-reason" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><option value="">-- 請選擇原因 --</option><option value="火警">A. 火警</option><option value="支援勤務">B. 支援勤務</option></select></div>
 
 </div></div></div>
-    </section><section class="rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-4">
+    </section><section data-ems-form-page="patient" class="hidden rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-4">
     <div><h4 class="font-bold text-rose-300 text-base">二、傷病患資料</h4></div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">傷病患姓名</span><input id="ems-patient-name" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">請填遊戲角色設定名稱，勿填真實敏感資料</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">國民身分證</span><input id="ems-patient-id" type="text" placeholder="RP 虛構證件資料" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">僅限 RP 虛構資料；請勿填寫真實身分證字號</span></label><label><span class="block text-xs font-semibold text-slate-300 mb-1.5">性別</span><select id="ems-patient-sex" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><option value="">-- 請選擇 --</option><option>男</option><option>女</option><option>其他／未註明</option></select></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">年齡</span><input id="ems-patient-age" type="number" placeholder="年齡" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label></div>
     <div class="grid grid-cols-1 gap-4"><label class="block"><span class="block text-xs font-semibold text-slate-300 mb-1.5">GCS 評分 E: V: M:</span><input id="ems-gcs-e" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">同一欄位輸入 E、V、M 的評分；不自動計分</span></label></div>
-    </section><section class="rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-4">
-    <div><h4 class="font-bold text-rose-300 text-base">三、現場狀況</h4><p class="text-xs text-slate-400 mt-1">勾選項目後，才會展開該項對應的 A／B／C 回答框。</p></div>
-    <div class="space-y-2"><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
-<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-nontrauma" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(1) 非創傷</label>
-<div data-ems-reveal="ems-nontrauma" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 填寫症狀</span><textarea id="ems-nontrauma-symptom" rows="2" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></textarea></label></div>
-
-</div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
-<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-trauma" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(2) 創傷</label>
-<div data-ems-reveal="ems-trauma" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 填寫症狀</span><textarea id="ems-trauma-symptom" rows="2" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></textarea></label></div>
-
-</div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
+    </section><section data-ems-form-page="condition" class="hidden rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-4">
+<div hidden id="ems-triage-state-fields"><input type="hidden" id="ems-nontrauma-choices"><input type="hidden" id="ems-trauma-injuries"><input type="hidden" id="ems-trauma-mechanism"><input type="hidden" id="ems-trauma-traffic-role"><input type="hidden" id="ems-trauma-nontraffic"></div>
+    <div><h4 class="font-bold text-rose-300 text-base">三、現場狀況</h4><p class="text-xs text-slate-400 mt-1">先選「非創傷」或「創傷」，再於各分類中勾選症狀、事故類別與必要補充內容。</p></div>
+    <div class="space-y-3"><p class="text-xs text-slate-400">請先勾選勤務類別，選項將依分類展開；同一案件以一個主類別為主。</p><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3 space-y-3">
+<label class="ems-triage-main"><input id="ems-nontrauma" type="checkbox" data-ems-triage-main="nontrauma"><span>非創傷</span><span class="text-xs font-normal text-slate-400">急病／一般疾病</span></label>
+<div data-ems-reveal="ems-nontrauma" class="hidden space-y-4 px-1">
+<div class="flex flex-wrap gap-2"><button class="ems-triage-subtab is-active" type="button" data-ems-nontrauma-tab="acute">急病</button><button class="ems-triage-subtab" type="button" data-ems-nontrauma-tab="general">一般疾病</button></div>
+<div class="ems-triage-panel" data-ems-nontrauma-panel="acute"><p class="text-xs text-slate-400 mb-3">可複選急病症狀</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="呼吸問題（喘／呼吸急促）"><span>呼吸問題（喘／呼吸急促）</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="呼吸道問題（異物哽塞）"><span>呼吸道問題（異物哽塞）</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="昏迷（意識不清）"><span>昏迷（意識不清）</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="胸痛／胸悶"><span>胸痛／胸悶</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="腹痛"><span>腹痛</span></label></div></div>
+<div class="ems-triage-panel hidden" data-ems-nontrauma-panel="general"><p class="text-xs text-slate-400 mb-3">可複選一般疾病症狀</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="頭痛／頭暈／昏倒／昏厥"><span>頭痛／頭暈／昏倒／昏厥</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="發燒"><span>發燒</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="噁心／嘔吐／腹瀉"><span>噁心／嘔吐／腹瀉</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="肢體無力"><span>肢體無力</span></label></div><p class="ems-triage-divider">其他一般疾病／特殊狀況</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="疑似毒藥物中毒"><span>疑似毒藥物中毒</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="疑似一氧化碳中毒"><span>疑似一氧化碳中毒</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="癲癇／抽搐"><span>癲癇／抽搐</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="路倒"><span>路倒</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="行為急症／精神異常"><span>行為急症／精神異常</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="孕婦急產"><span>孕婦急產</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="到院前心肺功能停止"><span>到院前心肺功能停止</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="其他"><span>其他</span></label></div></div>
+<label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-nontrauma-other"><span class="text-xs font-bold text-rose-200">其他非創傷原因</span><input id="ems-nontrauma-other" type="text" placeholder="請說明其他非創傷原因" autocomplete="off"></label>
+<label class="block"><span class="block text-xs font-semibold text-slate-300 mb-1.5">非創傷症狀補充說明</span><textarea id="ems-nontrauma-symptom" rows="2" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white" placeholder="可補充主訴、發作時間等"></textarea></label>
+</div></div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3 space-y-3">
+<label class="ems-triage-main"><input id="ems-trauma" type="checkbox" data-ems-triage-main="trauma"><span>創傷</span><span class="text-xs font-normal text-slate-400">部位／受傷機轉／事故類別</span></label>
+<div data-ems-reveal="ems-trauma" class="hidden space-y-4 px-1">
+<div><h5 class="text-sm font-bold text-rose-200 mb-2">一般外傷</h5><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaInjuries" value="頭部外傷"><span>頭部外傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaInjuries" value="胸部外傷"><span>胸部外傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaInjuries" value="腹部外傷"><span>腹部外傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaInjuries" value="背部外傷"><span>背部外傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaInjuries" value="肢體外傷"><span>肢體外傷</span></label></div></div>
+<div><h5 class="text-sm font-bold text-rose-200 mb-2">受傷機轉（請擇一）</h5><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-mechanism-radio" value="交通事故"><span>交通事故</span></label><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-mechanism-radio" value="非交通事故"><span>非交通事故</span></label></div></div>
+<div class="hidden space-y-3" data-ems-trauma-mechanism="交通事故"><h5 class="text-sm font-bold text-rose-200">事故類別（以傷病患身分為主）</h5><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-traffic-radio" value="汽車"><span>汽車</span></label><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-traffic-radio" value="機車"><span>機車</span></label><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-traffic-radio" value="腳踏車"><span>腳踏車</span></label><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-traffic-radio" value="行人"><span>行人</span></label><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-traffic-radio" value="其他"><span>其他</span></label></div><label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-trauma-traffic-other"><span class="text-xs font-bold text-rose-200">其他交通事故類別</span><input id="ems-trauma-traffic-other" type="text" placeholder="請輸入交通事故類別" autocomplete="off"></label></div>
+<div class="hidden space-y-3" data-ems-trauma-mechanism="非交通事故"><h5 class="text-sm font-bold text-rose-200">非交通事故類別（可複選）</h5><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="溺水"><span>溺水</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="摔跌傷"><span>摔跌傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="墜落傷"><span>墜落傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="穿刺傷"><span>穿刺傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="燒燙傷"><span>燒燙傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="電擊傷"><span>電擊傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="生物咬螫傷"><span>生物咬螫傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="到院前心肺功能停止"><span>到院前心肺功能停止</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="其他"><span>其他</span></label></div><label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-trauma-fall-height"><span class="text-xs font-bold text-rose-200">墜落高度（樓）</span><input id="ems-trauma-fall-height" type="text" placeholder="例如：3" autocomplete="off"></label><label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-trauma-burn-degree"><span class="text-xs font-bold text-rose-200">燒燙傷程度</span><input id="ems-trauma-burn-degree" type="text" placeholder="例如：2 度" autocomplete="off"></label><label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-trauma-nontraffic-other"><span class="text-xs font-bold text-rose-200">其他非交通事故說明</span><input id="ems-trauma-nontraffic-other" type="text" placeholder="請說明其他事故類型" autocomplete="off"></label></div>
+<label class="block"><span class="block text-xs font-semibold text-slate-300 mb-1.5">創傷症狀補充說明</span><textarea id="ems-trauma-symptom" rows="2" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white" placeholder="例如：傷口位置、出血或意識狀態"></textarea></label>
+</div></div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
 <label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-complaint" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(3) 傷病患主訴</label>
 <div data-ems-reveal="ems-complaint" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">感覺哪裡不舒服？</span><input id="ems-complaint-where" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">感覺怎麼的不舒服？</span><input id="ems-complaint-how" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">大約不舒服有多久了？</span><input id="ems-complaint-duration" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">還有其他地方不舒服嗎？</span><input id="ems-complaint-other" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block sm:col-span-2"><span class="block text-xs font-semibold text-slate-300 mb-1.5">評估頸椎是否損傷？</span><input id="ems-cervical" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">創傷患者適用</span></label></div></div>
 
@@ -2310,30 +2390,196 @@
 <div data-ems-reveal="ems-history" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 過去病史</span><input id="ems-past-history" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">未知請填「不清楚」</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">B. 藥物史</span><input id="ems-medication-history" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">未知請填「不清楚」</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">C. 過敏史</span><input id="ems-allergy-history" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">未知請填「不清楚」</span></label></div></div>
 
 </div></div>
-    </section><section class="rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-4">
-    <div><h4 class="font-bold text-rose-300 text-base">四、處置項目</h4></div>
-    <div class="space-y-2"><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
-<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-oxygen" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(1) 氧氣治療</label>
-<div data-ems-reveal="ems-oxygen" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 給氧設備</span><input id="ems-oxygen-device" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">B. 氧氣流量</span><input id="ems-oxygen-flow" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label></div></div>
-
-</div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
-<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-bandaging" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(2) 止血包紮</label>
-<div data-ems-reveal="ems-bandaging" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 使用器材</span><input id="ems-bandaging-equipment" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label></div>
-
-</div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
-<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-wound" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(3) 傷口描述</label>
-<div data-ems-reveal="ems-wound" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 傷口面積</span><input id="ems-wound-area" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">B. 何種傷口</span><input id="ems-wound-type" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label></div></div>
-
-</div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
-<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-medication" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(4) 給藥</label>
-<div data-ems-reveal="ems-medication" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 途徑／劑量</span><input id="ems-medication-route-dose" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label></div>
-
-</div></div>
-    </section><section class="rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-4">
+    <div class="border-t border-rose-500/20 pt-5 mt-5 space-y-4">
+        <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h5 class="text-sm font-bold text-rose-200">受傷部位標記（Roblox 模型）</h5>
+                <p class="text-xs text-slate-400 mt-1">可直接點擊正面／背面部位，選取後該部位會紅色閃爍；再次點擊可取消。手部與腿部分為上下段。</p>
+            </div>
+            <button type="button" id="ems-body-map-clear-btn" class="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-xs font-semibold text-slate-200 hover:border-rose-400 hover:text-rose-200">清除全部標記</button>
+        </div>
+        <input id="ems-body-map-selection" type="hidden">
+        <div class="ems-body-map-shell">
+            <div class="ems-body-card">
+                <div class="text-center text-xs font-semibold tracking-wide text-slate-300 mb-3">正面</div>
+                <svg viewBox="0 0 240 430" class="ems-body-figure" aria-label="EMS 受傷部位正面圖">
+                    <g data-ems-body-part="前-頭部" role="button" tabindex="0" aria-label="切換受傷部位：前-頭部" aria-pressed="false"><rect class="ems-body-region" x="92" y="12" width="56" height="54" rx="18"></rect></g>
+                    <g data-ems-body-part="前-頸部" role="button" tabindex="0" aria-label="切換受傷部位：前-頸部" aria-pressed="false"><rect class="ems-body-region" x="107" y="66" width="26" height="18" rx="8"></rect></g>
+                    <g data-ems-body-part="前-胸部" role="button" tabindex="0" aria-label="切換受傷部位：前-胸部" aria-pressed="false"><rect class="ems-body-region" x="76" y="84" width="88" height="70" rx="12"></rect></g>
+                    <g data-ems-body-part="前-腹部" role="button" tabindex="0" aria-label="切換受傷部位：前-腹部" aria-pressed="false"><rect class="ems-body-region" x="84" y="154" width="72" height="56" rx="10"></rect></g>
+                    <g data-ems-body-part="前-骨盆" role="button" tabindex="0" aria-label="切換受傷部位：前-骨盆" aria-pressed="false"><rect class="ems-body-region" x="87" y="210" width="66" height="40" rx="10"></rect></g>
+                    <g data-ems-body-part="前-左上臂" role="button" tabindex="0" aria-label="切換受傷部位：前-左上臂" aria-pressed="false"><rect class="ems-body-region" x="36" y="92" width="34" height="72" rx="12"></rect></g>
+                    <g data-ems-body-part="前-左前臂" role="button" tabindex="0" aria-label="切換受傷部位：前-左前臂" aria-pressed="false"><rect class="ems-body-region" x="34" y="165" width="30" height="66" rx="12"></rect></g>
+                    <g data-ems-body-part="前-左手" role="button" tabindex="0" aria-label="切換受傷部位：前-左手" aria-pressed="false"><rect class="ems-body-region" x="32" y="232" width="30" height="32" rx="12"></rect></g>
+                    <g data-ems-body-part="前-右上臂" role="button" tabindex="0" aria-label="切換受傷部位：前-右上臂" aria-pressed="false"><rect class="ems-body-region" x="170" y="92" width="34" height="72" rx="12"></rect></g>
+                    <g data-ems-body-part="前-右前臂" role="button" tabindex="0" aria-label="切換受傷部位：前-右前臂" aria-pressed="false"><rect class="ems-body-region" x="176" y="165" width="30" height="66" rx="12"></rect></g>
+                    <g data-ems-body-part="前-右手" role="button" tabindex="0" aria-label="切換受傷部位：前-右手" aria-pressed="false"><rect class="ems-body-region" x="178" y="232" width="30" height="32" rx="12"></rect></g>
+                    <g data-ems-body-part="前-左大腿" role="button" tabindex="0" aria-label="切換受傷部位：前-左大腿" aria-pressed="false"><rect class="ems-body-region" x="86" y="252" width="28" height="88" rx="12"></rect></g>
+                    <g data-ems-body-part="前-左小腿" role="button" tabindex="0" aria-label="切換受傷部位：前-左小腿" aria-pressed="false"><rect class="ems-body-region" x="86" y="341" width="28" height="62" rx="12"></rect></g>
+                    <g data-ems-body-part="前-左腳" role="button" tabindex="0" aria-label="切換受傷部位：前-左腳" aria-pressed="false"><rect class="ems-body-region" x="80" y="404" width="40" height="18" rx="9"></rect></g>
+                    <g data-ems-body-part="前-右大腿" role="button" tabindex="0" aria-label="切換受傷部位：前-右大腿" aria-pressed="false"><rect class="ems-body-region" x="126" y="252" width="28" height="88" rx="12"></rect></g>
+                    <g data-ems-body-part="前-右小腿" role="button" tabindex="0" aria-label="切換受傷部位：前-右小腿" aria-pressed="false"><rect class="ems-body-region" x="126" y="341" width="28" height="62" rx="12"></rect></g>
+                    <g data-ems-body-part="前-右腳" role="button" tabindex="0" aria-label="切換受傷部位：前-右腳" aria-pressed="false"><rect class="ems-body-region" x="120" y="404" width="40" height="18" rx="9"></rect></g>
+                </svg>
+            </div>
+            <div class="ems-body-card">
+                <div class="text-center text-xs font-semibold tracking-wide text-slate-300 mb-3">背面</div>
+                <svg viewBox="0 0 240 430" class="ems-body-figure" aria-label="EMS 受傷部位背面圖">
+                    <g data-ems-body-part="後-頭部" role="button" tabindex="0" aria-label="切換受傷部位：後-頭部" aria-pressed="false"><rect class="ems-body-region" x="92" y="12" width="56" height="54" rx="18"></rect></g>
+                    <g data-ems-body-part="後-頸部" role="button" tabindex="0" aria-label="切換受傷部位：後-頸部" aria-pressed="false"><rect class="ems-body-region" x="107" y="66" width="26" height="18" rx="8"></rect></g>
+                    <g data-ems-body-part="後-上背" role="button" tabindex="0" aria-label="切換受傷部位：後-上背" aria-pressed="false"><rect class="ems-body-region" x="76" y="84" width="88" height="68" rx="12"></rect></g>
+                    <g data-ems-body-part="後-下背" role="button" tabindex="0" aria-label="切換受傷部位：後-下背" aria-pressed="false"><rect class="ems-body-region" x="84" y="152" width="72" height="54" rx="10"></rect></g>
+                    <g data-ems-body-part="後-臀部" role="button" tabindex="0" aria-label="切換受傷部位：後-臀部" aria-pressed="false"><rect class="ems-body-region" x="87" y="206" width="66" height="44" rx="10"></rect></g>
+                    <g data-ems-body-part="後-左上臂" role="button" tabindex="0" aria-label="切換受傷部位：後-左上臂" aria-pressed="false"><rect class="ems-body-region" x="36" y="92" width="34" height="72" rx="12"></rect></g>
+                    <g data-ems-body-part="後-左前臂" role="button" tabindex="0" aria-label="切換受傷部位：後-左前臂" aria-pressed="false"><rect class="ems-body-region" x="34" y="165" width="30" height="66" rx="12"></rect></g>
+                    <g data-ems-body-part="後-左手" role="button" tabindex="0" aria-label="切換受傷部位：後-左手" aria-pressed="false"><rect class="ems-body-region" x="32" y="232" width="30" height="32" rx="12"></rect></g>
+                    <g data-ems-body-part="後-右上臂" role="button" tabindex="0" aria-label="切換受傷部位：後-右上臂" aria-pressed="false"><rect class="ems-body-region" x="170" y="92" width="34" height="72" rx="12"></rect></g>
+                    <g data-ems-body-part="後-右前臂" role="button" tabindex="0" aria-label="切換受傷部位：後-右前臂" aria-pressed="false"><rect class="ems-body-region" x="176" y="165" width="30" height="66" rx="12"></rect></g>
+                    <g data-ems-body-part="後-右手" role="button" tabindex="0" aria-label="切換受傷部位：後-右手" aria-pressed="false"><rect class="ems-body-region" x="178" y="232" width="30" height="32" rx="12"></rect></g>
+                    <g data-ems-body-part="後-左大腿" role="button" tabindex="0" aria-label="切換受傷部位：後-左大腿" aria-pressed="false"><rect class="ems-body-region" x="86" y="252" width="28" height="88" rx="12"></rect></g>
+                    <g data-ems-body-part="後-左小腿" role="button" tabindex="0" aria-label="切換受傷部位：後-左小腿" aria-pressed="false"><rect class="ems-body-region" x="86" y="341" width="28" height="62" rx="12"></rect></g>
+                    <g data-ems-body-part="後-左腳" role="button" tabindex="0" aria-label="切換受傷部位：後-左腳" aria-pressed="false"><rect class="ems-body-region" x="80" y="404" width="40" height="18" rx="9"></rect></g>
+                    <g data-ems-body-part="後-右大腿" role="button" tabindex="0" aria-label="切換受傷部位：後-右大腿" aria-pressed="false"><rect class="ems-body-region" x="126" y="252" width="28" height="88" rx="12"></rect></g>
+                    <g data-ems-body-part="後-右小腿" role="button" tabindex="0" aria-label="切換受傷部位：後-右小腿" aria-pressed="false"><rect class="ems-body-region" x="126" y="341" width="28" height="62" rx="12"></rect></g>
+                    <g data-ems-body-part="後-右腳" role="button" tabindex="0" aria-label="切換受傷部位：後-右腳" aria-pressed="false"><rect class="ems-body-region" x="120" y="404" width="40" height="18" rx="9"></rect></g>
+                </svg>
+            </div>
+        </div>
+        <div class="rounded-2xl border border-slate-700/60 bg-slate-950/65 p-4 space-y-3">
+            <div id="ems-body-map-summary" class="text-sm font-semibold text-slate-200">尚未選取受傷部位</div>
+            <div id="ems-body-map-chips" class="flex flex-wrap gap-2"></div>
+            <label class="block">
+                <span class="block text-xs font-semibold text-slate-300 mb-1.5">受傷部位尺寸／補充說明</span>
+                <textarea id="ems-body-map-note" rows="3" placeholder="例如：左前臂擦傷約 6x2 cm、前胸紅腫 4x4 cm。" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></textarea>
+            </label>
+        </div>
+    </div>
+    </section><section data-ems-form-page="treatment" class="hidden rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-5">
+    <div><h4 class="font-bold text-rose-300 text-base">四、處置項目</h4><p class="text-xs text-slate-400 mt-1">依 EMS 平板分七類記錄，所有選項可直接點按。選擇「其他」、CPR、電擊去顫或特定藥物時，會展開相應的補充回答框。</p></div>
+    <div hidden id="ems-treatment-state-fields">
+        <input type="hidden" id="ems-airway-treatment">
+        <input type="hidden" id="ems-trauma-care">
+        <input type="hidden" id="ems-transport-method">
+        <input type="hidden" id="ems-transport-position">
+        <input type="hidden" id="ems-cpr-actions">
+        <input type="hidden" id="ems-medication-actions">
+        <input type="hidden" id="ems-other-care">
+    </div>
+        <section class="ems-treatment-group rounded-2xl border border-slate-700/65 bg-slate-950/60 p-4 space-y-3" aria-labelledby="ems-treatment-heading-airwayTreatment">
+            <div class="flex flex-wrap items-baseline gap-2"><h5 id="ems-treatment-heading-airwayTreatment" class="font-bold text-rose-200 text-sm sm:text-base">基本呼吸道／呼吸處置</h5><span class="text-[11px] text-slate-500">（可複選）</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="口咽呼吸道"><span>口咽呼吸道</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="鼻咽呼吸道"><span>鼻咽呼吸道</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="抽吸"><span>抽吸</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="哈姆立克法"><span>哈姆立克法</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="非再呼吸型面罩"><span>非再呼吸型面罩</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="BVM（正壓輔助呼吸）"><span>BVM（正壓輔助呼吸）</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="其他"><span>其他</span></label>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="airwayTreatment" data-ems-treatment-trigger="其他">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">其他呼吸道／呼吸處置說明</span>
+                <input id="ems-airway-other" type="text" maxlength="250" placeholder="請說明其他處置項目" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label></div>
+        </section>
+        <section class="ems-treatment-group rounded-2xl border border-slate-700/65 bg-slate-950/60 p-4 space-y-3" aria-labelledby="ems-treatment-heading-traumaCare">
+            <div class="flex flex-wrap items-baseline gap-2"><h5 id="ems-treatment-heading-traumaCare" class="font-bold text-rose-200 text-sm sm:text-base">創傷處置</h5><span class="text-[11px] text-slate-500">（可複選）</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="traumaCare" value="頸圈"><span>頸圈</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="traumaCare" value="清洗傷口"><span>清洗傷口</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="traumaCare" value="止血、包紮"><span>止血、包紮</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="traumaCare" value="止血帶"><span>止血帶</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="traumaCare" value="骨折固定"><span>骨折固定</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="traumaCare" value="長背板固定"><span>長背板固定</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="traumaCare" value="其他"><span>其他</span></label>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="traumaCare" data-ems-treatment-trigger="其他">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">其他創傷處置說明</span>
+                <input id="ems-trauma-care-other" type="text" maxlength="250" placeholder="請說明其他創傷處置" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label></div>
+        </section>
+        <section class="ems-treatment-group rounded-2xl border border-slate-700/65 bg-slate-950/60 p-4 space-y-3" aria-labelledby="ems-treatment-heading-transportMethod">
+            <div class="flex flex-wrap items-baseline gap-2"><h5 id="ems-treatment-heading-transportMethod" class="font-bold text-rose-200 text-sm sm:text-base">搬運</h5><span class="text-[11px] text-slate-500">（可複選）</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="transportMethod" value="自行上車"><span>自行上車</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="transportMethod" value="以適當方式搬運"><span>以適當方式搬運</span></label>
+            </div>
+            
+        </section>
+        <section class="ems-treatment-group rounded-2xl border border-slate-700/65 bg-slate-950/60 p-4 space-y-3" aria-labelledby="ems-treatment-heading-transportPosition">
+            <div class="flex flex-wrap items-baseline gap-2"><h5 id="ems-treatment-heading-transportPosition" class="font-bold text-rose-200 text-sm sm:text-base">特定後送姿勢</h5><span class="text-[11px] text-slate-500">（側躺請依實際姿勢勾選左側或右側）</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="transportPosition" value="平躺"><span>平躺</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="transportPosition" value="半坐臥"><span>半坐臥</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="transportPosition" value="左側躺"><span>左側躺</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="transportPosition" value="右側躺"><span>右側躺</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="transportPosition" value="下肢抬高"><span>下肢抬高</span></label>
+            </div>
+            
+        </section>
+        <section class="ems-treatment-group rounded-2xl border border-slate-700/65 bg-slate-950/60 p-4 space-y-3" aria-labelledby="ems-treatment-heading-cprActions">
+            <div class="flex flex-wrap items-baseline gap-2"><h5 id="ems-treatment-heading-cprActions" class="font-bold text-rose-200 text-sm sm:text-base">心肺復甦術</h5><span class="text-[11px] text-slate-500">（可複選；有次數、部位或其他項目時會出現填寫欄）</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="cprActions" value="自動心肺復甦機（MCPR）"><span>自動心肺復甦機（MCPR）</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="cprActions" value="CPR"><span>CPR</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="cprActions" value="使用AED"><span>使用AED</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="cprActions" value="電擊去顫"><span>電擊去顫</span></label>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="cprActions" data-ems-treatment-trigger="CPR">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">CPR 施行時間（分鐘）</span>
+                <input id="ems-cpr-minutes" type="number" min="0" max="9999" step="1" inputmode="numeric" placeholder="請輸入分鐘數" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label>            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="cprActions" data-ems-treatment-trigger="電擊去顫">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">電擊去顫次數（次）</span>
+                <input id="ems-defib-shocks" type="number" min="0" max="9999" step="1" inputmode="numeric" placeholder="請輸入電擊次數" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label></div>
+        </section>
+        <section class="ems-treatment-group rounded-2xl border border-slate-700/65 bg-slate-950/60 p-4 space-y-3" aria-labelledby="ems-treatment-heading-medicationActions">
+            <div class="flex flex-wrap items-baseline gap-2"><h5 id="ems-treatment-heading-medicationActions" class="font-bold text-rose-200 text-sm sm:text-base">藥物處置</h5><span class="text-[11px] text-slate-500">（可複選；有次數、部位或其他項目時會出現填寫欄）</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="medicationActions" value="靜脈輸液"><span>靜脈輸液</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="medicationActions" value="給予口服葡萄糖液／粉"><span>給予口服葡萄糖液／粉</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="medicationActions" value="協助使用Aspirin"><span>協助使用Aspirin</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="medicationActions" value="協助使用NTG含片"><span>協助使用NTG含片</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="medicationActions" value="協助使用支氣管擴張劑"><span>協助使用支氣管擴張劑</span></label>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="medicationActions" data-ems-treatment-trigger="靜脈輸液">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">靜脈輸液部位</span>
+                <input id="ems-iv-site" type="text" maxlength="250" placeholder="例如：左手背" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label>            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="medicationActions" data-ems-treatment-trigger="靜脈輸液">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">輸液名稱／種類</span>
+                <input id="ems-iv-fluid" type="text" maxlength="250" placeholder="例如：生理食鹽水" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label>            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="medicationActions" data-ems-treatment-trigger="協助使用NTG含片">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">協助使用 NTG 含片數量（片）</span>
+                <input id="ems-ntg-tablets" type="number" min="0" max="9999" step="1" inputmode="numeric" placeholder="請輸入片數" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label>            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="medicationActions" data-ems-treatment-trigger="協助使用支氣管擴張劑">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">協助使用支氣管擴張劑次數（次）</span>
+                <input id="ems-bronchodilator-times" type="number" min="0" max="9999" step="1" inputmode="numeric" placeholder="請輸入次數" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label></div>
+        </section>
+        <section class="ems-treatment-group rounded-2xl border border-slate-700/65 bg-slate-950/60 p-4 space-y-3" aria-labelledby="ems-treatment-heading-otherCare">
+            <div class="flex flex-wrap items-baseline gap-2"><h5 id="ems-treatment-heading-otherCare" class="font-bold text-rose-200 text-sm sm:text-base">其他處置</h5><span class="text-[11px] text-slate-500">（可複選）</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="otherCare" value="保暖"><span>保暖</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="otherCare" value="心理支持"><span>心理支持</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="otherCare" value="急產接生"><span>急產接生</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="otherCare" value="約束帶"><span>約束帶</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="otherCare" value="灌洗眼睛"><span>灌洗眼睛</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="otherCare" value="其他"><span>其他</span></label>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="otherCare" data-ems-treatment-trigger="其他">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">其他處置說明</span>
+                <input id="ems-other-care-other" type="text" maxlength="250" placeholder="請說明其他處置" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label></div>
+        </section>
+    <p class="text-xs text-slate-500">請依 RP 勤務實際執行內容勾選；未施行的處置無須勾選。</p>
+</section><section data-ems-form-page="staff" class="hidden rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-4">
     <div><h4 class="font-bold text-rose-300 text-base">五、出勤紀錄</h4></div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 出勤人員姓名</span><input id="ems-staff-a" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">B. 出勤人員姓名</span><input id="ems-staff-b" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">C. 出勤人員姓名</span><input id="ems-staff-c" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">D. 出勤人員姓名</span><input id="ems-staff-d" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label></div>
     </section><div id="ems-legacy-note" class="hidden rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200">此報告為舊版 EMS 格式，原有的派遣類別與舊版處置內容會保留在資料中。編輯時請依新欄位補充資料；未補充的部分不會自動捏造內容。</div>
 <div class="rounded-xl border border-slate-800 bg-slate-950 p-3"><label class="block text-xs text-slate-400 mb-1">填寫人（系統自動填入）</label><input type="text" id="ems-author" readonly class="w-full bg-slate-950/60 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-400"></div>
+<div id="ems-tablet-footer" class="grid grid-cols-2 gap-3 items-center pt-2">
+ <button type="button" id="ems-tablet-back" class="rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 px-4 py-3 text-sm text-slate-200 disabled:opacity-40" disabled>上一類別</button>
+ <button type="button" id="ems-tablet-next" class="rounded-xl bg-rose-600/20 border border-rose-500/50 hover:bg-rose-600/30 px-4 py-3 text-sm text-rose-200">下一類別 →</button>
+</div>
 <button type="button" id="submit-ems-report-btn" class="w-full bg-rose-600 hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl">提交 EMS 救護出勤報告</button></div>
       </div>
     </div>
@@ -7201,33 +7447,45 @@ async function republishAnnouncement(id) {
         // EMS 新表單只儲存一般純值／布林值到 Firestore；不增加登入時讀取，也不修改舊資料。
         const EMS_FORM_V2_KEYS = [
             'dutyDate','unitVehicle','dispatchTime','arrivalTime','leaveTime','hospitalTime','leaveHospitalTime','returnTime',
-            'incidentLocation','assistingUnits','hospitalDestination','notTransported','noTransportGroup','noTransportReason',
-            'patientName','patientId','patientSex','patientAge',
-            'nontrauma','nontraumaSymptom','trauma','traumaSymptom','complaint','complaintWhere','complaintHow','complaintDuration','complaintOther','cervical',
+            'incidentLocation','assistingUnits','hospitalDestination','notTransported','noTransportGroup','noTransportReason','noTransportOtherReason',
+            'patientName','patientId','patientSex','patientAge','bodyMapSelection','bodyMapNote',
+            'nontrauma','nontraumaSymptom','trauma','traumaSymptom','nontraumaChoices','nontraumaOther','traumaInjuries','traumaMechanism','traumaTrafficRole','traumaTrafficOther','traumaNontraffic','traumaFallHeight','traumaBurnDegree','traumaNontrafficOther','complaint','complaintWhere','complaintHow','complaintDuration','complaintOther','cervical',
             'history','pastHistory','medicationHistory','allergyHistory','gcs',
-            'oxygen','oxygenDevice','oxygenFlow','bandaging','bandagingEquipment','wound','woundArea','woundType','medication','medicationRouteDose',
+            'airwayTreatment','airwayOther','traumaCare','traumaCareOther','transportMethod','transportPosition',
+            'cprActions','cprMinutes','defibShocks','medicationActions','ivSite','ivFluid','ntgTablets','bronchodilatorTimes','otherCare','otherCareOther',
             'staffA','staffB','staffC','staffD'
         ];
-        const EMS_FORM_V2_BOOLEAN_KEYS = new Set(['notTransported','nontrauma','trauma','complaint','history','oxygen','bandaging','wound','medication']);
+        const EMS_FORM_V2_BOOLEAN_KEYS = new Set(['notTransported','nontrauma','trauma','complaint','history']);
         const EMS_FORM_V2_IDS = {
             dutyDate:'ems-duty-date',unitVehicle:'ems-unit-vehicle',dispatchTime:'ems-dispatch-time',arrivalTime:'ems-arrival-time',
             leaveTime:'ems-leave-time',hospitalTime:'ems-hospital-time',leaveHospitalTime:'ems-leave-hospital-time',returnTime:'ems-return-time',
-            incidentLocation:'ems-incident-location',assistingUnits:'ems-assisting-units',hospitalDestination:'ems-hospital-destination',notTransported:'ems-no-transport',
-            patientName:'ems-patient-name',patientId:'ems-patient-id',patientSex:'ems-patient-sex',patientAge:'ems-patient-age',
-            nontrauma:'ems-nontrauma',nontraumaSymptom:'ems-nontrauma-symptom',trauma:'ems-trauma',traumaSymptom:'ems-trauma-symptom',
+            incidentLocation:'ems-incident-location',assistingUnits:'ems-assisting-units',hospitalDestination:'ems-hospital-destination',notTransported:'ems-no-transport',noTransportOtherReason:'ems-had-contact-other-reason',
+            patientName:'ems-patient-name',patientId:'ems-patient-id',patientSex:'ems-patient-sex',patientAge:'ems-patient-age',bodyMapSelection:'ems-body-map-selection',bodyMapNote:'ems-body-map-note',
+            nontrauma:'ems-nontrauma',nontraumaSymptom:'ems-nontrauma-symptom',trauma:'ems-trauma',traumaSymptom:'ems-trauma-symptom',nontraumaChoices:'ems-nontrauma-choices',nontraumaOther:'ems-nontrauma-other',traumaInjuries:'ems-trauma-injuries',traumaMechanism:'ems-trauma-mechanism',traumaTrafficRole:'ems-trauma-traffic-role',traumaTrafficOther:'ems-trauma-traffic-other',traumaNontraffic:'ems-trauma-nontraffic',traumaFallHeight:'ems-trauma-fall-height',traumaBurnDegree:'ems-trauma-burn-degree',traumaNontrafficOther:'ems-trauma-nontraffic-other',
             complaint:'ems-complaint',complaintWhere:'ems-complaint-where',complaintHow:'ems-complaint-how',complaintDuration:'ems-complaint-duration',complaintOther:'ems-complaint-other',cervical:'ems-cervical',
             history:'ems-history',pastHistory:'ems-past-history',medicationHistory:'ems-medication-history',allergyHistory:'ems-allergy-history',
-            gcs:'ems-gcs-e',oxygen:'ems-oxygen',oxygenDevice:'ems-oxygen-device',oxygenFlow:'ems-oxygen-flow',
-            bandaging:'ems-bandaging',bandagingEquipment:'ems-bandaging-equipment',wound:'ems-wound',woundArea:'ems-wound-area',woundType:'ems-wound-type',
-            medication:'ems-medication',medicationRouteDose:'ems-medication-route-dose',staffA:'ems-staff-a',staffB:'ems-staff-b',staffC:'ems-staff-c',staffD:'ems-staff-d'
+            gcs:'ems-gcs-e',
+            airwayTreatment:'ems-airway-treatment',airwayOther:'ems-airway-other',traumaCare:'ems-trauma-care',traumaCareOther:'ems-trauma-care-other',
+            transportMethod:'ems-transport-method',transportPosition:'ems-transport-position',cprActions:'ems-cpr-actions',cprMinutes:'ems-cpr-minutes',defibShocks:'ems-defib-shocks',
+            medicationActions:'ems-medication-actions',ivSite:'ems-iv-site',ivFluid:'ems-iv-fluid',ntgTablets:'ems-ntg-tablets',bronchodilatorTimes:'ems-bronchodilator-times',
+            otherCare:'ems-other-care',otherCareOther:'ems-other-care-other',staffA:'ems-staff-a',staffB:'ems-staff-b',staffC:'ems-staff-c',staffD:'ems-staff-d'
         };
         function emsLegacyToV2(r={}){
             if(r.emsFormV2 && typeof r.emsFormV2==='object' && !Array.isArray(r.emsFormV2))return r.emsFormV2;
             return {
                 dutyDate:r.timestamp?localDateKey(r.timestamp):localDateKey(Date.now()),unitVehicle:r.unitVehicle||'',
                 dispatchTime:r.dispatchTime||'',arrivalTime:r.arrivalTime||'',leaveTime:r.leaveTime||'',hospitalTime:r.hospitalTime||'',returnTime:r.returnTime||'',
-                patientName:r.patient||'',complaint:!!r.chiefComplaint,complaintWhere:r.chiefComplaint||'',gcs:r.gcsE||''
+                patientName:r.patient||'',bodyMapSelection:'',bodyMapNote:'',complaint:!!r.chiefComplaint,complaintWhere:r.chiefComplaint||'',gcs:r.gcsE||''
             };
+        }
+        function syncEMSContactOtherReason(){
+            const wrap=document.getElementById('ems-had-contact-other-wrap');
+            const input=document.getElementById('ems-had-contact-other-reason');
+            const visible=!!document.getElementById('ems-no-transport')?.checked
+                &&!!document.getElementById('ems-had-contact')?.checked
+                &&document.getElementById('ems-had-contact-reason')?.value==='其他';
+            if(wrap)wrap.classList.toggle('hidden',!visible);
+            if(input)input.disabled=!visible;
         }
         function syncEMSFormReveals(){
             const host=document.getElementById('modal-ems-report');if(!host)return;
@@ -7238,10 +7496,227 @@ async function republishAnnouncement(id) {
                 node.classList.toggle('hidden',!visible);
                 node.querySelectorAll('input, select, textarea').forEach(el=>{el.disabled=!visible;});
             });
+            syncEMSContactOtherReason();
+            syncEMSTriageUI();
+        }
+        const EMS_BODY_REGION_DELIMITER = '|';
+        function parseEMSBodySelection(value=''){
+            return [...new Set(String(value||'').split(EMS_BODY_REGION_DELIMITER).map(x=>x.trim()).filter(Boolean))];
+        }
+        function setEMSBodySelection(value=''){
+            const input=document.getElementById('ems-body-map-selection');
+            if(!input)return;
+            input.value=parseEMSBodySelection(Array.isArray(value)?value.join(EMS_BODY_REGION_DELIMITER):value).join(EMS_BODY_REGION_DELIMITER);
+            syncEMSBodyMapUI();
+        }
+        function getEMSBodySelection(){
+            return parseEMSBodySelection(document.getElementById('ems-body-map-selection')?.value||'');
+        }
+        function toggleEMSBodyPart(label=''){
+            const list=getEMSBodySelection();
+            const index=list.indexOf(label);
+            if(index>=0)list.splice(index,1);else list.push(label);
+            setEMSBodySelection(list);
+        }
+        // 所有受傷標記共用同一個閃爍時鐘：後選的部位也會加入原有節奏，不會重新起算。
+        const EMS_BODY_PULSE_CYCLE_MS = 900;
+        const EMS_BODY_PULSE_ORIGIN_MS = performance.now();
+        function syncEMSBodyMapUI(){
+            const list=getEMSBodySelection();
+            const selected=new Set(list);
+            const synchronizedTimeMs=(performance.now()-EMS_BODY_PULSE_ORIGIN_MS)%EMS_BODY_PULSE_CYCLE_MS;
+            document.querySelectorAll('[data-ems-body-part]').forEach(node=>{
+                const isSelected=selected.has(node.dataset.emsBodyPart||'');
+                const region=node.querySelector('.ems-body-region');
+                node.classList.toggle('is-selected',isSelected);
+                node.setAttribute('aria-pressed',isSelected?'true':'false');
+                // 同步校正每個 CSS Animation 的時間軸，後選取也跟舊標記同時亮／暗。
+                if(region && isSelected){
+                    const pulse=region.getAnimations().find(a=>a.animationName==='emsBodyPulse');
+                    if(pulse)pulse.currentTime=synchronizedTimeMs;
+                }
+            });
+            const summary=document.getElementById('ems-body-map-summary');
+            if(summary)summary.textContent=list.length?`已選取 ${list.length} 個部位：${list.join('、')}`:'尚未選取受傷部位';
+            const chips=document.getElementById('ems-body-map-chips');
+            if(chips){
+                chips.innerHTML='';
+                if(list.length){
+                    list.forEach(label=>{
+                        const btn=document.createElement('button');
+                        btn.type='button';
+                        btn.className='ems-body-chip';
+                        btn.dataset.emsBodyChip=label;
+                        btn.textContent=`${label} ×`;
+                        chips.appendChild(btn);
+                    });
+                }else{
+                    const hint=document.createElement('span');
+                    hint.className='text-xs text-slate-500';
+                    hint.textContent='點擊上方模型開始標記受傷部位。';
+                    chips.appendChild(hint);
+                }
+            }
+        }
+        function installEMSBodyMapListeners(host){
+            if(!host||host.dataset.emsBodyMapReady)return;
+            host.dataset.emsBodyMapReady='1';
+            host.addEventListener('click',e=>{
+                const region=e.target.closest('[data-ems-body-part]');
+                if(region){toggleEMSBodyPart(region.dataset.emsBodyPart||'');return;}
+                const chip=e.target.closest('[data-ems-body-chip]');
+                if(chip){toggleEMSBodyPart(chip.dataset.emsBodyChip||'');return;}
+                if(e.target.closest('#ems-body-map-clear-btn'))setEMSBodySelection('');
+            });
+            host.addEventListener('keydown',e=>{
+                if(e.key!=='Enter'&&e.key!==' ')return;
+                const region=e.target.closest('[data-ems-body-part]');
+                if(!region)return;
+                e.preventDefault();
+                toggleEMSBodyPart(region.dataset.emsBodyPart||'');
+            });
+        }
+        /* EMS 平板式分頁與條件式病況選單。僅處理表單狀態，原本送件與 Firestore 不受影響。 */
+        const EMS_TABLET_PAGES=[['dispatch','派遣資料'],['patient','傷病患資料'],['condition','現場狀況'],['treatment','處置項目'],['staff','出勤紀錄']];
+        const EMS_TRIAGE_SEPARATOR='｜';
+        let emsTabletPage='dispatch';
+        let emsNontraumaTab='acute';
+        function splitEMSTriageItems(value){return String(value||'').split(EMS_TRIAGE_SEPARATOR).map(v=>v.trim()).filter(Boolean);}
+        function selectEMSTabletPage(page){
+            const idx=EMS_TABLET_PAGES.findIndex(x=>x[0]===page);
+            if(idx<0)return;
+            emsTabletPage=page;
+            document.querySelectorAll('#modal-ems-report [data-ems-form-page]').forEach(node=>node.classList.toggle('hidden',node.dataset.emsFormPage!==page));
+            document.querySelectorAll('#modal-ems-report [data-ems-page-tab]').forEach(button=>{
+                const active=button.dataset.emsPageTab===page;
+                button.classList.toggle('is-active',active);
+                button.setAttribute('aria-selected',active?'true':'false');
+            });
+            const status=document.getElementById('ems-tablet-page-status');
+            if(status)status.textContent=`第 ${idx+1}／5 頁 · ${EMS_TABLET_PAGES[idx][1]}`;
+            const back=document.getElementById('ems-tablet-back'), next=document.getElementById('ems-tablet-next');
+            if(back)back.disabled=idx===0;
+            if(next){next.disabled=idx===EMS_TABLET_PAGES.length-1;next.textContent=idx===EMS_TABLET_PAGES.length-1?'已到最後一類別':'下一類別 →';}
+            const scroll=document.getElementById('ems-form-scroll');
+            if(scroll)scroll.scrollTop=0;
+        }
+        function setEMSNontraumaTab(name){
+            if(name!=='acute'&&name!=='general')return;
+            emsNontraumaTab=name;
+            document.querySelectorAll('#modal-ems-report [data-ems-nontrauma-tab]').forEach(node=>node.classList.toggle('is-active',node.dataset.emsNontraumaTab===name));
+            document.querySelectorAll('#modal-ems-report [data-ems-nontrauma-panel]').forEach(node=>node.classList.toggle('hidden',node.dataset.emsNontraumaPanel!==name));
+        }
+        function captureEMSTriageChoices(){
+            const host=document.getElementById('modal-ems-report');if(!host)return;
+            ['nontraumaChoices','traumaInjuries','traumaNontraffic'].forEach(key=>{
+                const value=[...host.querySelectorAll(`[data-ems-triage-choice="${key}"]:checked`)].map(el=>el.value).join(EMS_TRIAGE_SEPARATOR);
+                const id=EMS_FORM_V2_IDS[key],target=document.getElementById(id);
+                if(target)target.value=value;
+            });
+            const mechanism=host.querySelector('input[name="ems-trauma-mechanism-radio"]:checked');
+            const role=host.querySelector('input[name="ems-trauma-traffic-radio"]:checked');
+            const a=document.getElementById('ems-trauma-mechanism'),b=document.getElementById('ems-trauma-traffic-role');
+            if(a)a.value=mechanism?.value||'';
+            if(b)b.value=role?.value||'';
+        }
+        function populateEMSTriageChoices(data){
+            const host=document.getElementById('modal-ems-report');if(!host)return;
+            ['nontraumaChoices','traumaInjuries','traumaNontraffic'].forEach(key=>{
+                const values=new Set(splitEMSTriageItems(data[key]));
+                host.querySelectorAll(`[data-ems-triage-choice="${key}"]`).forEach(el=>el.checked=values.has(el.value));
+            });
+            host.querySelectorAll('input[name="ems-trauma-mechanism-radio"]').forEach(el=>el.checked=el.value===data.traumaMechanism);
+            host.querySelectorAll('input[name="ems-trauma-traffic-radio"]').forEach(el=>el.checked=el.value===data.traumaTrafficRole);
+            captureEMSTriageChoices();
+            setEMSNontraumaTab('acute');
+            syncEMSTriageUI();
+        }
+        const EMS_TREATMENT_CHOICE_FIELDS=['airwayTreatment','traumaCare','transportMethod','transportPosition','cprActions','medicationActions','otherCare'];
+        function captureEMSTreatmentChoices(){
+            const host=document.getElementById('modal-ems-report');if(!host)return;
+            EMS_TREATMENT_CHOICE_FIELDS.forEach(key=>{
+                const target=document.getElementById(EMS_FORM_V2_IDS[key]);
+                if(target)target.value=[...host.querySelectorAll(`[data-ems-treatment-choice="${key}"]:checked`)].map(el=>el.value).join(EMS_TRIAGE_SEPARATOR);
+            });
+        }
+        function populateEMSTreatmentChoices(data={}){
+            const host=document.getElementById('modal-ems-report');if(!host)return;
+            EMS_TREATMENT_CHOICE_FIELDS.forEach(key=>{
+                const chosen=new Set(splitEMSTriageItems(data[key]));
+                host.querySelectorAll(`[data-ems-treatment-choice="${key}"]`).forEach(el=>{el.checked=chosen.has(el.value);});
+            });
+            captureEMSTreatmentChoices();
+            syncEMSTreatmentDetails();
+        }
+        function syncEMSTreatmentDetails(){
+            const host=document.getElementById('modal-ems-report');if(!host)return;
+            host.querySelectorAll('[data-ems-treatment-detail]').forEach(panel=>{
+                const category=panel.dataset.emsTreatmentDetail, trigger=panel.dataset.emsTreatmentTrigger;
+                const selected=[...host.querySelectorAll(`[data-ems-treatment-choice="${category}"]:checked`)].some(el=>el.value===trigger);
+                panel.classList.toggle('hidden',!selected);
+                panel.querySelectorAll('input,textarea,select').forEach(el=>{el.disabled=!selected;});
+            });
+        }
+        function syncEMSTriageUI(){
+            const host=document.getElementById('modal-ems-report');if(!host)return;
+            const nontrauma=!!document.getElementById('ems-nontrauma')?.checked;
+            const trauma=!!document.getElementById('ems-trauma')?.checked;
+            const mechanism=host.querySelector('input[name="ems-trauma-mechanism-radio"]:checked')?.value||'';
+            const traffic=host.querySelector('input[name="ems-trauma-traffic-radio"]:checked')?.value||'';
+            const nontraffic=new Set([...host.querySelectorAll('[data-ems-triage-choice="traumaNontraffic"]:checked')].map(x=>x.value));
+            const nontraumaChoices=new Set([...host.querySelectorAll('[data-ems-triage-choice="nontraumaChoices"]:checked')].map(x=>x.value));
+            const show={
+                'ems-nontrauma-other':nontrauma&&nontraumaChoices.has('其他'),
+                'ems-trauma-traffic-other':trauma&&mechanism==='交通事故'&&traffic==='其他',
+                'ems-trauma-fall-height':trauma&&mechanism==='非交通事故'&&nontraffic.has('墜落傷'),
+                'ems-trauma-burn-degree':trauma&&mechanism==='非交通事故'&&nontraffic.has('燒燙傷'),
+                'ems-trauma-nontraffic-other':trauma&&mechanism==='非交通事故'&&nontraffic.has('其他')
+            };
+            host.querySelectorAll('[data-ems-trauma-mechanism]').forEach(panel=>{
+                const visible=trauma&&panel.dataset.emsTraumaMechanism===mechanism;
+                panel.classList.toggle('hidden',!visible);
+                panel.querySelectorAll('input').forEach(input=>{input.disabled=!visible;});
+            });
+            host.querySelectorAll('[data-ems-triage-detail]').forEach(panel=>{
+                const visible=!!show[panel.dataset.emsTriageDetail];
+                panel.classList.toggle('hidden',!visible);
+                const input=panel.querySelector('input');if(input)input.disabled=!visible;
+            });
+        }
+        function installEMSTabletListeners(host){
+            if(!host||host.dataset.emsTabletReady)return;
+            host.dataset.emsTabletReady='1';
+            host.addEventListener('click',event=>{
+                const tab=event.target.closest('[data-ems-page-tab]');
+                if(tab){selectEMSTabletPage(tab.dataset.emsPageTab);return;}
+                const conditionTab=event.target.closest('[data-ems-nontrauma-tab]');
+                if(conditionTab){setEMSNontraumaTab(conditionTab.dataset.emsNontraumaTab);return;}
+                const idx=EMS_TABLET_PAGES.findIndex(x=>x[0]===emsTabletPage);
+                if(event.target.closest('#ems-tablet-next')){selectEMSTabletPage(EMS_TABLET_PAGES[Math.min(idx+1,4)][0]);return;}
+                if(event.target.closest('#ems-tablet-back'))selectEMSTabletPage(EMS_TABLET_PAGES[Math.max(idx-1,0)][0]);
+            });
+            host.addEventListener('change',event=>{
+                const field=event.target;
+                if(field.matches('[data-ems-triage-main]')&&field.checked){
+                    const otherId=field.id==='ems-nontrauma'?'ems-trauma':'ems-nontrauma';
+                    const other=document.getElementById(otherId);if(other)other.checked=false;
+                    syncEMSFormReveals();
+                }
+                if(field.matches('[data-ems-triage-main], [data-ems-triage-choice], input[name="ems-trauma-mechanism-radio"], input[name="ems-trauma-traffic-radio"]')){
+                    captureEMSTriageChoices();
+                    syncEMSTriageUI();
+                }
+                if(field.matches('[data-ems-treatment-choice]')){
+                    captureEMSTreatmentChoices();
+                    syncEMSTreatmentDetails();
+                }
+            });
         }
         function installEMSFormListeners(){
             const host=document.getElementById('modal-ems-report');if(!host||host.dataset.emsV2Ready)return;
             host.dataset.emsV2Ready='1';
+            installEMSBodyMapListeners(host);
+            installEMSTabletListeners(host);
             host.addEventListener('change',e=>{
                 const target=e.target;
                 if(target.matches('input[type="checkbox"][data-ems-option-group="no-transport"]')&&target.checked){
@@ -7253,9 +7728,22 @@ async function republishAnnouncement(id) {
                     host.querySelectorAll('input[type="checkbox"][data-ems-option-group="no-transport"]').forEach(el=>{el.checked=false;});
                     host.querySelectorAll('[data-ems-reveal="ems-no-transport"] select').forEach(el=>{el.value='';});
                 }
+                if(target.id==='ems-had-contact-reason'&&target.value!=='其他'){
+                    const other=document.getElementById('ems-had-contact-other-reason');
+                    if(other)other.value='';
+                }
+                if(target.id==='ems-no-transport'||target.matches('input[data-ems-option-group="no-transport"]')){
+                    const hadContact=document.getElementById('ems-had-contact');
+                    if(!document.getElementById('ems-no-transport')?.checked||!hadContact?.checked){
+                        const other=document.getElementById('ems-had-contact-other-reason');
+                        if(other)other.value='';
+                    }
+                }
                 if(target.matches('input[type="checkbox"]'))syncEMSFormReveals();
+                if(target.id==='ems-had-contact-reason')syncEMSContactOtherReason();
             });
             syncEMSFormReveals();
+            syncEMSBodyMapUI();
         }
         function populateEMSFormV2(record){
             const data=record?emsLegacyToV2(record):{dutyDate:localDateKey(Date.now())};
@@ -7275,8 +7763,14 @@ async function republishAnnouncement(id) {
             });
             document.getElementById('ems-legacy-note')?.classList.toggle('hidden',!record||!!record.emsFormV2);
             syncEMSFormReveals();
+            populateEMSTriageChoices(data);
+            populateEMSTreatmentChoices(data);
+            selectEMSTabletPage('dispatch');
+            syncEMSBodyMapUI();
         }
         function captureEMSFormV2(){
+            captureEMSTriageChoices();
+            captureEMSTreatmentChoices();
             const data={};
             for(const key of EMS_FORM_V2_KEYS){
                 const el=document.getElementById(EMS_FORM_V2_IDS[key]);
@@ -7286,17 +7780,59 @@ async function republishAnnouncement(id) {
             const selected=checks.find(([,id])=>document.getElementById(id)?.checked);
             data.noTransportGroup=data.notTransported&&selected?selected[0]:'';
             data.noTransportReason=data.notTransported&&selected?String(document.getElementById(selected[1]+'-reason')?.value||''):'';
-            const subFields={nontrauma:['nontraumaSymptom'],trauma:['traumaSymptom'],complaint:['complaintWhere','complaintHow','complaintDuration','complaintOther','cervical'],history:['pastHistory','medicationHistory','allergyHistory'],oxygen:['oxygenDevice','oxygenFlow'],bandaging:['bandagingEquipment'],wound:['woundArea','woundType'],medication:['medicationRouteDose']};
+            if(data.noTransportGroup!=='有接觸'||data.noTransportReason!=='其他')data.noTransportOtherReason='';
+            if(!data.nontrauma){data.nontraumaChoices='';data.nontraumaOther='';}
+            else if(!splitEMSTriageItems(data.nontraumaChoices).includes('其他'))data.nontraumaOther='';
+            if(!data.trauma){['traumaInjuries','traumaMechanism','traumaTrafficRole','traumaTrafficOther','traumaNontraffic','traumaFallHeight','traumaBurnDegree','traumaNontrafficOther'].forEach(k=>data[k]='');}
+            else if(data.traumaMechanism==='交通事故'){
+                ['traumaNontraffic','traumaFallHeight','traumaBurnDegree','traumaNontrafficOther'].forEach(k=>data[k]='');
+                if(data.traumaTrafficRole!=='其他')data.traumaTrafficOther='';
+            }else if(data.traumaMechanism==='非交通事故'){
+                data.traumaTrafficRole='';data.traumaTrafficOther='';
+                const vals=splitEMSTriageItems(data.traumaNontraffic);
+                if(!vals.includes('墜落傷'))data.traumaFallHeight='';
+                if(!vals.includes('燒燙傷'))data.traumaBurnDegree='';
+                if(!vals.includes('其他'))data.traumaNontrafficOther='';
+            }else {['traumaTrafficRole','traumaTrafficOther','traumaNontraffic','traumaFallHeight','traumaBurnDegree','traumaNontrafficOther'].forEach(k=>data[k]='');}
+            data.bodyMapSelection=parseEMSBodySelection(data.bodyMapSelection).join(EMS_BODY_REGION_DELIMITER);
+            const subFields={nontrauma:['nontraumaSymptom'],trauma:['traumaSymptom'],complaint:['complaintWhere','complaintHow','complaintDuration','complaintOther','cervical'],history:['pastHistory','medicationHistory','allergyHistory']};
             for(const [flag,keys] of Object.entries(subFields))if(!data[flag])keys.forEach(k=>data[k]='');
+            const includes=(group,value)=>splitEMSTriageItems(data[group]).includes(value);
+            if(!includes('airwayTreatment','其他'))data.airwayOther='';
+            if(!includes('traumaCare','其他'))data.traumaCareOther='';
+            if(!includes('cprActions','CPR'))data.cprMinutes='';
+            if(!includes('cprActions','電擊去顫'))data.defibShocks='';
+            if(!includes('medicationActions','靜脈輸液')){data.ivSite='';data.ivFluid='';}
+            if(!includes('medicationActions','協助使用NTG含片'))data.ntgTablets='';
+            if(!includes('medicationActions','協助使用支氣管擴張劑'))data.bronchodilatorTimes='';
+            if(!includes('otherCare','其他'))data.otherCareOther='';
             return data;
         }
         function emsTreatmentText(data,oldTreatment=''){
             const notes=[];
-            if(data.oxygen)notes.push('氧氣治療：'+[data.oxygenDevice,data.oxygenFlow].filter(Boolean).join('／'));
-            if(data.bandaging)notes.push('止血包紮：'+(data.bandagingEquipment||'已勾選'));
-            if(data.wound)notes.push('傷口描述：'+[data.woundArea,data.woundType].filter(Boolean).join('／'));
-            if(data.medication)notes.push('給藥：'+(data.medicationRouteDose||'已勾選'));
-            if(oldTreatment&&!notes.includes(oldTreatment))notes.unshift('舊版處置紀錄：'+oldTreatment);
+            const pushGroup=(label,key,otherKey)=>{
+                const values=splitEMSTriageItems(data[key]);
+                if(!values.length)return;
+                notes.push(label+'：'+values.map(v=>v==='其他'&&data[otherKey]?`其他（${data[otherKey]}）`:v).join('、'));
+            };
+            pushGroup('基本呼吸道／呼吸處置','airwayTreatment','airwayOther');
+            pushGroup('創傷處置','traumaCare','traumaCareOther');
+            pushGroup('搬運','transportMethod');
+            pushGroup('特定後送姿勢','transportPosition');
+            pushGroup('心肺復甦術','cprActions');
+            if(data.cprMinutes)notes.push('CPR 時間：'+data.cprMinutes+' 分鐘');
+            if(data.defibShocks)notes.push('電擊去顫：'+data.defibShocks+' 次');
+            pushGroup('藥物處置','medicationActions');
+            if(data.ivSite||data.ivFluid)notes.push('靜脈輸液：部位 '+(data.ivSite||'未填')+'／輸液 '+(data.ivFluid||'未填'));
+            if(data.ntgTablets)notes.push('NTG 含片：'+data.ntgTablets+' 片');
+            if(data.bronchodilatorTimes)notes.push('支氣管擴張劑：'+data.bronchodilatorTimes+' 次');
+            pushGroup('其他處置','otherCare','otherCareOther');
+            if(data.oxygen)notes.push('舊版氧氣治療：'+[data.oxygenDevice,data.oxygenFlow].filter(Boolean).join('／'));
+            if(data.bandaging)notes.push('舊版止血包紮：'+(data.bandagingEquipment||'已勾選'));
+            if(data.wound)notes.push('舊版傷口描述：'+[data.woundArea,data.woundType].filter(Boolean).join('／'));
+            if(data.medication)notes.push('舊版給藥：'+(data.medicationRouteDose||'已勾選'));
+            const legacyText=data.legacyTreatmentText||oldTreatment;
+            if(legacyText)notes.unshift('舊版處置紀錄：'+legacyText);
             return notes.join('\n');
         }
         function emsDetailSections(r){
@@ -7308,8 +7844,24 @@ async function republishAnnouncement(id) {
                 return group('舊版 EMS 報告',[['主訴',r.chiefComplaint],['派遣類別',r.dispatchCategory],['傷患 RP 名稱 / ID',r.patient],['出勤單位 / 車輛',r.unitVehicle],['GCS 評分 E: V: M:',r.gcsE],['出勤時間',r.dispatchTime],['到達現場時間',r.arrivalTime],['離開現場時間',r.leaveTime],['送達醫院時間',r.hospitalTime],['返隊待命時間',r.returnTime],['填寫人',`${r.authorName||'--'} (${r.authorId||'--'})`],['建立時間',r.time||formatDateTime(r.timestamp)]]);
             }
             const condition=[];
-            if(d.nontrauma)condition.push(['非創傷／症狀',d.nontraumaSymptom]);
-            if(d.trauma)condition.push(['創傷／症狀',d.traumaSymptom]);
+            if(d.nontrauma){
+                condition.push(['勤務分類','非創傷']);
+                if(d.nontraumaChoices)condition.push(['非創傷／勾選項目',splitEMSTriageItems(d.nontraumaChoices).join('、')]);
+                if(d.nontraumaOther)condition.push(['非創傷／其他',d.nontraumaOther]);
+                if(d.nontraumaSymptom)condition.push(['非創傷／症狀補充',d.nontraumaSymptom]);
+            }
+            if(d.trauma){
+                condition.push(['勤務分類','創傷']);
+                if(d.traumaInjuries)condition.push(['一般外傷',splitEMSTriageItems(d.traumaInjuries).join('、')]);
+                if(d.traumaMechanism)condition.push(['受傷機轉',d.traumaMechanism]);
+                if(d.traumaTrafficRole)condition.push(['交通事故身分',d.traumaTrafficRole]);
+                if(d.traumaTrafficOther)condition.push(['交通事故其他',d.traumaTrafficOther]);
+                if(d.traumaNontraffic)condition.push(['非交通事故類別',splitEMSTriageItems(d.traumaNontraffic).join('、')]);
+                if(d.traumaFallHeight)condition.push(['墜落高度（樓）',d.traumaFallHeight]);
+                if(d.traumaBurnDegree)condition.push(['燒燙傷程度',d.traumaBurnDegree]);
+                if(d.traumaNontrafficOther)condition.push(['非交通事故其他',d.traumaNontrafficOther]);
+                if(d.traumaSymptom)condition.push(['創傷／症狀補充',d.traumaSymptom]);
+            }
             if(d.complaint)condition.push(['主訴 A. 哪裡不舒服',d.complaintWhere],['主訴 B. 如何不舒服',d.complaintHow],['主訴 C. 不舒服多久',d.complaintDuration],['主訴 D. 其他不舒服',d.complaintOther],['主訴 E. 頸椎評估',d.cervical]);
             if(d.history)condition.push(['病史 A. 過去病史',d.pastHistory],['病史 B. 藥物史',d.medicationHistory],['病史 C. 過敏史',d.allergyHistory]);
             const treatments=[];
@@ -7317,10 +7869,27 @@ async function republishAnnouncement(id) {
             if(d.bandaging)treatments.push(['止血包紮／器材',d.bandagingEquipment]);
             if(d.wound)treatments.push(['傷口描述／面積',d.woundArea],['傷口描述／種類',d.woundType]);
             if(d.medication)treatments.push(['給藥／途徑及劑量',d.medicationRouteDose]);
+            const addTreatment=(label,key,otherKey)=>{
+                const values=splitEMSTriageItems(d[key]);
+                if(values.length)treatments.push([label,values.map(v=>v==='其他'&&d[otherKey]?`其他（${d[otherKey]}）`:v).join('、')]);
+            };
+            addTreatment('基本呼吸道／呼吸處置','airwayTreatment','airwayOther');
+            addTreatment('創傷處置','traumaCare','traumaCareOther');
+            addTreatment('搬運','transportMethod');
+            addTreatment('特定後送姿勢','transportPosition');
+            addTreatment('心肺復甦術','cprActions');
+            if(d.cprMinutes)treatments.push(['CPR 分鐘數',d.cprMinutes+' 分鐘']);
+            if(d.defibShocks)treatments.push(['電擊去顫次數',d.defibShocks+' 次']);
+            addTreatment('藥物處置','medicationActions');
+            if(d.ivSite||d.ivFluid)treatments.push(['靜脈輸液（部位／輸液）',[d.ivSite,d.ivFluid].filter(Boolean).join('／')]);
+            if(d.ntgTablets)treatments.push(['NTG 含片數',d.ntgTablets+' 片']);
+            if(d.bronchodilatorTimes)treatments.push(['支氣管擴張劑次數',d.bronchodilatorTimes+' 次']);
+            addTreatment('其他處置','otherCare','otherCareOther');
+            if(d.legacyTreatmentText)treatments.push(['舊版處置紀錄',d.legacyTreatmentText]);
             return [
-                group('一、派遣資料',[['日期',d.dutyDate],['出勤單位',d.unitVehicle],['出勤時間',d.dispatchTime],['到達現場時間',d.arrivalTime],['離開現場時間',d.leaveTime],['送達醫院時間',d.hospitalTime],['離開醫院時間',d.leaveHospitalTime],['返隊待命時間',d.returnTime],['發生地點',d.incidentLocation],['協同處理單位',d.assistingUnits],['送往醫院或地點',d.hospitalDestination],['未運送原因',(d.notTransported||d.noTransportGroup)?`${d.noTransportGroup||'尚未分類'}／${d.noTransportReason||'未選擇項目'}`:'已運送／未勾選']]),
+                group('一、派遣資料',[['日期',d.dutyDate],['出勤單位',d.unitVehicle],['出勤時間',d.dispatchTime],['到達現場時間',d.arrivalTime],['離開現場時間',d.leaveTime],['送達醫院時間',d.hospitalTime],['離開醫院時間',d.leaveHospitalTime],['返隊待命時間',d.returnTime],['發生地點',d.incidentLocation],['協同處理單位',d.assistingUnits],['送往醫院或地點',d.hospitalDestination],['未運送原因',(d.notTransported||d.noTransportGroup)?`${d.noTransportGroup||'尚未分類'}／${d.noTransportReason||'未選擇項目'}`:'已運送／未勾選'],...(d.noTransportGroup==='有接觸'&&d.noTransportReason==='其他'?[['其他原因說明',d.noTransportOtherReason]]:[])]),
                 group('二、傷病患資料',[['傷病患姓名',d.patientName],['國民身分證（RP 虛構資料）',d.patientId],['性別',d.patientSex],['年齡',d.patientAge],['GCS 評分 E: V: M:',d.gcs]]),
-                group('三、現場狀況',condition.length?condition:[['現場狀況','未勾選']]),
+                group('三、現場狀況',[...(condition.length?condition:[['現場狀況','未勾選']]),['受傷部位標記',parseEMSBodySelection(d.bodyMapSelection).join('、')],['部位尺寸／補充說明',d.bodyMapNote]]),
                 group('四、處置項目',treatments.length?treatments:[['處置項目','未勾選']]),
                 group('五、出勤紀錄',[['A. 出勤人員',d.staffA],['B. 出勤人員',d.staffB],['C. 出勤人員',d.staffC],['D. 出勤人員',d.staffD]]),
                 group('登記資料',[['填寫人',`${r.authorName||'--'} (${r.authorId||'--'})`],['建立時間',r.time||formatDateTime(r.timestamp)]])
@@ -7415,12 +7984,50 @@ async function republishAnnouncement(id) {
                     showToast('請至少填寫勤務日期、出勤單位、發生地點及一位出勤人員。','warning','EMS 資料不完整');return;
                 }
                 if(details.notTransported&&(!details.noTransportGroup||!details.noTransportReason)){showToast('已勾選沒有運送，請選擇未運送分類及原因。','warning','資料不完整');return;}
+                if(details.notTransported&&details.noTransportGroup==='有接觸'&&details.noTransportReason==='其他'&&!details.noTransportOtherReason){
+                    showToast('選擇「D. 其他」時，請填寫其他原因說明。','warning','資料不完整');
+                    document.getElementById('ems-had-contact-other-reason')?.focus();
+                    return;
+                }
+                // 條件式『其他』欄位需要填寫，避免產生只有「其他」卻沒有內容的勤務紀錄。
+                const missingOther=(details.nontrauma&&splitEMSTriageItems(details.nontraumaChoices).includes('其他')&&!details.nontraumaOther)
+                    ||(details.trauma&&details.traumaMechanism==='交通事故'&&details.traumaTrafficRole==='其他'&&!details.traumaTrafficOther)
+                    ||(details.trauma&&details.traumaMechanism==='非交通事故'&&splitEMSTriageItems(details.traumaNontraffic).includes('其他')&&!details.traumaNontrafficOther);
+                if(missingOther){
+                    selectEMSTabletPage('condition');
+                    if(details.nontrauma)setEMSNontraumaTab('general');
+                    syncEMSTriageUI();
+                    showToast('已選擇「其他」，請補充具體原因。','warning','資料不完整');return;
+                }
+                const selectedTreatment=(key,value)=>splitEMSTriageItems(details[key]).includes(value);
+                const requiredTreatmentDetails=[
+                    ['airwayTreatment','其他','airwayOther','基本呼吸道／呼吸處置的其他說明'],
+                    ['traumaCare','其他','traumaCareOther','創傷處置的其他說明'],
+                    ['cprActions','CPR','cprMinutes','CPR 分鐘數'],
+                    ['cprActions','電擊去顫','defibShocks','電擊去顫次數'],
+                    ['medicationActions','靜脈輸液','ivSite','靜脈輸液部位'],
+                    ['medicationActions','靜脈輸液','ivFluid','靜脈輸液種類'],
+                    ['medicationActions','協助使用NTG含片','ntgTablets','NTG 含片數量'],
+                    ['medicationActions','協助使用支氣管擴張劑','bronchodilatorTimes','支氣管擴張劑使用次數'],
+                    ['otherCare','其他','otherCareOther','其他處置說明']
+                ];
+                const missingTreatment=requiredTreatmentDetails.find(([cat,choice,field])=>selectedTreatment(cat,choice)&&!String(details[field]||'').trim());
+                if(missingTreatment){
+                    selectEMSTabletPage('treatment');
+                    showToast('請補充「'+missingTreatment[3]+'」。','warning','處置資料不完整');
+                    document.getElementById(EMS_FORM_V2_IDS[missingTreatment[2]])?.focus();
+                    return;
+                }
                 const chief=[details.complaintWhere,details.complaintHow,details.complaintDuration,details.complaintOther].filter(Boolean).join('；');
+                // Preserve older emsFormV2 fields, even if the old controls are no longer displayed in this updated form.
+                const previousData=old?.emsFormV2&&typeof old.emsFormV2==='object'&&!Array.isArray(old.emsFormV2)?old.emsFormV2:{};
+                const mergedDetails={...previousData,...details};
+                if(old&&!old.emsFormV2&&old.treatment)mergedDetails.legacyTreatmentText=old.treatment;
                 const f={
-                    emsFormSchema:2,emsFormV2:details,chiefComplaint:chief||(old?.chiefComplaint||''),
+                    emsFormSchema:2,emsFormV2:mergedDetails,chiefComplaint:chief||(old?.chiefComplaint||''),
                     dispatchCategory:details.noTransportGroup||(old?.dispatchCategory||''),patient:details.patientName,
                     unitVehicle:details.unitVehicle,gcsE:details.gcs,
-                    treatment:emsTreatmentText(details,old&&!old.emsFormV2?old.treatment:''),
+                    treatment:emsTreatmentText(mergedDetails),
                     dispatchTime:details.dispatchTime,arrivalTime:details.arrivalTime,leaveTime:details.leaveTime,
                     hospitalTime:details.hospitalTime,returnTime:details.returnTime
                 };
