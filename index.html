@@ -866,38 +866,7 @@
                 </div>
 
 
-                <!-- V2.0 專屬勤務地圖：警察勤務單位 -->
-                <section id="ntpc-map-police-section" class="rounded-2xl border border-blue-500/25 bg-slate-900 p-5 md:p-6 space-y-4 shadow-xl">
-                    <div class="flex flex-wrap justify-between items-center gap-3"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-map-location-dot text-blue-400 mr-2"></i>警察勤務單位｜即時位置圖</h3><p class="text-xs text-slate-400 mt-1">僅顯示警察／警政隊伍。每 5 秒取得 Worker 共用快取，未連線不會讀取 Firebase。</p></div><span id="ntpc-map-police-status" class="text-xs border border-slate-700 bg-slate-950 text-slate-400 rounded-full px-3 py-1">尚未連線</span></div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3"><label class="block text-xs text-slate-400">Cloudflare Worker 網址<input id="ntpc-map-police-url" type="url" autocomplete="off" spellcheck="false" placeholder="https://ntpc-rp-smart-dispatch.你的帳號.workers.dev" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm" /></label><label class="block text-xs text-slate-400">警察勤務單位唯讀密鑰（不會儲存）<input id="ntpc-map-police-token" type="password" autocomplete="off" placeholder="由管理員提供專用地圖密鑰" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm" /></label></div>
-                    <div class="flex flex-wrap gap-2"><button type="button" onclick="ntpcMapConnect('police')" class="px-4 py-2 rounded-xl bg-blue-700 text-white text-sm font-semibold hover:brightness-110">連線並每 5 秒更新</button><button type="button" onclick="ntpcMapRefresh('police')" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 text-sm">立即更新</button><button type="button" onclick="ntpcMapDisconnect('police')" class="px-4 py-2 rounded-xl border border-slate-700 text-slate-400 text-sm">中斷連線</button></div>
-                    <p id="ntpc-map-police-meta" class="text-xs text-slate-400">請先部署 Worker，再輸入網址與此部門的唯讀密鑰。</p>
-                    <!-- V2.0.1：官方地圖背景與本機座標校正（不新增 Worker/API/Firebase 請求） -->
-<div id="ntpc-map-police-toolbar" class="rounded-xl border border-slate-700/80 bg-slate-950/80 p-3 space-y-2 text-xs text-slate-300">
-  <div class="flex flex-wrap items-center gap-2">
-    <label for="ntpc-map-police-layer" class="font-semibold text-slate-100">地圖背景</label>
-    <select id="ntpc-map-police-layer" onchange="ntpcMapSetLayer(this.value)" class="bg-slate-900 border border-slate-600 rounded-lg px-2 py-2 text-slate-100">
-      <option value="postal">ER:LC 官方郵遞區號圖</option>
-      <option value="blank">ER:LC 官方空白圖</option>
-      <option value="community">社群地圖（版本可能不同）</option>
-      <option value="custom">自訂地圖網址</option>
-      <option value="grid">純座標圖（舊版）</option>
-    </select>
-    <button type="button" onclick="ntpcMapClearCalibration()" class="border border-slate-600 rounded-lg px-2 py-2 hover:bg-slate-800">重設定位校正</button>
-  </div>
-  <div id="ntpc-map-police-custom-wrap" class="hidden flex flex-wrap items-center gap-2"><input id="ntpc-map-police-custom" type="url" class="flex-1 min-w-[180px] border border-slate-700 rounded-lg bg-slate-900 p-2 text-white" placeholder="貼入圖片的 HTTPS 網址（例如 GitHub 圖片直連）"/><button type="button" onclick="ntpcMapSetCustomUrl('police')" class="rounded-lg bg-indigo-700 px-3 py-2 text-white">套用圖片</button></div>
-  <div class="flex flex-wrap items-center gap-2">
-    <label for="ntpc-map-police-person">校正參照玩家</label>
-    <select id="ntpc-map-police-person" class="bg-slate-900 border border-slate-600 rounded-lg px-2 py-2 text-slate-100 max-w-[260px]"><option value="">請先連線取得玩家位置</option></select>
-    <button type="button" onclick="ntpcMapStartCalibration('police','a')" class="border border-cyan-600/50 text-cyan-200 rounded-lg px-2 py-2 hover:bg-slate-800">設第 1 個定位點</button>
-    <button type="button" onclick="ntpcMapStartCalibration('police','b')" class="border border-fuchsia-600/50 text-fuchsia-200 rounded-lg px-2 py-2 hover:bg-slate-800">設第 2 個定位點</button>
-  </div>
-  <p id="ntpc-map-police-cal-hint" class="text-amber-300/90">地圖需完成兩點校正，才會顯示玩家在道路上的位置；原始座標圖仍可隨時切回。</p>
-</div>
-<div id="ntpc-map-police-canvas" class="relative flex items-center justify-center h-[440px] sm:h-[660px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" role="img" aria-label="ER:LC 警察勤務單位位置座標圖"><div class="absolute inset-0 grid place-items-center text-sm text-slate-500">尚未取得位置</div></div>
-                    <div id="ntpc-map-police-list" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 text-xs"></div>
-                    <p class="text-[11px] text-slate-500">座標方向依 ER:LC 官方規格：X 向右增加、Z 向下增加。此處顯示的是座標方格圖，非實際道路底圖；正式個人編號由網站綁定資料核對。</p>
-                </section>
+
 
                 <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
                     <button id="btn-police-reports" data-sub="reports" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史案件報告庫</button>
@@ -908,6 +877,7 @@
                     <button id="btn-police-citizen" data-sub="citizen" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-id-card mr-2"></i>市民身份系統</button>
                     <button id="btn-police-vehicles" data-sub="vehicles" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-car-side mr-2"></i>車輛資訊系統</button>
                     <button id="btn-police-wanted" data-sub="wanted" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-user-secret mr-2"></i>通緝查詢系統</button>
+                    <button id="btn-police-map" data-sub="map" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-map-location-dot mr-2"></i>即時地圖</button>
                 </div>
 
                 <div id="police-sub-reports" class="space-y-4">
@@ -1071,6 +1041,44 @@
                     <div id="wanted-locked-view" class="bg-slate-900/90 backdrop-blur border border-slate-800 rounded-2xl p-12 text-center space-y-4 shadow-xl"><div class="w-16 h-16 mx-auto rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-2xl"><i class="fa-solid fa-lock"></i></div><h3 class="text-2xl font-bold text-white">通緝查詢系統</h3><p class="text-slate-400">當前開發階段 敬請期待</p></div>
                     <div id="wanted-unlocked-view" class="hidden space-y-4"><div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl"><div class="flex flex-col sm:flex-row justify-between gap-3 sm:items-center"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-user-secret text-rose-400 mr-2"></i>通緝查詢系統</h3><p class="text-xs text-slate-500 mt-1">使用證件末五碼查詢；解鎖後所有員警皆可發布與刪除通緝資料。</p></div><button id="open-wanted-post-btn" type="button" class="hidden bg-rose-600 hover:bg-rose-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold"><i class="fa-solid fa-plus mr-2"></i>發布通緝資料</button></div><div class="flex gap-2 mt-4"><input id="wanted-search-input" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono" placeholder="輸入關鍵字（姓名／證件末五碼／原因／條例）"><button id="wanted-search-btn" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl text-sm">查詢</button></div><div class="mt-4 rounded-xl bg-indigo-500/5 border border-indigo-500/20 p-4"><div class="flex flex-wrap items-center justify-between gap-3"><div><div class="text-sm font-semibold text-indigo-200"><i class="fa-brands fa-discord mr-2"></i>Discord 市民私訊通知</div><p class="text-xs text-slate-500 mt-1">核准通緝後由 Discord Bot 依「|」後方 RP 名稱尋找群組成員並私訊。</p></div><span id="wanted-discord-bot-status" class="inline-flex items-center px-3 py-1 rounded-full bg-slate-800 text-slate-400 text-xs">等待 Bot 回報</span></div></div></div><div id="wanted-results" class="grid grid-cols-1 gap-4"></div></div>
                 </div>
+
+                <!-- 獨立即時地圖：點擊通緝查詢後的分頁才顯示 -->
+                <section id="police-sub-map" class="hidden rounded-2xl border border-blue-500/25 bg-slate-900 p-5 md:p-6 space-y-4 shadow-xl">
+                    <div class="flex flex-wrap justify-between items-center gap-3"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-map-location-dot text-blue-400 mr-2"></i>警察勤務單位｜即時位置圖</h3><p class="text-xs text-slate-400 mt-1">僅顯示警察／警政隊伍。每 5 秒取得 Worker 共用快取，未連線不會讀取 Firebase。</p></div><span id="ntpc-map-police-status" class="text-xs border border-slate-700 bg-slate-950 text-slate-400 rounded-full px-3 py-1">尚未連線</span></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3"><label class="block text-xs text-slate-400">Cloudflare Worker 網址<input id="ntpc-map-police-url" type="url" autocomplete="off" spellcheck="false" placeholder="https://ntpc-rp-smart-dispatch.你的帳號.workers.dev" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm" /></label><label class="block text-xs text-slate-400">警察勤務單位唯讀密鑰（不會儲存）<input id="ntpc-map-police-token" type="password" autocomplete="off" placeholder="由管理員提供專用地圖密鑰" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm" /></label></div>
+                    <div class="flex flex-wrap gap-2"><button type="button" onclick="ntpcMapConnect('police')" class="px-4 py-2 rounded-xl bg-blue-700 text-white text-sm font-semibold hover:brightness-110">連線並每 5 秒更新</button><button type="button" onclick="ntpcMapRefresh('police')" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 text-sm">立即更新</button><button type="button" onclick="ntpcMapDisconnect('police')" class="px-4 py-2 rounded-xl border border-slate-700 text-slate-400 text-sm">中斷連線</button></div>
+                    <p id="ntpc-map-police-meta" class="text-xs text-slate-400">請先部署 Worker，再輸入網址與此部門的唯讀密鑰。</p>
+                    <!-- V2.0.1：官方地圖背景與本機座標校正（不新增 Worker/API/Firebase 請求） -->
+<div id="ntpc-map-police-toolbar" class="rounded-xl border border-slate-700/80 bg-slate-950/80 p-3 space-y-2 text-xs text-slate-300">
+  <div class="flex flex-wrap items-center gap-2">
+    <label for="ntpc-map-police-layer" class="font-semibold text-slate-100">地圖背景</label>
+    <select id="ntpc-map-police-layer" onchange="ntpcMapSetLayer(this.value)" class="bg-slate-900 border border-slate-600 rounded-lg px-2 py-2 text-slate-100">
+      <option value="project">新北市 RP 地圖（GitHub 2026/10/21）</option>
+      <option value="postal">ER:LC 官方郵遞區號圖</option>
+      <option value="blank">ER:LC 官方空白圖</option>
+      <option value="community">社群地圖（版本可能不同）</option>
+      <option value="custom">自訂地圖網址</option>
+      <option value="grid">純座標圖（舊版）</option>
+    </select>
+    <button type="button" onclick="ntpcMapClearCalibration()" class="border border-slate-600 rounded-lg px-2 py-2 hover:bg-slate-800">重設定位校正</button>
+  </div>
+  <div id="ntpc-map-police-custom-wrap" class="hidden flex flex-wrap items-center gap-2"><input id="ntpc-map-police-custom" type="url" class="flex-1 min-w-[180px] border border-slate-700 rounded-lg bg-slate-900 p-2 text-white" placeholder="貼入圖片的 HTTPS 網址（例如 GitHub 圖片直連）"/><button type="button" onclick="ntpcMapSetCustomUrl('police')" class="rounded-lg bg-indigo-700 px-3 py-2 text-white">套用圖片</button></div>
+  <div class="flex flex-wrap items-center gap-2">
+    <label for="ntpc-map-police-person">校正參照玩家</label>
+    <select id="ntpc-map-police-person" class="bg-slate-900 border border-slate-600 rounded-lg px-2 py-2 text-slate-100 max-w-[260px]"><option value="">請先連線取得玩家位置</option></select>
+    <button type="button" onclick="ntpcMapStartCalibration('police','a')" class="border border-cyan-600/50 text-cyan-200 rounded-lg px-2 py-2 hover:bg-slate-800">設第 1 個定位點</button>
+    <button type="button" onclick="ntpcMapStartCalibration('police','b')" class="border border-fuchsia-600/50 text-fuchsia-200 rounded-lg px-2 py-2 hover:bg-slate-800">設第 2 個定位點</button>
+  </div>
+  <p id="ntpc-map-police-cal-hint" class="text-amber-300/90">地圖需完成兩點校正，才會顯示玩家在道路上的位置；原始座標圖仍可隨時切回。</p>
+</div>
+<div id="ntpc-map-police-canvas" class="relative flex items-center justify-center h-[440px] sm:h-[660px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" role="img" aria-label="ER:LC 警察勤務單位位置座標圖"><div class="absolute inset-0 grid place-items-center text-sm text-slate-500">尚未取得位置</div></div>
+                    <div id="ntpc-map-police-list" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 text-xs"></div>
+                    <div class="mt-3 rounded-xl border border-slate-700/80 bg-slate-950/70 p-3 space-y-2">
+                        <label class="flex items-center gap-2 text-xs text-amber-200"><input id="ntpc-map-police-show-cases" type="checkbox" checked onchange="ntpcMapRefreshView()" class="accent-amber-500"> 顯示最近 10 分鐘 110／119 報案標記（有座標才可釘在地圖上）</label>
+                        <div id="ntpc-map-police-case-list" class="space-y-2 text-xs text-slate-300">開啟此地圖並連線後顯示案件</div>
+                    </div>
+                    <p class="text-[11px] text-slate-500">座標方向依 ER:LC 官方規格：X 向右增加、Z 向下增加。可切換提供的 GitHub 地圖或純座標圖；在遊戲地圖上標點需先完成位置校正。</p>
+                </section>
             </div>
         </section>
 
@@ -1110,37 +1118,7 @@
 
 
                 <!-- V2.0 專屬勤務地圖：消防勤務單位 -->
-                <section id="ntpc-map-fire-section" class="rounded-2xl border border-rose-500/25 bg-slate-900 p-5 md:p-6 space-y-4 shadow-xl">
-                    <div class="flex flex-wrap justify-between items-center gap-3"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-map-location-dot text-rose-400 mr-2"></i>消防勤務單位｜即時位置圖</h3><p class="text-xs text-slate-400 mt-1">僅顯示消防／救護隊伍。每 5 秒取得 Worker 共用快取，未連線不會讀取 Firebase。</p></div><span id="ntpc-map-fire-status" class="text-xs border border-slate-700 bg-slate-950 text-slate-400 rounded-full px-3 py-1">尚未連線</span></div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3"><label class="block text-xs text-slate-400">Cloudflare Worker 網址<input id="ntpc-map-fire-url" type="url" autocomplete="off" spellcheck="false" placeholder="https://ntpc-rp-smart-dispatch.你的帳號.workers.dev" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm" /></label><label class="block text-xs text-slate-400">消防勤務單位唯讀密鑰（不會儲存）<input id="ntpc-map-fire-token" type="password" autocomplete="off" placeholder="由管理員提供專用地圖密鑰" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm" /></label></div>
-                    <div class="flex flex-wrap gap-2"><button type="button" onclick="ntpcMapConnect('fire')" class="px-4 py-2 rounded-xl bg-rose-700 text-white text-sm font-semibold hover:brightness-110">連線並每 5 秒更新</button><button type="button" onclick="ntpcMapRefresh('fire')" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 text-sm">立即更新</button><button type="button" onclick="ntpcMapDisconnect('fire')" class="px-4 py-2 rounded-xl border border-slate-700 text-slate-400 text-sm">中斷連線</button></div>
-                    <p id="ntpc-map-fire-meta" class="text-xs text-slate-400">請先部署 Worker，再輸入網址與此部門的唯讀密鑰。</p>
-                    <!-- V2.0.1：官方地圖背景與本機座標校正（不新增 Worker/API/Firebase 請求） -->
-<div id="ntpc-map-fire-toolbar" class="rounded-xl border border-slate-700/80 bg-slate-950/80 p-3 space-y-2 text-xs text-slate-300">
-  <div class="flex flex-wrap items-center gap-2">
-    <label for="ntpc-map-fire-layer" class="font-semibold text-slate-100">地圖背景</label>
-    <select id="ntpc-map-fire-layer" onchange="ntpcMapSetLayer(this.value)" class="bg-slate-900 border border-slate-600 rounded-lg px-2 py-2 text-slate-100">
-      <option value="postal">ER:LC 官方郵遞區號圖</option>
-      <option value="blank">ER:LC 官方空白圖</option>
-      <option value="community">社群地圖（版本可能不同）</option>
-      <option value="custom">自訂地圖網址</option>
-      <option value="grid">純座標圖（舊版）</option>
-    </select>
-    <button type="button" onclick="ntpcMapClearCalibration()" class="border border-slate-600 rounded-lg px-2 py-2 hover:bg-slate-800">重設定位校正</button>
-  </div>
-  <div id="ntpc-map-fire-custom-wrap" class="hidden flex flex-wrap items-center gap-2"><input id="ntpc-map-fire-custom" type="url" class="flex-1 min-w-[180px] border border-slate-700 rounded-lg bg-slate-900 p-2 text-white" placeholder="貼入圖片的 HTTPS 網址（例如 GitHub 圖片直連）"/><button type="button" onclick="ntpcMapSetCustomUrl('fire')" class="rounded-lg bg-indigo-700 px-3 py-2 text-white">套用圖片</button></div>
-  <div class="flex flex-wrap items-center gap-2">
-    <label for="ntpc-map-fire-person">校正參照玩家</label>
-    <select id="ntpc-map-fire-person" class="bg-slate-900 border border-slate-600 rounded-lg px-2 py-2 text-slate-100 max-w-[260px]"><option value="">請先連線取得玩家位置</option></select>
-    <button type="button" onclick="ntpcMapStartCalibration('fire','a')" class="border border-cyan-600/50 text-cyan-200 rounded-lg px-2 py-2 hover:bg-slate-800">設第 1 個定位點</button>
-    <button type="button" onclick="ntpcMapStartCalibration('fire','b')" class="border border-fuchsia-600/50 text-fuchsia-200 rounded-lg px-2 py-2 hover:bg-slate-800">設第 2 個定位點</button>
-  </div>
-  <p id="ntpc-map-fire-cal-hint" class="text-amber-300/90">地圖需完成兩點校正，才會顯示玩家在道路上的位置；原始座標圖仍可隨時切回。</p>
-</div>
-<div id="ntpc-map-fire-canvas" class="relative flex items-center justify-center h-[440px] sm:h-[660px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" role="img" aria-label="ER:LC 消防勤務單位位置座標圖"><div class="absolute inset-0 grid place-items-center text-sm text-slate-500">尚未取得位置</div></div>
-                    <div id="ntpc-map-fire-list" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 text-xs"></div>
-                    <p class="text-[11px] text-slate-500">座標方向依 ER:LC 官方規格：X 向右增加、Z 向下增加。此處顯示的是座標方格圖，非實際道路底圖；正式個人編號由網站綁定資料核對。</p>
-                </section>
+                
 
                 <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
                     <button id="btn-fire-reports" data-sub="reports" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史消防案件報告</button>
@@ -1148,6 +1126,7 @@
                     <button id="btn-fire-ems" data-sub="ems" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-truck-medical mr-2"></i>EMS救護出勤報告</button>
                     <button id="btn-fire-clocks" data-sub="clocks" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clipboard-user mr-2"></i>消防出勤打卡紀錄</button>
                     <button id="btn-fire-hours" data-sub="hours" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數統計</button>
+                    <button id="btn-fire-map" data-sub="map" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-map-location-dot mr-2"></i>即時地圖</button>
                 </div>
 
                 <div id="fire-sub-reports" class="space-y-4">
@@ -1245,6 +1224,43 @@
                         </div>
                     </div>
                 </div>
+                <!-- 消防勤務獨立即時地圖 -->
+                <section id="fire-sub-map" class="hidden rounded-2xl border border-rose-500/25 bg-slate-900 p-5 md:p-6 space-y-4 shadow-xl">
+                    <div class="flex flex-wrap justify-between items-center gap-3"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-map-location-dot text-rose-400 mr-2"></i>消防勤務單位｜即時位置圖</h3><p class="text-xs text-slate-400 mt-1">僅顯示消防／救護隊伍。每 5 秒取得 Worker 共用快取，未連線不會讀取 Firebase。</p></div><span id="ntpc-map-fire-status" class="text-xs border border-slate-700 bg-slate-950 text-slate-400 rounded-full px-3 py-1">尚未連線</span></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3"><label class="block text-xs text-slate-400">Cloudflare Worker 網址<input id="ntpc-map-fire-url" type="url" autocomplete="off" spellcheck="false" placeholder="https://ntpc-rp-smart-dispatch.你的帳號.workers.dev" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm" /></label><label class="block text-xs text-slate-400">消防勤務單位唯讀密鑰（不會儲存）<input id="ntpc-map-fire-token" type="password" autocomplete="off" placeholder="由管理員提供專用地圖密鑰" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm" /></label></div>
+                    <div class="flex flex-wrap gap-2"><button type="button" onclick="ntpcMapConnect('fire')" class="px-4 py-2 rounded-xl bg-rose-700 text-white text-sm font-semibold hover:brightness-110">連線並每 5 秒更新</button><button type="button" onclick="ntpcMapRefresh('fire')" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 text-sm">立即更新</button><button type="button" onclick="ntpcMapDisconnect('fire')" class="px-4 py-2 rounded-xl border border-slate-700 text-slate-400 text-sm">中斷連線</button></div>
+                    <p id="ntpc-map-fire-meta" class="text-xs text-slate-400">請先部署 Worker，再輸入網址與此部門的唯讀密鑰。</p>
+                    <!-- V2.0.1：官方地圖背景與本機座標校正（不新增 Worker/API/Firebase 請求） -->
+<div id="ntpc-map-fire-toolbar" class="rounded-xl border border-slate-700/80 bg-slate-950/80 p-3 space-y-2 text-xs text-slate-300">
+  <div class="flex flex-wrap items-center gap-2">
+    <label for="ntpc-map-fire-layer" class="font-semibold text-slate-100">地圖背景</label>
+    <select id="ntpc-map-fire-layer" onchange="ntpcMapSetLayer(this.value)" class="bg-slate-900 border border-slate-600 rounded-lg px-2 py-2 text-slate-100">
+      <option value="project">新北市 RP 地圖（GitHub 2026/10/21）</option>
+      <option value="postal">ER:LC 官方郵遞區號圖</option>
+      <option value="blank">ER:LC 官方空白圖</option>
+      <option value="community">社群地圖（版本可能不同）</option>
+      <option value="custom">自訂地圖網址</option>
+      <option value="grid">純座標圖（舊版）</option>
+    </select>
+    <button type="button" onclick="ntpcMapClearCalibration()" class="border border-slate-600 rounded-lg px-2 py-2 hover:bg-slate-800">重設定位校正</button>
+  </div>
+  <div id="ntpc-map-fire-custom-wrap" class="hidden flex flex-wrap items-center gap-2"><input id="ntpc-map-fire-custom" type="url" class="flex-1 min-w-[180px] border border-slate-700 rounded-lg bg-slate-900 p-2 text-white" placeholder="貼入圖片的 HTTPS 網址（例如 GitHub 圖片直連）"/><button type="button" onclick="ntpcMapSetCustomUrl('fire')" class="rounded-lg bg-indigo-700 px-3 py-2 text-white">套用圖片</button></div>
+  <div class="flex flex-wrap items-center gap-2">
+    <label for="ntpc-map-fire-person">校正參照玩家</label>
+    <select id="ntpc-map-fire-person" class="bg-slate-900 border border-slate-600 rounded-lg px-2 py-2 text-slate-100 max-w-[260px]"><option value="">請先連線取得玩家位置</option></select>
+    <button type="button" onclick="ntpcMapStartCalibration('fire','a')" class="border border-cyan-600/50 text-cyan-200 rounded-lg px-2 py-2 hover:bg-slate-800">設第 1 個定位點</button>
+    <button type="button" onclick="ntpcMapStartCalibration('fire','b')" class="border border-fuchsia-600/50 text-fuchsia-200 rounded-lg px-2 py-2 hover:bg-slate-800">設第 2 個定位點</button>
+  </div>
+  <p id="ntpc-map-fire-cal-hint" class="text-amber-300/90">地圖需完成兩點校正，才會顯示玩家在道路上的位置；原始座標圖仍可隨時切回。</p>
+</div>
+<div id="ntpc-map-fire-canvas" class="relative flex items-center justify-center h-[440px] sm:h-[660px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" role="img" aria-label="ER:LC 消防勤務單位位置座標圖"><div class="absolute inset-0 grid place-items-center text-sm text-slate-500">尚未取得位置</div></div>
+                    <div id="ntpc-map-fire-list" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 text-xs"></div>
+                    <div class="mt-3 rounded-xl border border-slate-700/80 bg-slate-950/70 p-3 space-y-2">
+                        <label class="flex items-center gap-2 text-xs text-amber-200"><input id="ntpc-map-fire-show-cases" type="checkbox" checked onchange="ntpcMapRefreshView()" class="accent-amber-500"> 顯示最近 10 分鐘 110／119 報案標記（有座標才可釘在地圖上）</label>
+                        <div id="ntpc-map-fire-case-list" class="space-y-2 text-xs text-slate-300">開啟此地圖並連線後顯示案件</div>
+                    </div>
+                    <p class="text-[11px] text-slate-500">座標方向依 ER:LC 官方規格：X 向右增加、Z 向下增加。可切換提供的 GitHub 地圖或純座標圖；在遊戲地圖上標點需先完成位置校正。</p>
+                </section>
             </div>
         </section>
 
@@ -2037,7 +2053,7 @@
                         </div>
                         <div class="flex gap-2 flex-wrap"><button type="button" onclick="ntpcDispatchConnect()" class="px-4 py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl text-sm font-semibold">連線並開始 5 秒更新</button><button type="button" onclick="ntpcDispatchRefresh()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm">立即更新</button><button id="ntpc-dispatch-autobutton" type="button" onclick="ntpcDispatchToggleAuto()" disabled class="px-4 py-2.5 rounded-xl text-sm bg-slate-700 text-slate-300 font-semibold disabled:opacity-50">自動派遣：關閉（安全模式）</button></div>
                         <div id="ntpc-dispatch-lastupdate" class="text-xs text-slate-400">需要部署附帶的 Worker，再輸入網址與獨立管理密鑰。</div>
-                        <p class="text-xs text-amber-300/90 leading-relaxed">安全設計：只有手動標記「待命」的線上警消人員會被推薦；預設不自動發送私人訊息，必須由管理員開啟。每案最多發送一次 <code>:pm</code>；發送結果不明時不自動重送。報案位置與人員位置是遊戲座標的直線距離，不代表實際行車時間。</p>
+                        <p class="text-xs text-amber-300/90 leading-relaxed">安全設計：自動派遣只會派給已待命的線上警消；管理中心可手動接管案件、選擇未待命單位或明確確認後人工改派。每案最多發送一次 <code>:pm</code>；發送結果不明時不自動重送。報案位置與人員位置是遊戲座標的直線距離，不代表實際行車時間。</p>
                     </div>
                         <!-- V2.0 管理中心全員位置圖 -->
                         <section class="rounded-2xl border border-violet-500/25 bg-slate-900 p-5 space-y-3"><div class="flex flex-wrap justify-between items-center gap-3"><div><h4 class="font-bold text-white"><i class="fa-solid fa-map-location-dot text-violet-400 mr-2"></i>全伺服器即時位置圖</h4><p class="text-xs text-slate-400 mt-1">可看警察、消防、一般市民；沿用上方 Worker 管理員連線，不會增加額外 ER:LC 查詢。</p></div><label class="flex items-center gap-2 text-xs text-slate-400">顯示隊伍<select id="ntpc-map-admin-filter" onchange="ntpcMapRender('admin', ntpcDispatchUI.state)" class="bg-slate-950 border border-slate-700 text-white rounded-lg px-2 py-1.5"><option value="all">全部玩家</option><option value="police">警察</option><option value="fire">消防</option><option value="civilian">市民</option></select></label></div>
@@ -2048,6 +2064,7 @@
   <div class="flex flex-wrap items-center gap-2">
     <label for="ntpc-map-admin-layer" class="font-semibold text-slate-100">地圖背景</label>
     <select id="ntpc-map-admin-layer" onchange="ntpcMapSetLayer(this.value)" class="bg-slate-900 border border-slate-600 rounded-lg px-2 py-2 text-slate-100">
+      <option value="project">新北市 RP 地圖（GitHub 2026/10/21）</option>
       <option value="postal">ER:LC 官方郵遞區號圖</option>
       <option value="blank">ER:LC 官方空白圖</option>
       <option value="community">社群地圖（版本可能不同）</option>
@@ -2065,7 +2082,11 @@
   </div>
   <p id="ntpc-map-admin-cal-hint" class="text-amber-300/90">地圖需完成兩點校正，才會顯示玩家在道路上的位置；原始座標圖仍可隨時切回。</p>
 </div>
-<div id="ntpc-map-admin-canvas" class="relative flex items-center justify-center h-[440px] sm:h-[660px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" role="img" aria-label="ER:LC 全員位置座標圖"><div class="absolute inset-0 grid place-items-center text-sm text-slate-500">尚未取得位置</div></div><div id="ntpc-map-admin-list" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 text-xs"></div><p class="text-[11px] text-slate-500">個人編號依網站使用者 ROBLOX ID 綁定顯示；未綁定者會註明。市民以 Roblox ID 作為座標標籤。</p></section>
+<div id="ntpc-map-admin-canvas" class="relative flex items-center justify-center h-[440px] sm:h-[660px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" role="img" aria-label="ER:LC 全員位置座標圖"><div class="absolute inset-0 grid place-items-center text-sm text-slate-500">尚未取得位置</div></div><div id="ntpc-map-admin-list" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 text-xs"></div>
+                    <div class="mt-3 rounded-xl border border-slate-700/80 bg-slate-950/70 p-3 space-y-2">
+                        <label class="flex items-center gap-2 text-xs text-amber-200"><input id="ntpc-map-admin-show-cases" type="checkbox" checked onchange="ntpcMapRefreshView()" class="accent-amber-500"> 顯示最近 10 分鐘 110／119 報案標記（有座標才可釘在地圖上）</label>
+                        <div id="ntpc-map-admin-case-list" class="space-y-2 text-xs text-slate-300">開啟此地圖並連線後顯示案件</div>
+                    </div><p class="text-[11px] text-slate-500">個人編號依網站使用者 ROBLOX ID 綁定顯示；未綁定者會註明。市民以 Roblox ID 作為座標標籤。</p></section>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <section class="rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-3"><div class="flex justify-between gap-2 items-center"><h4 class="font-bold text-white"><i class="fa-solid fa-users-viewfinder text-sky-400 mr-2"></i>線上勤務單位與位置</h4><span id="ntpc-dispatch-player-count" class="text-xs text-slate-400">--</span></div><div class="text-xs text-slate-500">地點每 5 秒更新；將符合隊伍的成員標為待命後才可自動派遣。</div><div id="ntpc-dispatch-players" class="space-y-2 max-h-[520px] overflow-y-auto"><div class="text-sm text-slate-500">尚未取得資料</div></div></section>
                         <section class="rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-3"><div class="flex justify-between gap-2 items-center"><h4 class="font-bold text-white"><i class="fa-solid fa-headset text-rose-400 mr-2"></i>110／119 即時派遣案件</h4><span id="ntpc-dispatch-case-count" class="text-xs text-slate-400">--</span></div><div class="text-xs text-slate-500">案源：ER:LC API V2 EmergencyCalls；可人工派遣最近的已待命單位。</div><div id="ntpc-dispatch-cases" class="space-y-3 max-h-[600px] overflow-y-auto"><div class="text-sm text-slate-500">尚未取得資料</div></div></section>
@@ -4859,7 +4880,7 @@ async function republishAnnouncement(id) {
                 showToast('高層審核系統僅限警察高層、高階成員與管理中心使用。', 'warning', '權限不足');
                 sub = 'reports';
             }
-            ['reports', 'review', 'punishments', 'clocks', 'hours', 'citizen', 'vehicles', 'wanted'].forEach(s => {
+            ['reports', 'review', 'punishments', 'clocks', 'hours', 'citizen', 'vehicles', 'wanted','map'].forEach(s => {
                 const el = document.getElementById(`police-sub-${s}`);
                 if (el) el.classList.add('hidden');
                 const btn = document.getElementById(`btn-police-${s}`);
@@ -4870,6 +4891,7 @@ async function republishAnnouncement(id) {
             const activeBtn = document.getElementById(`btn-police-${sub}`);
             if (activeBtn) activeBtn.className = "police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white whitespace-nowrap";
             if(sub==='review') renderPoliceReview();
+            ntpcMapSwitch(document.getElementById('tab-police')?.classList.contains('hidden')?'none':'police');
         }
 
         function switchFireSubTab(sub) {
@@ -4877,7 +4899,7 @@ async function republishAnnouncement(id) {
                 showToast('高層審核系統僅限消防高層、高階成員與管理中心使用。', 'warning', '權限不足');
                 sub = 'reports';
             }
-            ['reports', 'review', 'ems', 'clocks', 'hours'].forEach(s => {
+            ['reports', 'review', 'ems', 'clocks', 'hours','map'].forEach(s => {
                 const el = document.getElementById(`fire-sub-${s}`);
                 if (el) el.classList.add('hidden');
                 const btn = document.getElementById(`btn-fire-${s}`);
@@ -4889,6 +4911,7 @@ async function republishAnnouncement(id) {
             if (activeBtn) activeBtn.className = "fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white whitespace-nowrap";
             if(sub==='review') renderFireReview();
             if(sub==='hours') populateFireHoursMemberSelect();
+            ntpcMapSwitch(document.getElementById('tab-fire')?.classList.contains('hidden')?'none':'fire');
         }
 
         function switchAdminSubTab(sub){
@@ -9985,7 +10008,7 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
             return role==='admin'||(currentUser.units||[currentUser.unit]).includes(scope);
         }
         function ntpcMapIsActive(scope){
-            return document.visibilityState==='visible' && ntpcMapAllowed(scope) && !document.getElementById('tab-'+scope)?.classList.contains('hidden');
+            return document.visibilityState==='visible' && ntpcMapAllowed(scope) && !document.getElementById('tab-'+scope)?.classList.contains('hidden') && !document.getElementById(scope+'-sub-map')?.classList.contains('hidden');
         }
         // 不強迫使用者將金鑰留在瀏覽器儲存空間。
         function ntpcMapDisconnect(scope,clear=true){
@@ -9998,7 +10021,7 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
             for(const scope of ['police','fire']){
                 const m=ntpcMaps[scope];
                 if(m.timer){clearInterval(m.timer);m.timer=null;}
-                if(tab===scope && m.connected && ntpcMapAllowed(scope)){ntpcMapRefresh(scope);m.timer=setInterval(()=>ntpcMapRefresh(scope),5000);}
+                if(tab===scope && m.connected && ntpcMapIsActive(scope)){ntpcMapRefresh(scope);m.timer=setInterval(()=>{if(ntpcMapIsActive(scope))ntpcMapRefresh(scope);},5000);}
                 const input=document.getElementById('ntpc-map-'+scope+'-url');
                 if(input&&!input.value)input.value=localStorage.getItem('ntpc_dispatch_worker_url')||'';
             }
@@ -10021,7 +10044,7 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
         }
         async function ntpcMapRefresh(scope,throwError=false){
             const m=ntpcMaps[scope];if(!m?.connected||m.fetching||!ntpcMapAllowed(scope)||document.visibilityState!=='visible')return;
-            if(document.getElementById('tab-'+scope)?.classList.contains('hidden'))return;
+            if(!ntpcMapIsActive(scope))return;
             m.fetching=true;try{
                 const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),10000);
                 let r;try{r=await fetch(m.url+'/api/map',{method:'GET',mode:'cors',cache:'no-store',headers:{'Authorization':'Bearer '+m.token},signal:ctrl.signal});}finally{clearTimeout(t);}
@@ -10029,7 +10052,7 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
                 if(!r.ok||data.ok===false)throw Error(data.error||'HTTP '+r.status);
                 if(data.scope!==scope && data.scope!=='admin')throw Error('Worker 回傳不符合單位權限的資料');
                 // 前端再次篩選；真正的隔離由 Worker 執行
-                m.state={...data,players:(data.players||[]).filter(p=>p.type===scope)};
+                m.state={...data,players:(data.players||[]).filter(p=>p.type===scope),cases:(data.cases||[]).filter(c=>c.type===scope)};
                 ntpcMapRender(scope,m.state);ntpcMapStatus(scope,'● 已連線',!data.stale);
             }catch(e){ntpcMapStatus(scope,'更新失敗：'+e.message);if(throwError)throw e;}
             finally{m.fetching=false;}
@@ -10046,17 +10069,18 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
         }
         // V2.0.1：地圖背景採官方或自訂圖片，校正資料僅保存本機；不存取 Firebase、不改動 Worker。
         const ntpcMapImageSources={
+            project:'https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/ERLC_One_Map_2026-10-21%20%282%29.png',
             postal:'https://api.policeroleplay.community/maps/fall_postals.png',
             blank:'https://api.policeroleplay.community/maps/fall_blank.png',
             community:'https://erlc-hub.pages.dev/maps/latest.png'
         };
-        const ntpcMapStorageKey='ntpc_erlc_map_view_v201';
+        const ntpcMapStorageKey='ntpc_erlc_map_view_v202';
         const ntpcMapImageConfig=(()=>{
             try{
                 const saved=JSON.parse(localStorage.getItem(ntpcMapStorageKey)||'{}');
-                const allowed=['postal','blank','community','custom','grid'];
-                return {layer:allowed.includes(saved.layer)?saved.layer:'postal',customUrl:typeof saved.customUrl==='string'?saved.customUrl:'',calibrations:typeof saved.calibrations==='object'&&saved.calibrations? saved.calibrations:{}};
-            }catch(e){return {layer:'postal',customUrl:'',calibrations:{}};}
+                const allowed=['project','postal','blank','community','custom','grid'];
+                return {layer:allowed.includes(saved.layer)?saved.layer:'project',customUrl:typeof saved.customUrl==='string'?saved.customUrl:'',calibrations:typeof saved.calibrations==='object'&&saved.calibrations? saved.calibrations:{}};
+            }catch(e){return {layer:'project',customUrl:'',calibrations:{}};}
         })();
         let ntpcMapPendingCalibration=null;
         function ntpcMapSaveImageConfig(){try{localStorage.setItem(ntpcMapStorageKey,JSON.stringify(ntpcMapImageConfig));}catch(e){console.warn('瀏覽器未能保存本機地圖校正',e);}}
@@ -10082,7 +10106,7 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
             }
         }
         function ntpcMapSetLayer(next){
-            if(!['postal','blank','community','custom','grid'].includes(next))return;
+            if(!['project','postal','blank','community','custom','grid'].includes(next))return;
             ntpcMapPendingCalibration=null;ntpcMapImageConfig.layer=next;ntpcMapSaveImageConfig();ntpcMapRefreshView();
         }
         function ntpcMapSetCustomUrl(scope){
@@ -10136,12 +10160,29 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
             if(cal.a&&cal.b&&!ntpcMapValidatedCalibration(cal))showToast('兩點距離太近，或 X、Z 某方向相近，請在更遠的位置重新校正','warning','校正不足');
             else showToast(cal.a&&cal.b?'兩點校正完成，請用第三個地點核對定位是否準確':'第 1 點已保存；請移到另一處校正第 2 點','success');
         }
-        function ntpcMapImageRender(scope,players,map){
+        // 10 分鐘內的報案：同一 Worker 快取，不另行輪詢遊戲 API / Firestore。
+        const NTPC_CASE_VISIBLE_MS=600000;
+        function ntpcMapRecentCases(scope,state){
+            if(!document.getElementById('ntpc-map-'+scope+'-show-cases')?.checked)return [];
+            const now=Date.now();
+            return (Array.isArray(state?.cases)?state.cases:[]).filter(c=>{
+                const started=Number(c.startedAt)||0;
+                const time=started>1e12?started:started>0?started*1000:Number(c.createdAt)||0;
+                return time>0 && now>=time-60000 && now-time<NTPC_CASE_VISIBLE_MS && (scope==='admin'||c.type===scope);
+            }).slice(0,80);
+        }
+        function ntpcMapCaseHtml(c,compact=false){
+            const esc=ntpcDispatchText, when=c.startedAt?new Date(Number(c.startedAt)*1000).toLocaleTimeString('zh-TW'):'--';
+            const where=c.place||(c.location?`X ${Math.round(c.location.x)} / Z ${Math.round(c.location.z)}`:'未提供遊戲座標');
+            const status=({new:'待派遣',held:'管理員接管',sending:'派遣中',dispatched:'已派遣',uncertain:'發送待確認',closed:'已結案'})[c.status]||'待處理';
+            return `<div class="${compact?'':'rounded-lg border border-slate-700 bg-slate-900/80 p-2'} text-xs leading-relaxed text-slate-200"><div class="font-semibold ${c.type==='fire'?'text-rose-300':'text-blue-300'}">${c.type==='fire'?'119 消防':'110 警務'}｜案件 #${esc(c.callNumber||'—')}｜${esc(status)}</div><div>報案人：${esc(c.caller||'未提供')}</div><div>地點：${esc(where)}</div><div class="break-words">內容：${esc(c.description||'未提供')}</div>${c.assignedName?`<div>分發：${esc(c.assignedName)}</div>`:''}<div class="text-slate-500">時間：${esc(when)}</div></div>`;
+        }
+        function ntpcMapImageRender(scope,players,map,cases){
             const mode=ntpcMapImageConfig.layer,url=ntpcMapImageURL(),key=ntpcMapCalibrationKey(),cal=ntpcMapValidatedCalibration(ntpcMapGetCalibration());
             const imageKey=mode+'|'+url;
             if(map.dataset.ntpcImageKey!==imageKey||!map.querySelector('.ntpc-map-world')){
-                const source=url?`<img src="${ntpcDispatchText(url)}" class="absolute inset-0 w-full h-full object-contain" alt="ER:LC 地圖背景" loading="lazy" decoding="async" onerror="this.classList.add('hidden');this.parentNode.querySelector('[data-image-failed]').classList.remove('hidden')">`:'';
-                map.innerHTML=`<div class="ntpc-map-world relative w-full max-w-[640px] max-h-full aspect-square overflow-hidden rounded-lg bg-slate-800 border border-slate-600 shadow-xl select-none" onclick="ntpcMapCalibrationClick(event,'${scope}')" style="cursor:crosshair">${source}<div data-image-failed class="${url?'hidden ':''}absolute inset-0 flex items-center justify-center px-5 text-center text-sm text-amber-300 bg-slate-950/80 pointer-events-none">${url?'無法載入地圖圖片，請切換背景來源或使用自己的圖片網址。':'請先輸入 HTTPS 地圖圖片網址。'}</div><div data-map-markers class="absolute inset-0 pointer-events-none"></div></div>`;
+                const source=url?`<img src="${ntpcDispatchText(url)}" class="absolute inset-0 w-full h-full object-fill" alt="ER:LC 地圖背景" loading="lazy" decoding="async" onload="this.parentNode.style.aspectRatio=this.naturalWidth+'/'+this.naturalHeight" onerror="this.classList.add('hidden');this.parentNode.querySelector('[data-image-failed]').classList.remove('hidden')">`:'';
+                map.innerHTML=`<div class="ntpc-map-world relative h-full max-w-full aspect-square overflow-hidden rounded-lg bg-slate-800 border border-slate-600 shadow-xl select-none" onclick="ntpcMapCalibrationClick(event,'${scope}')" style="cursor:crosshair">${source}<div data-image-failed class="${url?'hidden ':''}absolute inset-0 flex items-center justify-center px-5 text-center text-sm text-amber-300 bg-slate-950/80 pointer-events-none">${url?'無法載入地圖圖片，請切換背景來源或使用自己的圖片網址。':'請先輸入 HTTPS 地圖圖片網址。'}</div><div data-map-markers class="absolute inset-0 pointer-events-none"></div></div>`;
                 map.dataset.ntpcImageKey=imageKey;
             }
             const markers=map.querySelector('[data-map-markers]');if(!markers)return;
@@ -10163,6 +10204,17 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
             }else{
                 output+='<div class="absolute top-2 left-2 right-2 bg-slate-950/85 border border-amber-400/50 text-amber-200 text-xs p-2 rounded pointer-events-none">尚未完成位置校正，避免誤導，地圖上不顯示未校正玩家標點。可先切回「純座標圖」。</div>';
             }
+            if(cal && Array.isArray(cases)){
+                const a=cal.a,b=cal.b;
+                for(const c of cases){
+                    if(!c.location||!Number.isFinite(Number(c.location.x))||!Number.isFinite(Number(c.location.z)))continue;
+                    const u=a.u+(Number(c.location.x)-a.x)/(b.x-a.x)*(b.u-a.u);
+                    const v=a.v+(Number(c.location.z)-a.z)/(b.z-a.z)*(b.v-a.v);
+                    if(u<0||u>1||v<0||v>1)continue;
+                    const fire=c.type==='fire';
+                    output+=`<button type="button" data-map-pin class="absolute z-20 group -translate-x-1/2 -translate-y-full pointer-events-auto" style="left:${(u*100).toFixed(3)}%;top:${(v*100).toFixed(3)}%" aria-label="報案 ${ntpcDispatchText(c.callNumber)}"><span class="flex justify-center text-lg drop-shadow-lg">${fire?'🚑':'🚨'}</span><span class="block text-[9px] font-semibold px-1 rounded border ${fire?'border-rose-400 bg-rose-950':'border-blue-400 bg-blue-950'} text-white">#${ntpcDispatchText(c.callNumber)}</span><span class="hidden group-hover:block group-focus:block absolute left-1/2 -translate-x-1/2 bottom-full mb-1 w-[230px] max-w-[70vw] rounded-lg bg-slate-950 border border-amber-500/50 p-2 shadow-xl text-left z-50">${ntpcMapCaseHtml(c,true)}</span></button>`;
+                }
+            }
             const raw=ntpcMapGetCalibration();
             for(const [point,color] of [['a','bg-cyan-400'],['b','bg-fuchsia-400']]){
                 const p=raw?.[point];if(!p)continue;
@@ -10182,16 +10234,20 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
             const age=state.updatedAt?Math.round((Date.now()-state.updatedAt)/1000):null;
             if(info)info.textContent=`${players.length} 位可定位｜${state.updatedAt?new Date(state.updatedAt).toLocaleTimeString('zh-TW'):'無'} 更新（${age===null?'—':age+' 秒前）'}${state.stale?'｜資料過期':''}${state.apiError?'｜API：'+state.apiError:''}`;
             ntpcMapPlayerOptions(scope,players);
+            const recentCases=ntpcMapRecentCases(scope,state);
+            const caseList=document.getElementById('ntpc-map-'+scope+'-case-list');
+            if(caseList)caseList.innerHTML=recentCases.length?recentCases.map(c=>ntpcMapCaseHtml(c)).join(''):'<div class="text-slate-500">最近 10 分鐘無對應案件，或案件標記已關閉。</div>';
             // 切換到地圖模式時，維持固定大小與固定校正：不再隨玩家數量縮放底圖。
             if(ntpcMapImageConfig.layer!=='grid'){
-                ntpcMapImageRender(scope,players,map);
+                ntpcMapImageRender(scope,players,map,recentCases);
                 const esc=x=>ntpcDispatchText(x);
                 list.innerHTML=players.map(p=>`<div class="rounded-lg border border-slate-700 bg-slate-950 p-2 text-slate-300"><div class="font-semibold text-slate-100">${esc(ntpcMapPersonNumber(p))} <span class="font-normal text-slate-500">${esc(p.team||'市民')}</span></div><div>${esc(p.name)}・郵遞區號 ${esc(p.postal||'—')}</div><div class="font-mono text-slate-500">X ${Number(p.x).toFixed(0)} ｜ Z ${Number(p.z).toFixed(0)} ｜ Roblox ID ${esc(p.id)}</div></div>`).join('');
                 return;
             }
             const base='<div class="absolute inset-0 pointer-events-none opacity-50" style="background-image:linear-gradient(#47556955 1px,transparent 1px),linear-gradient(90deg,#47556955 1px,transparent 1px);background-size:10% 10%"></div>';
-            if(!players.length){map.innerHTML=base+'<div class="absolute inset-0 grid place-items-center text-slate-400 text-sm">尚無可定位成員（需線上且 API 提供有效座標）</div>';list.innerHTML='';return;}
-            const xs=players.map(p=>Number(p.x));const zs=players.map(p=>Number(p.z));
+            if(!players.length&&!recentCases.some(c=>c.location)){map.innerHTML=base+'<div class="absolute inset-0 grid place-items-center text-slate-400 text-sm">尚無可定位人員或報案座標</div>';list.innerHTML='';return;}
+            const activePositions=[...players,...recentCases.filter(c=>c.location).map(c=>c.location)];
+            const xs=activePositions.map(p=>Number(p.x));const zs=activePositions.map(p=>Number(p.z));
             const minX=Math.min(0,...xs),maxX=Math.max(0,...xs),minZ=Math.min(0,...zs),maxZ=Math.max(0,...zs);
             const dimension=Math.max(maxX-minX,maxZ-minZ,400)*1.16;
             const cx=(minX+maxX)/2,cz=(minZ+maxZ)/2;
@@ -10206,6 +10262,7 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
                 const palette=p.type==='police'?'border-blue-400 bg-blue-950/95 text-blue-100':p.type==='fire'?'border-rose-400 bg-rose-950/95 text-rose-100':'border-emerald-400 bg-emerald-950/95 text-emerald-100';
                 return `<button type="button" class="absolute z-10 -translate-x-1/2 -translate-y-1/2 group max-w-[130px]" style="left:${percentX(p.x)}%;top:${percentZ(p.z)}%" title="${esc(p.name)}｜${esc(tag)}｜${esc(p.postal||'無郵遞區號')}｜X ${Number(p.x).toFixed(0)}, Z ${Number(p.z).toFixed(0)}"><span class="block w-2.5 h-2.5 mx-auto rounded-full ring-2 ring-slate-950 ${p.type==='police'?'bg-blue-400':p.type==='fire'?'bg-rose-400':'bg-emerald-400'}"></span><span class="block mt-1 border px-1.5 py-0.5 rounded-md text-[10px] font-bold leading-tight break-all shadow-lg ${palette}">${esc(tag)}</span><span class="hidden group-hover:block absolute left-1/2 -translate-x-1/2 top-full mt-1 whitespace-nowrap text-[10px] bg-slate-950 border border-slate-600 px-2 py-1 rounded text-slate-200">${esc(p.name)}｜${esc(p.postal||'未知區域')}</span></button>`;
             }).join('');
+            content+=recentCases.filter(c=>c.location&&Number.isFinite(Number(c.location.x))&&Number.isFinite(Number(c.location.z))).map(c=>`<button type="button" class="absolute z-20 group -translate-x-1/2 -translate-y-full" style="left:${percentX(c.location.x)}%;top:${percentZ(c.location.z)}%" aria-label="報案 ${esc(c.callNumber)}"><span class="block text-xl">${c.type==='fire'?'🚑':'🚨'}</span><span class="hidden group-hover:block group-focus:block absolute left-1/2 -translate-x-1/2 bottom-full w-56 rounded-lg p-2 bg-slate-950 border border-amber-500/50 shadow-xl text-left">${ntpcMapCaseHtml(c,true)}</span></button>`).join('');
             map.innerHTML=content;
             list.innerHTML=players.map(p=>`<div class="rounded-lg border border-slate-700 bg-slate-950 p-2 text-slate-300"><div class="font-semibold text-slate-100">${esc(ntpcMapPersonNumber(p))} <span class="font-normal text-slate-500">${esc(p.team||'市民')}</span></div><div>${esc(p.name)}・郵遞區號 ${esc(p.postal||'—')}</div><div class="font-mono text-slate-500">X ${Number(p.x).toFixed(0)} ｜ Z ${Number(p.z).toFixed(0)} ｜ Roblox ID ${esc(p.id)}</div></div>`).join('');
         }
@@ -10293,21 +10350,28 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
             }).join(''):'<div class="text-sm text-slate-500">目前沒有線上警消。</div>';
             list.querySelectorAll('[data-ntpc-ready]').forEach(btn=>btn.addEventListener('click',()=>ntpcDispatchReady(btn.dataset.ntpcReady,btn.dataset.ntpcValue==='1')));
             }
-            const cases=state.cases||[];const cc=document.getElementById('ntpc-dispatch-case-count');if(cc)cc.textContent=`${cases.filter(c=>c.status!=='closed').length} 件未結案`;
-            const box=document.getElementById('ntpc-dispatch-cases');if(box){
-                box.innerHTML=cases.length?cases.slice(0,35).map(c=>{
-                    const assigned=c.assignedTo?`｜已指派 ${ntpcDispatchText(c.assignedName)}`:'';
-                    const eligible=players.filter(p=>state.ready?.[p.id]===true&&(/police|sheriff|trooper|patrol/i.test(p.team)?'police':(/fire|rescue|ems|medical/i.test(p.team)?'fire':'unknown'))===c.type&&p.x!==null&&p.z!==null&&c.location);
-                    const sorted=eligible.map(p=>({...p,dist:Math.hypot(p.x-c.location.x,p.z-c.location.z)})).sort((a,b)=>a.dist-b.dist);
-                    const others=new Set(cases.filter(x=>['sending','dispatched','uncertain'].includes(x.status)).map(x=>x.assignedTo));
-                    const options=sorted.filter(p=>!others.has(p.id));
-                    const select=c.status==='new'&&c.location&&options.length?`<select data-ntpc-pick="${ntpcDispatchText(c.id)}" class="w-full sm:w-auto bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-slate-200">${options.map(p=>`<option value="${ntpcDispatchText(p.id)}">${ntpcDispatchText(p.name)} (直線距離 ${Math.round(p.dist)})</option>`).join('')}</select><button data-ntpc-send="${ntpcDispatchText(c.id)}" class="bg-cyan-700 text-white rounded-lg px-3 py-2 text-xs">派遣此單位</button>`:c.status==='new'?'<span class="text-xs text-amber-300">無符合條件的待命人員或案件缺少座標</span>':'';
-                    return `<article class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2"><div class="flex justify-between gap-2"><div class="font-semibold text-white text-sm">案件 #${ntpcDispatchText(c.callNumber)} <span class="text-[11px] text-slate-400">${c.type==='fire'?'消防／救護':c.type==='police'?'警務':'未分類'}</span></div><span class="text-xs ${c.status==='dispatched'?'text-emerald-300':c.status==='uncertain'?'text-rose-300':'text-amber-300'}">${ntpcDispatchText(c.status)}</span></div><div class="text-xs text-slate-400">地點：${ntpcDispatchText(c.place||'座標 '+(c.location?`${Math.round(c.location.x)}, ${Math.round(c.location.z)}`:'未提供'))}${assigned}</div><div class="text-xs text-slate-500">${ntpcDispatchText(c.description||'無描述')}</div>${c.notifyResult?`<div class="text-xs text-slate-400">通知結果：${ntpcDispatchText(c.notifyResult)}</div>`:''}<div class="flex flex-wrap gap-2 items-center">${select}${c.status!=='closed'?`<button data-ntpc-close="${ntpcDispatchText(c.id)}" class="border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-400">結案</button>`:''}</div></article>`;
-                }).join(''):'<div class="text-sm text-slate-500">目前沒有近兩分鐘新進的緊急報案。</div>';
+            const cases=state.cases||[];const cc=document.getElementById('ntpc-dispatch-case-count');
+            if(cc)cc.textContent=`${cases.filter(c=>c.status!=='closed').length} 件未結案`;
+            const box=document.getElementById('ntpc-dispatch-cases');
+            if(box){
+                box.innerHTML=cases.length?cases.slice(0,40).map(c=>{
+                    const canManual=['new','held','dispatched','uncertain'].includes(c.status);
+                    const alreadyBusy=new Set(cases.filter(x=>x.id!==c.id&&['sending','dispatched','uncertain'].includes(x.status)).map(x=>x.assignedTo));
+                    const online=(state.players||[]).filter(p=>p.type===c.type&&/^\d+$/.test(String(p.id||''))&&p.name&&!alreadyBusy.has(p.id)&&(c.status==='new'||c.status==='held'||p.id!==c.assignedTo));
+                    const matches=online.map(p=>({p,dist:c.location&&p.x!=null&&p.z!=null?Math.hypot(p.x-c.location.x,p.z-c.location.z):null})).sort((a,b)=>(a.dist??Infinity)-(b.dist??Infinity));
+                    const picker=canManual&&matches.length?`<label class="text-xs text-slate-300">管理員手動指派（可選未待命單位）<select data-ntpc-pick="${ntpcDispatchText(c.id)}" class="block mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-white">${matches.map(({p,dist})=>`<option value="${ntpcDispatchText(p.id)}">${ntpcDispatchText(p.name)}｜${state.ready?.[p.id]===true?'待命':'未待命'}${dist!=null?'｜距離 '+Math.round(dist):''}</option>`).join('')}</select></label><button data-ntpc-send="${ntpcDispatchText(c.id)}" class="bg-cyan-700 hover:bg-cyan-600 text-white rounded-lg px-3 py-2 text-xs">${['dispatched','uncertain'].includes(c.status)?'確認人工改派':'管理員手動派遣'}</button>`:canManual?'<span class="text-xs text-amber-300">無符合隊伍的線上人員可供人工指派</span>':'';
+                    const badge=({new:'待派遣',held:'等待管理員人工處理',sending:'派遣中',dispatched:'已派遣',uncertain:'發送結果未確認',closed:'已結案'})[c.status]||String(c.status);
+                    const color=c.status==='dispatched'?'text-emerald-300':c.status==='uncertain'?'text-rose-300':c.status==='held'?'text-violet-300':'text-amber-300';
+                    const manage=c.status==='new'?`<button data-ntpc-hold="${ntpcDispatchText(c.id)}" class="border border-violet-500/40 bg-violet-950/30 text-violet-200 rounded-lg px-3 py-2 text-xs">接管案件／暫停自動派遣</button>`:c.status==='held'?`<button data-ntpc-release="${ntpcDispatchText(c.id)}" class="border border-sky-500/40 text-sky-200 rounded-lg px-3 py-2 text-xs">恢復自動派遣</button>`:'';
+                    const assigned=c.assignedName?`｜已派 ${ntpcDispatchText(c.assignedName)}`:'';
+                    return `<article class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2"><div class="flex justify-between gap-2"><div class="font-semibold text-white text-sm">案件 #${ntpcDispatchText(c.callNumber)} <span class="text-[11px] text-slate-400">${c.type==='fire'?'消防／救護':'警務'}</span></div><span class="text-xs ${color}">${ntpcDispatchText(badge)}</span></div><div class="text-xs text-slate-400">報案人：${ntpcDispatchText(c.caller||'未知')}｜地點：${ntpcDispatchText(c.place||'座標 '+(c.location?`${Math.round(c.location.x)}, ${Math.round(c.location.z)}`:'未提供'))}${assigned}</div><div class="text-xs text-slate-500">${ntpcDispatchText(c.description||'無描述')}</div>${c.notifyResult?`<div class="text-xs text-slate-400">通知結果：${ntpcDispatchText(c.notifyResult)}</div>`:''}<div class="flex flex-wrap gap-2 items-end">${manage}${picker}${c.status!=='closed'?`<button data-ntpc-close="${ntpcDispatchText(c.id)}" class="border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-400">結案</button>`:''}</div></article>`;
+                }).join(''):'<div class="text-sm text-slate-500">目前沒有 ER:LC 緊急報案。</div>';
                 box.querySelectorAll('[data-ntpc-send]').forEach(btn=>btn.addEventListener('click',()=>{
                     const select=Array.from(box.querySelectorAll('[data-ntpc-pick]')).find(x=>x.dataset.ntpcPick===btn.dataset.ntpcSend);
                     if(select)ntpcDispatchAssign(btn.dataset.ntpcSend,select.value);
                 }));
+                box.querySelectorAll('[data-ntpc-hold]').forEach(btn=>btn.addEventListener('click',()=>ntpcDispatchHold(btn.dataset.ntpcHold)));
+                box.querySelectorAll('[data-ntpc-release]').forEach(btn=>btn.addEventListener('click',()=>ntpcDispatchRelease(btn.dataset.ntpcRelease)));
                 box.querySelectorAll('[data-ntpc-close]').forEach(btn=>btn.addEventListener('click',()=>ntpcDispatchClose(btn.dataset.ntpcClose)));
             }
         }
@@ -10322,9 +10386,20 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
             if(!isOn && !(await showConfirm('開啟後，新報案會自動對最近的已待命員警或救護單位發送 ER:LC :pm 私訊（非全服廣播）。確定啟用？','啟用自動派遣','確認開啟')))return;
             return ntpcDispatchMutation('/api/settings',{autoDispatch:!isOn});
         }
+        async function ntpcDispatchHold(id){
+            if(!(await showConfirm('接管此案件後會停止自動派遣，請在管理中心手動選擇單位。','人工接管案件','確認接管')))return;
+            return ntpcDispatchMutation('/api/cases/'+encodeURIComponent(id)+'/hold',{});
+        }
+        async function ntpcDispatchRelease(id){
+            if(!(await showConfirm('恢復此案自動派遣，Worker 可能立即通知最近的已待命單位。','恢復自動派遣','確認恢復')))return;
+            return ntpcDispatchMutation('/api/cases/'+encodeURIComponent(id)+'/release',{});
+        }
         async function ntpcDispatchAssign(id,playerId){
-            if(!(await showConfirm('確定對此單位發送一次 ER:LC 私訊派遣指令？此操作不可自動重試。','確認派遣','送出派遣')))return;
-            return ntpcDispatchMutation('/api/cases/'+encodeURIComponent(id)+'/assign',{playerId});
+            const caseRow=ntpcDispatchUI.state?.cases?.find(c=>c.id===id);
+            const reassigned=['dispatched','uncertain'].includes(caseRow?.status);
+            const prompt=reassigned?'此案可能已寄出私訊！人工改派會「另外」發送 :pm 給新單位，不能撤回已通知的原單位。確定要人工改派嗎？':'管理員將手動派遣指定線上單位，即使沒有標記待命，也會發送一次 ER:LC :pm。確定執行？';
+            if(!(await showConfirm(prompt,reassigned?'確認人工改派':'確認管理員人工派遣',reassigned?'再次發送通知':'確定派遣')))return;
+            return ntpcDispatchMutation('/api/cases/'+encodeURIComponent(id)+'/assign',{playerId,manual:true,confirmed:true,reassign:reassigned});
         }
         async function ntpcDispatchClose(id){return ntpcDispatchMutation('/api/cases/'+encodeURIComponent(id)+'/close',{});}
         document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&ntpcDispatchUI.connected&&ntpcDispatchActive())ntpcDispatchRefresh();});
