@@ -8,12 +8,12 @@
     <!-- NTPC-RP Discord webhook fix + management LOG: 2026-10-06-v4 -->
     <!-- Security audit: 2026-10-07. Front-end hardening only; Firestore Rules/Firebase Auth/Discord secrets still require backend configuration. -->
     <!-- Account safety fix: never auto-reset DSUENSX or auto-seed demo users when users collection is empty. -->
-    <title>新北市 RP 3.0 公職服務系統 V1.9.4</title>
+    <title>新北市 RP 3.0 公職服務系統 V2.0｜ER:LC 智慧派遣</title>
     <!-- 網站圖標與連結分享資訊 -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
     <link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261013-verified-logo">
-    <meta name="description" content="新北市 RP 3.0 公職服務系統｜提供警務、消防、EMS 勤務、案件審核、個人通知、警專考核與管理中心功能。">
+    <meta name="description" content="新北市 RP 3.0 公職服務系統 V2.0｜新增 ER:LC 智慧派遣、每 5 秒勤務位置查看及 :pm 指定通知；整合警務、消防、EMS 報告與管理中心。">
     <!-- PWA：可安裝到 Windows、Android 與 iOS 主畫面；不啟用離線快取，避免 Firebase 資料過期。 -->
     <link rel="manifest" href="/manifest.json?v=20261013-verified-logo">
     <meta name="theme-color" content="#020617">
@@ -25,13 +25,13 @@
     <link rel="canonical" href="https://ntpc-rp.pages.dev/">
     <meta property="og:site_name" content="新北市 RP 3.0 公職服務系統">
     <meta property="og:locale" content="zh_TW">
-    <meta property="og:title" content="新北市 RP 3.0 公職服務系統｜勤務與案件管理">
-    <meta property="og:description" content="新北市 RP 3.0 公職服務系統，整合警務、消防、EMS 勤務、案件審核、個人通知、警專考核與管理中心，提供更完整的 RP 公職勤務服務。">
+    <meta property="og:title" content="新北市 RP 3.0 公職服務系統 V2.0｜智慧派遣與勤務管理">
+    <meta property="og:description" content="新北市 RP 3.0 公職服務系統 V2.0，新增 ER:LC 智慧派遣及位置監看，整合警務、消防、EMS 勤務與案件管理。">
     <meta property="og:image" content="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://ntpc-rp.pages.dev/">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="新北市 RP 3.0 公職服務系統｜勤務與案件管理">
+    <meta name="twitter:title" content="新北市 RP 3.0 公職服務系統 V2.0｜智慧派遣與勤務管理">
     <meta name="twitter:description" content="整合警務、消防、EMS 勤務、案件審核、個人通知、警專考核與管理中心的 RP 公職勤務服務系統。">
     <meta name="twitter:image" content="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -767,8 +767,8 @@
                     <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">New Taipei Roleplay 3.0</span>
                     <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">新北市 RP 3.0<br><span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">虛擬勤務與案件管理系統</span></h1>
                     <p class="text-sm font-medium text-sky-200/90"><i class="fa-solid fa-gamepad mr-2"></i>僅供 ER:LC 遊戲角色扮演使用，非真實政府機關官方網站。</p>
-                    <div><span id="home-site-version-badge" class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V1.9.4</span></div>
-                    <p id="home-version-intro" class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 虛擬公職服務系統。V1.9.4 全面更新 EMS 救護報告五大區塊，優化未運送原因勾選顯示，並強化 EMS 送審的防重複流水號交易。</p>
+                    <div><span id="home-site-version-badge" class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V2.0</span></div>
+                    <p id="home-version-intro" class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 虛擬公職服務系統。V2.0 新增 ER:LC 智慧派遣中心，可查看勤務人員位置、分析就近待命單位，並由 Cloudflare 後端以 :pm 傳送派遣通知；保留原有警務、消防、EMS 與管理功能。</p>
                     <div class="flex flex-wrap justify-center gap-4 pt-2">
                         <button data-tab="police" class="tab-shortcut-btn bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
                             <i class="fa-solid fa-shield"></i><span>進入警務系統</span>
@@ -785,11 +785,11 @@
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div class="flex items-center gap-2 text-emerald-300 font-bold">
-                            <i class="fa-solid fa-satellite-dish"></i><span id="home-latest-update-label">V1.9.4 最新更新</span>
+                            <i class="fa-solid fa-satellite-dish"></i><span id="home-latest-update-label">V2.0 最新更新</span>
                         </div>
-                        <p class="text-slate-400 text-sm mt-2 leading-relaxed">本版本優化 Firestore 讀取流程，減少重複下載與啟動時重複載入；管理中心在線名單刷新間隔調整為 60 秒，並縮小登入安全資料查詢範圍。</p>
+                        <p class="text-slate-400 text-sm mt-2 leading-relaxed">本版本新增 ER:LC 智慧派遣中心，在管理中心分頁開啟並連線後每 5 秒更新線上警消位置；透過 Cloudflare Worker 共用 API 快取，避免反覆讀寫 Firestore。</p>
                     </div>
-                    <p id="home-latest-update-summary" class="text-xs text-slate-500 mt-2">EMS 報告五區塊與防重複編號更新｜未運送原因改為條件顯示，送件時交易配號，避免案件覆寫。</p>
+                    <p id="home-latest-update-summary" class="text-xs text-slate-500 mt-2">ER:LC 智慧派遣與 5 秒位置查看｜自動分析就近待命單位，可切換 :pm 個人派遣通知。</p>
                     <button type="button" data-tab="update-log" class="tab-shortcut-btn shrink-0 px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-200 text-sm font-semibold transition">查看完整更新紀錄</button>
                 </div>
             </div>
@@ -1195,7 +1195,7 @@
                             </div>
                         </div>
                     </div>
-                    <span id="update-log-current-version" class="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V1.9.4</span>
+                    <span id="update-log-current-version" class="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V2.0</span>
                 </div>
 
                 <div id="dynamic-update-log" class="space-y-4"></div>
@@ -1203,10 +1203,27 @@
                     <article class="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                             <div>
-                                <h3 class="text-lg font-bold text-white">V1.9.4</h3>
-                                <p class="text-xs text-emerald-300 mt-1">EMS 表單重製、未運送條件顯示與案件流水號防覆寫</p>
+                                <h3 class="text-lg font-bold text-white">V2.0</h3>
+                                <p class="text-xs text-emerald-300 mt-1">ER:LC 智慧派遣中心與每 5 秒位置更新</p>
                             </div>
                             <span class="text-xs font-semibold text-emerald-300">目前版本</span>
+                        </div>
+                        <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
+                            <li>管理中心新增 ER:LC 智慧派遣面板，可查看線上警消隊伍、郵遞區號、座標及待命狀態。</li>
+                            <li>管理員開啟派遣分頁並連線 Worker 後，前景每 5 秒讀取共用快取的最新位置，避免各瀏覽器直接頻繁查詢 ER:LC 或 Firestore。</li>
+                            <li>接收緊急報案後，系統可從符合部門、已待命且有可用座標的成員中選擇就近單位；允許手動指派與結案。</li>
+                            <li>自動派遣預設關閉；經管理員開啟後，由後端以 ER:LC :pm 對指定人員發送派遣通知，並防止重複指派。</li>
+                            <li>承襲 V1.9.4 EMS 五區塊、受傷部位標記、七大處置分類、預設醫院以及既有警務／消防／管理中心功能。</li>
+                            <li>派遣查詢與發送需另外部署並設定具權限保護的 Cloudflare Worker；僅更新 HTML 不會直接啟用 API 派遣。</li>
+                        </ul>
+                    </article>
+                    <article class="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                            <div>
+                                <h3 class="text-lg font-bold text-white">V1.9.4</h3>
+                                <p class="text-xs text-slate-400 mt-1">EMS 表單重製、未運送條件顯示與案件流水號防覆寫</p>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-500">上一版本</span>
                         </div>
                         <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
                             <li>EMS 救護出勤報告重整為派遣資料、傷病患資料、現場狀況、處置項目及出勤紀錄五大區塊。</li>
@@ -1222,7 +1239,7 @@
                                 <h3 class="text-lg font-bold text-white">V1.9.3</h3>
                                 <p class="text-xs text-red-300 mt-1">Firestore 讀取量優化、Webhook 轉送與勤務交接分流修復</p>
                             </div>
-                            <span class="text-xs font-semibold text-red-300">前一版本</span>
+                            <span class="text-xs font-semibold text-slate-500">歷史版本</span>
                         </div>
                         <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
                             <li>減少部分資料集合在 getDocs 與 onSnapshot 初次載入時的重複讀取。</li>
@@ -1651,6 +1668,7 @@
                     <button id="btn-admin-academy" data-sub="academy" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-graduation-cap mr-2"></i>專生考核系統</button>
                     <button id="btn-admin-jail-rules" data-sub="jail-rules" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-scale-balanced mr-2"></i>警用刑期表</button>
                     <button id="btn-admin-erlc" data-sub="erlc" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-gamepad mr-2"></i>ER:LC 整合設定</button>
+                    <button id="btn-admin-dispatch" data-sub="dispatch" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-tower-broadcast mr-2"></i>智慧派遣中心</button>
                     <button id="btn-admin-discord-webhooks" data-sub="discord-webhooks" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-brands fa-discord mr-2"></i>Discord Webhook 設定</button>
                 </div>
 
@@ -1705,7 +1723,7 @@
                                 <h3 class="text-xl font-bold text-white mt-1"><i class="fa-solid fa-code-branch text-emerald-400 mr-2"></i>網站版本更新管理</h3>
                                 <p class="text-xs text-slate-500 mt-1">發布新版本後，首頁版本標籤、最新更新資訊、更新紀錄目前版本與瀏覽器標題會自動同步。</p>
                             </div>
-                            <span id="admin-current-site-version" class="inline-flex items-center justify-center px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V1.9.4</span>
+                            <span id="admin-current-site-version" class="inline-flex items-center justify-center px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V2.0</span>
                         </div>
                     </div>
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
@@ -1936,6 +1954,27 @@
                         <p class="text-xs text-slate-500 mt-1">登入後即可接收 ER:LC 即時警報；警員／市民身分由後端 Worker 判定。</p>
                         <div id="erlc-alert-preview" class="mt-4 text-xs text-slate-500">目前沒有待處理警報。</div>
                     </div>
+                </div>
+                <!-- ER:LC V2 Smart Dispatch: all live state stays in Cloudflare Durable Object, not Firestore -->
+                <div id="admin-sub-dispatch" class="hidden space-y-5">
+                    <div class="rounded-2xl border border-cyan-500/20 bg-slate-900 p-5 md:p-6 space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-tower-broadcast text-cyan-400 mr-2"></i>ER:LC 智慧派遣中心｜測試版</h3><p class="text-xs text-slate-400 mt-2">每 5 秒更新線上人員位置（頁面開啟時）；同一伺服器由 Cloudflare 後端共用快取，不會每 5 秒讀寫 Firebase。</p></div>
+                            <span id="ntpc-dispatch-status" class="text-xs rounded-full px-3 py-1.5 border border-slate-700 bg-slate-950 text-slate-400">尚未連線</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div><label for="ntpc-dispatch-url" class="block text-xs text-slate-400 mb-1">智慧派遣 Worker 網址</label><input id="ntpc-dispatch-url" type="url" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-3 text-sm text-white font-mono" placeholder="https://ntpc-rp-smart-dispatch.帳號.workers.dev" autocomplete="off" spellcheck="false"></div>
+                            <div><label for="ntpc-dispatch-token" class="block text-xs text-slate-400 mb-1">勤務中心管理密鑰（僅保存於此頁記憶體）</label><input id="ntpc-dispatch-token" type="password" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-3 text-sm text-white" placeholder="Cloudflare DISPATCH_ADMIN_TOKEN" autocomplete="off"></div>
+                        </div>
+                        <div class="flex gap-2 flex-wrap"><button type="button" onclick="ntpcDispatchConnect()" class="px-4 py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl text-sm font-semibold">連線並開始 5 秒更新</button><button type="button" onclick="ntpcDispatchRefresh()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm">立即更新</button><button id="ntpc-dispatch-autobutton" type="button" onclick="ntpcDispatchToggleAuto()" disabled class="px-4 py-2.5 rounded-xl text-sm bg-slate-700 text-slate-300 font-semibold disabled:opacity-50">自動派遣：關閉（安全模式）</button></div>
+                        <div id="ntpc-dispatch-lastupdate" class="text-xs text-slate-400">需要部署附帶的 Worker，再輸入網址與獨立管理密鑰。</div>
+                        <p class="text-xs text-amber-300/90 leading-relaxed">安全設計：只有手動標記「待命」的線上警消人員會被推薦；預設不自動發送私人訊息，必須由管理員開啟。每案最多發送一次 <code>:pm</code>；發送結果不明時不自動重送。報案位置與人員位置是遊戲座標的直線距離，不代表實際行車時間。</p>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <section class="rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-3"><div class="flex justify-between gap-2 items-center"><h4 class="font-bold text-white"><i class="fa-solid fa-users-viewfinder text-sky-400 mr-2"></i>線上勤務單位與位置</h4><span id="ntpc-dispatch-player-count" class="text-xs text-slate-400">--</span></div><div class="text-xs text-slate-500">地點每 5 秒更新；將符合隊伍的成員標為待命後才可自動派遣。</div><div id="ntpc-dispatch-players" class="space-y-2 max-h-[520px] overflow-y-auto"><div class="text-sm text-slate-500">尚未取得資料</div></div></section>
+                        <section class="rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-3"><div class="flex justify-between gap-2 items-center"><h4 class="font-bold text-white"><i class="fa-solid fa-headset text-rose-400 mr-2"></i>110／119 即時派遣案件</h4><span id="ntpc-dispatch-case-count" class="text-xs text-slate-400">--</span></div><div class="text-xs text-slate-500">案源：ER:LC API V2 EmergencyCalls；可人工派遣最近的已待命單位。</div><div id="ntpc-dispatch-cases" class="space-y-3 max-h-[600px] overflow-y-auto"><div class="text-sm text-slate-500">尚未取得資料</div></div></section>
+                    </div>
+                    <div class="rounded-xl bg-slate-950 border border-slate-800 p-4 text-xs text-slate-500">要達成「管理員未開網站也能自動派遣」，請部署附件 Worker 的每分鐘 Cron，並在 ER:LC 私服設定官方事件 Webhook 至 <code>你的Worker網址/webhook</code>，接收到已簽章的緊急報案即可即時觸發。此版派遣狀態保存在 Cloudflare Durable Object，尚未將派遣紀錄寫回既有 Firebase 案件報告。</div>
                 </div>
                 <div id="admin-sub-discord-webhooks" class="hidden space-y-6">
                     <div class="bg-slate-900 border border-indigo-500/20 rounded-2xl p-6 shadow-xl">
@@ -3687,10 +3726,10 @@ function compareSiteVersion(a, b){
                 return Number(b?.publishedAt||b?.updatedAt||b?.createdAt||0)-Number(a?.publishedAt||a?.updatedAt||a?.createdAt||0);
             });
         }
-        // 本 HTML 固定內建 V1.9.4。雲端舊版發布紀錄不可覆蓋較新的已部署版本。
+        // 本 HTML 固定內建 V2.0。雲端舊版發布紀錄不可覆蓋較新的已部署版本。
         const NTPC_BUNDLED_SITE_VERSION={
-            version:'V1.9.4',title:'EMS 報告五區塊與防重複編號更新',
-            summary:'V1.9.4 重整 EMS 報告格式、未運送原因改為條件勾選，並以交易避免 EMS 案件流水號重複覆寫。'
+            version:'V2.0',title:'ER:LC 智慧派遣與每 5 秒位置更新',
+            summary:'V2.0 新增 ER:LC 智慧派遣中心，可查看線上勤務人員位置、選擇最近待命單位，並由 Cloudflare Worker 發送 :pm 個人通知；保留 V1.9.4 既有功能。'
         };
         function getCurrentSiteVersion(){
             const rows=sortSiteVersions((appData.siteVersions||[]).filter(v=>v&&v.active!==false));
@@ -3698,9 +3737,9 @@ function compareSiteVersion(a, b){
         }
         function renderSiteVersionUI(){
             const v=getCurrentSiteVersion();
-            const version=String(v?.version||'V1.9.4').trim()||'V1.9.4';
+            const version=String(v?.version||'V2.0').trim()||'V2.0';
             const title=String(v?.title||'系統穩定性與功能更新').trim();
-            const summary=String(v?.summary||'V1.9.4 更新 EMS 報告格式並修復案件編號重複風險。').trim();
+            const summary=String(v?.summary||'V2.0 新增 ER:LC 智慧派遣及每 5 秒位置更新。').trim();
             const set=(id,val)=>{const e=document.getElementById(id);if(e)e.textContent=val;};
             set('home-site-version-badge','網站版本 '+version);
             set('home-latest-update-label',version+' 最新更新');
@@ -3709,7 +3748,7 @@ function compareSiteVersion(a, b){
             const intro=document.getElementById('home-version-intro'); if(intro) intro.textContent=summary;
             const latest=document.getElementById('home-latest-update-summary'); if(latest) latest.textContent=title+'｜'+summary;
             document.title='新北市 RP 3.0 公職服務系統 '+version;
-            const meta=document.querySelector('meta[name="description"]'); if(meta) meta.setAttribute('content',`新北市 RP 3.0 公職服務系統 ${version}｜提供警務、消防、EMS 勤務、案件審核、個人通知、警專考核與管理中心功能。`);
+            const meta=document.querySelector('meta[name="description"]'); if(meta) meta.setAttribute('content',`新北市 RP 3.0 公職服務系統 ${version}｜整合 ER:LC 智慧派遣、警務、消防、EMS 勤務、案件審核、個人通知與管理中心。`);
             renderDynamicUpdateLog();
         }
         function renderDynamicUpdateLog(){
@@ -4664,6 +4703,7 @@ async function republishAnnouncement(id) {
             closeDesktopMoreMenu();
             closeMobileMoreMenu();
             
+            if(tabId !== 'admin')ntpcDispatchStop();
             if (tabId === 'dashboard') { refreshDutyDashboard(); initHandoverDepartmentSelector(); loadHandoverNotesOnDemand(false); }
             if (tabId === 'faq') switchFAQCategory(document.querySelector('.faq-category-btn.active')?.getAttribute('data-faq-category') || 'info');
             if (tabId === 'notifications') renderPersonalNotifications();
@@ -4755,7 +4795,7 @@ async function republishAnnouncement(id) {
         }
 
         function switchAdminSubTab(sub){
-            const tabs=['users','announcements','site-versions','clock','logs','storage','duty-alerts','notification-alerts','sync-health','memo','overview','online','devices','feedback','issues','academy','jail-rules','erlc','discord-webhooks'];
+            const tabs=['users','announcements','site-versions','clock','logs','storage','duty-alerts','notification-alerts','sync-health','memo','overview','online','devices','feedback','issues','academy','jail-rules','erlc','dispatch','discord-webhooks'];
             const academyOnly = !!currentUser && getEffectiveRole(currentUser) !== 'admin' && hasUserPermission(currentUser,'academyInstructor');
             const allowed = !academyOnly || sub === 'academy';
             tabs.forEach(x=>{
@@ -4771,8 +4811,10 @@ async function republishAnnouncement(id) {
                 if(msg) msg.textContent='警專教官帳號僅可使用「專生考核系統」分頁，其他管理中心功能無權限。';
                 return;
             }
+            if(sub!=='dispatch')ntpcDispatchStop();
             document.getElementById(`admin-sub-${sub}`)?.classList.remove('hidden');
             document.getElementById(`btn-admin-${sub}`)?.classList.add('bg-purple-600','text-white');
+            if(sub==='dispatch')ntpcDispatchShow();
             if(sub==='online' && getEffectiveRole(currentUser)==='admin' && document.visibilityState==='visible') refreshAdminOnlineUsers();
             if(sub==='devices' && getEffectiveRole(currentUser)==='admin') renderAdminDevices();
             if(sub==='feedback' && getEffectiveRole(currentUser)==='admin') renderAdminFeedback();
@@ -5568,7 +5610,7 @@ async function republishAnnouncement(id) {
         const SECURITY_ACTION_COOLDOWN=new Map();
         function securityActionAllowed(key,cooldownMs=700){const now=Date.now(),last=SECURITY_ACTION_COOLDOWN.get(key)||0;if(now-last<cooldownMs)return false;SECURITY_ACTION_COOLDOWN.set(key,now);return true;}
         async function handleLogin(){if(!securityActionAllowed('login',900))return;await cloudDataReadyPromise;const device=getDeviceInfo();const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}try{const fingerprint=getDeviceFingerprint(device),deviceKey=getDeviceKey(device);const [blockedByFingerprint,blockedByKey]=await Promise.all([fm.getDoc(fm.doc(db,'blockedDevices',fingerprint)),fm.getDocs(fm.query(fm.collection(db,'blockedDevices'),fm.where('deviceKey','==',deviceKey)))]);const matches=[];if(blockedByFingerprint.exists())matches.push({docId:blockedByFingerprint.id,...blockedByFingerprint.data()});blockedByKey.docs.forEach(d=>{if(!matches.some(x=>String(x.docId)===String(d.id)))matches.push({docId:d.id,...d.data()});});appData.blockedDevices=matches;/* 登入失敗紀錄只在失敗時依裝置 ID 單筆讀取，不下載整個集合。 */}catch(e){console.warn('登入安全資料讀取失敗：',e);}if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}let found=null;try{const userSnap=await fm.getDoc(fm.doc(db,'users',acc));if(userSnap.exists()){const data=userSnap.data();found={docId:userSnap.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}if(!found&&isSuperAdminAccount(acc)){const all=await fm.getDocs(fm.collection(db,'users'));const d=all.docs.find(x=>isSuperAdminAccount(x.id)||isSuperAdminAccount(x.data().account));if(d){const data=d.data();found={docId:d.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}}}catch(e){showToast('帳號驗證失敗，請稍後重試：'+e.message,'error','登入失敗');return;}if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));if(!(await requireSiteAgreement(found)))return;currentUser=found;appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);resetManualReadFlags();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();if(isAcademyInstructor(currentUser)&&getEffectiveRole(currentUser)!=='admin')switchTab('academy');else switchTab('home');}
-        async function logout(){resetManualReadFlags();stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
+        async function logout(){ntpcDispatchStop(true);resetManualReadFlags();stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
             const badge = document.getElementById('user-badge');
@@ -9834,6 +9876,114 @@ async function closeFAQIssue(id){if(!currentUser||getEffectiveRole(currentUser)!
 function renderDashManagementWork(){const card=document.getElementById('dash-management-work-card'),h=document.getElementById('dash-management-work');if(!card||!h)return;const can=!!currentUser&&canAccessManagementCenter();card.classList.toggle('hidden',!can);if(!can)return;const items=[['警察案件待審',manualReadState.cases['police-review']?ntpcCountPendingReports(appData.policePendingReports):'尚未查詢','police'],['消防／EMS待審',manualReadState.cases['fire-review']?ntpcCountPendingReports(appData.firePendingReports)+ntpcCountPendingReports(appData.emsPendingReports):'尚未查詢','fire'],['通緝待審',ntpcCountPendingReports(appData.wantedPendingRecords),'police'],['帳號協助單',appData.faqIssues?.filter(x=>x.status!=='closed').length||0,'admin'],['異常回報',appData.feedbackReports?.length||0,'admin']];h.innerHTML=items.map(x=>`<div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800"><span class="text-sm text-slate-200">${x[0]}</span><span class="font-bold ${x[1]==='尚未查詢'?'text-slate-500':x[1]?'text-amber-400':'text-emerald-400'}">${x[1]}</span></div>`).join('');}
 function openFAQIssueModal(){if(!currentUser){showToast('請先登入後再提交問題。','warning','需要登入');return;}const nameEl=document.getElementById('faq-issue-account-preview');if(nameEl)nameEl.textContent=`${currentUser.name||'使用者'} (${currentUser.account})`;const input=document.getElementById('faq-issue-text');if(input)input.value='';document.getElementById('modal-faq-issue')?.classList.remove('hidden');setTimeout(()=>document.getElementById('faq-issue-text')?.focus(),80);}
 async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登入後再提交問題。','warning','需要登入');return;}const input=document.getElementById('faq-issue-text'),text=String(input?.value||'').trim();if(!text){showToast('請先描述你遇到的問題。','error','內容未填寫');input?.focus();return;}if(text.length>1000){showToast('問題內容最多 1000 字。','warning','內容過長');return;}const btn=document.getElementById('submit-faq-issue-btn');if(btn?.classList.contains('is-busy-action'))return;btn?.classList.add('is-busy-action');try{const now=Date.now(),id='FAQ-'+now+'-'+Math.random().toString(36).slice(2,7),obj={id,account:currentUser.account,name:currentUser.name||'',text:text.slice(0,1000),timestamp:now,time:formatDateTime(now),status:'open'};await fm.setDoc(fm.doc(db,'faqIssues',id),obj);appData.faqIssues.unshift({docId:id,...obj});closeModal('modal-faq-issue');await logAdminAction('提交常見問題協助單',id,text,{discord:false});renderFAQIssues();renderDashManagementWork();showSubmitSuccessAnimation('問題提交成功','問題已送至管理中心，管理人員可以查看。');}catch(e){showToast('提交失敗：'+e.message,'error','操作失敗');}finally{btn?.classList.remove('is-busy-action');}}
+        // ------------------------------------------------------------
+        // 智慧派遣前端（只連線 Cloudflare Worker；不寫入 Firestore）
+        // ------------------------------------------------------------
+        const ntpcDispatchUI={url:'',token:'',timer:null,fetching:false,connected:false,state:null};
+        function ntpcDispatchActive(){
+            return document.visibilityState==='visible' && !!currentUser && getEffectiveRole(currentUser)==='admin'
+                && !document.getElementById('tab-admin')?.classList.contains('hidden')
+                && !document.getElementById('admin-sub-dispatch')?.classList.contains('hidden');
+        }
+        function ntpcDispatchStop(clear=false){
+            if(ntpcDispatchUI.timer){clearInterval(ntpcDispatchUI.timer);ntpcDispatchUI.timer=null;}
+            if(clear){ntpcDispatchUI.token='';ntpcDispatchUI.connected=false;ntpcDispatchUI.state=null;const e=document.getElementById('ntpc-dispatch-token');if(e)e.value='';}
+        }
+        function ntpcDispatchShow(){
+            const el=document.getElementById('ntpc-dispatch-url');
+            if(el&&!el.value)el.value=localStorage.getItem('ntpc_dispatch_worker_url')||'';
+            if(ntpcDispatchUI.connected){ntpcDispatchRefresh();ntpcDispatchStartTimer();}
+        }
+        function ntpcDispatchSetStatus(message,ok=false){const el=document.getElementById('ntpc-dispatch-status');if(el){el.textContent=message;el.className='text-xs rounded-full px-3 py-1.5 border '+(ok?'border-emerald-500/30 bg-emerald-500/10 text-emerald-300':'border-amber-500/20 bg-amber-500/5 text-amber-300');}}
+        function ntpcDispatchNormalizeURL(value){try{const u=new URL(String(value||''));return u.protocol==='https:'&&u.hostname.endsWith('.workers.dev')&&!u.username&&!u.password&&!u.search&&!u.hash?u.origin:'';}catch{return '';}}
+        async function ntpcDispatchRequest(path,method='GET',data){
+            if(!ntpcDispatchUI.url||!ntpcDispatchUI.token)throw Error('先連線 Worker 並輸入管理密鑰');
+            const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),13000);
+            try{
+                const r=await fetch(ntpcDispatchUI.url+path,{method,cache:'no-store',mode:'cors',headers:{Authorization:'Bearer '+ntpcDispatchUI.token,...(data?{'Content-Type':'application/json'}:{})},body:data?JSON.stringify(data):undefined,signal:ctrl.signal});
+                const out=await r.json().catch(()=>({error:'Worker 沒有回傳 JSON'}));
+                if(!r.ok||out.ok===false)throw Error(out.error||`HTTP ${r.status}`);
+                return out;
+            }finally{clearTimeout(timer);}
+        }
+        async function ntpcDispatchConnect(){
+            if(!currentUser||getEffectiveRole(currentUser)!=='admin')return;
+            const url=ntpcDispatchNormalizeURL(document.getElementById('ntpc-dispatch-url')?.value);
+            const token=document.getElementById('ntpc-dispatch-token')?.value||'';
+            if(!url||token.length<16){showToast('Worker 網址須為 HTTPS workers.dev，管理密鑰至少 16 字。','warning','設定錯誤');return;}
+            ntpcDispatchStop();ntpcDispatchUI.url=url;ntpcDispatchUI.token=token;
+            try{
+                const state=await ntpcDispatchRequest('/api/state');
+                localStorage.setItem('ntpc_dispatch_worker_url',url);ntpcDispatchUI.connected=true;
+                document.getElementById('ntpc-dispatch-token').value='';
+                ntpcDispatchRender(state);ntpcDispatchStartTimer();
+                showToast('智慧派遣已連線，僅在此管理分頁開啟時每 5 秒更新。','success','連線成功');
+            }catch(e){ntpcDispatchUI.connected=false;ntpcDispatchUI.token='';ntpcDispatchSetStatus('連線失敗：'+e.message);showToast('Worker 連線失敗：'+e.message,'error','無法連線');}
+        }
+        function ntpcDispatchStartTimer(){
+            ntpcDispatchStop();ntpcDispatchUI.timer=setInterval(()=>{if(ntpcDispatchActive())ntpcDispatchRefresh();},5000);
+        }
+        async function ntpcDispatchRefresh(){
+            if(!ntpcDispatchUI.connected||!ntpcDispatchActive()||ntpcDispatchUI.fetching)return;
+            ntpcDispatchUI.fetching=true;
+            try{ntpcDispatchRender(await ntpcDispatchRequest('/api/state'));}
+            catch(e){ntpcDispatchSetStatus('更新失敗：'+e.message);}
+            finally{ntpcDispatchUI.fetching=false;}
+        }
+        function ntpcDispatchText(value){return escapeHtml(String(value??''));}
+        function ntpcDispatchRender(state){
+            if(!ntpcDispatchActive())return;
+            ntpcDispatchUI.state=state;
+            const age=state.updatedAt?Math.round((Date.now()-state.updatedAt)/1000):null;
+            ntpcDispatchSetStatus(!state.updatedAt?'等待 API 資料':state.stale?'資料已過期':`● 線上 ${state.players?.length||0} 人`,!!state.updatedAt&&!state.stale);
+            const updated=document.getElementById('ntpc-dispatch-lastupdate');if(updated)updated.textContent=`更新：${state.updatedAt?new Date(state.updatedAt).toLocaleTimeString('zh-TW'):'尚無'} (${age===null?'—':age+'秒前'})　｜　伺服器：${state.serverName||'--'}${state.apiError?'　｜　API：'+state.apiError:''}`;
+            const auto=document.getElementById('ntpc-dispatch-autobutton');
+            if(auto){auto.disabled=false;auto.textContent=state.settings?.autoDispatch?'自動派遣：開啟（實際發送 :pm）':'自動派遣：關閉（安全模式）';auto.className='px-4 py-2.5 rounded-xl text-sm font-semibold '+(state.settings?.autoDispatch?'bg-rose-700 hover:bg-rose-600 text-white':'bg-slate-700 hover:bg-slate-600 text-white');}
+            const players=(state.players||[]).filter(p=>/(police|sheriff|trooper|patrol|fire|rescue|ems|medical)/i.test(p.team));
+            const pc=document.getElementById('ntpc-dispatch-player-count');if(pc)pc.textContent=`${players.length} 位警消`;const list=document.getElementById('ntpc-dispatch-players');
+            if(list){list.innerHTML=players.length?players.map(p=>{
+                const ready=state.ready?.[p.id]===true;
+                const place=[p.postal,p.street].filter(Boolean).join(' ')||'無街道資訊';
+                return `<div class="rounded-xl p-3 bg-slate-950 border border-slate-800 flex items-center justify-between gap-2"><div class="min-w-0"><div class="font-semibold text-sm text-white break-words">${ntpcDispatchText(p.name)} <span class="text-slate-500 text-xs">${ntpcDispatchText(p.callsign)}</span></div><div class="text-xs text-slate-400">${ntpcDispatchText(p.team)}・${ntpcDispatchText(place)}</div><div class="text-[11px] text-slate-500 font-mono">X:${p.x??'--'} Z:${p.z??'--'}・Roblox ID ${ntpcDispatchText(p.id)}</div></div><button type="button" data-ntpc-ready="${ntpcDispatchText(p.id)}" data-ntpc-value="${ready?'0':'1'}" class="shrink-0 px-3 py-2 rounded-lg text-xs font-semibold ${ready?'bg-emerald-600/20 text-emerald-300 border border-emerald-500/40':'bg-slate-800 text-slate-300 border border-slate-700'}">${ready?'待命中':'設為待命'}</button></div>`;
+            }).join(''):'<div class="text-sm text-slate-500">目前沒有線上警消。</div>';
+            list.querySelectorAll('[data-ntpc-ready]').forEach(btn=>btn.addEventListener('click',()=>ntpcDispatchReady(btn.dataset.ntpcReady,btn.dataset.ntpcValue==='1')));
+            }
+            const cases=state.cases||[];const cc=document.getElementById('ntpc-dispatch-case-count');if(cc)cc.textContent=`${cases.filter(c=>c.status!=='closed').length} 件未結案`;
+            const box=document.getElementById('ntpc-dispatch-cases');if(box){
+                box.innerHTML=cases.length?cases.slice(0,35).map(c=>{
+                    const assigned=c.assignedTo?`｜已指派 ${ntpcDispatchText(c.assignedName)}`:'';
+                    const eligible=players.filter(p=>state.ready?.[p.id]===true&&(/police|sheriff|trooper|patrol/i.test(p.team)?'police':(/fire|rescue|ems|medical/i.test(p.team)?'fire':'unknown'))===c.type&&p.x!==null&&p.z!==null&&c.location);
+                    const sorted=eligible.map(p=>({...p,dist:Math.hypot(p.x-c.location.x,p.z-c.location.z)})).sort((a,b)=>a.dist-b.dist);
+                    const others=new Set(cases.filter(x=>['sending','dispatched','uncertain'].includes(x.status)).map(x=>x.assignedTo));
+                    const options=sorted.filter(p=>!others.has(p.id));
+                    const select=c.status==='new'&&c.location&&options.length?`<select data-ntpc-pick="${ntpcDispatchText(c.id)}" class="w-full sm:w-auto bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-slate-200">${options.map(p=>`<option value="${ntpcDispatchText(p.id)}">${ntpcDispatchText(p.name)} (直線距離 ${Math.round(p.dist)})</option>`).join('')}</select><button data-ntpc-send="${ntpcDispatchText(c.id)}" class="bg-cyan-700 text-white rounded-lg px-3 py-2 text-xs">派遣此單位</button>`:c.status==='new'?'<span class="text-xs text-amber-300">無符合條件的待命人員或案件缺少座標</span>':'';
+                    return `<article class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2"><div class="flex justify-between gap-2"><div class="font-semibold text-white text-sm">案件 #${ntpcDispatchText(c.callNumber)} <span class="text-[11px] text-slate-400">${c.type==='fire'?'消防／救護':c.type==='police'?'警務':'未分類'}</span></div><span class="text-xs ${c.status==='dispatched'?'text-emerald-300':c.status==='uncertain'?'text-rose-300':'text-amber-300'}">${ntpcDispatchText(c.status)}</span></div><div class="text-xs text-slate-400">地點：${ntpcDispatchText(c.place||'座標 '+(c.location?`${Math.round(c.location.x)}, ${Math.round(c.location.z)}`:'未提供'))}${assigned}</div><div class="text-xs text-slate-500">${ntpcDispatchText(c.description||'無描述')}</div>${c.notifyResult?`<div class="text-xs text-slate-400">通知結果：${ntpcDispatchText(c.notifyResult)}</div>`:''}<div class="flex flex-wrap gap-2 items-center">${select}${c.status!=='closed'?`<button data-ntpc-close="${ntpcDispatchText(c.id)}" class="border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-400">結案</button>`:''}</div></article>`;
+                }).join(''):'<div class="text-sm text-slate-500">目前沒有近兩分鐘新進的緊急報案。</div>';
+                box.querySelectorAll('[data-ntpc-send]').forEach(btn=>btn.addEventListener('click',()=>{
+                    const select=Array.from(box.querySelectorAll('[data-ntpc-pick]')).find(x=>x.dataset.ntpcPick===btn.dataset.ntpcSend);
+                    if(select)ntpcDispatchAssign(btn.dataset.ntpcSend,select.value);
+                }));
+                box.querySelectorAll('[data-ntpc-close]').forEach(btn=>btn.addEventListener('click',()=>ntpcDispatchClose(btn.dataset.ntpcClose)));
+            }
+        }
+        async function ntpcDispatchMutation(path,body){
+            if(!ntpcDispatchUI.connected||!ntpcDispatchActive())return;
+            try{await ntpcDispatchRequest(path,'POST',body);await ntpcDispatchRefresh();}
+            catch(e){showToast('智慧派遣操作失敗：'+e.message,'error','操作失敗');}
+        }
+        async function ntpcDispatchReady(id,ready){return ntpcDispatchMutation('/api/ready',{playerId:id,ready});}
+        async function ntpcDispatchToggleAuto(){
+            const isOn=!!ntpcDispatchUI.state?.settings?.autoDispatch;
+            if(!isOn && !(await showConfirm('開啟後，新報案會自動對最近的已待命員警或救護單位發送 ER:LC :pm 私訊（非全服廣播）。確定啟用？','啟用自動派遣','確認開啟')))return;
+            return ntpcDispatchMutation('/api/settings',{autoDispatch:!isOn});
+        }
+        async function ntpcDispatchAssign(id,playerId){
+            if(!(await showConfirm('確定對此單位發送一次 ER:LC 私訊派遣指令？此操作不可自動重試。','確認派遣','送出派遣')))return;
+            return ntpcDispatchMutation('/api/cases/'+encodeURIComponent(id)+'/assign',{playerId});
+        }
+        async function ntpcDispatchClose(id){return ntpcDispatchMutation('/api/cases/'+encodeURIComponent(id)+'/close',{});}
+        document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&ntpcDispatchUI.connected&&ntpcDispatchActive())ntpcDispatchRefresh();});
+
 /* 公告重要標記：兼容既有發布流程。 */
 (function patchAnnouncementImportant(){const btn=document.getElementById('publish-announcement-btn');if(!btn||btn.dataset.v182)return;btn.dataset.v182='1';btn.addEventListener('click',()=>{setTimeout(()=>{const text=document.getElementById('announcement-text-input')?.value;},0);});const original=window.publishAnnouncement;if(typeof original==='function'&&original.__v182)return;})();
 /* Discord Webhook 使用 Firestore 佇列，由 Cloud Functions 負責實際發送；通緝通知仍由原有 Discord BOT 處理。 */
