@@ -1079,7 +1079,7 @@
 <div id="ntpc-map-police-canvas" class="relative flex items-center justify-center h-[440px] sm:h-[660px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" role="img" aria-label="ER:LC 警察勤務單位位置座標圖"><div class="absolute inset-0 grid place-items-center text-sm text-slate-500">尚未取得位置</div></div>
                     <div id="ntpc-map-police-list" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 text-xs"></div>
                     <div class="mt-3 rounded-xl border border-slate-700/80 bg-slate-950/70 p-3 space-y-2">
-                        <label class="flex items-center gap-2 text-xs text-amber-200"><input id="ntpc-map-police-show-cases" type="checkbox" checked onchange="ntpcMapRefreshView()" class="accent-amber-500"> 顯示最近 5 分鐘 110／119 報案標記（有座標才可釘在地圖上）</label>
+                        <label class="flex items-center gap-2 text-xs text-amber-200"><input id="ntpc-map-police-show-cases" type="checkbox" checked onchange="ntpcMapRefreshView()" class="accent-amber-500"> 顯示最近 5 分鐘 110／119 報案通知（有座標才釘圖，無座標顯示通知）</label>
                         <div id="ntpc-map-police-case-list" class="space-y-2 text-xs text-slate-300">開啟此地圖並連線後顯示案件</div>
                     </div>
                     <p class="text-[11px] text-slate-500">座標方向依 ER:LC 官方規格：X 向右增加、Z 向下增加。可切換提供的 GitHub 地圖或純座標圖；系統自動顯示概略座標；定位精度尚未經實際遊戲校驗。</p>
@@ -1252,7 +1252,7 @@
 <div id="ntpc-map-fire-canvas" class="relative flex items-center justify-center h-[440px] sm:h-[660px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" role="img" aria-label="ER:LC 消防勤務單位位置座標圖"><div class="absolute inset-0 grid place-items-center text-sm text-slate-500">尚未取得位置</div></div>
                     <div id="ntpc-map-fire-list" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 text-xs"></div>
                     <div class="mt-3 rounded-xl border border-slate-700/80 bg-slate-950/70 p-3 space-y-2">
-                        <label class="flex items-center gap-2 text-xs text-amber-200"><input id="ntpc-map-fire-show-cases" type="checkbox" checked onchange="ntpcMapRefreshView()" class="accent-amber-500"> 顯示最近 5 分鐘 110／119 報案標記（有座標才可釘在地圖上）</label>
+                        <label class="flex items-center gap-2 text-xs text-amber-200"><input id="ntpc-map-fire-show-cases" type="checkbox" checked onchange="ntpcMapRefreshView()" class="accent-amber-500"> 顯示最近 5 分鐘 110／119 報案通知（有座標才釘圖，無座標顯示通知）</label>
                         <div id="ntpc-map-fire-case-list" class="space-y-2 text-xs text-slate-300">開啟此地圖並連線後顯示案件</div>
                     </div>
                     <p class="text-[11px] text-slate-500">座標方向依 ER:LC 官方規格：X 向右增加、Z 向下增加。可切換提供的 GitHub 地圖或純座標圖；系統自動顯示概略座標；定位精度尚未經實際遊戲校驗。</p>
@@ -2074,7 +2074,7 @@
 </div>
 <div id="ntpc-map-admin-canvas" class="relative flex items-center justify-center h-[440px] sm:h-[660px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" role="img" aria-label="ER:LC 全員位置座標圖"><div class="absolute inset-0 grid place-items-center text-sm text-slate-500">尚未取得位置</div></div><div id="ntpc-map-admin-list" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 text-xs"></div>
                     <div class="mt-3 rounded-xl border border-slate-700/80 bg-slate-950/70 p-3 space-y-2">
-                        <label class="flex items-center gap-2 text-xs text-amber-200"><input id="ntpc-map-admin-show-cases" type="checkbox" checked onchange="ntpcMapRefreshView()" class="accent-amber-500"> 顯示最近 5 分鐘 110／119 報案標記（有座標才可釘在地圖上）</label>
+                        <label class="flex items-center gap-2 text-xs text-amber-200"><input id="ntpc-map-admin-show-cases" type="checkbox" checked onchange="ntpcMapRefreshView()" class="accent-amber-500"> 顯示最近 5 分鐘 110／119 報案通知（有座標才釘圖，無座標顯示通知）</label>
                         <div id="ntpc-map-admin-case-list" class="space-y-2 text-xs text-slate-300">開啟此地圖並連線後顯示案件</div>
                     </div><p class="text-[11px] text-slate-500">個人編號依網站使用者 ROBLOX ID 綁定顯示；未綁定者會註明。市民以 Roblox ID 作為座標標籤。</p></section>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -10306,9 +10306,9 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
             });
         }
         function ntpcMapImageRender(scope,players,map,cases){
-            const url=ntpcMapImageURL(),cal=ntpcMapAutomaticProjection(players),imageKey='ntpc-map-declutter-2026-10-22|'+url;
+            const url=ntpcMapImageURL(),cal=ntpcMapAutomaticProjection(players),imageKey='ntpc-map-notifications-and-roster-2026-10-22|'+url;
             if(map.dataset.ntpcImageKey!==imageKey||!map.querySelector('.ntpc-map-world')){
-                map.innerHTML=`<div class="ntpc-map-world relative h-full max-w-full aspect-square overflow-hidden rounded-lg bg-slate-800 border border-slate-600 shadow-xl select-none" style="will-change:transform"><img src="${ntpcDispatchText(url)}" class="absolute inset-0 w-full h-full object-fill pointer-events-none" alt="ER:LC 地圖背景，來源 ERLC.One" loading="lazy" decoding="async" onerror="this.classList.add('hidden');this.parentNode.querySelector('[data-image-failed]').classList.remove('hidden')"><div data-image-failed class="hidden absolute inset-0 flex items-center justify-center px-5 text-center text-sm text-amber-300 bg-slate-950/80 pointer-events-none">地圖圖片暫時無法載入，請檢查 GitHub image.png 是否可以公開存取。</div><div data-map-markers class="absolute inset-0 pointer-events-none"></div></div>`;
+                map.innerHTML=`<div class="ntpc-map-world relative h-full max-w-full aspect-square overflow-hidden rounded-lg bg-slate-800 border border-slate-600 shadow-xl select-none" style="will-change:transform"><img src="${ntpcDispatchText(url)}" class="absolute inset-0 w-full h-full object-fill pointer-events-none" alt="ER:LC 地圖背景，來源 ERLC.One" loading="lazy" decoding="async" onerror="this.classList.add('hidden');this.parentNode.querySelector('[data-image-failed]').classList.remove('hidden')"><div data-image-failed class="hidden absolute inset-0 flex items-center justify-center px-5 text-center text-sm text-amber-300 bg-slate-950/80 pointer-events-none">地圖圖片暫時無法載入，請檢查 GitHub image.png 是否可以公開存取。</div><div data-map-markers class="absolute inset-0 pointer-events-none"></div></div><div data-map-notices class="absolute top-2 right-2 z-40 max-h-[43%] overflow-y-auto rounded-lg pointer-events-auto" style="width:min(235px,58%)" aria-label="110／119 地圖報案通知"></div>`;
                 map.dataset.ntpcImageKey=imageKey;
             }
             ntpcMapBindZoom(scope,map);
@@ -10337,20 +10337,39 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
                 const color=g.kind==='police'?'bg-blue-400':g.kind==='fire'?'bg-rose-400':g.kind==='mixed'?'bg-amber-400':'bg-emerald-400';
                 const theme=g.kind==='police'?'border-sky-400/90 bg-blue-950/95 text-sky-50':g.kind==='fire'?'border-rose-400/90 bg-rose-950/95 text-rose-50':'border-emerald-400/90 bg-emerald-950/95 text-emerald-50';
                 const tooltip=esc(g.description),number=esc(g.number),qualifier=g.coarse?' ≈':'';
-                output+=`<button type="button" data-map-pin class="absolute z-10 pointer-events-auto group w-0 h-0" style="left:${(g.u*100).toFixed(4)}%;top:${(g.v*100).toFixed(4)}%" title="${tooltip}" aria-label="${tooltip}"><span class="absolute -translate-x-1/2 -translate-y-1/2 block w-3.5 h-3.5 rounded-full border-2 border-slate-950 ${color} shadow-md ring-1 ring-white/40"></span><span data-map-label style="left:${g.labelX.toFixed(1)}px;top:${g.labelY.toFixed(1)}px" class="absolute inline-flex whitespace-nowrap max-w-[122px] overflow-hidden text-ellipsis rounded-md border ${theme} shadow-lg font-bold px-1.5 py-1 text-[10px] leading-tight ${g.collapsed?'hidden group-hover:inline-flex group-focus:inline-flex':''}">${number}${qualifier}</span>${g.collapsed?'<span class="absolute top-[-13px] left-[9px] text-[10px] rounded-full bg-slate-900/90 text-white px-1">＋</span>':''}</button>`;
+                // 所有重疊單位編號完整列於懸停名單，非僅顯示「第一個 +N」。
+                const roster=g.members.map(({p,pos})=>`<li class="flex justify-between items-start gap-2 border-b border-slate-700/70 py-1.5 last:border-0"><span class="font-bold text-cyan-200 shrink-0">${esc(ntpcMapMarkerNumber(p))}</span><span class="min-w-0 break-words text-right text-slate-200">${esc(p.name||'未知單位')}<span class="block text-slate-400">郵區 ${esc(p.postal||'—')}${pos.coarse?'（概略）':''}</span></span></li>`).join('');
+                const popupSide=g.u>0.62?'right:18px;':'left:18px;';
+                const popupVertical=g.v<0.26?'top:18px;':'bottom:18px;';
+                output+=`<button type="button" data-map-pin class="absolute z-10 hover:z-[60] focus:z-[60] pointer-events-auto group w-0 h-0" style="left:${(g.u*100).toFixed(4)}%;top:${(g.v*100).toFixed(4)}%" title="${tooltip}" aria-label="查看此位置全部 ${g.members.length} 個單位：${tooltip}"><span class="absolute -translate-x-1/2 -translate-y-1/2 block w-7 h-7 rounded-full flex items-center justify-center"><span class="block w-3.5 h-3.5 rounded-full border-2 border-slate-950 ${color} shadow-md ring-1 ring-white/40"></span></span><span data-map-label style="left:${g.labelX.toFixed(1)}px;top:${g.labelY.toFixed(1)}px" class="absolute inline-flex whitespace-nowrap max-w-[122px] overflow-hidden text-ellipsis rounded-md border ${theme} shadow-lg font-bold px-1.5 py-1 text-[10px] leading-tight ${g.collapsed?'hidden group-hover:inline-flex group-focus:inline-flex':''}">${number}${qualifier}</span>${g.collapsed?'<span class="absolute top-[-15px] left-[8px] text-[10px] rounded-full bg-slate-900/90 text-white px-1">＋</span>':''}<span style="${popupSide}${popupVertical}" class="hidden group-hover:block group-focus:block absolute z-[70] w-[240px] max-w-[65vw] rounded-lg border border-cyan-500/60 bg-slate-950/95 p-2.5 text-left text-xs font-normal text-white shadow-2xl whitespace-normal"><span class="block font-bold text-sky-200 pb-1 border-b border-slate-700">此處 ${g.members.length} 個單位（全部編號）</span><ul class="block max-h-48 overflow-y-auto">${roster}</ul></span></button>`;
             }
-            for(const c of Array.isArray(cases)?cases:[]){
-                if(!c.location||!Number.isFinite(Number(c.location.x))||!Number.isFinite(Number(c.location.z)))continue;
+            // 報案通知：有遊戲座標才畫「精確位置」圖釘；Discord 只有郵區時
+            // 仍顯示在地圖右上角的報案通知，但不假造 X/Z 座標。
+            const incidentCases=Array.isArray(cases)?cases:[];
+            let placedIncidents=0;
+            for(const c of incidentCases){
+                if(!c.location||c.location.x==null||c.location.z==null||!Number.isFinite(Number(c.location.x))||!Number.isFinite(Number(c.location.z)))continue;
                 const v=ntpcMapSafeProjection({...c.location,postal:c.postal||c.postalCode||''},cal);
                 if(!v||v.u<0||v.u>1||v.v<0||v.v>1)continue;
+                placedIncidents++;
                 const fire=c.type==='fire';
-                output+=`<button type="button" data-map-pin class="absolute z-20 group -translate-x-1/2 -translate-y-full pointer-events-auto" style="left:${(v.u*100).toFixed(3)}%;top:${(v.v*100).toFixed(3)}%" aria-label="報案 ${esc(c.callNumber)}"><span class="flex justify-center text-lg drop-shadow-lg">${fire?'🚑':'🚨'}</span><span class="hidden group-hover:block group-focus:block absolute left-1/2 -translate-x-1/2 bottom-full mb-1 w-[230px] max-w-[70vw] rounded-lg bg-slate-950 border border-amber-500/50 p-2 shadow-xl text-left z-50">${ntpcMapCaseHtml(c,true)}</span></button>`;
+                const placeNote=v.coarse?'郵區概略位置（非精確報案位置）':'地圖預估位置（非實際導航）';
+                output+=`<button type="button" data-map-pin class="absolute z-30 hover:z-[70] focus:z-[70] group -translate-x-1/2 -translate-y-full pointer-events-auto" style="left:${(v.u*100).toFixed(3)}%;top:${(v.v*100).toFixed(3)}%" aria-label="報案 ${esc(c.callNumber)}：${esc(c.description||'未提供內容')}"><span class="flex justify-center text-xl drop-shadow-lg">${fire?'🚑':'🚨'}</span><span class="block rounded-md border border-amber-300/80 bg-slate-950/90 px-1 text-[10px] text-amber-100">${esc(c.callNumber||'報案')}</span><span class="hidden group-hover:block group-focus:block absolute left-1/2 -translate-x-1/2 bottom-full mb-1 w-[245px] max-w-[70vw] rounded-lg bg-slate-950 border border-amber-500/60 p-2 shadow-xl text-left z-50">${ntpcMapCaseHtml(c,true)}<span class="text-amber-300 text-[10px]">${esc(placeNote)}</span></span></button>`;
+            }
+            // 覆蓋於地圖可視區的通知卡片；每 5 秒從 Worker 同步狀態，不額外讀 ER:LC API。
+            const noticeBox=map.querySelector('[data-map-notices]');
+            if(noticeBox){
+                const visible=incidentCases.slice(0,4);
+                noticeBox.innerHTML=visible.length?`<div class="space-y-1.5"><div class="rounded-md border border-amber-500/60 bg-slate-950/95 px-2 py-1 text-[11px] font-bold text-amber-200 shadow-lg">🚨 最新報案 ${incidentCases.length} 件｜保留 5 分鐘</div>${visible.map(c=>{
+                    const hasXY=c.location&&c.location.x!=null&&c.location.z!=null&&Number.isFinite(Number(c.location.x))&&Number.isFinite(Number(c.location.z));
+                    return `<div class="rounded-md border ${c.type==='fire'?'border-rose-500/60':'border-sky-500/60'} bg-slate-950/95 p-2 text-[11px] text-white shadow-xl" title="${esc(c.description||'')}"><div class="font-bold">${c.type==='fire'?'🚑 119':'🚨 110'}　${esc(c.callNumber||'—')}</div><div class="truncate text-slate-300">${esc(c.caller||'未提供報案人')}・${esc(c.postal||c.place||'未知郵區')}</div><div class="line-clamp-2 break-words">${esc(c.description||'未提供報案內容')}</div><div class="text-[10px] ${hasXY?'text-emerald-200':'text-amber-300'}">${hasXY?'已有遊戲座標（圖上可看圖釘）':'僅有郵區，無精確座標｜可由管理中心派遣'}</div></div>`;
+                }).join('')}${incidentCases.length>4?`<div class="rounded-md bg-slate-950/90 px-2 py-1 text-[10px] text-slate-300">另有 ${incidentCases.length-4} 件，請查看下方案件清單</div>`:''}</div>`:'';
             }
             markers.innerHTML=output;
             const noPin=players.length-mapped.length;
             map.setAttribute('aria-label',`ER:LC 即時地圖，${mapped.length} 位概略顯示，${noPin} 位缺少可信地圖位置；編號自動避讓，靠近則合併顯示。`);
             const note=document.getElementById('ntpc-map-'+scope+'-cal-hint');
-            if(note)note.textContent='地圖標籤會自動避讓與聚合；X/Z 僅有兩個參考點，遠距位置若與郵區不符會顯示「≈」概略位置，沒有可信郵區則只列於下方名單，不會誤標精確位置。';
+            if(note)note.textContent='滑鼠移到重疊點可看全部單位編號；Discord 只有郵區的案件會顯示在地圖右上角，無法精確打點。地圖標籤會自動避讓與聚合；X/Z 僅有兩個參考點，遠距位置若與郵區不符會顯示「≈」概略位置，沒有可信郵區則只列於下方名單，不會誤標精確位置。';
             ntpcMapApplyView(scope);
         }
 
