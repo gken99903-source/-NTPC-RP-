@@ -1074,7 +1074,7 @@
     </div>
   </div>
   <p class="text-slate-400">滑鼠滾輪可縮放、按住拖曳可移動；玩家顯示定位點，不顯示常駐文字標籤。地圖由 <a href="https://erlc.one/" target="_blank" rel="noopener noreferrer" class="text-sky-300 underline">ERLC.One</a> 提供。</p>
-  <p id="ntpc-map-police-cal-hint" class="text-amber-300/90">參考 ER:LC 常見出生郵區 210、1102 自動估算方向與位置；缺少圖片精確地理座標，請以遊戲郵區核對。</p>
+  <p id="ntpc-map-police-cal-hint" class="text-amber-300/90">依郵區 210（X1571／Z3848）及警局 316（X2900／Z3506）的兩組實測座標自動定位；仍需以其他區域核對精度。</p>
 </div>
 <div id="ntpc-map-police-canvas" class="relative flex items-center justify-center h-[440px] sm:h-[660px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" role="img" aria-label="ER:LC 警察勤務單位位置座標圖"><div class="absolute inset-0 grid place-items-center text-sm text-slate-500">尚未取得位置</div></div>
                     <div id="ntpc-map-police-list" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 text-xs"></div>
@@ -1247,7 +1247,7 @@
     </div>
   </div>
   <p class="text-slate-400">滑鼠滾輪可縮放、按住拖曳可移動；玩家顯示定位點，不顯示常駐文字標籤。地圖由 <a href="https://erlc.one/" target="_blank" rel="noopener noreferrer" class="text-sky-300 underline">ERLC.One</a> 提供。</p>
-  <p id="ntpc-map-fire-cal-hint" class="text-amber-300/90">參考 ER:LC 常見出生郵區 210、1102 自動估算方向與位置；缺少圖片精確地理座標，請以遊戲郵區核對。</p>
+  <p id="ntpc-map-fire-cal-hint" class="text-amber-300/90">依郵區 210（X1571／Z3848）及警局 316（X2900／Z3506）的兩組實測座標自動定位；仍需以其他區域核對精度。</p>
 </div>
 <div id="ntpc-map-fire-canvas" class="relative flex items-center justify-center h-[440px] sm:h-[660px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" role="img" aria-label="ER:LC 消防勤務單位位置座標圖"><div class="absolute inset-0 grid place-items-center text-sm text-slate-500">尚未取得位置</div></div>
                     <div id="ntpc-map-fire-list" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 text-xs"></div>
@@ -2070,7 +2070,7 @@
     </div>
   </div>
   <p class="text-slate-400">滑鼠滾輪可縮放、按住拖曳可移動；玩家顯示定位點，不顯示常駐文字標籤。地圖由 <a href="https://erlc.one/" target="_blank" rel="noopener noreferrer" class="text-sky-300 underline">ERLC.One</a> 提供。</p>
-  <p id="ntpc-map-admin-cal-hint" class="text-amber-300/90">參考 ER:LC 常見出生郵區 210、1102 自動估算方向與位置；缺少圖片精確地理座標，請以遊戲郵區核對。</p>
+  <p id="ntpc-map-admin-cal-hint" class="text-amber-300/90">依郵區 210（X1571／Z3848）及警局 316（X2900／Z3506）的兩組實測座標自動定位；仍需以其他區域核對精度。</p>
 </div>
 <div id="ntpc-map-admin-canvas" class="relative flex items-center justify-center h-[440px] sm:h-[660px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" role="img" aria-label="ER:LC 全員位置座標圖"><div class="absolute inset-0 grid place-items-center text-sm text-slate-500">尚未取得位置</div></div><div id="ntpc-map-admin-list" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 text-xs"></div>
                     <div class="mt-3 rounded-xl border border-slate-700/80 bg-slate-950/70 p-3 space-y-2">
@@ -10125,37 +10125,24 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
             // Callsign 是遊戲呼號，不能偽裝成個人編號。
             return '個人編號未綁定';
         }
-        // V2.0.2：固定使用使用者指定的 GitHub 地圖，不提供切換、不進行人工校正。
-        // PRC API 提供遊戲 X/Z 座標與郵遞區號，並沒有提供 ERLC.One 匯出 PNG 的可靠像素對照。
-        // 郵區 210 / 1102 為玩家常見出生位置，僅當成觀察與座標方向的參考，不能當作絕對的畫素 GPS 校正點。
+        // V2.0.3：固定底圖 + 使用者提供的兩個實際遊戲座標對應圖面位置。
+        // 參考地點 A：210（Freedom Avenue / Southern Avenue 附近）X 1571 Z 3848。
+        // 參考地點 B：316（NTPC XinZhuang Police Station）X 2900 Z 3506。
+        // 右/下 = X/Z 增加；這兩張截圖提供方向、比例及偏移的可重現參考。
+        // u,v 為依使用者分享的完整底圖截圖估計的 0..1 圖面比例，非官方座標。
+        // 如需對整張地圖達到高精度，仍應在遠處（北部/東部）取得第 3 個實測參考點。
         const NTPC_FIXED_MAP_URL='https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/image.png';
         const ntpcMapImageConfig=Object.freeze({layer:'project'});
         function ntpcMapImageURL(){return NTPC_FIXED_MAP_URL;}
-        const NTPC_FIXED_MAP_BOUNDS=Object.freeze({xLeft:5500,xRight:-4000,zTop:-3000,zBottom:6500});
-        // 地圖匯出檔不含官方投影資料；下列為參考畫面估計的 210 / 1102 郵區相對位置，並非精準的建築物座標。
-        // 每個頁面工作階段最多擷取一次首次觀測到的出生郵區作偏移校正，避免玩家移動時底圖跟著漂移。
-        const NTPC_SPAWN_POSTAL_ANCHORS={'210':{u:0.27,v:0.80},'1102':{u:0.74,v:0.30}};
-        const ntpcMapSpawnFix={applied:false,du:0,dv:0,postal:''};
-        function ntpcMapTrySpawnAnchor(players){
-            if(ntpcMapSpawnFix.applied||!Array.isArray(players))return;
-            const candidates=players.filter(p=>NTPC_SPAWN_POSTAL_ANCHORS[String(p.postal||'').trim()] && Number.isFinite(Number(p.x))&&Number.isFinite(Number(p.z)));
-            // 210 優先，1102 次之；無人處於出生郵區時採固定世界座標範圍。
-            const p=candidates.find(x=>String(x.postal).trim()==='210')||candidates[0];if(!p)return;
-            const b=NTPC_FIXED_MAP_BOUNDS,anchor=NTPC_SPAWN_POSTAL_ANCHORS[String(p.postal).trim()];
-            const u=(Number(p.x)-b.xLeft)/(b.xRight-b.xLeft),v=(Number(p.z)-b.zTop)/(b.zBottom-b.zTop);
-            const du=anchor.u-u,dv=anchor.v-v;
-            // 如果差太多，不要拿單一郵區推斷絕對定位；防止誤校正。
-            if(Math.abs(du)>0.22||Math.abs(dv)>0.22)return;
-            ntpcMapSpawnFix.applied=true;
-            ntpcMapSpawnFix.du=Math.max(-0.08,Math.min(0.08,du));
-            ntpcMapSpawnFix.dv=Math.max(-0.08,Math.min(0.08,dv));
-            ntpcMapSpawnFix.postal=String(p.postal).trim();
-        }
-        function ntpcMapAutomaticProjection(players){
-            ntpcMapTrySpawnAnchor(players);
-            const b=NTPC_FIXED_MAP_BOUNDS;
-            // 修正同時套用在玩家與 110 / 119 案件點位，避免兩者相對位置分離。
-            return {a:{x:b.xLeft,z:b.zTop,u:ntpcMapSpawnFix.du,v:ntpcMapSpawnFix.dv},b:{x:b.xRight,z:b.zBottom,u:1+ntpcMapSpawnFix.du,v:1+ntpcMapSpawnFix.dv},approximate:true};
+        const NTPC_VERIFIED_GAME_ANCHORS=Object.freeze({
+            a:Object.freeze({name:'210 Freedom Avenue',x:1571,z:3848,u:0.300,v:0.770}),
+            b:Object.freeze({name:'316 XinZhuang Police Station',x:2900,z:3506,u:0.567,v:0.701})
+        });
+        function ntpcMapAutomaticProjection(){
+            // 由兩個已知點作 X->圖面水平、Z->圖面垂直的固定線性轉換。
+            // 舊版「從任意剛上線玩家猜出生點並動態偏移」會讓其他玩家位置一起錯誤，故已移除。
+            const {a,b}=NTPC_VERIFIED_GAME_ANCHORS;
+            return {a,b,approximate:true};
         }
         const ntpcMapViews={admin:{zoom:1,panX:0,panY:0},police:{zoom:1,panX:0,panY:0},fire:{zoom:1,panX:0,panY:0}};
         function ntpcMapApplyView(scope){
@@ -10248,7 +10235,7 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
                 output+=`<button type="button" data-map-pin class="absolute z-20 group -translate-x-1/2 -translate-y-full pointer-events-auto" style="left:${(v.u*100).toFixed(3)}%;top:${(v.v*100).toFixed(3)}%" aria-label="報案 ${esc(c.callNumber)}"><span class="flex justify-center text-lg drop-shadow-lg">${fire?'🚑':'🚨'}</span><span class="hidden group-hover:block group-focus:block absolute left-1/2 -translate-x-1/2 bottom-full mb-1 w-[230px] max-w-[70vw] rounded-lg bg-slate-950 border border-amber-500/50 p-2 shadow-xl text-left z-50">${ntpcMapCaseHtml(c,true)}</span></button>`;
             }
             markers.innerHTML=output;
-            map.setAttribute('aria-label',`ER:LC 即時地圖，${visible} 名可定位玩家。位置為概略值，請以郵遞區號確認。`);
+            map.setAttribute('aria-label',`ER:LC 即時地圖，${visible} 名可定位玩家。位置依兩點實測座標估算，請與遊戲郵區核對。`);
             ntpcMapApplyView(scope);
         }
 
