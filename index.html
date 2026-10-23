@@ -7573,7 +7573,11 @@ async function republishAnnouncement(id) {
         }
 
         function canDeletePunishment(p) {
-            return punishmentHasPoliceAuthority();
+            if (!currentUser) return false;
+            // 警察高階成員 (senior) 可移除警用獎勵與懲處，與高層／最高管理員權限並存。
+            // 僅賦予警務身分；消防／其他單位的高階成員不因此取得警務獎懲刪除權限。
+            return punishmentHasPoliceAuthority() ||
+                (getEffectiveRole(currentUser) === 'senior' && userHasUnit('police'));
         }
 
         function viewPunishmentDetail(punishId) {
@@ -7600,7 +7604,7 @@ async function republishAnnouncement(id) {
             const p = appData.policePunishments.find(x => String(x.id || '') === String(punishId) || String(x.docId || '') === String(punishId));
             if (!p) return;
             if (!canDeletePunishment(p)) {
-                showToast('權限不足：只有警察高層與管理處可以移除警用獎懲。', 'warning', '權限不足');
+                showToast('權限不足：只有警察高層、警察高階成員與管理中心可以移除警用獎懲。', 'warning', '權限不足');
                 return;
             }
             if (!(await showConfirm('確定要刪除這筆警用獎懲公告嗎？', '刪除警用獎懲', '確定刪除'))) return;
