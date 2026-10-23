@@ -13,7 +13,7 @@
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
     <link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261013-verified-logo">
-    <meta name="description" content="新北市 RP 3.0 公職服務系統 V2.0｜新增 ER:LC 智慧派遣、每 5 秒勤務位置查看及 :pm 指定通知；整合警務、消防、EMS 報告與管理中心。">
+    <meta name="description" content="新北市 RP 3.0 公職服務系統 V2.0｜管理中心人工派遣、勤務位置與報案通知；整合警務、消防、EMS 報告。">
     <!-- PWA：可安裝到 Windows、Android 與 iOS 主畫面；不啟用離線快取，避免 Firebase 資料過期。 -->
     <link rel="manifest" href="/manifest.json?v=20261013-verified-logo">
     <meta name="theme-color" content="#020617">
@@ -782,7 +782,7 @@
                     <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">新北市 RP 3.0<br><span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">虛擬勤務與案件管理系統</span></h1>
                     <p class="text-sm font-medium text-sky-200/90"><i class="fa-solid fa-gamepad mr-2"></i>僅供 ER:LC 遊戲角色扮演使用，非真實政府機關官方網站。</p>
                     <div><span id="home-site-version-badge" class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-xs font-bold tracking-wider">網站版本 V2.0</span></div>
-                    <p id="home-version-intro" class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 虛擬公職服務系統。V2.0 新增 ER:LC 智慧派遣中心，可查看勤務人員位置、分析就近待命單位，並由 Cloudflare 後端以 :pm 傳送派遣通知；保留原有警務、消防、EMS 與管理功能。</p>
+                    <p id="home-version-intro" class="text-slate-300 text-base sm:text-lg leading-relaxed">歡迎來到新北市 RP 3.0 虛擬公職服務系統。V2.0 新增 ER:LC 智慧派遣中心，可查看勤務人員位置、分析就近待命單位，並由管理中心在網站指派單位（不傳送遊戲私訊）；保留原有警務、消防、EMS 與管理功能。</p>
                     <div class="flex flex-wrap justify-center gap-4 pt-2">
                         <button data-tab="police" class="tab-shortcut-btn bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
                             <i class="fa-solid fa-shield"></i><span>進入警務系統</span>
@@ -803,7 +803,7 @@
                         </div>
                         <p class="text-slate-400 text-sm mt-2 leading-relaxed">本版本新增 ER:LC 智慧派遣中心，在管理中心分頁開啟並連線後每 5 秒更新線上警消位置；透過 Cloudflare Worker 共用 API 快取，避免反覆讀寫 Firestore。</p>
                     </div>
-                    <p id="home-latest-update-summary" class="text-xs text-slate-500 mt-2">ER:LC 智慧派遣與 5 秒位置查看｜自動分析就近待命單位，可切換 :pm 個人派遣通知。</p>
+                    <p id="home-latest-update-summary" class="text-xs text-slate-500 mt-2">ER:LC 智慧派遣與 5 秒位置查看｜提供即時單位位置與網站人工指派；不發送遊戲私訊。</p>
                     <button type="button" data-tab="update-log" class="tab-shortcut-btn shrink-0 px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-200 text-sm font-semibold transition">查看完整更新紀錄</button>
                 </div>
             </div>
@@ -1235,8 +1235,8 @@
                             <li>管理中心新增 ER:LC 智慧派遣面板，可查看線上警消隊伍、郵遞區號、座標及待命狀態。</li>
                             <li>警務中心、消防中心新增各自專屬的座標圖；管理中心新增全員座標圖及隊伍篩選，市民標示 Roblox ID，警消人員優先標示網站綁定的個人編號。</li>
                             <li>管理員開啟派遣分頁並連線 Worker 後，前景每 5 秒讀取共用快取的最新位置，避免各瀏覽器直接頻繁查詢 ER:LC 或 Firestore。</li>
-                            <li>接收緊急報案後，系統可從符合部門、已待命且有可用座標的成員中選擇就近單位；允許手動指派與結案。</li>
-                            <li>自動派遣預設關閉；經管理員開啟後，由後端以 ER:LC :pm 對指定人員發送派遣通知，並防止重複指派。</li>
+                            <li>接收緊急報案後，管理中心可參考單位位置選擇線上警消、進行人工指派與結案。</li>
+                            <li>僅允許管理中心於網站手動指派與結案；系統不執行自動派遣，也不向遊戲發送私人訊息。</li>
                             <li>承襲 V1.9.4 EMS 五區塊、受傷部位標記、七大處置分類、預設醫院以及既有警務／消防／管理中心功能。</li>
                             <li>派遣查詢與發送需另外部署並設定具權限保護的 Cloudflare Worker；僅更新 HTML 不會直接啟用 API 派遣。</li>
                         </ul>
@@ -1993,9 +1993,9 @@
                             <div><label for="ntpc-dispatch-url" class="block text-xs text-slate-400 mb-1">智慧派遣 Worker 網址</label><input id="ntpc-dispatch-url" type="url" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-3 text-sm text-white font-mono" placeholder="https://ntpc-rp-smart-dispatch.帳號.workers.dev" autocomplete="off" spellcheck="false"></div>
                             <div><label for="ntpc-dispatch-token" class="block text-xs text-slate-400 mb-1">勤務中心管理密鑰（僅保存於此頁記憶體）</label><input id="ntpc-dispatch-token" type="password" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-3 text-sm text-white" placeholder="Cloudflare DISPATCH_ADMIN_TOKEN" autocomplete="off"></div>
                         </div>
-                        <div class="flex gap-2 flex-wrap"><button type="button" onclick="ntpcDispatchConnect()" class="px-4 py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl text-sm font-semibold">連線並開始 5 秒更新</button><button type="button" onclick="ntpcDispatchRefresh()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm">立即更新</button><button id="ntpc-dispatch-autobutton" type="button" onclick="ntpcDispatchToggleAuto()" disabled class="px-4 py-2.5 rounded-xl text-sm bg-slate-700 text-slate-300 font-semibold disabled:opacity-50">自動派遣：關閉（安全模式）</button></div>
+                        <div class="flex gap-2 flex-wrap"><button type="button" onclick="ntpcDispatchConnect()" class="px-4 py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl text-sm font-semibold">連線並開始 5 秒更新</button><button type="button" onclick="ntpcDispatchRefresh()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm">立即更新</button><span class="px-4 py-2.5 rounded-xl text-sm border border-emerald-500/30 bg-emerald-950/30 text-emerald-200 font-semibold">僅網站人工派遣｜不發送遊戲私訊</span></div>
                         <div id="ntpc-dispatch-lastupdate" class="text-xs text-slate-400">需要部署附帶的 Worker，再輸入網址與獨立管理密鑰。</div>
-                        <p class="text-xs text-amber-300/90 leading-relaxed">安全設計：自動派遣只會派給已待命的線上警消；管理中心可手動接管案件、選擇未待命單位或明確確認後人工改派。每案只嘗試發送一次 <code>:pm</code>；發送結果不明時不自動重送。報案位置與人員位置是遊戲座標的直線距離，不代表實際行車時間。</p>
+                        <p class="text-xs text-amber-300/90 leading-relaxed">管理中心手動指派：選擇線上警消後，僅在網站記錄派遣單位與案件狀態；不執行自動派遣，也不傳送 ER:LC <code>:pm</code> 私訊。實際通知單位請由勤務人員另行聯繫。位置直線距離不代表行車時間。</p>
                     </div>
                         <!-- V2.0 管理中心全員位置圖 -->
                         <section class="rounded-2xl border border-violet-500/25 bg-slate-900 p-5 space-y-3"><div class="flex flex-wrap justify-between items-center gap-3"><div><h4 class="font-bold text-white"><i class="fa-solid fa-map-location-dot text-violet-400 mr-2"></i>全伺服器即時位置圖</h4><p class="text-xs text-slate-400 mt-1">可看警察、消防、一般市民；沿用上方 Worker 管理員連線，不會增加額外 ER:LC 查詢。</p></div><label class="flex items-center gap-2 text-xs text-slate-400">顯示隊伍<select id="ntpc-map-admin-filter" onchange="ntpcMapRender('admin', ntpcDispatchUI.state)" class="bg-slate-950 border border-slate-700 text-white rounded-lg px-2 py-1.5"><option value="all">全部玩家</option><option value="police">警察</option><option value="fire">消防</option><option value="civilian">市民</option></select></label></div>
@@ -2021,10 +2021,10 @@
                         <div id="ntpc-map-admin-case-list" class="space-y-2 text-xs text-slate-300">開啟此地圖並連線後顯示案件</div>
                     </div><p class="text-[11px] text-slate-500">個人編號依網站使用者 ROBLOX ID 綁定顯示；未綁定者會註明。市民以 Roblox ID 作為座標標籤。</p></section>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <section class="rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-3"><div class="flex justify-between gap-2 items-center"><h4 class="font-bold text-white"><i class="fa-solid fa-users-viewfinder text-sky-400 mr-2"></i>線上勤務單位與位置</h4><span id="ntpc-dispatch-player-count" class="text-xs text-slate-400">--</span></div><div class="text-xs text-slate-500">地點每 5 秒更新；將符合隊伍的成員標為待命後才可自動派遣。</div><div id="ntpc-dispatch-players" class="space-y-2 max-h-[520px] overflow-y-auto"><div class="text-sm text-slate-500">尚未取得資料</div></div></section>
-                        <section class="rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-3"><div class="flex justify-between gap-2 items-center"><h4 class="font-bold text-white"><i class="fa-solid fa-headset text-rose-400 mr-2"></i>110／119 即時派遣案件</h4><span id="ntpc-dispatch-case-count" class="text-xs text-slate-400">--</span></div><div class="text-xs text-slate-500">案源：ER:LC API V2 EmergencyCalls；可人工派遣最近的已待命單位。</div><div id="ntpc-dispatch-cases" class="space-y-3 max-h-[600px] overflow-y-auto"><div class="text-sm text-slate-500">尚未取得資料</div></div></section>
+                        <section class="rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-3"><div class="flex justify-between gap-2 items-center"><h4 class="font-bold text-white"><i class="fa-solid fa-users-viewfinder text-sky-400 mr-2"></i>線上勤務單位與位置</h4><span id="ntpc-dispatch-player-count" class="text-xs text-slate-400">--</span></div><div class="text-xs text-slate-500">網站每 5 秒更新快取；待命標記僅供管理中心參考，指派一律手動。</div><div id="ntpc-dispatch-players" class="space-y-2 max-h-[520px] overflow-y-auto"><div class="text-sm text-slate-500">尚未取得資料</div></div></section>
+                        <section class="rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-3"><div class="flex justify-between gap-2 items-center"><h4 class="font-bold text-white"><i class="fa-solid fa-headset text-rose-400 mr-2"></i>110／119 即時派遣案件</h4><span id="ntpc-dispatch-case-count" class="text-xs text-slate-400">--</span></div><div class="text-xs text-slate-500">案源：ER:LC API 與 Discord 報案；僅限管理中心網站人工指派。</div><div id="ntpc-dispatch-cases" class="space-y-3 max-h-[600px] overflow-y-auto"><div class="text-sm text-slate-500">尚未取得資料</div></div></section>
                     </div>
-                    <div class="rounded-xl bg-slate-950 border border-slate-800 p-4 text-xs text-slate-500">要達成「管理員未開網站也能自動派遣」，請部署附件 Worker 的每分鐘 Cron，並在 ER:LC 私服設定官方事件 Webhook 至 <code>你的Worker網址/webhook</code>，接收到已簽章的緊急報案即可即時觸發。此版派遣狀態保存在 Cloudflare Durable Object，尚未將派遣紀錄寫回既有 Firebase 案件報告。</div>
+                    <div class="rounded-xl bg-slate-950 border border-slate-800 p-4 text-xs text-slate-500">本版本只提供管理中心網站人工指派。指派結果寫入 Cloudflare Durable Object，不會自動通知遊戲內玩家；派遣狀態尚未寫入既有 Firebase 案件報告。</div>
                 </div>
                 <div id="admin-sub-discord-webhooks" class="hidden space-y-6">
                     <div class="bg-slate-900 border border-indigo-500/20 rounded-2xl p-6 shadow-xl">
@@ -3781,7 +3781,7 @@ function compareSiteVersion(a, b){
         // 本 HTML 固定內建 V2.0。雲端舊版發布紀錄不可覆蓋較新的已部署版本。
         const NTPC_BUNDLED_SITE_VERSION={
             version:'V2.0',title:'ER:LC 智慧派遣與每 5 秒位置更新',
-            summary:'V2.0 新增 ER:LC 智慧派遣中心，可查看線上勤務人員位置、選擇最近待命單位，並由 Cloudflare Worker 發送 :pm 個人通知；保留 V1.9.4 既有功能。'
+            summary:'V2.0 新增 ER:LC 智慧派遣中心，可查看線上勤務人員位置、選擇最近待命單位，並由管理中心在網站人工指派（不發送 :pm）；保留 V1.9.4 既有功能。'
         };
         function getCurrentSiteVersion(){
             const rows=sortSiteVersions((appData.siteVersions||[]).filter(v=>v&&v.active!==false));
@@ -10512,8 +10512,6 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
             const age=state.updatedAt?Math.round((Date.now()-state.updatedAt)/1000):null;
             ntpcDispatchSetStatus(!state.updatedAt?'等待 API 資料':state.stale?'資料已過期':`● 線上 ${state.players?.length||0} 人`,!!state.updatedAt&&!state.stale);
             const updated=document.getElementById('ntpc-dispatch-lastupdate');if(updated)updated.textContent=`更新：${state.updatedAt?new Date(state.updatedAt).toLocaleTimeString('zh-TW'):'尚無'} (${age===null?'—':age+'秒前'})　｜　伺服器：${state.serverName||'--'}${state.apiError?'　｜　API：'+state.apiError:''}`;
-            const auto=document.getElementById('ntpc-dispatch-autobutton');
-            if(auto){auto.disabled=false;auto.textContent=state.settings?.autoDispatch?'自動派遣：開啟（實際發送 :pm）':'自動派遣：關閉（安全模式）';auto.className='px-4 py-2.5 rounded-xl text-sm font-semibold '+(state.settings?.autoDispatch?'bg-rose-700 hover:bg-rose-600 text-white':'bg-slate-700 hover:bg-slate-600 text-white');}
             const players=(state.players||[]).filter(p=>/(police|sheriff|trooper|patrol|fire|rescue|ems|medical)/i.test(p.team));
             const pc=document.getElementById('ntpc-dispatch-player-count');if(pc)pc.textContent=`${players.length} 位警消`;const list=document.getElementById('ntpc-dispatch-players');
             if(list){list.innerHTML=players.length?players.map(p=>{
@@ -10528,16 +10526,16 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
             const box=document.getElementById('ntpc-dispatch-cases');
             if(box){
                 box.innerHTML=cases.length?cases.slice(0,40).map(c=>{
-                    const canManual=['new','held','dispatched','uncertain'].includes(c.status);
+                    const canManual=['new','held','sending','dispatched','uncertain'].includes(c.status);
                     const alreadyBusy=new Set(cases.filter(x=>x.id!==c.id&&['sending','dispatched','uncertain'].includes(x.status)).map(x=>x.assignedTo));
                     const online=(state.players||[]).filter(p=>p.type===c.type&&/^\d+$/.test(String(p.id||''))&&p.name&&!alreadyBusy.has(p.id)&&(c.status==='new'||c.status==='held'||p.id!==c.assignedTo));
                     const matches=online.map(p=>({p,dist:c.location&&p.x!=null&&p.z!=null?Math.hypot(p.x-c.location.x,p.z-c.location.z):null})).sort((a,b)=>(a.dist??Infinity)-(b.dist??Infinity));
-                    const picker=canManual&&matches.length?`<label class="text-xs text-slate-300">管理員手動指派（可選未待命單位）<select data-ntpc-pick="${ntpcDispatchText(c.id)}" class="block mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-white">${matches.map(({p,dist})=>`<option value="${ntpcDispatchText(p.id)}">${ntpcDispatchText(p.name)}｜${state.ready?.[p.id]===true?'待命':'未待命'}${dist!=null?'｜距離 '+Math.round(dist):''}</option>`).join('')}</select></label><button data-ntpc-send="${ntpcDispatchText(c.id)}" class="bg-cyan-700 hover:bg-cyan-600 text-white rounded-lg px-3 py-2 text-xs">${['dispatched','uncertain'].includes(c.status)?'確認人工改派':'管理員手動派遣'}</button>`:canManual?'<span class="text-xs text-amber-300">無符合隊伍的線上人員可供人工指派</span>':'';
-                    const badge=({new:'待派遣',held:'等待管理員人工處理',sending:'派遣中',dispatched:'已派遣',uncertain:'發送結果未確認',closed:'已結案'})[c.status]||String(c.status);
+                    const picker=canManual&&matches.length?`<label class="text-xs text-slate-300">管理員手動指派（可選未待命單位）<select data-ntpc-pick="${ntpcDispatchText(c.id)}" class="block mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-white">${matches.map(({p,dist})=>`<option value="${ntpcDispatchText(p.id)}">${ntpcDispatchText(p.name)}｜${state.ready?.[p.id]===true?'待命':'未待命'}${dist!=null?'｜距離 '+Math.round(dist):''}</option>`).join('')}</select></label><button data-ntpc-send="${ntpcDispatchText(c.id)}" class="bg-cyan-700 hover:bg-cyan-600 text-white rounded-lg px-3 py-2 text-xs">${['sending','dispatched','uncertain'].includes(c.status)?'網站人工改派':'網站人工指派'}</button>`:canManual?'<span class="text-xs text-amber-300">無符合隊伍的線上人員可供人工指派</span>':'';
+                    const badge=({new:'待派遣',held:'等待管理員人工處理',sending:'舊版派遣待確認',dispatched:'已人工指派',uncertain:'舊版派遣結果不明',closed:'已結案'})[c.status]||String(c.status);
                     const color=c.status==='dispatched'?'text-emerald-300':c.status==='uncertain'?'text-rose-300':c.status==='held'?'text-violet-300':'text-amber-300';
-                    const manage=c.status==='new'?`<button data-ntpc-hold="${ntpcDispatchText(c.id)}" class="border border-violet-500/40 bg-violet-950/30 text-violet-200 rounded-lg px-3 py-2 text-xs">接管案件／暫停自動派遣</button>`:c.status==='held'?`<button data-ntpc-release="${ntpcDispatchText(c.id)}" class="border border-sky-500/40 text-sky-200 rounded-lg px-3 py-2 text-xs">恢復自動派遣</button>`:'';
+                    const manage=c.status==='new'?`<button data-ntpc-hold="${ntpcDispatchText(c.id)}" class="border border-violet-500/40 bg-violet-950/30 text-violet-200 rounded-lg px-3 py-2 text-xs">標記管理中心接管</button>`:c.status==='held'?`<button data-ntpc-release="${ntpcDispatchText(c.id)}" class="border border-sky-500/40 text-sky-200 rounded-lg px-3 py-2 text-xs">恢復待人工指派</button>`:'';
                     const assigned=c.assignedName?`｜已派 ${ntpcDispatchText(c.assignedName)}`:'';
-                    return `<article class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2"><div class="flex justify-between gap-2"><div class="font-semibold text-white text-sm">案件 #${ntpcDispatchText(c.callNumber)} <span class="text-[11px] text-slate-400">${c.type==='fire'?'消防／救護':'警務'}</span></div><span class="text-xs ${color}">${ntpcDispatchText(badge)}</span></div><div class="text-xs text-slate-400">報案人：${ntpcDispatchText(c.caller||'未知')}｜地點：${ntpcDispatchText(c.place||'座標 '+(c.location?`${Math.round(c.location.x)}, ${Math.round(c.location.z)}`:'未提供'))}${assigned}</div><div class="text-xs text-slate-500">${ntpcDispatchText(c.description||'無描述')}</div>${c.notifyResult?`<div class="text-xs text-slate-400">通知結果：${ntpcDispatchText(c.notifyResult)}</div>`:''}<div class="flex flex-wrap gap-2 items-end">${manage}${picker}${c.status!=='closed'?`<button data-ntpc-close="${ntpcDispatchText(c.id)}" class="border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-400">結案</button>`:''}</div></article>`;
+                    return `<article class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2"><div class="flex justify-between gap-2"><div class="font-semibold text-white text-sm">案件 #${ntpcDispatchText(c.callNumber)} <span class="text-[11px] text-slate-400">${c.type==='fire'?'消防／救護':'警務'}</span></div><span class="text-xs ${color}">${ntpcDispatchText(badge)}</span></div><div class="text-xs text-slate-400">報案人：${ntpcDispatchText(c.caller||'未知')}｜地點：${ntpcDispatchText(c.place||'座標 '+(c.location?`${Math.round(c.location.x)}, ${Math.round(c.location.z)}`:'未提供'))}${assigned}</div><div class="text-xs text-slate-500">${ntpcDispatchText(c.description||'無描述')}</div>${c.notifyResult?`<div class="text-xs text-slate-400">指派備註：${ntpcDispatchText(c.notifyResult)}</div>`:''}<div class="flex flex-wrap gap-2 items-end">${manage}${picker}${c.status!=='closed'?`<button data-ntpc-close="${ntpcDispatchText(c.id)}" class="border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-400">結案</button>`:''}</div></article>`;
                 }).join(''):'<div class="text-sm text-slate-500">最近 5 分鐘沒有待處理案件。</div>';
                 box.querySelectorAll('[data-ntpc-send]').forEach(btn=>btn.addEventListener('click',()=>{
                     const select=Array.from(box.querySelectorAll('[data-ntpc-pick]')).find(x=>x.dataset.ntpcPick===btn.dataset.ntpcSend);
@@ -10554,24 +10552,19 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
             catch(e){showToast('智慧派遣操作失敗：'+e.message,'error','操作失敗');}
         }
         async function ntpcDispatchReady(id,ready){return ntpcDispatchMutation('/api/ready',{playerId:id,ready});}
-        async function ntpcDispatchToggleAuto(){
-            const isOn=!!ntpcDispatchUI.state?.settings?.autoDispatch;
-            if(!isOn && !(await showConfirm('開啟後，新報案會自動對最近的已待命員警或救護單位發送 ER:LC :pm 私訊（非全服廣播）。確定啟用？','啟用自動派遣','確認開啟')))return;
-            return ntpcDispatchMutation('/api/settings',{autoDispatch:!isOn});
-        }
         async function ntpcDispatchHold(id){
-            if(!(await showConfirm('接管此案件後會停止自動派遣，請在管理中心手動選擇單位。','人工接管案件','確認接管')))return;
+            if(!(await showConfirm('接管此案件後會標記為管理中心人工處理。','人工接管案件','確認接管')))return;
             return ntpcDispatchMutation('/api/cases/'+encodeURIComponent(id)+'/hold',{});
         }
         async function ntpcDispatchRelease(id){
-            if(!(await showConfirm('恢復此案自動派遣，Worker 可能立即通知最近的已待命單位。','恢復自動派遣','確認恢復')))return;
+            if(!(await showConfirm('把此案件恢復成「等待管理中心網站人工指派」；不會傳送任何遊戲訊息。','恢復待人工指派','確認恢復')))return;
             return ntpcDispatchMutation('/api/cases/'+encodeURIComponent(id)+'/release',{});
         }
         async function ntpcDispatchAssign(id,playerId){
             const caseRow=ntpcDispatchUI.state?.cases?.find(c=>c.id===id);
-            const reassigned=['dispatched','uncertain'].includes(caseRow?.status);
-            const prompt=reassigned?'此案可能已寄出私訊！人工改派會「另外」發送 :pm 給新單位，不能撤回已通知的原單位。確定要人工改派嗎？':'管理員將手動派遣指定線上單位，即使沒有標記待命，也會發送一次 ER:LC :pm。確定執行？';
-            if(!(await showConfirm(prompt,reassigned?'確認人工改派':'確認管理員人工派遣',reassigned?'再次發送通知':'確定派遣')))return;
+            const reassigned=['sending','dispatched','uncertain'].includes(caseRow?.status);
+            const prompt=reassigned?'確定在網站重新指定這筆案件的勤務單位嗎？只更新指派紀錄，不會發送 ER:LC 私訊。':'確定在網站指派指定的線上勤務單位嗎？這只會記錄到管理中心，不會自動通知對方。';
+            if(!(await showConfirm(prompt,reassigned?'確認網站人工改派':'確認網站人工指派',reassigned?'確定改派':'確定指派')))return;
             return ntpcDispatchMutation('/api/cases/'+encodeURIComponent(id)+'/assign',{playerId,manual:true,confirmed:true,reassign:reassigned});
         }
         async function ntpcDispatchClose(id){return ntpcDispatchMutation('/api/cases/'+encodeURIComponent(id)+'/close',{});}
