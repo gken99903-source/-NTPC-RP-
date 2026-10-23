@@ -1678,6 +1678,7 @@
 
                 <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
                     <button id="btn-admin-users" data-sub="users" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap"><i class="fa-solid fa-users mr-2"></i>帳號與人員管理</button>
+                    <button id="btn-admin-dispatch" data-sub="dispatch" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-tower-broadcast mr-2"></i>智慧派遣中心</button>
                     <button id="btn-admin-announcements" data-sub="announcements" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-bullhorn mr-2"></i>發布公告</button>
                     <button id="btn-admin-site-versions" data-sub="site-versions" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-code-branch mr-2"></i>版本更新</button>
                     <button id="btn-admin-clock" data-sub="clock" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-business-time mr-2"></i>管理中心打卡</button>
@@ -1695,7 +1696,6 @@
                     <button id="btn-admin-academy" data-sub="academy" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-graduation-cap mr-2"></i>專生考核系統</button>
                     <button id="btn-admin-jail-rules" data-sub="jail-rules" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-scale-balanced mr-2"></i>警用刑期表</button>
                     <button id="btn-admin-erlc" data-sub="erlc" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-gamepad mr-2"></i>ER:LC 整合設定</button>
-                    <button id="btn-admin-dispatch" data-sub="dispatch" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-tower-broadcast mr-2"></i>智慧派遣中心</button>
                     <button id="btn-admin-discord-webhooks" data-sub="discord-webhooks" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-brands fa-discord mr-2"></i>Discord Webhook 設定</button>
                 </div>
 
@@ -1999,7 +1999,7 @@
                     </div>
                         <!-- V2.0 管理中心全員位置圖 -->
                         <section class="rounded-2xl border border-violet-500/25 bg-slate-900 p-5 space-y-3"><div class="flex flex-wrap justify-between items-center gap-3"><div><h4 class="font-bold text-white"><i class="fa-solid fa-map-location-dot text-violet-400 mr-2"></i>全伺服器即時位置圖</h4><p class="text-xs text-slate-400 mt-1">可看警察、消防、一般市民；沿用上方 Worker 管理員連線，不會增加額外 ER:LC 查詢。</p></div><label class="flex items-center gap-2 text-xs text-slate-400">顯示隊伍<select id="ntpc-map-admin-filter" onchange="ntpcMapRender('admin', ntpcDispatchUI.state)" class="bg-slate-950 border border-slate-700 text-white rounded-lg px-2 py-1.5"><option value="all">全部玩家</option><option value="police">警察</option><option value="fire">消防</option><option value="civilian">市民</option></select></label></div>
-                        <button type="button" onclick="ntpcDispatchSyncStaffMap()" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-semibold rounded-lg px-4 py-2 mb-3">同步網站個人編號到 Worker</button>
+                        <button id="ntpc-dispatch-staff-sync-btn" type="button" onclick="ntpcDispatchSyncStaffMap()" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-semibold rounded-lg px-4 py-2 mb-3">同步網站個人編號到 Worker</button>
                         <p class="text-[11px] text-slate-500 mb-3">僅同步已綁定的 Roblox ID 與個人編號，請先確認管理中心已載入所有員工資料；異動後再次按下同步即可。</p>
                         <p id="ntpc-map-admin-meta" class="text-xs text-slate-400">等待管理中心 Worker 連線。</p><!-- V2.0.1：官方地圖背景與本機座標校正（不新增 Worker/API/Firebase 請求） -->
 <div id="ntpc-map-admin-toolbar" class="rounded-xl border border-slate-700/80 bg-slate-950/80 p-3 space-y-2 text-xs text-slate-300">
@@ -4766,8 +4766,10 @@ async function republishAnnouncement(id) {
                 renderAcademyCache();
             }
             if (tabId === 'admin') {
-                if (isAcademyInstructor() && getEffectiveRole(currentUser) !== 'admin') {
-                    switchAdminSubTab('academy');
+                if (getEffectiveRole(currentUser)!=='admin') {
+                    // 非最高管理員：管理中心職員只進入智慧派遣，警專教官只進入專生考核。
+                    if(canUseManagementDispatch(currentUser))switchAdminSubTab('dispatch');
+                    else if(hasUserPermission(currentUser,'academyInstructor'))switchAdminSubTab('academy');
                 } else {
                     switchAdminSubTab('users');
                     renderAdminUsers();
@@ -4855,11 +4857,16 @@ async function republishAnnouncement(id) {
 
         function switchAdminSubTab(sub){
             const tabs=['users','announcements','site-versions','clock','logs','storage','duty-alerts','notification-alerts','sync-health','memo','overview','online','devices','feedback','issues','academy','jail-rules','erlc','dispatch','discord-webhooks'];
-            const academyOnly = !!currentUser && getEffectiveRole(currentUser) !== 'admin' && hasUserPermission(currentUser,'academyInstructor');
-            const allowed = !academyOnly || sub === 'academy';
+            const fullAdmin=!!currentUser && getEffectiveRole(currentUser)==='admin';
+            const dispatchAllowed=canUseManagementDispatch(currentUser);
+            const academyAllowed=!!currentUser && hasUserPermission(currentUser,'academyInstructor');
+            const allowed=fullAdmin || (sub==='dispatch' && dispatchAllowed) || (sub==='academy' && academyAllowed);
             tabs.forEach(x=>{
                 document.getElementById(`admin-sub-${x}`)?.classList.add('hidden');
-                document.getElementById(`btn-admin-${x}`)?.classList.remove('bg-purple-600','text-white');
+                const btn=document.getElementById(`btn-admin-${x}`);
+                btn?.classList.remove('bg-purple-600','text-white');
+                // 一般管理中心職員僅見派遣；警專教官僅見考核，不擴大其餘管理分頁權限。
+                btn?.classList.toggle('hidden',!fullAdmin && !((x==='dispatch'&&dispatchAllowed)||(x==='academy'&&academyAllowed)));
             });
             const denied=document.getElementById('admin-sub-permission-denied');
             if(denied) denied.classList.toggle('hidden',allowed);
@@ -4867,7 +4874,7 @@ async function republishAnnouncement(id) {
                 const title=document.getElementById('admin-permission-denied-title');
                 const msg=document.getElementById('admin-permission-denied-message');
                 if(title) title.textContent='權限不足';
-                if(msg) msg.textContent='警專教官帳號僅可使用「專生考核系統」分頁，其他管理中心功能無權限。';
+                if(msg) msg.textContent='請使用目前帳號獲授權的管理中心功能；一般管理中心職員僅可使用智慧派遣，警專教官僅可使用專生考核。';
                 return;
             }
             if(sub!=='dispatch')ntpcDispatchStop();
@@ -5803,10 +5810,12 @@ async function republishAnnouncement(id) {
                 const lockTitle = adminLock.querySelector('h3');
                 const lockMsg = adminLock.querySelector('p');
                 if (lockTitle) lockTitle.textContent = '管理中心權限受限';
-                if (lockMsg) lockMsg.textContent = '需要管理中心權限；警專教官僅可使用「專生考核系統」分頁。';
+                if (lockMsg) lockMsg.textContent = '需具備管理中心所屬單位或管理權限；警專教官僅可使用「專生考核系統」。';
             }
             if (adminNav) adminNav.classList.toggle('hidden', !canManage);
             if (adminMobileNav) adminMobileNav.classList.toggle('hidden', !canManage);
+            const staffSyncBtn=document.getElementById('ntpc-dispatch-staff-sync-btn');
+            if(staffSyncBtn)staffSyncBtn.classList.toggle('hidden',getEffectiveRole(currentUser)!=='admin');
             const createUserBtn = document.getElementById('open-create-user-modal-btn');
             if (createUserBtn) createUserBtn.classList.toggle('hidden', !isAdmin);
 
@@ -9004,7 +9013,18 @@ async function republishAnnouncement(id) {
         }
         function hasUserPermission(u, permission) { return getUserPermissions(u).includes(permission); }
         function isAcademyInstructor(u=currentUser) { return !!u && (hasUserPermission(u,'academyInstructor') || getEffectiveRole(u)==='admin'); }
-        function canAccessManagementCenter(u=currentUser) { return !!u && (getEffectiveRole(u)==='admin' || hasUserPermission(u,'academyInstructor')); }
+        // 所屬單位與職級權限分離：管理中心一般職員可使用派遣，不因此取得最高管理員權限。
+        function isManagementUnitMember(u=currentUser) {
+            if(!u)return false;
+            const units=Array.isArray(u.units)?u.units:(u.units?[u.units]:(u.unit?[u.unit]:[]));
+            return units.some(unit=>String(unit||'').trim().toLowerCase()==='admin');
+        }
+        function canUseManagementDispatch(u=currentUser) {
+            return !!u && (getEffectiveRole(u)==='admin' || isManagementUnitMember(u));
+        }
+        function canAccessManagementCenter(u=currentUser) {
+            return !!u && (canUseManagementDispatch(u) || hasUserPermission(u,'academyInstructor'));
+        }
         function permissionDisplayText(u) {
             return getUserPermissions(u).map(p => USER_PERMISSION_DEFINITIONS[p]).join('、') || '未設定';
         }
@@ -10424,7 +10444,7 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
 
         const ntpcDispatchUI={url:'',token:'',timer:null,fetching:false,connected:false,state:null};
         function ntpcDispatchActive(){
-            return document.visibilityState==='visible' && !!currentUser && getEffectiveRole(currentUser)==='admin'
+            return document.visibilityState==='visible' && canUseManagementDispatch(currentUser)
                 && !document.getElementById('tab-admin')?.classList.contains('hidden')
                 && !document.getElementById('admin-sub-dispatch')?.classList.contains('hidden');
         }
@@ -10459,7 +10479,9 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
             }finally{clearTimeout(timer);}
         }
         async function ntpcDispatchConnect(){
-            if(!currentUser||getEffectiveRole(currentUser)!=='admin')return;
+            if(!canUseManagementDispatch(currentUser)){
+                showToast('僅限管理中心人員使用智慧派遣。','warning','權限不足');return;
+            }
             const url=ntpcDispatchNormalizeURL(document.getElementById('ntpc-dispatch-url')?.value);
             const token=document.getElementById('ntpc-dispatch-token')?.value||'';
             if(!url||token.length<16){showToast('Worker 網址須為 HTTPS workers.dev，管理密鑰至少 16 字。','warning','設定錯誤');return;}
