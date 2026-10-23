@@ -586,7 +586,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, query, where, limit, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, query, where, orderBy, limit, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // 安全提醒：Firebase Web 設定本身不是祕密；真正的防護必須靠 Firebase Authentication／Security Rules。
         // 安全強化：前端資料只視為不可信輸入；真正權限邊界仍由 Firebase Security Rules 決定。
@@ -615,7 +615,7 @@
         const db = getFirestore(app);
 
         window.db = db;
-        window.firebaseModules = { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, query, where, limit, writeBatch, runTransaction };
+        window.firebaseModules = { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, query, where, orderBy, limit, writeBatch, runTransaction };
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
 </head>
@@ -891,7 +891,6 @@
                     <button id="btn-police-citizen" data-sub="citizen" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-id-card mr-2"></i>市民身份系統</button>
                     <button id="btn-police-vehicles" data-sub="vehicles" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-car-side mr-2"></i>車輛資訊系統</button>
                     <button id="btn-police-wanted" data-sub="wanted" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-user-secret mr-2"></i>通緝查詢系統</button>
-                    <button id="btn-police-map" data-sub="map" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-map-location-dot mr-2"></i>即時地圖</button>
                 </div>
 
                 <div id="police-sub-reports" class="space-y-4">
@@ -1056,34 +1055,7 @@
                     <div id="wanted-unlocked-view" class="hidden space-y-4"><div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl"><div class="flex flex-col sm:flex-row justify-between gap-3 sm:items-center"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-user-secret text-rose-400 mr-2"></i>通緝查詢系統</h3><p class="text-xs text-slate-500 mt-1">使用證件末五碼查詢；解鎖後所有員警皆可發布與刪除通緝資料。</p></div><button id="open-wanted-post-btn" type="button" class="hidden bg-rose-600 hover:bg-rose-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold"><i class="fa-solid fa-plus mr-2"></i>發布通緝資料</button></div><div class="flex gap-2 mt-4"><input id="wanted-search-input" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono" placeholder="輸入關鍵字（姓名／證件末五碼／原因／條例）"><button id="wanted-search-btn" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl text-sm">查詢</button></div><div class="mt-4 rounded-xl bg-indigo-500/5 border border-indigo-500/20 p-4"><div class="flex flex-wrap items-center justify-between gap-3"><div><div class="text-sm font-semibold text-indigo-200"><i class="fa-brands fa-discord mr-2"></i>Discord 市民私訊通知</div><p class="text-xs text-slate-500 mt-1">核准通緝後由 Discord Bot 依「|」後方 RP 名稱尋找群組成員並私訊。</p></div><span id="wanted-discord-bot-status" class="inline-flex items-center px-3 py-1 rounded-full bg-slate-800 text-slate-400 text-xs">等待 Bot 回報</span></div></div></div><div id="wanted-results" class="grid grid-cols-1 gap-4"></div></div>
                 </div>
 
-                <!-- 獨立即時地圖：點擊通緝查詢後的分頁才顯示 -->
-                <section id="police-sub-map" class="hidden rounded-2xl border border-blue-500/25 bg-slate-900 p-5 md:p-6 space-y-4 shadow-xl">
-                    <div class="flex flex-wrap justify-between items-center gap-3"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-map-location-dot text-blue-400 mr-2"></i>警察勤務單位｜即時位置圖</h3><p class="text-xs text-slate-400 mt-1">僅顯示警察／警政隊伍。每 5 秒取得 Worker 共用快取，未連線不會讀取 Firebase。</p></div><span id="ntpc-map-police-status" class="text-xs border border-slate-700 bg-slate-950 text-slate-400 rounded-full px-3 py-1">尚未連線</span></div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3"><label class="block text-xs text-slate-400">Cloudflare Worker 網址<input id="ntpc-map-police-url" type="url" autocomplete="off" spellcheck="false" placeholder="https://ntpc-rp-smart-dispatch.你的帳號.workers.dev" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm" /></label><label class="block text-xs text-slate-400">警察勤務單位唯讀密鑰（不會儲存）<input id="ntpc-map-police-token" type="password" autocomplete="off" placeholder="由管理員提供專用地圖密鑰" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm" /></label></div>
-                    <div class="flex flex-wrap gap-2"><button type="button" onclick="ntpcMapConnect('police')" class="px-4 py-2 rounded-xl bg-blue-700 text-white text-sm font-semibold hover:brightness-110">連線並每 5 秒更新</button><button type="button" onclick="ntpcMapRefresh('police')" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 text-sm">立即更新</button><button type="button" onclick="ntpcMapDisconnect('police')" class="px-4 py-2 rounded-xl border border-slate-700 text-slate-400 text-sm">中斷連線</button></div>
-                    <p id="ntpc-map-police-meta" class="text-xs text-slate-400">請先部署 Worker，再輸入網址與此部門的唯讀密鑰。</p>
-                    <!-- V2.0.1：官方地圖背景與本機座標校正（不新增 Worker/API/Firebase 請求） -->
-<div id="ntpc-map-police-toolbar" class="rounded-xl border border-slate-700/80 bg-slate-950/80 p-3 space-y-2 text-xs text-slate-300">
-  <div class="flex flex-wrap items-center gap-2 justify-between">
-    <span class="font-semibold text-slate-100"><i class="fa-solid fa-map mr-1 text-sky-400"></i>即時地圖｜固定背景</span>
-    <div class="flex items-center gap-1" aria-label="地圖縮放控制">
-      <button type="button" onclick="ntpcMapZoom('police',0.8)" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 font-bold" aria-label="縮小地圖">－</button>
-      <button type="button" onclick="ntpcMapZoom('police',1.25)" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 font-bold" aria-label="放大地圖">＋</button>
-      <button type="button" onclick="ntpcMapResetView('police')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700" aria-label="還原全圖">還原全圖</button>
-      <span id="ntpc-map-police-zoom" class="text-slate-400 min-w-[38px] text-center">100%</span>
-    </div>
-  </div>
-  <p class="text-slate-400">滑鼠滾輪可縮放、按住拖曳可移動；玩家定位點下方會顯示勤務編號或呼號，滑鼠移入可查看完整資料。地圖由 <a href="https://erlc.one/" target="_blank" rel="noopener noreferrer" class="text-sky-300 underline">ERLC.One</a> 提供。</p>
-  <p id="ntpc-map-police-cal-hint" class="text-amber-300/90">已修正 316 落點（避免誤標在 307）；參考 210／316 的 X／Z 座標自動定位。地圖仍是估算，其他郵區需再核對。</p>
-</div>
-<div id="ntpc-map-police-canvas" class="relative flex items-center justify-center h-[440px] sm:h-[660px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" role="img" aria-label="ER:LC 警察勤務單位位置座標圖"><div class="absolute inset-0 grid place-items-center text-sm text-slate-500">尚未取得位置</div></div>
-                    <div id="ntpc-map-police-list" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 text-xs"></div>
-                    <div class="mt-3 rounded-xl border border-slate-700/80 bg-slate-950/70 p-3 space-y-2">
-                        <label class="flex items-center gap-2 text-xs text-amber-200"><input id="ntpc-map-police-show-cases" type="checkbox" checked onchange="ntpcMapRefreshView()" class="accent-amber-500"> 顯示最近 5 分鐘 110／119 報案通知（有座標才釘圖，無座標顯示通知）</label>
-                        <div id="ntpc-map-police-case-list" class="space-y-2 text-xs text-slate-300">開啟此地圖並連線後顯示案件</div>
-                    </div>
-                    <p class="text-[11px] text-slate-500">座標方向依 ER:LC 官方規格：X 向右增加、Z 向下增加。可切換提供的 GitHub 地圖或純座標圖；系統自動顯示概略座標；定位精度尚未經實際遊戲校驗。</p>
-                </section>
+                
             </div>
         </section>
 
@@ -1122,7 +1094,6 @@
                 </div>
 
 
-                <!-- V2.0 專屬勤務地圖：消防勤務單位 -->
                 
 
                 <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
@@ -1131,7 +1102,6 @@
                     <button id="btn-fire-ems" data-sub="ems" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-truck-medical mr-2"></i>EMS救護出勤報告</button>
                     <button id="btn-fire-clocks" data-sub="clocks" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clipboard-user mr-2"></i>消防出勤打卡紀錄</button>
                     <button id="btn-fire-hours" data-sub="hours" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數統計</button>
-                    <button id="btn-fire-map" data-sub="map" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-map-location-dot mr-2"></i>即時地圖</button>
                 </div>
 
                 <div id="fire-sub-reports" class="space-y-4">
@@ -1229,34 +1199,7 @@
                         </div>
                     </div>
                 </div>
-                <!-- 消防勤務獨立即時地圖 -->
-                <section id="fire-sub-map" class="hidden rounded-2xl border border-rose-500/25 bg-slate-900 p-5 md:p-6 space-y-4 shadow-xl">
-                    <div class="flex flex-wrap justify-between items-center gap-3"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-map-location-dot text-rose-400 mr-2"></i>消防勤務單位｜即時位置圖</h3><p class="text-xs text-slate-400 mt-1">僅顯示消防／救護隊伍。每 5 秒取得 Worker 共用快取，未連線不會讀取 Firebase。</p></div><span id="ntpc-map-fire-status" class="text-xs border border-slate-700 bg-slate-950 text-slate-400 rounded-full px-3 py-1">尚未連線</span></div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3"><label class="block text-xs text-slate-400">Cloudflare Worker 網址<input id="ntpc-map-fire-url" type="url" autocomplete="off" spellcheck="false" placeholder="https://ntpc-rp-smart-dispatch.你的帳號.workers.dev" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm" /></label><label class="block text-xs text-slate-400">消防勤務單位唯讀密鑰（不會儲存）<input id="ntpc-map-fire-token" type="password" autocomplete="off" placeholder="由管理員提供專用地圖密鑰" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm" /></label></div>
-                    <div class="flex flex-wrap gap-2"><button type="button" onclick="ntpcMapConnect('fire')" class="px-4 py-2 rounded-xl bg-rose-700 text-white text-sm font-semibold hover:brightness-110">連線並每 5 秒更新</button><button type="button" onclick="ntpcMapRefresh('fire')" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 text-sm">立即更新</button><button type="button" onclick="ntpcMapDisconnect('fire')" class="px-4 py-2 rounded-xl border border-slate-700 text-slate-400 text-sm">中斷連線</button></div>
-                    <p id="ntpc-map-fire-meta" class="text-xs text-slate-400">請先部署 Worker，再輸入網址與此部門的唯讀密鑰。</p>
-                    <!-- V2.0.1：官方地圖背景與本機座標校正（不新增 Worker/API/Firebase 請求） -->
-<div id="ntpc-map-fire-toolbar" class="rounded-xl border border-slate-700/80 bg-slate-950/80 p-3 space-y-2 text-xs text-slate-300">
-  <div class="flex flex-wrap items-center gap-2 justify-between">
-    <span class="font-semibold text-slate-100"><i class="fa-solid fa-map mr-1 text-sky-400"></i>即時地圖｜固定背景</span>
-    <div class="flex items-center gap-1" aria-label="地圖縮放控制">
-      <button type="button" onclick="ntpcMapZoom('fire',0.8)" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 font-bold" aria-label="縮小地圖">－</button>
-      <button type="button" onclick="ntpcMapZoom('fire',1.25)" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 font-bold" aria-label="放大地圖">＋</button>
-      <button type="button" onclick="ntpcMapResetView('fire')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700" aria-label="還原全圖">還原全圖</button>
-      <span id="ntpc-map-fire-zoom" class="text-slate-400 min-w-[38px] text-center">100%</span>
-    </div>
-  </div>
-  <p class="text-slate-400">滑鼠滾輪可縮放、按住拖曳可移動；玩家定位點下方會顯示勤務編號或呼號，滑鼠移入可查看完整資料。地圖由 <a href="https://erlc.one/" target="_blank" rel="noopener noreferrer" class="text-sky-300 underline">ERLC.One</a> 提供。</p>
-  <p id="ntpc-map-fire-cal-hint" class="text-amber-300/90">已修正 316 落點（避免誤標在 307）；參考 210／316 的 X／Z 座標自動定位。地圖仍是估算，其他郵區需再核對。</p>
-</div>
-<div id="ntpc-map-fire-canvas" class="relative flex items-center justify-center h-[440px] sm:h-[660px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" role="img" aria-label="ER:LC 消防勤務單位位置座標圖"><div class="absolute inset-0 grid place-items-center text-sm text-slate-500">尚未取得位置</div></div>
-                    <div id="ntpc-map-fire-list" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 text-xs"></div>
-                    <div class="mt-3 rounded-xl border border-slate-700/80 bg-slate-950/70 p-3 space-y-2">
-                        <label class="flex items-center gap-2 text-xs text-amber-200"><input id="ntpc-map-fire-show-cases" type="checkbox" checked onchange="ntpcMapRefreshView()" class="accent-amber-500"> 顯示最近 5 分鐘 110／119 報案通知（有座標才釘圖，無座標顯示通知）</label>
-                        <div id="ntpc-map-fire-case-list" class="space-y-2 text-xs text-slate-300">開啟此地圖並連線後顯示案件</div>
-                    </div>
-                    <p class="text-[11px] text-slate-500">座標方向依 ER:LC 官方規格：X 向右增加、Z 向下增加。可切換提供的 GitHub 地圖或純座標圖；系統自動顯示概略座標；定位精度尚未經實際遊戲校驗。</p>
-                </section>
+                
             </div>
         </section>
 
@@ -4868,11 +4811,13 @@ async function republishAnnouncement(id) {
         }
 
         function switchPoliceSubTab(sub) {
+            // 地圖已集中於管理中心；舊的路由請求安全地回到案件列表。
+            if (sub === 'map') sub = 'reports';
             if (sub === 'review' && !canReviewPoliceReports()) {
                 showToast('高層審核系統僅限警察高層、高階成員與管理中心使用。', 'warning', '權限不足');
                 sub = 'reports';
             }
-            ['reports', 'review', 'punishments', 'clocks', 'hours', 'citizen', 'vehicles', 'wanted','map'].forEach(s => {
+            ['reports', 'review', 'punishments', 'clocks', 'hours', 'citizen', 'vehicles', 'wanted'].forEach(s => {
                 const el = document.getElementById(`police-sub-${s}`);
                 if (el) el.classList.add('hidden');
                 const btn = document.getElementById(`btn-police-${s}`);
@@ -4887,11 +4832,13 @@ async function republishAnnouncement(id) {
         }
 
         function switchFireSubTab(sub) {
+            // 地圖已集中於管理中心；舊的路由請求安全地回到案件列表。
+            if (sub === 'map') sub = 'reports';
             if (sub === 'review' && !canReviewFireReports()) {
                 showToast('高層審核系統僅限消防高層、高階成員與管理中心使用。', 'warning', '權限不足');
                 sub = 'reports';
             }
-            ['reports', 'review', 'ems', 'clocks', 'hours','map'].forEach(s => {
+            ['reports', 'review', 'ems', 'clocks', 'hours'].forEach(s => {
                 const el = document.getElementById(`fire-sub-${s}`);
                 if (el) el.classList.add('hidden');
                 const btn = document.getElementById(`btn-fire-${s}`);
@@ -10061,9 +10008,8 @@ async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登�
         // V2.0 ER:LC 三中心專屬位置圖：唯讀 token 不存入 localStorage / Firestore。
         const ntpcMaps={police:{url:'',token:'',connected:false,timer:null,fetching:false,state:null},fire:{url:'',token:'',connected:false,timer:null,fetching:false,state:null}};
         function ntpcMapAllowed(scope){
-            if(!currentUser)return false;
-            const role=getEffectiveRole(currentUser);
-            return role==='admin'||(currentUser.units||[currentUser.unit]).includes(scope);
+            // 非管理部門地圖頁面已移除。保留共用的地圖渲染核心供管理中心使用。
+            return !!currentUser && getEffectiveRole(currentUser)==='admin' && scope==='admin';
         }
         function ntpcMapIsActive(scope){
             return document.visibilityState==='visible' && ntpcMapAllowed(scope) && !document.getElementById('tab-'+scope)?.classList.contains('hidden') && !document.getElementById(scope+'-sub-map')?.classList.contains('hidden');
