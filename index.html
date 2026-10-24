@@ -11333,7 +11333,6 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             );
         }
         function jxMedicalCosts(d={}){
-            const care=[['wheelchair','輪椅／行動不便患者',500],['oxygen','醫療氧氣使用',800],['ecg','心電圖監測',1200],['iv','靜脈點滴照護',1200],['medication','藥物給予',500]];
             return jxSection('六、出勤費用',
                 jxText('baseFee','基本費用（$）',d.baseFee??8000,'type="number" min="0" step="1" required')+
                 jxSelect('standbyFeeType','活動救護／駐點費用',['不加價','小型活動半天','小型活動整天','大型活動每場','長期駐點每月'],d.standbyFeeType||'不加價')+
@@ -11353,7 +11352,6 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                         </div>`;
                     }).join('')}</div>
                 </div>`+
-                `<div class="sm:col-span-2"><span class="block text-xs font-semibold text-slate-300 mb-2">特殊醫療與照護項目（依次數計費）</span><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">${care.map(([k,label,fee])=>`<div class="rounded-xl border border-slate-700 bg-slate-900 p-3">${jxCounter('care_'+k,label+'（'+jxMoney(fee)+'／次）',d['care_'+k]||0)}</div>`).join('')}</div></div>`+
                 `<div class="sm:col-span-2 rounded-xl border border-teal-500/40 bg-teal-950/40 p-4 space-y-2"><h5 class="text-teal-300 font-bold">自動試算明細</h5><div id="jx-cost-lines" class="space-y-1 text-sm text-slate-300"></div><div class="border-t border-teal-500/30 pt-3 flex justify-between text-lg font-bold text-white"><span>總金額</span><output id="jx-grand-total" class="text-teal-300">$8,000</output></div><p class="text-[11px] text-slate-400">前 2 位 EMT 已含於基本費，第 3 位起按 EMT-1 $700／EMT-2 $1,000／EMT-P $1,500 加收；護理師 $2,500、醫師 $5,000 另計。</p></div>`+
                 jxSelect('paymentStatus','付款狀態',['已付','未付'],d.paymentStatus||'未付')
             );
@@ -11491,7 +11489,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 }
                 // Compatibility with earlier records: old extraManual fields are replaced by new five rows.
                 data.extraManual=0;data.extraNote='';
-                Object.keys(JX_TREATMENT_RATES).forEach(k=>data['care_'+k]=jxNum(data,'care_'+k));
+                Object.keys(JX_TREATMENT_RATES).forEach(k=>data['care_'+k]=0);
                 data.clinical=jxCaptureClinical();
             }
             return data;
@@ -11742,15 +11740,39 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 catch(e){showToast('退件失敗：'+e.message,'error');}
             }
         }
+        // 審核狀態使用視窗選單，不必記憶數字代碼。
+        function chooseJXReviewStatus(current){
+            return new Promise(resolve=>{
+                const backdrop=document.createElement('div');
+                backdrop.className='fixed inset-0 z-[110] bg-black/75 flex items-center justify-center p-4';
+                backdrop.setAttribute('role','presentation');
+                const panel=document.createElement('div');
+                panel.className='w-full max-w-sm rounded-2xl border border-slate-600 bg-slate-900 p-5 shadow-2xl space-y-4 text-white';
+                panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');
+                const title=document.createElement('h3');title.className='text-lg font-bold';title.textContent='更改報告審核狀態';
+                const desc=document.createElement('p');desc.className='text-sm text-slate-400';desc.textContent='請選擇新的審核狀態：';
+                const select=document.createElement('select');select.className=jxInputClass;
+                [['pending','待審核'],['approved','已核准'],['rejected','退件']].forEach(([value,label])=>{
+                    const option=document.createElement('option');option.value=value;option.textContent=label;option.selected=value===current;select.appendChild(option);
+                });
+                const controls=document.createElement('div');controls.className='flex gap-3 justify-end';
+                const cancel=document.createElement('button');cancel.type='button';cancel.className='rounded-lg bg-slate-700 px-4 py-2';cancel.textContent='取消';
+                const accept=document.createElement('button');accept.type='button';accept.className='rounded-lg bg-teal-700 px-4 py-2 font-semibold';accept.textContent='下一步';
+                controls.append(cancel,accept);panel.append(title,desc,select,controls);backdrop.appendChild(panel);document.body.appendChild(backdrop);
+                const finish=value=>{document.removeEventListener('keydown',onKey);backdrop.remove();resolve(value);};
+                const onKey=event=>{if(event.key==='Escape')finish(null);};
+                cancel.addEventListener('click',()=>finish(null));accept.addEventListener('click',()=>finish(select.value));
+                backdrop.addEventListener('click',event=>{if(event.target===backdrop)finish(null);});
+                document.addEventListener('keydown',onKey);select.focus();
+            });
+        }
         async function changeJXReviewStatus(type,encoded,pending=false){
             if(!canReviewJX()||!db||!fm||!JX_COLLECTIONS[type]){showToast('無權限調整審核狀態','warning');return;}
             const id=decodeURIComponent(encoded),cfg=JX_COLLECTIONS[type],source=pending?cfg.pending:cfg.history;
             const r=(appData[source]||[]).find(x=>String(x.docId||x.id)===id);
             if(!r)return;
-            const raw=prompt('輸入新的審核狀態：1＝待審、2＝已核准、3＝退件',r.reviewStatus==='pending'?'1':r.reviewStatus==='rejected'?'3':'2');
-            if(raw===null)return;
-            const next=({'1':'pending','2':'approved','3':'rejected'})[String(raw).trim()];
-            if(!next){showToast('請輸入 1、2 或 3','warning');return;}
+            const next=await chooseJXReviewStatus(r.reviewStatus||'pending');
+            if(!next)return;
             let note='';
             if(next==='rejected'){
                 const response=prompt('請填寫退件原因',r.reviewNote||'');if(response===null)return;
