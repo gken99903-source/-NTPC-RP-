@@ -286,7 +286,7 @@ __                                                                              
             const raw=await response.text();let data;
             try{data=JSON.parse(raw);}catch(_){
               if(response.status===401||response.status===403)throw new Error('登入驗證未通過，請檢查 Cloudflare Access 管理員授權（HTTP '+response.status+'）');
-              if(/^\s*<!doctype html|^\s*<html/i.test(raw))throw new Error('後端回傳 HTML，請確認 Pages Functions 與 Cloudflare Access 路由（HTTP '+response.status+'）');
+              if(/^\s*<!doctype html|^\s*<html/i.test(raw))throw new Error(response.status===200?'Bot API 路由回傳了網站 HTML（HTTP 200），不是 JSON。請確認 Cloudflare Pages 已部署 functions/api/bot-console/state.js，且 API 路徑沒有被 SPA 回退規則覆蓋':'Bot API 回傳 HTML，可能是 Cloudflare Access 登入頁或 Pages Functions 路由錯誤（HTTP '+response.status+'）');
               throw new Error('後端回應格式異常（HTTP '+response.status+'）');
             }
             if(!response.ok||!data?.ok)throw new Error(String(data?.error||'HTTP '+response.status));
@@ -307,7 +307,7 @@ __                                                                              
           const status=document.getElementById('ntpc-bot-status');if(!status)return;
           ntpcBotConsoleRefreshBusy=true;ntpcBotConsoleReady=false;
           status.textContent='正在讀取 Cloudflare Bot 後端…';
-           if(location.protocol==='file:'){status.textContent='此頁是本機 HTML，無法同步 Bot。請從 https://ntpc-rp.pages.dev/ 開啟正式網站，並部署 ZIP 內的 functions、D1、Access 和貓居 Bot。';return;}
+           if(location.protocol==='file:'){status.textContent='此頁是本機 HTML，無法同步 Bot。請從 https://ntpc-rp.pages.dev/ 開啟正式網站，並部署 Pages Functions、D1、Access 和 Bot。';ntpcBotConsoleRefreshBusy=false;return;}
           try{
             const data=await ntpcBotConsoleRequest('/api/bot-console/state',{credentials:'same-origin'},15000);
             const s=data.snapshot||{};ntpcBotConsoleState=s;
@@ -11231,6 +11231,8 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
         const jxMoney=n=>'$'+Math.max(0,Number(n)||0).toLocaleString('en-US',{maximumFractionDigits:0});
         const jxNum=(data,key,fallback=0)=>Math.max(0,Math.floor(Number(data?.[key]??fallback)||0));
         const jxNowLocal=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date()).replace(' ','T');
+        // 填報權限和審核權限分離：管理中心一般成員可新增、提交嘉蕭報告，但不自動取得高層審核權限。
+        function canWriteJXReport(u=currentUser){return !!u&&(isJiaxiaoMember(u)||canUseManagementDispatch(u));}
         function canReviewJX(u=currentUser){return !!u&&(getEffectiveRole(u)==='admin'||hasUserPermission(u,'civilianHigh'));}
         const jxInputClass='w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white min-w-0 focus:border-teal-400 focus:outline-none';
         function jxText(key,label,value='',attr=''){
@@ -11545,7 +11547,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
         function openJXReport(type,id=''){
             if(!JX_COLLECTIONS[type]||!canAccessJiaxiao()){showToast('沒有嘉蕭集團報告權限','warning');return;}
             const list=appData[JX_COLLECTIONS[type].pending]||[],record=id?list.find(r=>String(r.docId||r.id)===String(id)):null;
-            if(!isJiaxiaoMember()){showToast('只有嘉蕭成員可以填寫案件報告','warning');return;}
+            if(!canWriteJXReport()){showToast('只有嘉蕭或管理中心成員可以填寫案件報告','warning');return;}
             if(record&&String(record.authorAccount||'')!==String(currentUser?.account||'')&&!canReviewJX()){showToast('無權修改其他人的報告','warning');return;}
             if(record&&record.reviewStatus==='pending'&&!canReviewJX()){showToast('待審期間無法修改案件','warning');return;}
             jxReportMode=type;
@@ -11617,7 +11619,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
         function jxUniqueId(type){return JX_COLLECTIONS[type].prefix+'-'+jxNowLocal().slice(0,10).replace(/-/g,'')+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,7).toUpperCase();}
         async function submitJXReport(event){
             event.preventDefault();if(jxReportSaving)return;
-            if(!isJiaxiaoMember()||!fm||!db){showToast('尚未登入或無嘉蕭報告提交權限','warning');return;}
+            if(!canWriteJXReport()||!fm||!db){showToast('尚未登入或無嘉蕭報告提交權限','warning');return;}
             const form=document.getElementById('jx-report-form');
             if(!form.checkValidity()&&jxReportMode==='medical'){
                 const invalid=form.querySelector(':invalid');const page=invalid?.closest('[data-jx-form-page]')?.dataset.jxFormPage;
@@ -11709,7 +11711,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             const p=document.getElementById('jx-pending-list');if(p)p.innerHTML=pending.length?pending.map(({r,type})=>jxReportCard(r,type,true)).join(''):'目前沒有待審案件（或尚未按下載入）。';
             const own=document.getElementById('jx-own-pending-list');
             if(own){const mine=pending.filter(x=>String(x.r.authorAccount||'')===String(currentUser?.account||''));own.innerHTML=mine.length?mine.map(({r,type})=>jxReportCard(r,type,true)).join(''):'目前沒有送審中的案件（或尚未按下載入）。';}
-            document.getElementById('jx-own-pending-section')?.classList.toggle('hidden',!isJiaxiaoMember());
+            document.getElementById('jx-own-pending-section')?.classList.toggle('hidden',!canWriteJXReport());
             const h=document.getElementById('jx-history-list');if(h)h.innerHTML=history.length?history.map(({r,type,pending})=>jxReportCard(r,type,pending)).join(''):'目前沒有歷史報告（或尚未按下載入）。';
             for(const type of ['medical','funeral']){
                 const list=document.getElementById('jx-'+type+'-history-list');
