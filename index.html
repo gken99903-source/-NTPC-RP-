@@ -282,16 +282,22 @@ __                                                                              
         let ntpcBotAdminIdentity='';
         let ntpcBotAdminKey='';
         function ntpcBotAdminLogin(){
-          if(ntpcBotAdminIdentity && ntpcBotAdminKey)return true;
-          const email=prompt('Bot 控制台：請輸入授權管理員的 Email（與網站登入分開驗證）');
-          if(email===null)return false;
-          const key=prompt('請輸入該管理員的 64 字元專用密鑰（不會保存在瀏覽器儲存空間）');
-          if(key===null)return false;
-          const cleanEmail=email.trim().toLowerCase(),cleanKey=key.trim();
-          if(!/^\S+@\S+\.\S+$/.test(cleanEmail)||!/^[a-f0-9]{64}$/.test(cleanKey)){
-            showToast('信箱或密鑰格式不正確','warning');return false;
+          const account=String(currentUser?.account||'').trim().toLowerCase();
+          if(!currentUser||!canAccessManagementCenter()||!account){
+            showToast('請先使用具有管理中心權限的網站帳號登入','warning');return false;
           }
-          ntpcBotAdminIdentity=cleanEmail;ntpcBotAdminKey=cleanKey;return true;
+          if(!/^[\p{L}\p{N}_.-]{1,80}$/u.test(account)){
+            showToast('此網站帳號包含不支援的字元，請聯絡管理員','warning');return false;
+          }
+          if(ntpcBotAdminIdentity===account && ntpcBotAdminKey)return true;
+          ntpcBotAdminLogout();
+          const key=prompt('Bot 控制台｜目前網站帳號：'+account+'\n請輸入此帳號的 64 字元專用管理密鑰');
+          if(key===null)return false;
+          const cleanKey=key.trim().toLowerCase();
+          if(!/^[a-f0-9]{64}$/.test(cleanKey)){
+            showToast('管理密鑰格式不正確（需要 64 字元）','warning');return false;
+          }
+          ntpcBotAdminIdentity=account;ntpcBotAdminKey=cleanKey;return true;
         }
         function ntpcBotAdminLogout(){ntpcBotAdminIdentity='';ntpcBotAdminKey='';ntpcBotConsoleReady=false;}
         async function ntpcBotConsoleRequest(url,options={},timeoutMs=15000){
@@ -302,11 +308,11 @@ __                                                                              
             const headers=new Headers(options.headers||{});
             headers.set('Authorization','Bearer '+ntpcBotAdminIdentity+':'+ntpcBotAdminKey);
             const response=await fetch(url,{...options,headers,signal:controller.signal,cache:'no-store'});
-            if(response.status===401){ntpcBotAdminLogout();throw new Error('Bot 管理員驗證失敗，請確認信箱、密鑰或 Cloudflare Secret；下次可重新輸入');}
+            if(response.status===401){ntpcBotAdminLogout();throw new Error('Bot 管理員驗證失敗，請確認網站帳號、密鑰或 Cloudflare Secret；下次可重新輸入');}
             const raw=await response.text();let data;
             try{data=JSON.parse(raw);}catch(_){
               if(response.status===401||response.status===403)throw new Error('Bot 管理員密鑰驗證未通過（HTTP '+response.status+'）');
-              if(/^\s*<!doctype html|^\s*<html/i.test(raw))throw new Error(response.status===200?'Bot API 路由回傳了網站 HTML（HTTP 200），不是 JSON。請確認 Cloudflare Pages 已部署 functions/api/bot-console/state.js，且 API 路徑沒有被 SPA 回退規則覆蓋':'Bot API 回傳 HTML，可能是 Cloudflare Access 登入頁或 Pages Functions 路由錯誤（HTTP '+response.status+'）');
+              if(/^\s*<!doctype html|^\s*<html/i.test(raw))throw new Error(response.status===200?'Bot API 路由回傳了網站 HTML（HTTP 200），不是 JSON。請確認 Cloudflare Pages 已部署 functions/api/bot-console/state.js，且 API 路徑沒有被 SPA 回退規則覆蓋':'Bot API 回傳 HTML，可能是 Pages Functions 路由錯誤（HTTP '+response.status+'）');
               throw new Error('後端回應格式異常（HTTP '+response.status+'）');
             }
             if(!response.ok||!data?.ok)throw new Error(String(data?.error||'HTTP '+response.status));
@@ -335,7 +341,7 @@ __                                                                              
             ntpcBotConsoleUpdatedAt=Number(data.updated_at)||0;
             ntpcBotConsoleReady=age!==null&&age<600;
             status.textContent=age==null?'Bot 尚未同步任何資料。':`Bot 狀態：${age<120?'已連線':'資料較舊'}｜上次更新 ${age} 秒前｜${s.guild_name||'新北市RP'}`;
-            document.getElementById('ntpc-bot-auth').textContent='已驗證 Bot 管理員：'+data.operator;
+            document.getElementById('ntpc-bot-auth').textContent='已驗證 Bot 管理帳號：'+data.operator;
             const select=document.getElementById('ntpc-bot-panel-list'),previous=select.value;
             select.innerHTML='<option value="">選擇面板</option>'+(s.panels||[]).map(p=>`<option value="${escapeHtml(String(p.channel_id))}">${escapeHtml(p.title||'未命名')}｜#${escapeHtml(String(p.channel_id))}${p.locked?'（已鎖定）':''}</option>`).join('');
             if((s.panels||[]).some(p=>String(p.channel_id)===previous))select.value=previous;
