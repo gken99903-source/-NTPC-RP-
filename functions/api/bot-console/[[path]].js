@@ -1,28 +1,29 @@
-// Protected management endpoints; MUST configure Cloudflare Access for /api/bot-console/*.
-// Access identity is verified cryptographically at the origin; never trust website username alone.
+// Protected management endpoints; independent administrator API key authentication.
+// No Cloudflare Access required. Never trust website username/sessionStorage alone.
 const GUILD = '1434729354474291232';
 const DAY = 86400;
 const json = (obj, status=200) => Response.json(obj, {status, headers:{'cache-control':'no-store','x-content-type-options':'nosniff'}});
 const bad = (message,status=400)=>json({ok:false,error:message},status);
-function decode(input){const raw=atob(input.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-input.length%4)%4));return Uint8Array.from(raw,x=>x.charCodeAt(0));}
+// Each administrator has an independent 256-bit random key. Store only SHA-256 key hashes
+// in the Pages secret BOT_ADMIN_KEYS, as a JSON object {"website_account":"hex hash"}.
+// Existing website sessionStorage is NOT a trusted authorization credential.
 async function admin(req,env){
-  const aud=String(env.BOT_ACCESS_AUD||'').trim();
-  const team=String(env.BOT_ACCESS_TEAM_DOMAIN||'').trim().replace(/^https?:\/\//,'').replace(/\/$/,'');
-  const allowed=(env.BOT_ADMIN_EMAILS||'').toLowerCase().split(',').map(x=>x.trim()).filter(Boolean);
-  if(!aud||!team||!allowed.length)throw new Error('尚未設定 Access 安全驗證');
-  const token=req.headers.get('Cf-Access-Jwt-Assertion');
-  if(!token) return null;
-  const chunks=token.split('.');if(chunks.length!==3)return null;
-  let hdr,payload;try{hdr=JSON.parse(new TextDecoder().decode(decode(chunks[0])));payload=JSON.parse(new TextDecoder().decode(decode(chunks[1])));}catch{return null;}
-  const now=Math.floor(Date.now()/1000);
-  if(hdr.alg!=='RS256'||!hdr.kid||!Array.isArray(payload.aud)||!payload.aud.includes(aud)||!payload.exp||payload.exp<=now||payload.nbf>now||payload.iss!==`https://${team}`)return null;
-  const email=String(payload.email||'').toLowerCase();if(!allowed.includes(email))return null;
-  const res=await fetch(`https://${team}/cdn-cgi/access/certs`,{cf:{cacheTtl:300,cacheEverything:true}});
-  if(!res.ok)throw new Error('無法驗證 Access 公鑰');
-  const obj=await res.json();const jwk=(obj.keys||[]).find(k=>k.kid===hdr.kid&&k.kty==='RSA');if(!jwk)return null;
-  const key=await crypto.subtle.importKey('jwk',jwk,{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['verify']);
-  const sig=decode(chunks[2]), data=new TextEncoder().encode(chunks[0]+'.'+chunks[1]);
-  return await crypto.subtle.verify('RSASSA-PKCS1-v1_5',key,sig,data)?email:null;
+  const raw=String(env.BOT_ADMIN_KEYS||'');
+  if(!raw)throw new Error('尚未設定 BOT_ADMIN_KEYS 管理員密鑰雜湊');
+  let keys;try{keys=JSON.parse(raw);}catch{throw new Error('BOT_ADMIN_KEYS 必須為 JSON 物件');}
+  if(!keys||typeof keys!=='object'||Array.isArray(keys))throw new Error('BOT_ADMIN_KEYS 格式錯誤');
+  const header=req.headers.get('authorization')||'';
+  if(!header.startsWith('Bearer '))return null;
+  const value=header.slice(7);
+  const cut=value.indexOf(':');if(cut<1)return null;
+  const account=value.slice(0,cut).trim().toLowerCase();const token=value.slice(cut+1);
+  if(account.length<1||account.length>80||!/^[\p{L}\p{N}_.-]+$/u.test(account)||!/^[a-f0-9]{64}$/.test(token))return null;
+  const expected=String(Object.entries(keys).find(([k])=>k.toLowerCase()===account)?.[1]||'').toLowerCase();
+  if(!/^[a-f0-9]{64}$/.test(expected))return null;
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token));
+  const actual=Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,'0')).join('');
+  let difference=0;for(let i=0;i<64;i++)difference|=actual.charCodeAt(i)^expected.charCodeAt(i);
+  return difference===0?account:null;
 }
 function snowflake(s){return /^\d{17,20}$/.test(String(s||''));}
 function valid(action,p){
@@ -48,15 +49,18 @@ function valid(action,p){
 }
 export async function onRequest({request,env}){
   if(!env.BOT_PANEL_DB)return bad('尚未綁定 BOT_PANEL_DB 資料庫',503);
-  let email;try{email=await admin(request,env);}catch(e){return bad('管理驗證設定錯誤：'+e.message,503);}
-  if(!email)return bad('請先通過 Cloudflare Access 授權，並確認管理信箱在允許清單',401);
+  let account;try{account=await admin(request,env);}catch(e){return bad('管理驗證設定錯誤：'+e.message,503);}
+  if(!account)return bad('網站帳號或專用密鑰驗證失敗',401);
+  // Reject cross-site requests even when an administrator accidentally loads a malicious page.
+  const origin=request.headers.get('origin');
+  if(origin && origin!==new URL(request.url).origin)return bad('跨來源請求遭拒',403);
   const path=new URL(request.url).pathname.split('/').slice(-1)[0];
   const db=env.BOT_PANEL_DB,now=Math.floor(Date.now()/1000);
   if(request.method==='GET'){
     if(path!=='state')return bad('路由不存在',404);
     const snapshot=await db.prepare('SELECT payload,updated_at FROM bot_console_snapshot WHERE guild_id=?').bind(GUILD).first();
     const jobs=await db.prepare('SELECT id,action,operator,status,result,created_at,completed_at FROM bot_console_jobs ORDER BY created_at DESC LIMIT 40').all();
-    return json({ok:true,operator:email,snapshot:snapshot?JSON.parse(snapshot.payload):null,updated_at:snapshot?.updated_at||null,jobs:jobs.results});
+    return json({ok:true,operator:account,snapshot:snapshot?JSON.parse(snapshot.payload):null,updated_at:snapshot?.updated_at||null,jobs:jobs.results});
   }
   if(request.method!=='POST'||path!=='action')return bad('不支援的方法',405);
   const contentLength=Number(request.headers.get('content-length')||0);if(contentLength>12000)return bad('資料超過大小限制',413);
@@ -65,6 +69,6 @@ export async function onRequest({request,env}){
   const issue=valid(action,payload);if(issue)return bad(issue);
   const id=crypto.randomUUID();
   await db.prepare('INSERT INTO bot_console_jobs(id,action,payload,operator,created_at,status) VALUES(?,?,?,?,?,?)')
-    .bind(id,action,JSON.stringify(payload),email,now,'pending').run();
+    .bind(id,action,JSON.stringify(payload),account,now,'pending').run();
   return json({ok:true,id,status:'pending',notice:'已排入隊列，須等貓居 Bot 執行後才生效。'},202);
 }
