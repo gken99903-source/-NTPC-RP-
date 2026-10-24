@@ -691,6 +691,7 @@
                         <div class="grid grid-cols-2 gap-1.5">
                             <button id="nav-dashboard" data-tab="dashboard" class="nav-btn more-menu-item w-full px-3 py-2.5 rounded-xl text-sm font-medium text-left text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-gauge-high w-5 mr-2 text-blue-400"></i>勤務中心</button>
                             <button id="nav-academy" data-tab="academy" class="nav-btn more-menu-item w-full px-3 py-2.5 rounded-xl text-sm font-medium text-left text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-graduation-cap w-5 mr-2 text-amber-400"></i>專生考核</button>
+                            <button id="nav-jiaxiao" data-tab="jiaxiao" class="nav-btn more-menu-item w-full px-3 py-2.5 rounded-xl text-sm font-medium text-left text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-building w-5 mr-2 text-teal-400"></i>嘉蕭集團</button>
                             <button id="nav-admin" data-tab="admin" class="nav-btn more-menu-item w-full px-3 py-2.5 rounded-xl text-sm font-medium text-left text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-user-gear w-5 mr-2 text-purple-400"></i>管理員中心</button>
                             <button id="nav-update-log" data-tab="update-log" class="nav-btn more-menu-item w-full px-3 py-2.5 rounded-xl text-sm font-medium text-left text-slate-300 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-clock-rotate-left w-5 mr-2 text-emerald-400"></i>更新紀錄</button>
                         </div>
@@ -728,6 +729,7 @@
                 <div id="mobile-more-menu" class="hidden px-2 pb-2">
                     <button data-tab="admin" id="mobile-nav-admin" class="mobile-nav-btn text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-user-gear"></i><span>管理員中心</span></button>
                     <button data-tab="dashboard" class="mobile-nav-btn text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-gauge-high"></i><span>勤務中心</span></button>
+                    <button id="mobile-nav-jiaxiao" data-tab="jiaxiao" class="mobile-nav-btn text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-building"></i><span>嘉蕭集團</span></button>
                     <button data-tab="academy" class="mobile-nav-btn text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-graduation-cap"></i><span>專生考核</span></button>
                     <button data-tab="update-log" class="mobile-nav-btn text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-clock-rotate-left"></i><span>更新紀錄</span></button>
                 </div>
@@ -1652,6 +1654,36 @@
         </section>
 
         <!-- Admin Tab -->
+        <!-- 嘉蕭集團：先建立民間職業中心與最低限度的值班打卡；業務模組另行規劃 -->
+        <section id="tab-jiaxiao" class="hidden space-y-6">
+            <div id="jiaxiao-lock-overlay" class="rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center text-slate-400">
+                <i class="fa-solid fa-lock text-3xl mb-3"></i><p>僅嘉蕭集團成員、民間職業高層或管理中心可以瀏覽。</p>
+            </div>
+            <div id="jiaxiao-content-container" class="hidden space-y-6">
+                <div class="rounded-2xl border border-teal-500/25 bg-slate-900 p-5 sm:p-7">
+                    <div class="flex items-center gap-3"><i class="fa-solid fa-building text-3xl text-teal-400"></i><div>
+                        <h2 class="text-2xl font-bold text-white">嘉蕭集團</h2>
+                        <p class="text-slate-400 text-sm mt-1">民間職業中心｜功能架構預留，實際業務項目後續再擴充。</p>
+                    </div></div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                        <div class="flex items-center justify-between gap-2"><h3 class="font-bold text-white"><i class="fa-solid fa-clock text-teal-400 mr-2"></i>嘉蕭集團上下班打卡</h3><span id="jiaxiao-duty-state" class="text-xs text-slate-400">尚未確認</span></div>
+                        <p class="text-sm text-slate-400">為消防無人在班時的倒地通知後援名單提供依據；只通知已打卡上班的成員。</p>
+                        <div id="jiaxiao-clock-actions" class="flex flex-wrap gap-2">
+                            <button type="button" onclick="submitJiaxiaoClock('上班')" class="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 text-white text-sm font-semibold">上班打卡</button>
+                            <button type="button" onclick="submitJiaxiaoClock('下班')" class="rounded-xl bg-slate-700 hover:bg-slate-600 px-4 py-2.5 text-white text-sm font-semibold">下班打卡</button>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                        <h3 class="font-bold text-white"><i class="fa-solid fa-users text-teal-400 mr-2"></i>目前上班成員 <span id="jiaxiao-duty-count" class="text-teal-300">0</span> 人</h3>
+                        <div id="jiaxiao-duty-list" class="space-y-2 text-sm text-slate-400">載入值班資料中……</div>
+                    </div>
+                </div>
+                <div class="bg-slate-900/70 border border-dashed border-slate-700 rounded-2xl p-6 text-center text-slate-400"><i class="fa-solid fa-screwdriver-wrench text-2xl mb-2"></i><p class="font-medium">其他功能尚未啟用</p><p class="text-xs mt-1">待確認實際需求後再新增，不預先建立業務資料或權限。</p></div>
+            </div>
+        </section>
+
         <section id="tab-admin" class="hidden space-y-8">
             <div id="admin-lock-overlay" class="hidden bg-slate-900/90 backdrop-blur border border-slate-800 p-12 rounded-2xl text-center space-y-4 shadow-2xl">
                 <div class="w-16 h-16 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-2xl mx-auto flex items-center justify-center text-2xl font-bold">
@@ -2689,7 +2721,7 @@
                     <input type="text" id="report-case-id" readonly class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 font-mono cursor-not-allowed">
                     <p class="text-xs text-slate-500 mt-1">預覽不占用編號；只有成功送出才會正式配號。多人同時操作時，正式編號可能與預覽不同。</p>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">填寫人編號</label>
                         <input type="text" id="report-id" readonly placeholder="編號..." class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 focus:outline-none focus:border-blue-500">
@@ -2700,6 +2732,11 @@
                     </div>
                 </div>
                 
+                <!-- 手機版也優先顯示案件主述，避免被後續長表單擠到畫面底部 -->
+                <div class="min-w-0" id="report-title-wrap">
+                    <label for="report-title" class="block text-xs font-semibold uppercase tracking-wider text-slate-200 mb-2">案件主述（標題）</label>
+                    <input type="text" id="report-title" maxlength="160" autocomplete="off" placeholder="請輸入案件主述／標題" class="block w-full min-w-0 min-h-[48px] bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-base sm:text-sm text-white focus:outline-none focus:border-blue-500">
+                </div>
                 <div id="police-suspect-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯身分證件 ID</label>
@@ -2741,10 +2778,6 @@
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題 / 範圍說明</label>
-                    <input type="text" id="report-title" placeholder="例如：轄區內交通事故 或 住宅火警" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
-                </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細案件經過與處理結果</label>
                     <textarea id="report-content" rows="4" placeholder="請詳細敘述案件經過..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-blue-500"></textarea>
@@ -2884,6 +2917,10 @@
                             <input type="checkbox" name="edit-user-units" value="admin" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-purple-600">
                             <span>總管理處</span>
                         </label>
+                        <label class="flex items-center space-x-2 text-sm text-slate-200 cursor-pointer">
+                            <input type="checkbox" name="edit-user-units" value="jiaxiao" class="w-4 h-4 rounded border-slate-700 bg-slate-900 accent-teal-500">
+                            <span>嘉蕭集團</span>
+                        </label>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                         <select id="edit-user-police-division" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200"><option value="">警察所屬單位</option><option>偵查隊</option><option>霹靂小組</option><option>海巡署北部分署第八岸巡隊</option><option>交通分隊</option><option>新莊分局</option></select>
@@ -2898,6 +2935,8 @@
                         <label class="flex items-center gap-2 min-h-[44px] p-2 rounded-lg hover:bg-slate-900 cursor-pointer text-sm text-slate-200"><input type="checkbox" name="edit-user-permissions" value="senior" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-cyan-600"><span>高階成員</span></label>
                         <label class="flex items-center gap-2 min-h-[44px] p-2 rounded-lg hover:bg-slate-900 cursor-pointer text-sm text-slate-200"><input type="checkbox" name="edit-user-permissions" value="admin" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-purple-600"><span>最高管理員</span></label>
                         <label class="sm:col-span-2 flex items-center gap-2 min-h-[44px] p-2 rounded-lg bg-indigo-500/5 border border-indigo-500/10 hover:bg-indigo-500/10 cursor-pointer text-sm text-indigo-200"><input type="checkbox" name="edit-user-permissions" value="academyInstructor" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600"><i class="fa-solid fa-graduation-cap text-indigo-400"></i><span>警專教官</span><span class="text-[11px] text-slate-500 ml-auto">僅可進入專生代碼生成分頁</span></label>
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 rounded-lg hover:bg-slate-900 cursor-pointer text-sm text-teal-200"><input type="checkbox" name="edit-user-permissions" value="civilianMember" class="w-4 h-4 rounded accent-teal-500"><span>民間職業一般成員</span></label>
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 rounded-lg hover:bg-slate-900 cursor-pointer text-sm text-teal-200"><input type="checkbox" name="edit-user-permissions" value="civilianHigh" class="w-4 h-4 rounded accent-teal-500"><span>民間職業高層</span></label>
                     </div>
                 </div>
                 <div>
@@ -3003,6 +3042,10 @@
                             <input type="checkbox" name="new-user-units" value="admin" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-purple-600">
                             <span>總管理處</span>
                         </label>
+                        <label class="flex items-center space-x-2 text-sm text-slate-200 cursor-pointer">
+                            <input type="checkbox" name="new-user-units" value="jiaxiao" class="w-4 h-4 rounded border-slate-700 bg-slate-900 accent-teal-500">
+                            <span>嘉蕭集團</span>
+                        </label>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                         <select id="new-user-police-division" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200"><option value="">警察所屬單位</option><option>偵查隊</option><option>霹靂小組</option><option>海巡署北部分署第八岸巡隊</option><option>交通分隊</option><option>新莊分局</option></select>
@@ -3017,6 +3060,8 @@
                         <label class="flex items-center gap-2 min-h-[44px] p-2 rounded-lg hover:bg-slate-900 cursor-pointer text-sm text-slate-200"><input type="checkbox" name="new-user-permissions" value="senior" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-cyan-600"><span>高階成員</span></label>
                         <label class="flex items-center gap-2 min-h-[44px] p-2 rounded-lg hover:bg-slate-900 cursor-pointer text-sm text-slate-200"><input type="checkbox" name="new-user-permissions" value="admin" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-purple-600"><span>最高管理員</span></label>
                         <label class="sm:col-span-2 flex items-center gap-2 min-h-[44px] p-2 rounded-lg bg-indigo-500/5 border border-indigo-500/10 hover:bg-indigo-500/10 cursor-pointer text-sm text-indigo-200"><input type="checkbox" name="new-user-permissions" value="academyInstructor" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600"><i class="fa-solid fa-graduation-cap text-indigo-400"></i><span>警專教官</span><span class="text-[11px] text-slate-500 ml-auto">僅可進入專生代碼生成分頁</span></label>
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 rounded-lg hover:bg-slate-900 cursor-pointer text-sm text-teal-200"><input type="checkbox" name="new-user-permissions" value="civilianMember" class="w-4 h-4 rounded accent-teal-500"><span>民間職業一般成員</span></label>
+                        <label class="flex items-center gap-2 min-h-[44px] p-2 rounded-lg hover:bg-slate-900 cursor-pointer text-sm text-teal-200"><input type="checkbox" name="new-user-permissions" value="civilianHigh" class="w-4 h-4 rounded accent-teal-500"><span>民間職業高層</span></label>
                     </div>
                 </div>
                 <div>
@@ -3208,6 +3253,7 @@
             emsReports: [],
             policeClocks: [],
             fireClocks: [],
+            jiaxiaoClocks: [],
             adminLogs: [],
             loginSessions: [],
             feedbackReports: [],
@@ -3699,17 +3745,60 @@ const loginOpenBtn = document.getElementById('login-modal-open-btn');
 
         // ===== 修復：補回遺失的管理中心／公告函式 =====
         let announcementTimer=null,announcementIndex=0;
-const dutyCountCache={police:0,fire:0,admin:0};
-const dutyStatusCache={police:new Map(),fire:new Map(),admin:new Map()};
+const dutyCountCache={police:0,fire:0,admin:0,jiaxiao:0};
+const dutyStatusCache={police:new Map(),fire:new Map(),admin:new Map(),jiaxiao:new Map()};
 function buildLatestDutyMap(rows){const latest=new Map();(rows||[]).forEach(r=>{const key=String(r.account||r.staffNumber||r.name||r.id||'').trim().toLowerCase();if(!key)return;const old=latest.get(key);if(!old||getClockTimestamp(r)>getClockTimestamp(old))latest.set(key,r);});return latest;}
 function recalculateDutyStatusCache(){
-    const sources={police:appData?.policeClocks||[],fire:appData?.fireClocks||[],admin:appData?.adminClocks||[]};
+    const sources={police:appData?.policeClocks||[],fire:appData?.fireClocks||[],admin:appData?.adminClocks||[],jiaxiao:appData?.jiaxiaoClocks||[]};
     Object.keys(sources).forEach(dept=>{const latest=buildLatestDutyMap(sources[dept]);dutyStatusCache[dept]=latest;dutyCountCache[dept]=[...latest.values()].filter(r=>r.status==='上班').length;});
 }
 function getCurrentDutyCount(){return dutyCountCache.police+dutyCountCache.fire+dutyCountCache.admin;}
 function latestDutyCount(rows){return [...buildLatestDutyMap(rows).values()].filter(r=>r.status==='上班').length;}
 
-window.renderAdminOverview = function renderAdminOverview() {
+// 嘉蕭集團獨立打卡；資料不寫入警消或管理中心打卡集合。
+        let ntpcFireDutySnapshotReady=false;
+        let ntpcJiaxiaoDutySnapshotReady=false;
+        function isJiaxiaoMember(u=currentUser){
+            if(!u)return false;
+            const units=Array.isArray(u.units)?u.units:(u.units?[u.units]:[u.unit]);
+            return units.includes('jiaxiao') || hasUserPermission(u,'civilianHigh') || hasUserPermission(u,'civilianMember');
+        }
+        function jiaxiaoDutyRows(){
+            return [...buildLatestDutyMap(appData?.jiaxiaoClocks||[]).values()]
+                .filter(row=>row.status==='上班');
+        }
+        function renderJiaxiaoDuty(){
+            const rows=jiaxiaoDutyRows();
+            const count=document.getElementById('jiaxiao-duty-count');
+            if(count)count.textContent=String(rows.length);
+            const list=document.getElementById('jiaxiao-duty-list');
+            if(list)list.innerHTML=rows.length?rows.map(r=>`<div class="rounded-lg bg-slate-950 border border-slate-800 px-3 py-2">${escapeHtml(r.name||r.account||'--')} <span class="text-xs text-slate-500">${escapeHtml(r.staffNumber||r.account||'')}</span></div>`).join(''):'目前無成員打卡上班';
+            const own=rows.some(r=>String(r.account||'').toLowerCase()===String(currentUser?.account||'').toLowerCase());
+            const status=document.getElementById('jiaxiao-duty-state');
+            if(status)status.textContent=own?'🟢 上班中':'⚪ 未上班';
+            document.getElementById('jiaxiao-clock-actions')?.classList.toggle('hidden',!isJiaxiaoMember());
+        }
+        async function submitJiaxiaoClock(status){
+            if(!isJiaxiaoMember()||!db||!fm||!['上班','下班'].includes(status)){
+                showToast('只有嘉蕭集團成員可以打卡','warning','權限不足');return;
+            }
+            // 下班與上班必須依最新狀態切換，避免重複打卡。
+            try{
+                const rows=await fm.getDocs(fm.collection(db,'jiaxiaoClocks'));
+                appData.jiaxiaoClocks=rows.docs.map(d=>({docId:d.id,...d.data()}));
+                const current=buildLatestDutyMap(appData.jiaxiaoClocks).get(String(currentUser.account||'').toLowerCase());
+                if(current?.status===status){showToast('目前已是'+status+'狀態','warning','無需重複打卡');return;}
+                if(status==='下班' && current?.status!=='上班'){showToast('請先上班打卡','warning','操作失敗');return;}
+                const time=Date.now(); const id=`JXCLK-${time}-${Math.random().toString(36).slice(2,7)}`;
+                const data={id,account:currentUser.account,name:currentUser.name||currentUser.account,
+                    staffNumber:currentUser.staffNumber||'',status,timestamp:time,time:formatDateTime(time)};
+                await fm.setDoc(fm.doc(db,'jiaxiaoClocks',id),data);
+                appData.jiaxiaoClocks.push({docId:id,...data});
+                recalculateDutyStatusCache();renderJiaxiaoDuty();
+                showToast('嘉蕭集團'+status+'打卡成功','success','打卡成功');
+            }catch(e){showToast('嘉蕭集團打卡失敗：'+e.message,'error','資料庫存取失敗');}
+        }
+        window.renderAdminOverview = function renderAdminOverview() {
             const users = appData?.users || [];
             const policeReports = appData?.policeReports || [];
             const fireReports = appData?.fireReports || [];
@@ -4279,6 +4368,7 @@ async function republishAnnouncement(id) {
         function stopRealtimeListeners() {
             policeJailRulesReady=false;
             policeJailRulesStatus='loading';
+            ntpcFireDutySnapshotReady=false;ntpcJiaxiaoDutySnapshotReady=false;
             POLICE_VIOLATION_RULES=[];
             if(typeof ntpcSyncHealth!=='undefined'){ntpcSyncHealth.events={};ntpcSyncHealth.lastSuccess=0;ntpcSyncHealth.errors=[];}
             if(typeof ntpcRecentAdminNotifications!=='undefined'){ntpcRecentAdminNotifications=[];ntpcNoticeLoadedAt=0;}
@@ -4438,8 +4528,9 @@ async function republishAnnouncement(id) {
                 refreshDutyDashboard();
                 if (document.getElementById('admin-sub-online') && !document.getElementById('admin-sub-online').classList.contains('hidden')) renderAdminOnlineUsers();
             });
-            if(getEffectiveRole(currentUser)==='admin'||userHasUnit('fire')) subscribe('fireClocks', d => ({docId:d.id, ...d.data()}), rows => {
+            if(getEffectiveRole(currentUser)==='admin'||userHasUnit('fire')||canAccessJiaxiao()) subscribe('fireClocks', d => ({docId:d.id, ...d.data()}), rows => {
                 appData.fireClocks = rows;
+                ntpcFireDutySnapshotReady=true;
                 recalculateDutyStatusCache();
                 renderFireClocks(); // 即時更新消防打卡紀錄清單
                 // 消防高層不會下載所有 users；改由已授權同步的消防打卡紀錄更新隊員選單。
@@ -4448,6 +4539,11 @@ async function republishAnnouncement(id) {
                 renderAdminOverview(); // 即時更新消防當前值勤人數
                 refreshDutyDashboard();
                 if (document.getElementById('admin-sub-online') && !document.getElementById('admin-sub-online').classList.contains('hidden')) renderAdminOnlineUsers();
+            });
+            if(canAccessJiaxiao())subscribe('jiaxiaoClocks',d=>({docId:d.id,...d.data()}),rows=>{
+                appData.jiaxiaoClocks=rows;
+                ntpcJiaxiaoDutySnapshotReady=true;
+                recalculateDutyStatusCache();renderJiaxiaoDuty();
             });
             // 管理中心打卡紀錄可能影響全站總值勤人數，因此保留小型集合的即時同步；只有管理員會顯示其紀錄表。
             if(getEffectiveRole(currentUser)==='admin') subscribe('adminClocks', d => ({docId:d.id, ...d.data()}), rows => {
@@ -4729,11 +4825,12 @@ async function republishAnnouncement(id) {
                 tabId = 'home';
                 setTimeout(() => document.getElementById('login-modal')?.classList.remove('hidden'), 80);
             }
+            if (tabId === 'jiaxiao' && !canAccessJiaxiao()) {showToast('目前帳號沒有嘉蕭集團權限。','warning','權限不足');tabId='home';}
             if (tabId === 'admin' && !canAccessManagementCenter()) {
                 showToast('目前帳號沒有管理中心權限。', 'warning', '權限不足');
                 tabId = 'home';
             }
-            ['dashboard', 'home', 'police', 'fire', 'faq', 'notifications', 'profile', 'academy', 'admin', 'update-log'].forEach(t => {
+            ['dashboard', 'home', 'police', 'fire', 'faq', 'notifications', 'profile', 'academy', 'jiaxiao', 'admin', 'update-log'].forEach(t => {
                 const tabEl = document.getElementById(`tab-${t}`);
                 if (tabEl) tabEl.classList.add('hidden');
                 
@@ -5742,7 +5839,7 @@ async function republishAnnouncement(id) {
         const SECURITY_ACTION_COOLDOWN=new Map();
         function securityActionAllowed(key,cooldownMs=700){const now=Date.now(),last=SECURITY_ACTION_COOLDOWN.get(key)||0;if(now-last<cooldownMs)return false;SECURITY_ACTION_COOLDOWN.set(key,now);return true;}
         async function handleLogin(){if(!securityActionAllowed('login',900))return;await cloudDataReadyPromise;const device=getDeviceInfo();const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}try{const fingerprint=getDeviceFingerprint(device),deviceKey=getDeviceKey(device);const [blockedByFingerprint,blockedByKey]=await Promise.all([fm.getDoc(fm.doc(db,'blockedDevices',fingerprint)),fm.getDocs(fm.query(fm.collection(db,'blockedDevices'),fm.where('deviceKey','==',deviceKey)))]);const matches=[];if(blockedByFingerprint.exists())matches.push({docId:blockedByFingerprint.id,...blockedByFingerprint.data()});blockedByKey.docs.forEach(d=>{if(!matches.some(x=>String(x.docId)===String(d.id)))matches.push({docId:d.id,...d.data()});});appData.blockedDevices=matches;/* 登入失敗紀錄只在失敗時依裝置 ID 單筆讀取，不下載整個集合。 */}catch(e){console.warn('登入安全資料讀取失敗：',e);}if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}let found=null;try{const userSnap=await fm.getDoc(fm.doc(db,'users',acc));if(userSnap.exists()){const data=userSnap.data();found={docId:userSnap.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}if(!found&&isSuperAdminAccount(acc)){const all=await fm.getDocs(fm.collection(db,'users'));const d=all.docs.find(x=>isSuperAdminAccount(x.id)||isSuperAdminAccount(x.data().account));if(d){const data=d.data();found={docId:d.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}}}catch(e){showToast('帳號驗證失敗，請稍後重試：'+e.message,'error','登入失敗');return;}if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));if(!(await requireSiteAgreement(found)))return;currentUser=found;appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);resetManualReadFlags();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();if(isAcademyInstructor(currentUser)&&getEffectiveRole(currentUser)!=='admin')switchTab('academy');else switchTab('home');}
-        async function logout(){ntpcMapDisconnectAll();ntpcDispatchStop(true);resetManualReadFlags();stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
+        async function logout(){ntpcMapDisconnectAll();ntpcDispatchStop(true);resetManualReadFlags();stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','jiaxiaoClocks','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
             const badge = document.getElementById('user-badge');
@@ -5802,6 +5899,12 @@ async function republishAnnouncement(id) {
                 fireContent.classList.toggle('hidden', !isFire);
             }
 
+            const jiaxiaoAllowed=canAccessJiaxiao();
+            document.getElementById('nav-jiaxiao')?.classList.toggle('hidden',!jiaxiaoAllowed);
+            document.getElementById('mobile-nav-jiaxiao')?.classList.toggle('hidden',!jiaxiaoAllowed);
+            document.getElementById('jiaxiao-lock-overlay')?.classList.toggle('hidden',jiaxiaoAllowed);
+            document.getElementById('jiaxiao-content-container')?.classList.toggle('hidden',!jiaxiaoAllowed);
+            renderJiaxiaoDuty();
             const isAdmin = !!currentUser && currentUser.role === 'admin';
             const canManage = canAccessManagementCenter();
             if (adminLock && adminContent) {
@@ -9001,7 +9104,9 @@ async function republishAnnouncement(id) {
             high: '高層長官',
             senior: '高階成員',
             admin: '最高管理員',
-            academyInstructor: '警專教官'
+            academyInstructor: '警專教官',
+            civilianMember: '民間職業一般成員',
+            civilianHigh: '民間職業高層'
         };
         const USER_ROLE_PRIORITY = ['admin','high','senior','normal'];
         function getUserPermissions(u) {
@@ -9026,6 +9131,12 @@ async function republishAnnouncement(id) {
         function canUseManagementDispatch(u=currentUser) {
             return !!u && (getEffectiveRole(u)==='admin' || isManagementUnitMember(u));
         }
+        function canAccessJiaxiao(u=currentUser){
+            if(!u)return false;
+            const units=Array.isArray(u.units)?u.units:(u.units?[u.units]:[u.unit]);
+            return canUseManagementDispatch(u) || units.includes('jiaxiao') ||
+                hasUserPermission(u,'civilianHigh') || hasUserPermission(u,'civilianMember');
+        }
         function canAccessManagementCenter(u=currentUser) {
             return !!u && (canUseManagementDispatch(u) || hasUserPermission(u,'academyInstructor'));
         }
@@ -9037,6 +9148,7 @@ async function republishAnnouncement(id) {
             if (units.includes('police')) names.push(`警察／${u.policeDivision || '未指定分隊'}`);
             if (units.includes('fire')) names.push(`消防／${u.fireDivision || '未指定單位'}`);
             if (units.includes('admin')) names.push('總管理處');
+            if (units.includes('jiaxiao')) names.push('嘉蕭集團');
             return names.join('、') || '未指定';
         }
         function syncUnitDivisionVisibility(prefix) {
@@ -9186,9 +9298,13 @@ async function republishAnnouncement(id) {
                 const snap=await fm.getDoc(ref);
                 const d=snap.exists?snap.data():{};
                 if(!d.configured||!String(d.serverKey||'').trim()){showToast('請先設定 ER:LC Server Key。','warning','尚未設定');return;}
-                await fm.setDoc(ref,{serverOpen:!!isOpen,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});
+                if(d.serverOpen===!!isOpen){showToast(isOpen?'已經是開服狀態':'已經是關服狀態','warning','狀態未變更');return;}
+                const now=Date.now();
+                await fm.setDoc(ref,{serverOpen:!!isOpen,serverOpenChangedAt:now,
+                    ...(isOpen?{activitySessionId:`site-${now}-${Math.random().toString(36).slice(2,9)}`}:{ }),
+                    updatedAt:now,updatedBy:currentUser.account},{merge:true});
                 await renderERLCConfigStatus();
-                showToast(isOpen?'ER:LC 已設定為開服中，Worker 將開始偵測。':'ER:LC 已設定為關服中，Worker 將停止 ER:LC API 偵測。','success','伺服器狀況已更新');
+                showToast(isOpen?'網站已開服，Bot 將開始統計各單位活躍度。':'網站已關服，Bot 將停止記錄並結算各單位前五名。','success','伺服器狀況已更新');
             }catch(e){showToast('伺服器狀況更新失敗：'+e.message,'error','操作失敗');}
         }
         async function saveERLCConfig(){
@@ -9213,7 +9329,7 @@ async function republishAnnouncement(id) {
         async function clearERLCConfig(){
             if(!currentUser||getEffectiveRole(currentUser)!=='admin')return;
             if(!(await showConfirm('確定要停用 ER:LC 整合設定嗎？','停用 ER:LC','確定停用')))return;
-            try{await fm.setDoc(fm.doc(db,'systemSettings','erlcIntegration'),{configured:false,serverKey:'',serverId:'',serverOpen:false,updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});await renderERLCConfigStatus();showToast('ER:LC 整合已停用，伺服器狀況也已切換為關服。','success','操作完成');}catch(e){showToast('停用失敗：'+e.message,'error','操作失敗');}
+            try{await fm.setDoc(fm.doc(db,'systemSettings','erlcIntegration'),{configured:false,serverKey:'',serverId:'',serverOpen:false,serverOpenChangedAt:Date.now(),updatedAt:Date.now(),updatedBy:currentUser.account},{merge:true});await renderERLCConfigStatus();showToast('ER:LC 整合已停用，伺服器狀況也已切換為關服。','success','操作完成');}catch(e){showToast('停用失敗：'+e.message,'error','操作失敗');}
         }
         async function playERLCOfficerAlert(){
             if(!erlcAudioEnabled)return;
@@ -9308,13 +9424,67 @@ async function republishAnnouncement(id) {
             }
             return true;
         }
+        async function verifyERLCOfficerDutyForAlert(a){
+            if(isERLCOfficerCurrentlyOnDuty(a))return true;
+            try{
+                const acc=String(a.account||a.userAccount||a.websiteAccount||'').trim().toLowerCase();
+                const staff=String(a.staffNumber||a.dutyNumber||'').trim().toLowerCase();
+                const roblox=String(a.victimRobloxId||a.robloxId||a.robloxUserId||a.playerId||'').trim();
+                const keys=new Set(acc?[acc]:[]);
+                if(roblox){
+                    // 只查符合該 Roblox ID 的帳號，不下載全站使用者資料。
+                    try{
+                        const users=await fm.getDocs(fm.query(fm.collection(db,'users'),fm.where('robloxId','==',roblox)));
+                        users.docs.forEach(doc=>{const u=doc.data();const units=u.units||[u.unit];
+                            if(units.includes('police'))keys.add(String(u.account||doc.id).toLowerCase());});
+                    }catch(e){console.warn('無法核對警員 Roblox 身分：',e);}
+                }
+                if(!keys.size&&!staff)return false;
+                const snap=await fm.getDocs(fm.collection(db,'policeClocks'));
+                const active=[...buildLatestDutyMap(snap.docs.map(d=>({docId:d.id,...d.data()}))).values()]
+                    .filter(r=>r.status==='上班');
+                return active.some(r=>keys.has(String(r.account||'').trim().toLowerCase()) ||
+                    (!!staff&&String(r.staffNumber||'').trim().toLowerCase()===staff));
+            }catch(e){console.warn('無法確認警員打卡狀態，已忽略倒地事件：',e);return false;}
+        }
+        async function shouldDeliverERLCDeathAlert(a){
+            if(!currentUser||!fm||!db)return false;
+            // 警員 10-99 仍需核實警方在勤；嘉蕭成員可能沒有警方完整帳號快取，
+            // 因此以既有 policeClocks + 可查到的帳號對應判定，不以玩家在線代替打卡。
+            const officer=String(a.type||'')==='officer-life-alert';
+            if(officer&&!(await verifyERLCOfficerDutyForAlert(a)))return false;
+            // 優先查看消防最新打卡；快取尚未初始化時直接讀取，失敗則不誤判成無人在勤。
+            let fireRows=appData.fireClocks||[];
+            if(!ntpcFireDutySnapshotReady){
+                try{const snap=await fm.getDocs(fm.collection(db,'fireClocks'));
+                    fireRows=snap.docs.map(d=>({docId:d.id,...d.data()}));
+                }catch(e){console.warn('無法確認消防值班，暫不切換嘉蕭後援：',e);return false;}
+            }
+            const fireOnDuty=[...buildLatestDutyMap(fireRows).values()].filter(r=>r.status==='上班');
+            if(fireOnDuty.length){
+                // 消防正在值班時，只推送給打卡中的消防人員；管理中心仍可瀏覽警報。
+                const me=String(currentUser.account||'').trim().toLowerCase();
+                return canUseManagementDispatch() || (userHasUnit('fire')&&fireOnDuty.some(r=>String(r.account||'').toLowerCase()===me));
+            }
+            // 消防無人在班，只有嘉蕭上班中的成員／管理中心收到。
+            let jiaxiaoRows=appData.jiaxiaoClocks||[];
+            if(!ntpcJiaxiaoDutySnapshotReady){
+                try{const snap=await fm.getDocs(fm.collection(db,'jiaxiaoClocks'));
+                    jiaxiaoRows=snap.docs.map(d=>({docId:d.id,...d.data()}));
+                }catch(e){console.warn('嘉蕭值班資料不可讀：',e);return canUseManagementDispatch();}
+            }
+            const me=String(currentUser.account||'').trim().toLowerCase();
+            const onDuty=[...buildLatestDutyMap(jiaxiaoRows).values()]
+                .some(r=>r.status==='上班'&&String(r.account||'').toLowerCase()===me);
+            return canUseManagementDispatch() || (isJiaxiaoMember()&&onDuty);
+        }
+        async function routeERLCDeathAlert(a){
+            try{if(await shouldDeliverERLCDeathAlert(a))showERLCDeathAlert(a);}
+            catch(e){console.warn('倒地通知後援派送判定失敗：',e);}
+        }
         function showERLCDeathAlert(a){
             if(!isValidFreshERLCAlert(a))return;
             const isOfficer=String(a.type||'')==='officer-life-alert';
-            if(isOfficer&&!isERLCOfficerCurrentlyOnDuty(a)){
-                console.info('已忽略非值勤或無法確認值勤狀態的警員倒地警報。');
-                return;
-            }
             // 相容 Worker 不同版本可能使用的欄位名稱，優先使用 Worker 正式寫入的 postalCode。
             const postalCode=String(a.postalCode||a.PostalCode||a.postal||a.location?.PostalCode||a.Location?.PostalCode||'未提供').trim()||'未提供';
             const title=isOfficer?'🚨 警員生命狀態異常':'🔴 市民生命狀態異常';
@@ -9344,7 +9514,7 @@ async function republishAnnouncement(id) {
         let erlcAlertListenerGeneration = 0;
         function syncERLCAlertListener(){
             stopERLCAlertListener();
-            // 死亡通報是全站即時警報：登入後所有單位（警察、消防、EMS、管理中心）都會收到。
+            // 倒地事件仍由舊後端產生；網站依消防／嘉蕭打卡狀態向值班成員顯示警報。
             // 但「重新建立監聽器」時不能把目前 active 的舊警報重新當成新警報，否則會造成亂響。
             if(!currentUser||!db||!fm)return;
             const generation=++erlcAlertListenerGeneration;
@@ -9363,7 +9533,7 @@ async function republishAnnouncement(id) {
                         if(erlcDisplayedAlertIds.has(c.doc.id))return;
                         erlcDisplayedAlertIds.add(c.doc.id);
                         const a={docId:c.doc.id,...c.doc.data()};
-                        showERLCDeathAlert(a);
+                        routeERLCDeathAlert(a);
                     });
                     // 避免 Set 無限成長，只保留最近使用的一批 ID。
                     if(erlcDisplayedAlertIds.size>500){
