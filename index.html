@@ -211,29 +211,109 @@ __                                                                              
           document.getElementById('ntpc-bot-message-content').value=ntpcBotTemplates[kind]||'';
           if(kind!=='normal')document.getElementById('ntpc-bot-message-channel').value='1435222492481323113';
         }
-        function ntpcBotConsolePanelSelect(){
-          const v=document.getElementById('ntpc-bot-panel-list').value;
-          const p=(ntpcBotConsoleState?.panels||[]).find(x=>String(x.channel_id)===v);
-          if(!p)return;
+        function ntpcBotConsolePickPanel(id){
+          const p=(ntpcBotConsoleState?.panels||[]).find(x=>String(x.channel_id)===String(id));
+          if(!p){showToast('找不到已同步的票務面板：'+String(id),'warning','找不到面板');return;}
+          document.getElementById('ntpc-bot-panel-list').value=String(p.channel_id);
+          document.getElementById('ntpc-bot-panel-channel-id').value=String(p.channel_id);
           document.getElementById('ntpc-bot-panel-title').value=p.title||'';
           document.getElementById('ntpc-bot-panel-desc').value=p.description||'';
           document.getElementById('ntpc-bot-panel-roles').value=(p.role_ids||[]).join(',');
           document.getElementById('ntpc-bot-panel-lock').checked=!!p.locked;
+        }
+        function ntpcBotConsolePanelSelect(){
+          const id=document.getElementById('ntpc-bot-panel-list').value;
+          if(id)ntpcBotConsolePickPanel(id);
+        }
+        function ntpcBotConsoleLoadPanelById(){
+          const id=document.getElementById('ntpc-bot-panel-channel-id').value.trim();
+          ntpcBotConsolePickPanel(id);
+        }
+        function ntpcBotConsoleRenderPanels(){
+          const panels=ntpcBotConsoleState?.panels||[],q=(document.getElementById('ntpc-bot-panel-search').value||'').trim().toLowerCase();
+          const found=panels.filter(p=>(String(p.title||'')+' '+String(p.channel_id||'')).toLowerCase().includes(q));
+          document.getElementById('ntpc-bot-panel-count').textContent=found.length+'/'+panels.length+' 張';
+          const host=document.getElementById('ntpc-bot-panel-cards');host.replaceChildren();
+          if(!found.length){host.textContent=panels.length?'沒有符合的面板':'目前沒有同步到票務面板';return;}
+          for(const p of found){
+            const btn=document.createElement('button');btn.type='button';btn.className='block w-full text-left rounded-lg border border-slate-700 hover:bg-slate-800 bg-slate-950 p-3';
+            const title=document.createElement('strong');title.className='block text-indigo-200';title.textContent=String(p.title||'未命名')+(p.locked?' 🔒 已鎖定':'');
+            const id=document.createElement('small');id.className='block text-slate-400 font-mono mt-1';id.textContent='頻道 ID：'+String(p.channel_id);
+            btn.append(title,id);btn.onclick=()=>ntpcBotConsolePickPanel(p.channel_id);host.append(btn);
+          }
+        }
+        function ntpcBotConsolePickMoney(id){
+          const job=(ntpcBotConsoleState?.money_jobs||[]).find(x=>String(x.id)===String(id));
+          if(!job){showToast('找不到啟用中的排程 #'+String(id),'warning','找不到排程');return;}
+          document.getElementById('ntpc-bot-money-edit-id').value=String(job.id);
+          document.getElementById('ntpc-bot-money-cancel-id').value=String(job.id);
+          document.getElementById('ntpc-bot-money-op').value=job.kind==='扣錢'?'扣錢':'加錢';
+          document.getElementById('ntpc-bot-money-amount').value=String(job.amount||'');
+          document.getElementById('ntpc-bot-money-cycle').value=job.cycle||'週';
+          const targetIsRole=!!job.role_id;
+          document.getElementById('ntpc-bot-money-target-type').value=targetIsRole?'role_id':'target_id';
+          document.getElementById('ntpc-bot-money-target').value=String(job.role_id||job.target_id||job.target||'');
+        }
+        function ntpcBotConsoleLoadMoneyById(){ntpcBotConsolePickMoney(document.getElementById('ntpc-bot-money-edit-id').value.trim());}
+        function ntpcBotConsoleRenderMoney(){
+          const jobs=ntpcBotConsoleState?.money_jobs||[],q=(document.getElementById('ntpc-bot-money-search').value||'').trim().toLowerCase();
+          const found=jobs.filter(j=>(String(j.id)+' '+String(j.kind)+' '+String(j.amount)+' '+String(j.target)+' '+String(j.cycle)).toLowerCase().includes(q));
+          document.getElementById('ntpc-bot-money-count').textContent=found.length+'/'+jobs.length+' 項';
+          const host=document.getElementById('ntpc-bot-money-jobs');host.replaceChildren();
+          if(!found.length){host.textContent=jobs.length?'沒有符合的排程':'目前沒有啟用中的排程';return;}
+          for(const j of found){
+            const btn=document.createElement('button');btn.type='button';btn.className='block w-full text-left rounded-lg border border-slate-700 hover:border-emerald-500 bg-slate-950 p-3';
+            const line=document.createElement('strong');line.className='block text-emerald-300';line.textContent='#'+String(j.id)+'｜'+String(j.kind||'')+'｜$'+Number(j.amount||0).toLocaleString();
+            const detail=document.createElement('small');detail.className='text-slate-400 block mt-1';detail.textContent=String(j.cycle||'')+'｜'+(j.role_id?'身分組':'使用者')+' '+String(j.target||'')+'｜下次 '+String(j.next_at||'');
+            btn.append(line,detail);btn.onclick=()=>ntpcBotConsolePickMoney(j.id);host.append(btn);
+          }
         }
         function ntpcBotConsoleUseMessage(id,channel,content){
           document.getElementById('ntpc-bot-edit-id').value=String(id);
           document.getElementById('ntpc-bot-message-channel').value=String(channel);
           document.getElementById('ntpc-bot-message-content').value=String(content||'');
         }
+        // V60 穩定性：後台 API 限時、辨識非 JSON / Access 登入頁，不自動重送任何寫入操作。
+        let ntpcBotConsoleActionBusy=false;
+        let ntpcBotConsoleRefreshBusy=false;
+        let ntpcBotConsoleReady=false;
+        let ntpcBotConsoleUpdatedAt=0;
+        async function ntpcBotConsoleRequest(url,options={},timeoutMs=15000){
+          const controller=new AbortController();
+          const timer=setTimeout(()=>controller.abort(),timeoutMs);
+          try{
+            const response=await fetch(url,{...options,signal:controller.signal,cache:'no-store'});
+            const raw=await response.text();let data;
+            try{data=JSON.parse(raw);}catch(_){
+              if(response.status===401||response.status===403)throw new Error('登入驗證未通過，請檢查 Cloudflare Access 管理員授權（HTTP '+response.status+'）');
+              if(/^\s*<!doctype html|^\s*<html/i.test(raw))throw new Error('後端回傳 HTML，請確認 Pages Functions 與 Cloudflare Access 路由（HTTP '+response.status+'）');
+              throw new Error('後端回應格式異常（HTTP '+response.status+'）');
+            }
+            if(!response.ok||!data?.ok)throw new Error(String(data?.error||'HTTP '+response.status));
+            return data;
+          }catch(error){
+            if(error?.name==='AbortError')throw new Error(options.method==='POST'
+              ?'送出逾時；操作可能已由 Bot 接收，請先查操作紀錄，勿立刻重送。'
+              :'同步逾時，請檢查網路、Access 和 Pages Functions。');
+            if(error instanceof TypeError)throw new Error('網路連線失敗；請使用正式 HTTPS 網址並確認後端已部署。');
+            throw error;
+          }finally{clearTimeout(timer);}
+        }
+        function ntpcBotConsoleInvalid(message){showToast(message,'warning','設定檢查');return false;}
+        function ntpcBotConsoleSnowflake(value){return /^\d{15,22}$/.test(String(value||''));}
         async function ntpcBotConsoleRefresh(){
           if(!currentUser||!canUseManagementDispatch(currentUser))return;
+          if(ntpcBotConsoleRefreshBusy)return;
           const status=document.getElementById('ntpc-bot-status');if(!status)return;
+          ntpcBotConsoleRefreshBusy=true;ntpcBotConsoleReady=false;
           status.textContent='正在讀取 Cloudflare Bot 後端…';
+           if(location.protocol==='file:'){status.textContent='此頁是本機 HTML，無法同步 Bot。請從 https://ntpc-rp.pages.dev/ 開啟正式網站，並部署 ZIP 內的 functions、D1、Access 和貓居 Bot。';return;}
           try{
-            const res=await fetch('/api/bot-console/state',{credentials:'same-origin',cache:'no-store'});
-            const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||`HTTP ${res.status}`);
+            const data=await ntpcBotConsoleRequest('/api/bot-console/state',{credentials:'same-origin'},15000);
             const s=data.snapshot||{};ntpcBotConsoleState=s;
             const age=data.updated_at?Math.max(0,Math.round(Date.now()/1000-data.updated_at)):null;
+            ntpcBotConsoleUpdatedAt=Number(data.updated_at)||0;
+            ntpcBotConsoleReady=age!==null&&age<600;
             status.textContent=age==null?'Bot 尚未同步任何資料。':`Bot 狀態：${age<120?'已連線':'資料較舊'}｜上次更新 ${age} 秒前｜${s.guild_name||'新北市RP'}`;
             document.getElementById('ntpc-bot-auth').textContent='已驗證管理信箱：'+data.operator;
             const select=document.getElementById('ntpc-bot-panel-list'),previous=select.value;
@@ -241,7 +321,9 @@ __                                                                              
             if((s.panels||[]).some(p=>String(p.channel_id)===previous))select.value=previous;
             else if(s.panels?.length)select.value=s.panels[0].channel_id;
             ntpcBotConsolePanelSelect();
-            document.getElementById('ntpc-bot-money-jobs').innerHTML=(s.money_jobs||[]).length?(s.money_jobs||[]).map(j=>`<div>#${j.id}｜${escapeHtml(j.kind)}｜$${Number(j.amount).toLocaleString()}｜${escapeHtml(j.cycle)}｜${escapeHtml(j.target)}｜下次 ${escapeHtml(j.next_at||'')}</div>`).join(''):'目前沒有啟用的排程';
+
+             ntpcBotConsoleRenderPanels();
+             ntpcBotConsoleRenderMoney();
             const historyEl=document.getElementById('ntpc-bot-recent-messages');
             historyEl.replaceChildren();
             for(const m of (s.messages||[])){
@@ -253,27 +335,47 @@ __                                                                              
             }
             if(!(s.messages||[]).length)historyEl.textContent='尚無本版本記錄的可編輯訊息';
             document.getElementById('ntpc-bot-action-jobs').innerHTML=(data.jobs||[]).length?(data.jobs||[]).map(j=>`<div class="border-b border-slate-800 py-1">${new Date(j.created_at*1000).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'})}｜${escapeHtml(j.action)}｜${escapeHtml(j.status)}｜${escapeHtml(j.result||'')}<span class="text-slate-500"> · ${escapeHtml(j.operator)}</span></div>`).join(''):'尚無操作';
-          }catch(e){status.textContent='無法同步：'+e.message+'。確認 Pages Functions、D1、Cloudflare Access 與 Bot 都已部署。';}
+          }catch(e){ntpcBotConsoleReady=false;status.textContent='無法同步：'+e.message+'。請檢查 Pages Functions、D1、Cloudflare Access 與 Bot。';}
+          finally{ntpcBotConsoleRefreshBusy=false;}
         }
         async function ntpcBotConsoleSubmit(action){
           if(!currentUser||!canUseManagementDispatch(currentUser))return;
-          const val=id=>document.getElementById(id)?.value?.trim()||'';
+          if(ntpcBotConsoleActionBusy)return;
+          if(!ntpcBotConsoleReady||Date.now()/1000-ntpcBotConsoleUpdatedAt>=600){return ntpcBotConsoleInvalid('Bot 尚未同步，或資料超過 10 分鐘未更新；請先按「同步最新設定」確認 Bot 已連線。');}
+          const val=id=>String(document.getElementById(id)?.value||'').trim();
           let payload={};
+          if(action==='panel_update'){
+            payload={channel_id:val('ntpc-bot-panel-channel-id')||val('ntpc-bot-panel-list'),title:val('ntpc-bot-panel-title'),description:val('ntpc-bot-panel-desc'),role_ids:val('ntpc-bot-panel-roles').split(/[，,\s]+/).filter(Boolean),locked:!!document.getElementById('ntpc-bot-panel-lock')?.checked};
+            if(!ntpcBotConsoleSnowflake(payload.channel_id)||!payload.title||payload.title.length>60||!payload.description||payload.description.length>1000||payload.role_ids.length<1||payload.role_ids.length>5||!payload.role_ids.every(ntpcBotConsoleSnowflake))return ntpcBotConsoleInvalid('請檢查票務頻道 ID、標題（1～60字）、說明（1～1000字）、客服身分組（1～5 個有效 ID）。');
+          }else if(action==='money_create'||action==='money_update'){
+            payload={kind:val('ntpc-bot-money-op'),cycle:val('ntpc-bot-money-cycle'),amount:Number(val('ntpc-bot-money-amount'))};
+            const targetField=val('ntpc-bot-money-target-type');
+            if(!['role_id','target_id'].includes(targetField))return ntpcBotConsoleInvalid('請先選擇金錢發放對象類型。');
+            payload[targetField]=val('ntpc-bot-money-target');
+            if(action==='money_update')payload.job_id=Number(val('ntpc-bot-money-edit-id'));
+            if(!['加錢','扣錢'].includes(payload.kind)||!['週','月初','月底'].includes(payload.cycle)||!Number.isSafeInteger(payload.amount)||payload.amount<1||payload.amount>1000000000||!ntpcBotConsoleSnowflake(payload[targetField]))return ntpcBotConsoleInvalid('金額需為 1～10 億整數，並填入有效的 Discord 成員／身分組 ID。');
+            if(action==='money_update'&&(!Number.isSafeInteger(payload.job_id)||payload.job_id<1))return ntpcBotConsoleInvalid('請先載入要修改的排程編號。');
+          }else if(action==='money_cancel'){
+            payload={job_id:Number(val('ntpc-bot-money-cancel-id'))};
+            if(!Number.isSafeInteger(payload.job_id)||payload.job_id<1)return ntpcBotConsoleInvalid('請輸入有效的排程編號。');
+          }else if(action==='message_send'){
+            payload={channel_id:val('ntpc-bot-message-channel'),content:val('ntpc-bot-message-content'),template_kind:val('ntpc-bot-message-kind')};
+            if(!ntpcBotConsoleSnowflake(payload.channel_id)||!payload.content||payload.content.length>2000)return ntpcBotConsoleInvalid('請填寫頻道 ID 與不超過 2000 字的訊息。');
+            if(!['normal','vote','settlement'].includes(payload.template_kind))return ntpcBotConsoleInvalid('模板類型錯誤。');
+            if(payload.template_kind!=='normal'&&payload.channel_id!=='1435222492481323113')return ntpcBotConsoleInvalid('開服投票和結算模板只能發送到指定投票頻道。');
+          }else if(action==='message_edit'){
+            payload={message_id:val('ntpc-bot-edit-id'),content:val('ntpc-bot-message-content')};
+            if(!ntpcBotConsoleSnowflake(payload.message_id)||!payload.content||payload.content.length>2000)return ntpcBotConsoleInvalid('請載入有效訊息編號，並輸入 1～2000 字內容。');
+          }else{return ntpcBotConsoleInvalid('不支援的管理操作。');}
+          const names={panel_update:'更新客服票務',money_create:'新增金錢排程',money_update:'修改金錢排程',money_cancel:'取消金錢排程',message_send:'發布 Discord 訊息',message_edit:'編輯 Discord 訊息'};
+          ntpcBotConsoleActionBusy=true;
           try{
-            if(action==='panel_update'){
-              payload={channel_id:val('ntpc-bot-panel-list'),title:val('ntpc-bot-panel-title'),description:val('ntpc-bot-panel-desc'),role_ids:val('ntpc-bot-panel-roles').split(/[，,\s]+/).filter(Boolean),locked:document.getElementById('ntpc-bot-panel-lock').checked};
-            }else if(action==='money_create'){
-              payload={kind:val('ntpc-bot-money-op'),cycle:val('ntpc-bot-money-cycle'),amount:Number(val('ntpc-bot-money-amount'))};payload[val('ntpc-bot-money-target-type')]=val('ntpc-bot-money-target');
-            }else if(action==='money_cancel')payload={job_id:Number(val('ntpc-bot-money-cancel-id'))};
-            else if(action==='message_send')payload={channel_id:val('ntpc-bot-message-channel'),content:val('ntpc-bot-message-content'),template_kind:val('ntpc-bot-message-kind')};
-            else if(action==='message_edit')payload={message_id:val('ntpc-bot-edit-id'),content:val('ntpc-bot-message-content')};
-            else return;
-            if(!confirm('確定將此操作送交新北 RP Discord Bot？所有操作都會留下記錄。'))return;
-            const res=await fetch('/api/bot-console/action',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({action,payload})});
-            const result=await res.json();if(!res.ok||!result.ok)throw new Error(result.error||'操作失敗');
-            showToast('操作已排入 Bot 佇列；請稍後按「同步最新設定」查看結果。','success','已送出');
+            if(!confirm('確定要'+(names[action]||action)+'？這是正式操作，會留下管理紀錄。'))return;
+            const data=await ntpcBotConsoleRequest('/api/bot-console/action',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({action,payload})},20000);
+            showToast('操作已加入 Bot 佇列；這不代表執行完成。請稍後在操作紀錄確認成功或失敗。','success','已受理');
             await ntpcBotConsoleRefresh();
-          }catch(e){showToast(e.message,'error','操作失敗');}
+          }catch(e){showToast(String(e?.message||e),'error','操作未確認');}
+          finally{ntpcBotConsoleActionBusy=false;}
         }
 
 </script>
@@ -1762,46 +1864,46 @@ __                                                                              
                 <i class="fa-solid fa-lock text-3xl mb-3"></i><p>僅嘉蕭集團成員、民間職業高層或管理中心可以瀏覽。</p>
             </div>
             <div id="jiaxiao-content-container" class="hidden space-y-6">
-                <!-- V56：嘉蕭集團採用與消防中心一致的快速功能列＋分頁式分類 -->
+                <!-- 嘉蕭集團：如消防中心，頂端為開啟視窗的動作按鈕；下方僅為紀錄／審核分類 -->
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 p-5 sm:p-6 rounded-2xl border border-teal-500/25 shadow-xl">
                     <div>
                         <span class="text-xs uppercase font-bold tracking-wider text-teal-300 bg-teal-500/10 px-3 py-1 rounded-full border border-teal-500/20">Jiaxiao Group</span>
                         <h2 class="text-2xl font-bold text-white mt-2"><i class="fa-solid fa-building mr-2 text-teal-400"></i>嘉蕭集團｜勤務中心</h2>
-                        <p class="text-slate-400 text-sm mt-1">獨立救護與生命禮儀案件、審核、打卡及值勤統計；管理中心可瀏覽。</p>
+                        <p class="text-slate-400 text-sm mt-1">EMS 救護、生命禮儀報告與醫院登記表分開管理；點上方按鈕開啟打卡或填報視窗，下方分類只顯示歷史／審核紀錄。</p>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto mobile-action-group" id="jiaxiao-quick-actions">
-                        <button type="button" onclick="switchJiaxiaoSubTab('clocks')" class="rounded-xl bg-teal-600 hover:bg-teal-500 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-clock mr-2"></i>上下班打卡</button>
-                        <button type="button" onclick="switchJiaxiaoSubTab('hospital')" class="rounded-xl border border-teal-500/35 bg-slate-800 hover:bg-slate-700 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-hospital mr-2"></i>醫院登記表</button>
-                        <div class="flex flex-wrap gap-2" id="jx-report-create-actions">
-                            <button type="button" onclick="openJXReport('medical')" class="rounded-xl bg-emerald-700 hover:bg-emerald-600 px-4 py-2.5 text-sm text-white font-semibold"><i class="fa-solid fa-truck-medical mr-1"></i>填寫救護／轉送報告</button>
-                            <button type="button" onclick="openJXReport('funeral')" class="rounded-xl bg-indigo-700 hover:bg-indigo-600 px-4 py-2.5 text-sm text-white font-semibold"><i class="fa-solid fa-file-signature mr-1"></i>填寫生命禮儀報告</button>
+                    <div class="flex items-center justify-center flex-wrap gap-2 mobile-action-group w-full md:w-auto" id="jiaxiao-quick-actions">
+                        <button type="button" id="jx-clock-modal-btn" onclick="openJiaxiaoClockModal()" aria-haspopup="dialog" aria-controls="modal-jx-clock" class="jx-member-create-btn rounded-xl bg-teal-600 hover:bg-teal-500 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-clock mr-2"></i>上下班打卡</button>
+                        <button type="button" id="jx-hospital-modal-btn" onclick="openJiaxiaoHospitalModal()" aria-haspopup="dialog" aria-controls="modal-jx-hospital" class="rounded-xl border border-teal-500/35 bg-slate-800 hover:bg-slate-700 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-hospital mr-2"></i>填寫醫院報告（預留）</button>
+                        <div class="contents" id="jx-report-create-actions">
+                            <button type="button" onclick="openJXReport('medical')" aria-haspopup="dialog" aria-controls="modal-jx-report" class="rounded-xl bg-emerald-700 hover:bg-emerald-600 px-4 py-2.5 text-sm text-white font-semibold"><i class="fa-solid fa-truck-medical mr-1"></i>填寫 EMS 救護報告</button>
+                            <button type="button" onclick="openJXReport('funeral')" aria-haspopup="dialog" aria-controls="modal-jx-report" class="rounded-xl bg-indigo-700 hover:bg-indigo-600 px-4 py-2.5 text-sm text-white font-semibold"><i class="fa-solid fa-file-signature mr-1"></i>填寫生命禮儀報告</button>
                         </div>
                     </div>
                 </div>
                 <div class="flex gap-2 overflow-x-auto border-b border-slate-800 pb-2" role="tablist" aria-label="嘉蕭集團分類">
-                    <button type="button" id="btn-jiaxiao-hospital" data-sub="hospital" aria-controls="jx-sub-hospital" aria-selected="true" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-teal-600 text-white whitespace-nowrap"><i class="fa-solid fa-hospital mr-2"></i>醫院登記表</button>
-                    <button type="button" id="btn-jiaxiao-medical" data-sub="medical" aria-controls="jx-sub-medical" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-truck-medical mr-2"></i>救護／轉送報告</button>
-                    <button type="button" id="btn-jiaxiao-funeral" data-sub="funeral" aria-controls="jx-sub-funeral" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-file-medical mr-2"></i>生命禮儀報告</button>
+                    <button type="button" id="btn-jiaxiao-hospital" data-sub="hospital" aria-controls="jx-sub-hospital" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-hospital mr-2"></i>醫院報告（尚未開放）</button>
+                    <button type="button" id="btn-jiaxiao-medical" data-sub="medical" aria-controls="jx-sub-medical" aria-selected="true" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-teal-600 text-white whitespace-nowrap"><i class="fa-solid fa-truck-medical mr-2"></i>EMS 歷史報告</button>
+                    <button type="button" id="btn-jiaxiao-funeral" data-sub="funeral" aria-controls="jx-sub-funeral" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-file-medical mr-2"></i>生命禮儀歷史報告</button>
                     <button type="button" id="btn-jiaxiao-review" data-sub="review" aria-controls="jx-sub-review" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-stamp mr-2"></i>高層審核／我的送審</button>
                     <button type="button" id="btn-jiaxiao-clocks" data-sub="clocks" aria-controls="jx-sub-clocks" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clipboard-user mr-2"></i>打卡紀錄</button>
                     <button type="button" id="btn-jiaxiao-hours" data-sub="hours" aria-controls="jx-sub-hours" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數</button>
                 </div>
 
                 <!-- 需求尚未規劃：只保留按鈕及真正可切換的空白分頁，絕不假造醫院登記表資料 -->
-                <section id="jx-sub-hospital" role="tabpanel" aria-labelledby="btn-jiaxiao-hospital" class="rounded-2xl border border-teal-500/20 bg-slate-900 p-6 sm:p-8 space-y-4">
-                    <div class="flex items-center gap-3"><i class="fa-solid fa-hospital text-2xl text-teal-400"></i><div><h3 class="text-xl font-bold text-white">醫院登記表</h3><p class="text-sm text-slate-400 mt-1">嘉蕭集團｜獨立醫院登記區</p></div></div>
+                <section id="jx-sub-hospital" role="tabpanel" aria-labelledby="btn-jiaxiao-hospital" class="hidden rounded-2xl border border-teal-500/20 bg-slate-900 p-6 sm:p-8 space-y-4">
+                    <div class="flex items-center gap-3"><i class="fa-solid fa-hospital text-2xl text-teal-400"></i><div><h3 class="text-xl font-bold text-white">醫院報告（預留）</h3><p class="text-sm text-slate-400 mt-1">嘉蕭集團｜獨立醫院登記區</p></div></div>
                     <div class="rounded-xl border border-dashed border-slate-700 bg-slate-950/60 p-7 text-center space-y-3">
                         <i class="fa-regular fa-clipboard text-3xl text-slate-500"></i>
                         <p class="text-base font-semibold text-slate-200">醫院登記表欄位尚未規劃</p>
-                        <p class="text-sm text-slate-400">目前僅完成按鈕及分頁架構。待你提供欄位後，再加入建立、儲存、審核與查詢功能。</p>
+                        <p class="text-sm text-slate-400">這是「醫院登記表」的獨立預留分類，並非 EMS 救護報告。待提供醫院欄位後再新增表單，現階段不會建立空白報告。</p>
                         <span class="inline-flex rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-400">尚未開放填寫</span>
                     </div>
                 </section>
 
-                <section id="jx-sub-medical" role="tabpanel" aria-labelledby="btn-jiaxiao-medical" class="hidden space-y-4">
+                <section id="jx-sub-medical" role="tabpanel" aria-labelledby="btn-jiaxiao-medical" class="space-y-4">
                     <div id="jiaxiao-reports" class="bg-slate-900 border border-teal-500/20 rounded-2xl p-4 sm:p-6 space-y-4">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-truck-medical text-teal-400 mr-2"></i>嘉蕭救護／轉送案件報告</h3><p class="text-xs text-slate-400 mt-1">使用已建立的救護及計費表單；報告送審通過後列入歷史。</p></div><button type="button" onclick="openJXReport('medical')" class="jx-member-create-btn rounded-xl bg-teal-600 hover:bg-teal-500 px-4 py-2 text-sm text-white font-semibold">填寫救護／轉送報告</button></div>
-                        <button type="button" onclick="loadJXReports('history')" class="rounded-lg bg-slate-800 px-4 py-2 text-sm text-teal-300 hover:bg-slate-700"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理救護紀錄</button>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-truck-medical text-teal-400 mr-2"></i>嘉蕭 EMS 救護歷史報告</h3><p class="text-xs text-slate-400 mt-1">EMS 派遣、傷病患、現場、處置、出勤與費用都填寫在「EMS 救護報告」彈出視窗。這裡只查看歷史紀錄，與醫院登記表完全分開。</p></div><button type="button" onclick="openJXReport('medical')" class="jx-member-create-btn rounded-xl bg-teal-600 hover:bg-teal-500 px-4 py-2 text-sm text-white font-semibold">填寫 EMS 救護報告</button></div>
+                        <button type="button" onclick="loadJXReports('history')" class="rounded-lg bg-slate-800 px-4 py-2 text-sm text-teal-300 hover:bg-slate-700"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理 EMS 紀錄</button>
                         <div id="jx-report-status" class="text-xs text-slate-400">為降低 Firestore 讀取量，只有按下按鈕才會載入紀錄。</div>
                         <div id="jx-medical-history-list" class="grid grid-cols-1 gap-3 text-sm text-slate-400">尚未載入</div>
                         <div id="jx-history-list" class="hidden" aria-hidden="true"></div>
@@ -1828,8 +1930,7 @@ __                                                                              
                             <div class="flex items-center justify-between gap-2"><h3 class="font-bold text-white"><i class="fa-solid fa-clock text-teal-400 mr-2"></i>嘉蕭集團上下班打卡</h3><span id="jiaxiao-duty-state" class="text-xs text-slate-400">尚未確認</span></div>
                             <p class="text-sm text-slate-400">打卡資訊用於值班統計與消防無人值班時的倒地通知後援名單。</p>
                             <div id="jiaxiao-clock-actions" class="flex flex-wrap gap-2">
-                                <button type="button" onclick="submitJiaxiaoClock('上班')" class="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 text-white text-sm font-semibold">上班打卡</button>
-                                <button type="button" onclick="submitJiaxiaoClock('下班')" class="rounded-xl bg-slate-700 hover:bg-slate-600 px-4 py-2.5 text-white text-sm font-semibold">下班打卡</button>
+                                <button type="button" onclick="openJiaxiaoClockModal()" aria-haspopup="dialog" aria-controls="modal-jx-clock" class="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-arrow-up-right-from-square mr-2"></i>開啟上下班打卡視窗</button>
                             </div>
                         </div>
                         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
@@ -1839,7 +1940,7 @@ __                                                                              
                     </div>
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-3">
                         <div class="flex flex-wrap items-center gap-2 justify-between"><h3 class="font-bold text-white">嘉蕭集團打卡歷史</h3><button type="button" onclick="loadJiaxiaoClockRecords()" class="bg-slate-800 hover:bg-slate-700 rounded-lg px-4 py-2 text-sm text-teal-300"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理打卡紀錄</button></div>
-                        <p id="jx-clock-load-status" class="text-xs text-slate-400">點擊才會讀取嘉蕭打卡歷史。</p>
+                        <p id="jx-clock-load-status" class="text-xs text-slate-400">點擊才會讀取嘉蕭打卡歷史。</p><div id="jx-clock-duty-summary" class="rounded-xl border border-teal-500/30 bg-teal-950/30 px-4 py-3 text-sm text-teal-200">目前值班人數：尚未載入</div>
                         <div id="jx-clock-history-list" class="space-y-2 text-sm text-slate-400">尚未載入</div>
                     </div>
                 </section>
@@ -2239,7 +2340,11 @@ __                                                                              
                     <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
                       <section class="rounded-2xl bg-slate-900 border border-slate-800 p-5 space-y-3">
                         <h4 class="font-bold text-indigo-300"><i class="fa-solid fa-ticket mr-2"></i>客服票務面板設定</h4>
-                        <label class="block text-sm">選擇已建立的票務面板</label>
+                        <div class="flex flex-wrap items-center justify-between gap-2"><label class="block text-sm">全部客服票務面板</label><span id="ntpc-bot-panel-count" class="text-xs text-indigo-300">尚未同步</span></div>
+                         <input id="ntpc-bot-panel-search" type="search" oninput="ntpcBotConsoleRenderPanels()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="搜尋標題或頻道 ID">
+                         <div id="ntpc-bot-panel-cards" class="space-y-2 max-h-64 overflow-y-auto border border-slate-800 rounded-lg p-2 text-sm"><span class="text-slate-400">尚未同步</span></div>
+                         <label class="block text-sm">選擇或輸入票務面板頻道 ID</label>
+                         <div class="flex flex-col sm:flex-row gap-2"><input id="ntpc-bot-panel-channel-id" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-mono" placeholder="貼上頻道 ID"><button type="button" onclick="ntpcBotConsoleLoadPanelById()" class="rounded-lg bg-slate-800 hover:bg-slate-700 px-4 py-2 whitespace-nowrap">載入 ID</button></div>
                         <select id="ntpc-bot-panel-list" onchange="ntpcBotConsolePanelSelect()" class="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white"><option value="">先同步 Bot 設定</option></select>
                         <label class="block text-xs text-slate-400">面板標題</label><input id="ntpc-bot-panel-title" maxlength="60" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="客服面板標題">
                         <label class="block text-xs text-slate-400">面板說明</label><textarea id="ntpc-bot-panel-desc" rows="4" maxlength="1000" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="可修改面板原本的文字"></textarea>
@@ -2250,12 +2355,15 @@ __                                                                              
                       </section>
                       <section class="rounded-2xl bg-slate-900 border border-slate-800 p-5 space-y-3">
                         <h4 class="font-bold text-emerald-300"><i class="fa-solid fa-coins mr-2"></i>金錢自動發放／扣款</h4>
-                        <label class="text-xs text-slate-400">目前排程</label><div id="ntpc-bot-money-jobs" class="space-y-1 text-sm text-slate-300 max-h-36 overflow-y-auto">尚未同步</div>
+                        <div class="flex justify-between items-center gap-2"><label class="text-xs text-slate-400">全部啟用中排程（可點選載入修改）</label><span id="ntpc-bot-money-count" class="text-xs text-emerald-300">尚未同步</span></div>
+                         <input type="search" id="ntpc-bot-money-search" oninput="ntpcBotConsoleRenderMoney()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="搜尋排程編號／對象／類型">
+                         <div id="ntpc-bot-money-jobs" class="space-y-2 text-sm text-slate-300 max-h-72 overflow-y-auto">尚未同步</div>
+                         <div class="rounded-lg bg-slate-950 border border-slate-800 p-3 flex flex-col sm:flex-row gap-2"><input id="ntpc-bot-money-edit-id" type="number" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5" placeholder="直接輸入排程 #"><button type="button" class="px-3 py-2 whitespace-nowrap bg-slate-700 rounded-lg" onclick="ntpcBotConsoleLoadMoneyById()">載入編輯</button></div>
                         <label class="text-xs text-slate-400">操作</label><select id="ntpc-bot-money-op" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5"><option value="加錢">自動發放金錢</option><option value="扣錢">定時扣款</option></select>
                         <div class="grid grid-cols-2 gap-2"><div><label class="text-xs text-slate-400">金額</label><input id="ntpc-bot-money-amount" type="number" min="1" max="1000000000" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5" placeholder="1000"></div><div><label class="text-xs text-slate-400">執行週期</label><select id="ntpc-bot-money-cycle" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5"><option value="週">每週</option><option value="月初">每月初</option><option value="月底">每月底</option></select></div></div>
                         <label class="text-xs text-slate-400">指定對象類型</label><select id="ntpc-bot-money-target-type" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5"><option value="role_id">身分組</option><option value="target_id">指定使用者</option></select>
                         <label class="text-xs text-slate-400">Discord 身分組或使用者 ID</label><input id="ntpc-bot-money-target" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5" placeholder="數字 ID">
-                        <button type="button" onclick="ntpcBotConsoleSubmit('money_create')" class="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-sm">新增自動排程</button>
+                        <div class="flex flex-wrap gap-2"><button type="button" onclick="ntpcBotConsoleSubmit('money_create')" class="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-sm">新增自動排程</button><button type="button" onclick="ntpcBotConsoleSubmit('money_update')" class="px-4 py-2 rounded-lg bg-indigo-700 hover:bg-indigo-600 text-white text-sm">儲存所選排程修改</button></div>
                         <div class="border-t border-slate-700 pt-3"><label class="text-xs text-slate-400">取消排程（輸入編號）</label><div class="flex gap-2"><input id="ntpc-bot-money-cancel-id" type="number" min="1" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5" placeholder="排程 #"><button type="button" onclick="ntpcBotConsoleSubmit('money_cancel')" class="px-3 rounded-lg bg-rose-800 text-white text-sm">取消</button></div></div>
                       </section>
                     </div>
@@ -2654,6 +2762,39 @@ __                                                                              
 
     #ems-form-scroll [data-ems-form-page].hidden{display:none!important;}
     @media(max-width:390px){#ems-form-scroll .ems-page-nav{gap:2px;padding:4px;}#ems-form-scroll .ems-page-tab{font-size:10px;}}
+    /* 嘉蕭 EMS 以消防 EMS 平板樣式建立獨立六頁流程，包含額外收費頁。 */
+    #jx-report-form .ems-page-nav{position:sticky;top:-1rem;z-index:15;background:rgba(2,6,23,.97);border:1px solid #334155;border-radius:1rem;padding:.5rem;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.2rem;box-shadow:0 8px 28px rgba(0,0,0,.2);}
+    #jx-report-form .ems-page-tab{font-size:clamp(10px,1.2vw,13px);min-height:45px;padding:.45rem .1rem;border-radius:.7rem;color:#cbd5e1;border:1px solid transparent;line-height:1.35;font-weight:650;}
+    #jx-report-form .ems-page-tab.is-active{background:rgba(13,148,136,.25);border-color:rgba(45,212,191,.65);color:#ccfbf1;}
+    #jx-report-form .ems-page-tab span{display:block;}
+    #jx-report-form .ems-tablet-choice{display:flex;align-items:center;gap:.6rem;min-height:48px;border:1px solid #334155;border-radius:.75rem;padding:.7rem .8rem;background:rgba(15,23,42,.9);font-size:.875rem;color:#e2e8f0;cursor:pointer;}
+    #jx-report-form .ems-tablet-choice:has(input:checked){background:rgba(19,78,74,.45);border-color:#2dd4bf;color:white;}
+    #jx-report-form .ems-tablet-choice input{width:17px;height:17px;flex-shrink:0;accent-color:#14b8a6;}
+    #jx-report-form .ems-triage-main{display:flex;align-items:center;gap:.75rem;padding:.85rem 1rem;border:1px solid #475569;border-radius:.85rem;background:rgba(2,6,23,.8);color:#f8fafc;font-size:14px;font-weight:bold;}
+    #jx-report-form .ems-triage-main:has(input:checked){border-color:#2dd4bf;background:rgba(19,78,74,.45);}
+    #jx-report-form .ems-triage-subtab{border:1px solid #334155;border-radius:.75rem;background:#0f172a;color:#cbd5e1;font-size:13px;padding:.65rem 1rem;}
+    #jx-report-form .ems-triage-subtab.is-active{background:#0f766e;border-color:#2dd4bf;color:white;}
+    #jx-report-form .ems-triage-panel{padding:.7rem 0;}
+    /* V59: Match EMS tablet typography when the clinical template is cloned into Jiaxiao. */
+    #jx-report-form .ems-triage-divider{font-size:14px;line-height:1.5;color:#cbd5e1;font-weight:650;padding:8px 2px;margin:14px 0 10px;border-bottom:1px solid #334155;}
+    #jx-report-form .ems-triage-panel h5,#jx-report-form .ems-triage-panel p{line-height:1.5;}
+    #jx-report-form .ems-tablet-choice span{line-height:1.5;overflow-wrap:anywhere;font-size:14px;}
+    #jx-report-form .ems-triage-subtab{font-size:14px;font-weight:600;min-height:42px;}
+    #jx-report-form .jx-custom-fee-row{display:grid;grid-template-columns:36px minmax(0,1fr) minmax(118px,35%);align-items:end;gap:10px;background:rgba(2,6,23,.55);border:1px solid rgba(71,85,105,.7);border-radius:14px;padding:12px;}
+    #jx-report-form .jx-custom-fee-number{font-variant-numeric:tabular-nums;align-self:center;font-size:13px;font-weight:700;color:#5eead4;}
+    #jx-report-form .jx-custom-fee-row label{display:block;min-width:0;font-weight:500;}
+    #jx-report-form .jx-custom-fee-row label>span{display:block;font-size:12px;color:#cbd5e1;margin-bottom:5px;}
+    #jx-report-form .jx-custom-fee-row input{min-height:44px;}
+    #jx-report-form [data-jx-counter]{min-width:44px;min-height:44px;}
+    #jx-report-form label:has([data-jx-counter]) input[type=number]{width:100%;min-width:56px;}
+    @media(max-width:520px){#jx-report-form .jx-custom-fee-row{grid-template-columns:30px minmax(0,1fr);gap:8px;}#jx-report-form .jx-custom-fee-price{grid-column:2;}#jx-report-form .jx-custom-fee-number{grid-row:1 / span 2;}}
+
+    #jx-report-form .ems-treatment-detail{display:block;border:1px solid #475569;border-radius:.85rem;background:rgba(2,6,23,.65);padding:.8rem;}
+    #jx-report-form .ems-treatment-detail.hidden{display:none!important;}
+    #jx-report-form [data-jx-form-page].hidden{display:none!important;}
+    #jx-report-form #jx-ems-body-map-summary{border:1px solid rgba(45,212,191,.3);background:rgba(19,78,74,.25);border-radius:.7rem;padding:.65rem .8rem;color:#ccfbf1;}
+    #modal-ems-report #ems-body-map-summary{border:1px solid rgba(251,113,133,.35);background:rgba(136,19,55,.2);border-radius:.7rem;padding:.65rem .8rem;color:#ffe4e6;}
+    @media(max-width:490px){#jx-report-form .ems-page-nav{gap:1px;padding:4px;}#jx-report-form .ems-page-tab{font-size:9px;padding:5px 1px;}}
 </style>
 <div id="modal-ems-report" class="fixed inset-0 z-50 bg-slate-950/80 hidden flex items-center justify-center p-2 sm:p-4">
       <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-4xl w-full shadow-2xl max-h-[94dvh] flex flex-col overflow-hidden">
@@ -2781,7 +2922,7 @@ __                                                                              
             </div>
         </div>
         <div class="rounded-2xl border border-slate-700/60 bg-slate-950/65 p-4 space-y-3">
-            <div id="ems-body-map-summary" class="text-sm font-semibold text-slate-200">尚未選取受傷部位</div>
+            <div id="ems-body-map-summary" role="status" aria-live="polite" class="text-sm font-semibold text-slate-200">尚未選取受傷部位</div>
             <div id="ems-body-map-chips" class="flex flex-wrap gap-2"></div>
             <label class="block">
                 <span class="block text-xs font-semibold text-slate-300 mb-1.5">受傷部位尺寸／補充說明</span>
@@ -4016,6 +4157,7 @@ function latestDutyCount(rows){return [...buildLatestDutyMap(rows).values()].fil
                 appData.jiaxiaoClocks.push({docId:id,...data});
                 recalculateDutyStatusCache();renderJiaxiaoDuty();
                 showToast('嘉蕭集團'+status+'打卡成功','success','打卡成功');
+                return true;
             }catch(e){showToast('嘉蕭集團打卡失敗：'+e.message,'error','資料庫存取失敗');}
         }
         window.renderAdminOverview = function renderAdminOverview() {
@@ -5078,7 +5220,7 @@ async function republishAnnouncement(id) {
             if (tabId === 'faq') switchFAQCategory(document.querySelector('.faq-category-btn.active')?.getAttribute('data-faq-category') || 'info');
             if (tabId === 'notifications') renderPersonalNotifications();
             if (tabId === 'profile') renderMyProfile();
-            if (tabId === 'jiaxiao') { renderJXReports(); switchJiaxiaoSubTab('hospital'); }
+            if (tabId === 'jiaxiao') { renderJXReports(); switchJiaxiaoSubTab('medical'); }
             if (tabId === 'academy') {
                 renderAcademySession();
                 renderAcademyCache();
@@ -5177,7 +5319,7 @@ async function republishAnnouncement(id) {
         function switchJiaxiaoSubTab(sub){
             if(!canAccessJiaxiao())return;
             const tabs=['hospital','medical','funeral','review','clocks','hours'];
-            if(!tabs.includes(sub))sub='hospital';
+            if(!tabs.includes(sub))sub='medical';
             for(const key of tabs){
                 document.getElementById('jx-sub-'+key)?.classList.toggle('hidden',key!==sub);
                 const btn=document.getElementById('btn-jiaxiao-'+key);
@@ -5189,6 +5331,36 @@ async function republishAnnouncement(id) {
             if(sub==='clocks')renderJiaxiaoDuty();
             if(sub==='hours')renderJiaxiaoClockHours();
             if(['medical','funeral','review'].includes(sub))renderJXReports();
+        }
+
+        // 嘉蕭操作採消防中心同款彈窗，次分類只供查詢歷史／審核，不做表單入口跳轉。
+        function jxShowDialog(id){const el=document.getElementById(id);if(el){el.classList.remove('hidden');el.classList.add('flex');}}
+        function jxHideDialog(id){const el=document.getElementById(id);if(el){el.classList.add('hidden');el.classList.remove('flex');}}
+        function openJiaxiaoHospitalModal(){
+            if(!canAccessJiaxiao()){showToast('沒有嘉蕭集團瀏覽權限','warning');return;}
+            jxShowDialog('modal-jx-hospital');
+        }
+        function closeJiaxiaoHospitalModal(){jxHideDialog('modal-jx-hospital');}
+        function openJiaxiaoClockModal(){
+            if(!isJiaxiaoMember()){showToast('只有嘉蕭集團成員可以打卡','warning','權限不足');return;}
+            const own=buildLatestDutyMap(appData?.jiaxiaoClocks||[]).get(String(currentUser?.account||'').toLowerCase());
+            const onDuty=own?.status==='上班';
+            const who=document.getElementById('jx-clock-modal-member');
+            if(who)who.textContent=(currentUser?.name||currentUser?.account||'--')+'（'+(currentUser?.account||'')+'）';
+            const current=document.getElementById('jx-clock-modal-current');if(current)current.textContent=onDuty?'目前已上班':'目前未上班';
+            const select=document.getElementById('jx-clock-modal-status');if(select)select.value=onDuty?'下班':'上班';
+            jxShowDialog('modal-jx-clock');
+        }
+        function closeJiaxiaoClockModal(){jxHideDialog('modal-jx-clock');}
+        let jxClockModalBusy=false;
+        async function confirmJiaxiaoClockModal(){
+            if(jxClockModalBusy)return;
+            const status=document.getElementById('jx-clock-modal-status')?.value;
+            if(!['上班','下班'].includes(status))return;
+            jxClockModalBusy=true;
+            const button=document.getElementById('jx-clock-modal-confirm');if(button)button.disabled=true;
+            try{const saved=await submitJiaxiaoClock(status);if(saved===true)closeJiaxiaoClockModal();}
+            finally{jxClockModalBusy=false;if(button)button.disabled=false;}
         }
         // 嘉蕭打卡按需讀取；不增加登入後自動讀取 Firebase 的頻率。
         let jxClockHistoryLoaded=false;
@@ -5204,10 +5376,25 @@ async function republishAnnouncement(id) {
                 if(status)status.textContent=`共讀取 ${appData.jiaxiaoClocks.length} 筆打卡資料${appData.jiaxiaoClocks.length>=2000?'（達 2000 筆上限，請注意資料可能不完整）':''}。`;
             }catch(e){if(status)status.textContent='打卡讀取失敗：'+(e?.message||String(e));showToast('嘉蕭打卡讀取失敗：'+e.message,'error','讀取失敗');}
         }
+        async function deleteJiaxiaoClockRecord(encoded){
+            if(!canReviewJX()||!db||!fm){showToast('只有管理員或嘉蕭高層可以刪除打卡紀錄','warning');return;}
+            const id=decodeURIComponent(encoded),found=(appData.jiaxiaoClocks||[]).find(r=>String(r.docId||r.id)===id);
+            if(!found)return;
+            if(!(await showConfirm('確定刪除 '+(found.name||found.account||'此成員')+' 的 '+(found.status||'')+' 打卡紀錄？此操作將重新計算出勤狀態與時數。','刪除打卡紀錄','確定刪除')))return;
+            try{
+                await fm.deleteDoc(fm.doc(db,'jiaxiaoClocks',id));
+                appData.jiaxiaoClocks=(appData.jiaxiaoClocks||[]).filter(r=>String(r.docId||r.id)!==id);
+                recalculateDutyStatusCache();renderJiaxiaoDuty();renderJiaxiaoClockHistory();renderJiaxiaoClockHours();
+                await logAdminAction('刪除嘉蕭打卡紀錄',id);
+                showToast('打卡紀錄已刪除，值班統計已重算','success');
+            }catch(e){showToast('打卡紀錄刪除失敗：'+e.message,'error');}
+        }
         function renderJiaxiaoClockHistory(){
             const el=document.getElementById('jx-clock-history-list');if(!el||!jxClockHistoryLoaded)return;
             const rows=[...(appData?.jiaxiaoClocks||[])].sort((a,b)=>getClockTimestamp(b)-getClockTimestamp(a)).slice(0,100);
-            el.innerHTML=rows.length?rows.map(r=>`<div class="grid grid-cols-1 sm:grid-cols-3 gap-1 rounded-xl bg-slate-950 border border-slate-800 p-3"><span class="text-white font-medium">${escapeHtml(r.name||r.account||'--')}</span><span class="${r.status==='上班'?'text-emerald-400':'text-slate-300'}">${escapeHtml(r.status||'--')}</span><span class="text-xs text-slate-400">${escapeHtml(r.time||formatDateTime(getClockTimestamp(r)))}</span></div>`).join(''):'沒有打卡紀錄';
+            const duty=jiaxiaoDutyRows(),summary=document.getElementById('jx-clock-duty-summary');
+            if(summary)summary.innerHTML=`<strong>目前值班人數：${duty.length} 人</strong><div class="mt-1 text-xs text-slate-300">${duty.length?duty.map(r=>escapeHtml(r.name||r.account||'--')).join('、'):'目前無人值班'}</div>`;
+            el.innerHTML=rows.length?rows.map(r=>`<div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-950 border border-slate-800 p-3"><div class="flex flex-col sm:flex-row sm:items-center gap-2"><span class="text-white font-medium">${escapeHtml(r.name||r.account||'--')}</span><span class="${r.status==='上班'?'text-emerald-400':'text-slate-300'}">${escapeHtml(r.status||'--')}</span><span class="text-xs text-slate-400">${escapeHtml(r.time||formatDateTime(getClockTimestamp(r)))}</span></div>${canReviewJX()?`<button type="button" class="rounded-lg border border-rose-600/60 bg-rose-950/50 px-3 py-1.5 text-xs text-rose-300" onclick="deleteJiaxiaoClockRecord('${encodeURIComponent(String(r.docId||r.id||''))}')">刪除紀錄</button>`:''}</div>`).join(''):'沒有打卡紀錄';
         }
         function renderJiaxiaoClockHours(){
             const status=document.getElementById('jx-hours-status'),el=document.getElementById('jx-hours-list');
@@ -8064,13 +8251,13 @@ async function republishAnnouncement(id) {
             return [...new Set(String(value||'').split(EMS_BODY_REGION_DELIMITER).map(x=>x.trim()).filter(Boolean))];
         }
         function setEMSBodySelection(value=''){
-            const input=document.getElementById('ems-body-map-selection');
+            const input=document.querySelector('#modal-ems-report #ems-body-map-selection');
             if(!input)return;
             input.value=parseEMSBodySelection(Array.isArray(value)?value.join(EMS_BODY_REGION_DELIMITER):value).join(EMS_BODY_REGION_DELIMITER);
             syncEMSBodyMapUI();
         }
         function getEMSBodySelection(){
-            return parseEMSBodySelection(document.getElementById('ems-body-map-selection')?.value||'');
+            return parseEMSBodySelection(document.querySelector('#modal-ems-report #ems-body-map-selection')?.value||'');
         }
         function toggleEMSBodyPart(label=''){
             const list=getEMSBodySelection();
@@ -8085,7 +8272,8 @@ async function republishAnnouncement(id) {
             const list=getEMSBodySelection();
             const selected=new Set(list);
             const synchronizedTimeMs=(performance.now()-EMS_BODY_PULSE_ORIGIN_MS)%EMS_BODY_PULSE_CYCLE_MS;
-            document.querySelectorAll('[data-ems-body-part]').forEach(node=>{
+            const host=document.getElementById('modal-ems-report');
+            host?.querySelectorAll('[data-ems-body-part]').forEach(node=>{
                 const isSelected=selected.has(node.dataset.emsBodyPart||'');
                 const region=node.querySelector('.ems-body-region');
                 node.classList.toggle('is-selected',isSelected);
@@ -8096,9 +8284,9 @@ async function republishAnnouncement(id) {
                     if(pulse)pulse.currentTime=synchronizedTimeMs;
                 }
             });
-            const summary=document.getElementById('ems-body-map-summary');
+            const summary=host?.querySelector('#ems-body-map-summary');
             if(summary)summary.textContent=list.length?`已選取 ${list.length} 個部位：${list.join('、')}`:'尚未選取受傷部位';
-            const chips=document.getElementById('ems-body-map-chips');
+            const chips=host?.querySelector('#ems-body-map-chips');
             if(chips){
                 chips.innerHTML='';
                 if(list.length){
@@ -11057,21 +11245,80 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
         function jxNumber(key,label,value=0,min=0,max=99){return jxText(key,label,value,`type="number" step="1" min="${min}" max="${max}" inputmode="numeric"`);}
         function jxCounter(key,label,value=0){return `<label class="block min-w-0"><span class="block text-xs font-semibold text-slate-300 mb-1.5">${jxEsc(label)}</span><div class="flex items-center gap-2"><button type="button" data-jx-step="-1" data-jx-counter="${key}" class="rounded-xl bg-slate-700 hover:bg-slate-600 w-12 h-11 shrink-0 text-white font-bold" aria-label="${jxEsc(label)}減一">−</button><input name="${key}" class="${jxInputClass} text-center" type="number" min="0" max="99" step="1" inputmode="numeric" value="${jxEsc(value)}"><button type="button" data-jx-step="1" data-jx-counter="${key}" class="rounded-xl bg-slate-700 hover:bg-slate-600 w-12 h-11 shrink-0 text-white font-bold" aria-label="${jxEsc(label)}加一">＋</button></div></label>`;}
         function jxSection(title,html,desc='') {return `<section class="bg-slate-950/60 rounded-2xl border border-slate-700/65 p-4 sm:p-5 space-y-4"><div><h4 class="font-bold text-teal-300 text-base">${jxEsc(title)}</h4>${desc?`<p class="text-xs text-slate-400 mt-1">${jxEsc(desc)}</p>`:''}</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4">${html}</div></section>`;}
+        // 嘉蕭：運送選項與消防 EMS 相同；只有勾選「沒有運送」才展開三類未運送原因。
+        // FormData 維持舊版 transportStatus/noTransportGroup/noTransportReason 欄位，既有報告相容。
+        function jxMedicalTransport(d={}){
+            const state=d.transportStatus||'已送醫',group=d.noTransportGroup||'',reason=d.noTransportReason||'';
+            const options=[
+                ['未接觸',[['未發現','A. 未發現'],['誤報','B. 誤報'],['中途取消','C. 中途取消']]],
+                ['有接觸',[['拒送','A. 拒送'],['警察處理','B. 警察處理'],['現場死亡','C. 現場死亡'],['其他','D. 其他']]],
+                ['出勤待命',[['火警','A. 火警'],['支援勤務','B. 支援勤務']]]
+            ];
+            const choices=options.map(([name,items],i)=>`<div class="rounded-xl border border-slate-700/70 bg-slate-950/70 p-3 space-y-2">
+                <label class="flex items-center gap-3 cursor-pointer text-sm font-semibold text-white">
+                  <input type="checkbox" data-jx-no-transport-group="${jxEsc(name)}" class="w-4 h-4 accent-teal-500" ${state==='沒有運送'&&group===name?'checked':''}>（${i+1}）${jxEsc(name)}
+                </label>
+                <div data-jx-no-transport-reveal="${jxEsc(name)}" class="hidden border-t border-slate-800 pt-3">
+                  <label class="block text-xs text-slate-400 mb-2">未運送原因</label>
+                  <select data-jx-no-transport-reason="${jxEsc(name)}" class="${jxInputClass}">
+                    <option value="">-- 請選擇原因 --</option>
+                    ${items.map(([v,label])=>`<option value="${jxEsc(v)}" ${group===name&&reason===v?'selected':''}>${jxEsc(label)}</option>`).join('')}
+                  </select>
+                </div>
+              </div>`).join('');
+            return `<div class="sm:col-span-2 space-y-3" id="jx-transport-fields">
+                <div class="text-xs font-semibold text-slate-300">運送狀態</div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">${['已送醫','沒有運送','轉交其他單位'].map(x=>`<label class="ems-tablet-choice"><input type="radio" name="transportStatus" value="${x}" ${state===x?'checked':''}><span>${x}</span></label>`).join('')}</div>
+                <div data-jx-no-transport-panel class="hidden space-y-2 rounded-xl border border-teal-500/30 bg-slate-900/65 p-3">
+                  <div class="text-sm font-semibold text-white">未運送原因</div>
+                  ${choices}
+                  <label data-jx-no-transport-other class="hidden block text-sm text-slate-300">其他原因說明
+                    <textarea name="noTransportReasonOther" rows="2" maxlength="500" class="${jxInputClass} mt-2" placeholder="請填寫其他未運送原因">${jxEsc(d.noTransportReasonOther||'')}</textarea>
+                  </label>
+                </div>
+                <input type="hidden" name="noTransportGroup" value="${jxEsc(group)}">
+                <input type="hidden" name="noTransportReason" value="${jxEsc(reason)}">
+                ${jxText('transferredTo','轉交其他單位名稱',d.transferredTo||'')}
+              </div>`;
+        }
+        function jxSyncTransportUI(changed){
+            const area=document.getElementById('jx-transport-fields');if(!area)return;
+            const state=area.querySelector('input[name="transportStatus"]:checked')?.value||'已送醫';
+            const isNo=state==='沒有運送';
+            area.querySelector('[data-jx-no-transport-panel]')?.classList.toggle('hidden',!isNo);
+            const groupInputs=[...area.querySelectorAll('[data-jx-no-transport-group]')];
+            if(changed?.matches?.('[data-jx-no-transport-group]')&&changed.checked){
+                groupInputs.forEach(el=>{if(el!==changed)el.checked=false;});
+            }
+            const checked=isNo?groupInputs.find(el=>el.checked):null;
+            const group=checked?.dataset.jxNoTransportGroup||'';
+            let reason='';
+            area.querySelectorAll('[data-jx-no-transport-reveal]').forEach(panel=>{
+                const active=!!group&&isNo&&panel.dataset.jxNoTransportReveal===group;
+                panel.classList.toggle('hidden',!active);
+                const select=panel.querySelector('select');if(select){select.disabled=!active;if(active)reason=select.value;}
+            });
+            const hiddenGroup=area.querySelector('[name="noTransportGroup"]'),hiddenReason=area.querySelector('[name="noTransportReason"]');
+            if(hiddenGroup)hiddenGroup.value=group;
+            if(hiddenReason)hiddenReason.value=reason;
+            const other=area.querySelector('[data-jx-no-transport-other]');
+            const otherVisible=isNo&&group==='有接觸'&&reason==='其他';
+            if(other){other.classList.toggle('hidden',!otherVisible);other.querySelector('textarea').disabled=!otherVisible;}
+            const transfer=area.querySelector('[name="transferredTo"]')?.closest('label');
+            if(transfer)transfer.classList.toggle('hidden',state!=='轉交其他單位');
+        }
         function jxBaseMedical(d={}){
             const dt=d.acceptedAt||jxNowLocal();
             return jxSection('一、派遣資料',
                 jxText('acceptedAt','受理時間',dt,'type="datetime-local" required')+jxText('receiver','受理人員',d.receiver??currentUser?.name??'','required')+
                 jxText('participants','參與人員',d.participants||'')+jxText('hospitalAt','送達醫院時間',d.hospitalAt||'','type="datetime-local"')+
                 jxSelect('source','案件來源',['民眾','家屬','公司','政府','警員','其他'],d.source||'',true)+
-                jxSelect('mission','任務類型',['一般救護','轉院任務','出院接送','駐點待命'],d.mission||'一般救護')+
+                jxSelect('mission','任務類型',['一般救護','駐點待命'],(['轉院任務','出院接送'].includes(d.mission)?'一般救護':(d.mission||'一般救護')))+
                 jxText('incidentLocation','發生地點',d.incidentLocation||'','required')+jxText('destination','送往醫院或地點',d.destination||'嘉蕭醫學大學 附設嘉蕭醫院')+
-                jxSelect('transportStatus','運送狀態',['已送醫','沒有運送','轉交其他單位'],d.transportStatus||'已送醫')+
-                jxSelect('noTransportGroup','未運送分類（與 EMS 相同）',['未接觸','有接觸','出勤待命'],d.noTransportGroup||'')+
-                jxSelect('noTransportReason','未運送原因',['未發現','誤報','中途取消','拒送','警察處理','現場死亡','火警','支援勤務','其他'],d.noTransportReason||'',true)+
-                jxText('transferredTo','轉交其他單位名稱',d.transferredTo||'')
+                jxMedicalTransport(d)
             )+jxSection('二、傷病患資料',
-                jxText('patientName','姓名',d.patientName||'','required')+jxText('patientId','身分證字號（RP 虛構資料）',d.patientId||'')+
-                jxSelect('patientSex','性別',['男','女','不明','其他'],d.patientSex||'',true)+jxText('patientAge','年齡（約）',d.patientAge||'','placeholder="例如：約25歲"')+
+                jxText('patientName','姓名',d.patientName||'','required')+jxText('patientId','身分證字號',d.patientId||'')+
+                jxSelect('patientSex','性別',['男','女','不明','其他'],d.patientSex||'',true)+jxText('patientAge','年齡',d.patientAge||'','placeholder="例如：約25歲"')+
                 jxSelect('gcsE','GCS E',['1','2','3','4'],d.gcsE||'')+jxSelect('gcsV','GCS V',['1','2','3','4','5'],d.gcsV||'')+
                 jxSelect('gcsM','GCS M',['1','2','3','4','5','6'],d.gcsM||'')
             );
@@ -11080,7 +11327,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             return jxSection('五、出勤狀況',
                 jxSelect('sceneType','事件地點類型',['住家','公共場所','娛樂場所','其他'],d.sceneType||'',true)+
                 jxSelect('sceneRisk','是否存在危險因素',['無','暴力','不明風險','其他'],d.sceneRisk||'',true)+
-                jxCounter('staffEMT1','EMT-1 人數',d.staffEMT1??1,0,99)+jxCounter('staffEMT2','EMT-2 人數',d.staffEMT2??1,0,99)+
+                jxCounter('staffEMT1','EMT-1 人數',d.staffEMT1??2,0,99)+jxCounter('staffEMT2','EMT-2 人數',d.staffEMT2??0,0,99)+
                 jxCounter('staffEMTP','EMT-P 人數',d.staffEMTP??0,0,99)+jxCounter('staffNurse','護理師人數',d.staffNurse??0,0,99)+jxCounter('staffDoctor','醫師人數',d.staffDoctor??0,0,99)+
                 ['signature1','signature2','signature3','signature4'].map((x,i)=>jxText(x,'出勤人員簽名 '+(i+1),d[x]||'')).join('')
             );
@@ -11089,20 +11336,31 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             const care=[['wheelchair','輪椅／行動不便患者',500],['oxygen','醫療氧氣使用',800],['ecg','心電圖監測',1200],['iv','靜脈點滴照護',1200],['medication','藥物給予',500]];
             return jxSection('六、出勤費用',
                 jxText('baseFee','基本費用（$）',d.baseFee??8000,'type="number" min="0" step="1" required')+
-                jxSelect('transportFeeType','交通／轉送加價',['不加價','市區短程轉送','市區中程轉送','長途醫療轉送'],d.transportFeeType||'不加價')+
-                jxNumber('extraKilometers','超出里程（每公里 $100）',d.extraKilometers??0,0,9999)+
                 jxSelect('standbyFeeType','活動救護／駐點費用',['不加價','小型活動半天','小型活動整天','大型活動每場','長期駐點每月'],d.standbyFeeType||'不加價')+
                 jxNumber('overtimeHours','超時（每小時 $1,200）',d.overtimeHours??0,0,999)+
-                jxNumber('extraManual','其他加價金額（$）',d.extraManual??0,0,99999999)+
-                jxTextarea('extraNote','加價項目補充',d.extraNote||'')+
+                `<div class="sm:col-span-2 rounded-2xl border border-teal-500/25 bg-slate-900/60 p-4 space-y-3">
+                    <div class="flex flex-wrap items-start justify-between gap-2"><div><h5 class="text-sm font-bold text-teal-200">自訂服務項目</h5><p class="text-xs text-slate-400 mt-1">最多五項，分別輸入服務名稱與金額；空白項目不計費。</p></div><span class="text-xs text-slate-400">金額單位：$</span></div>
+                    <div class="space-y-3">${Array.from({length:5},(_,i)=>{
+                        const n=i+1;
+                        const legacyItem=i===0&&!('manualItem1' in d)&&jxNum(d,'extraManual')?String(d.extraNote||'其他加價服務'):'';
+                        const legacyPrice=i===0&&!('manualPrice1' in d)?jxNum(d,'extraManual'):0;
+                        const name=d['manualItem'+n]??legacyItem;
+                        const price=d['manualPrice'+n]??legacyPrice;
+                        return `<div class="jx-custom-fee-row" role="group" aria-label="自訂服務 ${n}">
+                            <span class="jx-custom-fee-number">${String(n).padStart(2,'0')}</span>
+                            <label class="jx-custom-fee-name"><span>服務項目</span><input class="${jxInputClass}" name="manualItem${n}" maxlength="80" value="${jxEsc(name)}" placeholder="例如：設備租借"></label>
+                            <label class="jx-custom-fee-price"><span>價格 ($)</span><input class="${jxInputClass} text-right" name="manualPrice${n}" type="number" min="0" max="99999999" step="1" inputmode="numeric" value="${jxEsc(Number(price)>0?price:'')}" placeholder="0"></label>
+                        </div>`;
+                    }).join('')}</div>
+                </div>`+
                 `<div class="sm:col-span-2"><span class="block text-xs font-semibold text-slate-300 mb-2">特殊醫療與照護項目（依次數計費）</span><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">${care.map(([k,label,fee])=>`<div class="rounded-xl border border-slate-700 bg-slate-900 p-3">${jxCounter('care_'+k,label+'（'+jxMoney(fee)+'／次）',d['care_'+k]||0)}</div>`).join('')}</div></div>`+
-                `<div class="sm:col-span-2 rounded-xl border border-teal-500/40 bg-teal-950/40 p-4 space-y-2"><h5 class="text-teal-300 font-bold">自動試算明細</h5><div id="jx-cost-lines" class="space-y-1 text-sm text-slate-300"></div><div class="border-t border-teal-500/30 pt-3 flex justify-between text-lg font-bold text-white"><span>總金額</span><output id="jx-grand-total" class="text-teal-300">$8,000</output></div><p class="text-[11px] text-slate-400">前 2 位 EMT 已含於基本費，第 3 位起按 EMT-1 $700／EMT-2 $1,000／EMT-P $1,500 加收；護理師 $2,500、醫師 $5,000 另計。長途轉送起價 $6,000。</p></div>`+
+                `<div class="sm:col-span-2 rounded-xl border border-teal-500/40 bg-teal-950/40 p-4 space-y-2"><h5 class="text-teal-300 font-bold">自動試算明細</h5><div id="jx-cost-lines" class="space-y-1 text-sm text-slate-300"></div><div class="border-t border-teal-500/30 pt-3 flex justify-between text-lg font-bold text-white"><span>總金額</span><output id="jx-grand-total" class="text-teal-300">$8,000</output></div><p class="text-[11px] text-slate-400">前 2 位 EMT 已含於基本費，第 3 位起按 EMT-1 $700／EMT-2 $1,000／EMT-P $1,500 加收；護理師 $2,500、醫師 $5,000 另計。</p></div>`+
                 jxSelect('paymentStatus','付款狀態',['已付','未付'],d.paymentStatus||'未付')
             );
         }
         function jxFuneralForm(d={}){
             return jxSection('一、基本案件資訊',
-                jxText('detailId','明細編號',d.detailId||'')+jxText('reportDate','填表日期',d.reportDate||jxNowLocal().slice(0,10),'type="date" required')+
+                jxText('reportDate','填表日期',d.reportDate||jxNowLocal().slice(0,10),'type="date" required')+
                 jxText('registrar','登記人員',d.registrar??currentUser?.name??'','required')+jxText('participants','參與人員',d.participants||'')+
                 jxSelect('source','案件來源',['醫院','警方','家屬','其他'],d.source||'',true)
             )+jxSection('二、往生者資料',
@@ -11118,7 +11376,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 jxSelect('plan','選擇方案',['經濟型','標準型','尊榮型','客製'],d.plan||'')+
                 jxTextarea('customPlan','客製方案項目',d.customPlan||'')+
                 jxText('estimatedTotal','預估總費用（$）',d.estimatedTotal??'','type="number" min="0" step="1"')+
-                jxSelect('depositPaid','是否已收訂金',['是','否'],d.depositPaid||'否')
+                jxSelect('depositPaid','是否已收訂金',['是','否'],d.depositPaid||'否')+jxSelect('paymentStatus','付款狀態',['已付','未付'],d.paymentStatus||'未付')
             )+'<p class="text-xs text-amber-300">禮儀方案未提供正式定價，本表不預設方案價格，由填報人輸入實際預估費用。</p>';
         }
         function jxSyncClinicalUI(){
@@ -11155,6 +11413,57 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             });
             // Non-trauma defaults to the acute tab; a selector can switch without touching EMS form.
         }
+        function jxBodySelection(){
+            const host=document.getElementById('jx-form-content');
+            return [...host.querySelectorAll('[data-ems-body-part][aria-pressed="true"]')].map(x=>x.dataset.emsBodyPart||'').filter(Boolean);
+        }
+        function jxSyncBodyMapUI(){
+            const host=document.getElementById('jx-form-content');if(!host)return;
+            const parts=jxBodySelection(),set=new Set(parts);
+            host.querySelectorAll('[data-ems-body-part]').forEach(node=>{
+                const picked=set.has(node.dataset.emsBodyPart||'');
+                node.classList.toggle('is-selected',picked);
+                node.setAttribute('aria-pressed',String(picked));
+            });
+            const field=host.querySelector('#jx-ems-body-map-selection');if(field)field.value=parts.join('|');
+            const summary=host.querySelector('#jx-ems-body-map-summary');
+            if(summary)summary.textContent=parts.length?`已選取 ${parts.length} 個受傷部位：${parts.join('、')}`:'尚未選取受傷部位';
+            const chips=host.querySelector('#jx-ems-body-map-chips');
+            if(chips){
+                chips.replaceChildren();
+                if(!parts.length){const span=document.createElement('span');span.className='text-xs text-slate-500';span.textContent='點擊上方人偶標記受傷部位。';chips.appendChild(span);}
+                else parts.forEach(part=>{const btn=document.createElement('button');btn.type='button';btn.className='ems-body-chip';btn.dataset.jxBodyChip=part;btn.textContent=part+' ×';chips.appendChild(btn);});
+            }
+        }
+        function jxToggleBodyPart(part){
+            const host=document.getElementById('jx-form-content');if(!host)return;
+            const node=[...host.querySelectorAll('[data-ems-body-part]')].find(x=>x.dataset.emsBodyPart===part);
+            if(node)node.setAttribute('aria-pressed',node.getAttribute('aria-pressed')==='true'?'false':'true');
+            jxSyncBodyMapUI();
+        }
+        const JX_EMS_PAGES=[['dispatch','派遣資料'],['patient','傷病患資料'],['condition','現場狀況'],['treatment','處置項目'],['staff','出勤狀況'],['cost','出勤費用']];
+        let jxEMSPage='dispatch';
+        function jxSelectEMSPage(page='dispatch'){
+            const host=document.getElementById('jx-form-content');if(!host||jxReportMode!=='medical')return;
+            const idx=JX_EMS_PAGES.findIndex(([k])=>k===page);if(idx<0)return;
+            jxEMSPage=page;
+            host.querySelectorAll('[data-jx-form-page]').forEach(el=>el.classList.toggle('hidden',el.dataset.jxFormPage!==page));
+            host.querySelectorAll('[data-jx-page-tab]').forEach(el=>{
+                const on=el.dataset.jxPageTab===page;el.classList.toggle('is-active',on);el.setAttribute('aria-selected',String(on));
+            });
+            const status=host.querySelector('#jx-ems-page-status');if(status)status.textContent=`第 ${idx+1}／${JX_EMS_PAGES.length} 頁 · ${JX_EMS_PAGES[idx][1]}`;
+            const prev=document.getElementById('jx-ems-back'),next=document.getElementById('jx-ems-next');
+            if(prev)prev.disabled=idx===0;
+            if(next)next.disabled=idx===JX_EMS_PAGES.length-1;
+            document.getElementById('jx-report-form-scroll')?.scrollTo({top:0,behavior:'instant'});
+        }
+        function jxMoveEMSPage(step){
+            const idx=JX_EMS_PAGES.findIndex(([key])=>key===jxEMSPage);
+            jxSelectEMSPage(JX_EMS_PAGES[Math.min(JX_EMS_PAGES.length-1,Math.max(0,idx+step))][0]);
+        }
+        function jxEMSPageNav(){
+            return `<nav id="jx-ems-page-nav" class="ems-page-nav" aria-label="嘉蕭 EMS 救護出勤報告填寫類別">${JX_EMS_PAGES.map(([key,label],idx)=>`<button type="button" class="ems-page-tab${idx===0?' is-active':''}" data-jx-page-tab="${key}" aria-selected="${idx===0}"><span>${String(idx+1).padStart(2,'0')}</span>${label}</button>`).join('')}</nav><div id="jx-ems-page-status" class="ems-page-step text-xs text-slate-400" aria-live="polite"></div>`;
+        }
         function jxCaptureClinical(){
             const host=document.getElementById('jx-form-content'),clinical={};
             if(!host)return clinical;
@@ -11174,7 +11483,14 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             const form=document.getElementById('jx-report-form'),fd=new FormData(form),data={};
             for(const [k,v] of fd.entries())if(!k.startsWith('jx-ems-'))data[k]=String(v).trim();
             if(jxReportMode==='medical'){
-                for(const k of ['staffEMT1','staffEMT2','staffEMTP','staffNurse','staffDoctor','extraKilometers','overtimeHours','extraManual','baseFee'])data[k]=Math.max(0,Number(data[k])||0);
+                for(const k of ['staffEMT1','staffEMT2','staffEMTP','staffNurse','staffDoctor','overtimeHours','baseFee'])data[k]=Math.max(0,Number(data[k])||0);
+                for(let n=1;n<=5;n++){
+                    data['manualItem'+n]=String(data['manualItem'+n]||'').trim();
+                    const fee=Number(data['manualPrice'+n]);
+                    data['manualPrice'+n]=Number.isFinite(fee)?Math.max(0,Math.floor(fee)):0;
+                }
+                // Compatibility with earlier records: old extraManual fields are replaced by new five rows.
+                data.extraManual=0;data.extraNote='';
                 Object.keys(JX_TREATMENT_RATES).forEach(k=>data['care_'+k]=jxNum(data,'care_'+k));
                 data.clinical=jxCaptureClinical();
             }
@@ -11182,10 +11498,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
         }
         function jxPriceMedical(data){
             const base=Math.max(0,Number(data.baseFee)||0),lines=[['基本費',base]],
-                transport={'不加價':0,'市區短程轉送':3000,'市區中程轉送':4500,'長途醫療轉送':6000},
                 standby={'不加價':0,'小型活動半天':8000,'小型活動整天':13000,'大型活動每場':30000,'長期駐點每月':120000};
-            const t=transport[data.transportFeeType]||0;if(t)lines.push([data.transportFeeType,t]);
-            if(jxNum(data,'extraKilometers'))lines.push(['超出里程 '+jxNum(data,'extraKilometers')+' 公里',jxNum(data,'extraKilometers')*100]);
             const stand=standby[data.standbyFeeType]||0;if(stand)lines.push([data.standbyFeeType,stand]);
             if(jxNum(data,'overtimeHours'))lines.push(['超時 '+jxNum(data,'overtimeHours')+' 小時',jxNum(data,'overtimeHours')*1200]);
             let emtIncluded=2;
@@ -11195,7 +11508,17 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             });
             [['staffNurse','護理師'],['staffDoctor','醫師']].forEach(([key,label])=>{const n=jxNum(data,key);if(n)lines.push([label+' '+n+' 人',n*JX_ROLE_RATES[key]]);});
             Object.entries(JX_TREATMENT_RATES).forEach(([key,rate])=>{if(jxNum(data,'care_'+key))lines.push([({wheelchair:'輪椅／行動不便患者',oxygen:'醫療氧氣',ecg:'心電圖監測',iv:'靜脈點滴照護',medication:'藥物給予'})[key]+' × '+jxNum(data,'care_'+key),rate*jxNum(data,'care_'+key)]);});
-            if(jxNum(data,'extraManual'))lines.push(['其他加價'+(data.extraNote?'（'+data.extraNote+'）':''),jxNum(data,'extraManual')]);
+            for(let n=1;n<=5;n++){
+                const fee=jxNum(data,'manualPrice'+n);
+                if(fee){
+                    const title=String(data['manualItem'+n]||'').trim()||('自訂服務 '+n);
+                    lines.push([title,fee]);
+                }
+            }
+            // Legacy saved cases (before five manual service fields) are still displayable.
+            if(!Array.from({length:5},(_,i)=>'manualPrice'+(i+1)).some(k=>Object.prototype.hasOwnProperty.call(data,k))&&jxNum(data,'extraManual')){
+                lines.push([String(data.extraNote||'其他加價服務'),jxNum(data,'extraManual')]);
+            }
             return {lines,total:lines.reduce((a,[,n])=>a+n,0),extraTotal:lines.slice(1).reduce((a,[,n])=>a+n,0)};
         }
         function jxSyncReportExtras(){
@@ -11206,10 +11529,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 if(label){label.classList.toggle('hidden',!visible);if(!visible&&input)input.disabled=true;else if(input)input.disabled=false;}
             };
             const medical=jxReportMode==='medical',notTransport=medical&&value('transportStatus')==='沒有運送';
-            toggle('noTransportGroup',notTransport);
-            toggle('noTransportReason',notTransport);
-            toggle('noTransportReasonOther',notTransport&&value('noTransportReason')==='其他');
-            toggle('transferredTo',medical&&value('transportStatus')==='轉交其他單位');
+            if(medical)jxSyncTransportUI();
             toggle('sourceOther',value('source')==='其他');
             toggle('sceneTypeOther',medical&&value('sceneType')==='其他');
             toggle('sceneRiskOther',medical&&value('sceneRisk')==='其他');
@@ -11233,7 +11553,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             jxReportMode=type;
             document.getElementById('jx-report-type').value=type;
             document.getElementById('jx-report-edit-id').value=record?.docId||'';
-            document.getElementById('jx-modal-title').textContent=type==='medical'?'嘉蕭救護／轉送案件報告':'嘉蕭生命禮儀案件報告';
+            document.getElementById('jx-modal-title').textContent=type==='medical'?'嘉蕭 EMS 救護出勤報告':'嘉蕭生命禮儀案件報告';
             const host=document.getElementById('jx-form-content'),data=record?.details||{};
             host.innerHTML=type==='medical'?jxBaseMedical(data)+jxMedicalStaff(data)+jxMedicalCosts(data):jxFuneralForm(data);
             host.insertAdjacentHTML('afterbegin',`<div class="bg-slate-950/80 rounded-xl border border-teal-500/30 p-3 text-sm text-teal-200">案件編號：${jxEsc(record?.id||'提交後自動產生（救護 JXM／禮儀 JXF）')}</div>`);
@@ -11244,14 +11564,29 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 const tmp=document.createElement('div');tmp.className='space-y-4';
                 // populate standalone clone in the temp element without coupling EMS report handlers
                 const template=document.getElementById('jx-ems-condition-treatment-template');
-                if(template){const frag=template.content.cloneNode(true);frag.querySelectorAll('[data-ems-form-page]').forEach(p=>{p.classList.remove('hidden');p.removeAttribute('data-ems-form-page');});frag.querySelectorAll('[id]').forEach(el=>el.id='jx-'+el.id);frag.querySelectorAll('[name]').forEach(el=>el.name='jx-'+el.name);frag.querySelectorAll('[for]').forEach(el=>el.htmlFor='jx-'+el.htmlFor);frag.querySelectorAll('[data-ems-reveal]').forEach(el=>el.dataset.emsReveal='jx-'+el.dataset.emsReveal);frag.querySelectorAll('[data-ems-triage-detail]').forEach(el=>el.dataset.emsTriageDetail='jx-'+el.dataset.emsTriageDetail);tmp.appendChild(frag);}
+                if(template){const frag=template.content.cloneNode(true);
+                    // Jiaxiao shares clinical choices, not Fire/EMS-only explanatory captions.
+                    frag.querySelectorAll('.ems-triage-main > span.text-xs.font-normal').forEach(node=>node.remove());
+                    frag.querySelectorAll('[data-ems-form-page]').forEach(p=>{p.dataset.jxFormPage=p.dataset.emsFormPage;p.removeAttribute('data-ems-form-page');});frag.querySelectorAll('[id]').forEach(el=>el.id='jx-'+el.id);frag.querySelectorAll('[name]').forEach(el=>el.name='jx-'+el.name);frag.querySelectorAll('[for]').forEach(el=>el.htmlFor='jx-'+el.htmlFor);frag.querySelectorAll('[data-ems-reveal]').forEach(el=>el.dataset.emsReveal='jx-'+el.dataset.emsReveal);frag.querySelectorAll('[data-ems-triage-detail]').forEach(el=>el.dataset.emsTriageDetail='jx-'+el.dataset.emsTriageDetail);tmp.appendChild(frag);}
                 host.insertBefore(tmp,staffSection);
                 const clinical=data.clinical||{};
                 tmp.querySelectorAll('[id^="jx-ems-"]').forEach(el=>{if(!Object.prototype.hasOwnProperty.call(clinical,el.id))return;if(el.type==='checkbox'||el.type==='radio')el.checked=!!clinical[el.id];else el.value=String(clinical[el.id]||'');});
                 tmp.querySelectorAll('input[type="radio"]').forEach(el=>{el.checked=!!clinical['radio:'+el.name+':'+el.value];});
                 tmp.querySelectorAll('[data-ems-triage-choice],[data-ems-treatment-choice]').forEach(el=>{const g=el.dataset.emsTriageChoice||el.dataset.emsTreatmentChoice;const type=el.dataset.emsTriageChoice?'triage':'treatment';el.checked=!!clinical[type+':'+g+':'+el.value];});
-                tmp.querySelectorAll('[data-ems-body-part]').forEach(el=>{const on=!!clinical['body:'+el.dataset.emsBodyPart];el.setAttribute('aria-pressed',on?'true':'false');el.classList.toggle('is-selected',on);});
-                jxSyncClinicalUI();jxRecalculate();
+                const chosen=new Set(parseEMSBodySelection(clinical['jx-ems-body-map-selection']||''));
+                tmp.querySelectorAll('[data-ems-body-part]').forEach(el=>{const on=!!clinical['body:'+el.dataset.emsBodyPart]||chosen.has(el.dataset.emsBodyPart);el.setAttribute('aria-pressed',on?'true':'false');el.classList.toggle('is-selected',on);});
+                // 六步驟醫療平板：完整的現場狀況及處置選項延用消防資料模板。
+                const sections=[...host.querySelectorAll(':scope > section')];
+                [['dispatch',0],['patient',1],['staff',2],['cost',3]].forEach(([key,idx])=>{if(sections[idx])sections[idx].dataset.jxFormPage=key;});
+                host.firstElementChild.insertAdjacentHTML('afterend',jxEMSPageNav());
+                jxSyncClinicalUI();jxSyncTransportUI();jxSyncBodyMapUI();jxRecalculate();
+                document.getElementById('jx-ems-back')?.classList.remove('hidden');
+                document.getElementById('jx-ems-next')?.classList.remove('hidden');
+                jxSelectEMSPage('dispatch');
+            }
+            if(type!=='medical'){
+                document.getElementById('jx-ems-back')?.classList.add('hidden');
+                document.getElementById('jx-ems-next')?.classList.add('hidden');
             }
             jxSyncReportExtras();
             document.getElementById('jx-submit-btn').textContent=record?'重新提交審核':'送交高層審核';
@@ -11262,22 +11597,35 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
         document.addEventListener('input',event=>{if(event.target.closest('#jx-report-form'))jxRecalculate();});
         document.addEventListener('click',event=>{if(!event.target.closest('#jx-report-form'))return;
             const counter=event.target.closest('[data-jx-counter]');if(counter){const input=document.querySelector('#jx-report-form [name="'+counter.dataset.jxCounter+'"]');if(input){input.value=Math.max(0,Math.min(99,Number(input.value||0)+Number(counter.dataset.jxStep||0)));jxRecalculate();}return;}
+            const page=event.target.closest('[data-jx-page-tab]');if(page){jxSelectEMSPage(page.dataset.jxPageTab);return;}
             const body=event.target.closest('[data-ems-body-part]');
-            if(body){const on=body.getAttribute('aria-pressed')==='true';body.setAttribute('aria-pressed',on?'false':'true');body.classList.toggle('is-selected',!on);return;}
+            if(body){jxToggleBodyPart(body.dataset.emsBodyPart||'');return;}
+            const chip=event.target.closest('[data-jx-body-chip]');
+            if(chip){jxToggleBodyPart(chip.dataset.jxBodyChip||'');return;}
             const tab=event.target.closest('[data-ems-nontrauma-tab]');
             if(tab){const host=document.getElementById('jx-form-content');host.querySelectorAll('[data-ems-nontrauma-tab]').forEach(el=>el.classList.toggle('is-active',el===tab));host.querySelectorAll('[data-ems-nontrauma-panel]').forEach(el=>el.classList.toggle('hidden',el.dataset.emsNontraumaPanel!==tab.dataset.emsNontraumaTab));}
-            if(event.target?.id==='jx-ems-body-map-clear-btn'){document.getElementById('jx-form-content').querySelectorAll('[data-ems-body-part]').forEach(el=>{el.setAttribute('aria-pressed','false');el.classList.remove('is-selected');});}
+            if(event.target.closest('#jx-ems-body-map-clear-btn')){document.getElementById('jx-form-content').querySelectorAll('[data-ems-body-part]').forEach(el=>el.setAttribute('aria-pressed','false'));jxSyncBodyMapUI();}
         });
         document.addEventListener('change',event=>{if(!event.target.closest('#jx-report-form'))return;
             const el=event.target;
             if(el.matches('[data-ems-triage-main]')&&el.checked){const other=document.getElementById(el.id==='jx-ems-trauma'?'jx-ems-nontrauma':'jx-ems-trauma');if(other)other.checked=false;}
+            if(el.matches('[data-jx-no-transport-group]'))jxSyncTransportUI(el);
             jxSyncReportExtras();jxSyncClinicalUI();jxRecalculate();
+        });
+        document.addEventListener('keydown',event=>{if(!event.target.closest('#jx-report-form'))return;
+            const item=event.target.closest('[data-ems-body-part]');
+            if(item&&(event.key==='Enter'||event.key===' ')){event.preventDefault();jxToggleBodyPart(item.dataset.emsBodyPart||'');}
         });
         function jxUniqueId(type){return JX_COLLECTIONS[type].prefix+'-'+jxNowLocal().slice(0,10).replace(/-/g,'')+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,7).toUpperCase();}
         async function submitJXReport(event){
             event.preventDefault();if(jxReportSaving)return;
             if(!isJiaxiaoMember()||!fm||!db){showToast('尚未登入或無嘉蕭報告提交權限','warning');return;}
-            const form=document.getElementById('jx-report-form');if(!form.reportValidity())return;
+            const form=document.getElementById('jx-report-form');
+            if(!form.checkValidity()&&jxReportMode==='medical'){
+                const invalid=form.querySelector(':invalid');const page=invalid?.closest('[data-jx-form-page]')?.dataset.jxFormPage;
+                if(page)jxSelectEMSPage(page);
+            }
+            if(!form.reportValidity())return;
             const type=jxReportMode,config=JX_COLLECTIONS[type],data=jxFormData();
             if(!config)return;
             if(type==='medical'){
@@ -11287,7 +11635,14 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 if(!['已送醫','轉交其他單位'].includes(data.transportStatus))data.destination='';
                 if(data.transportStatus!=='沒有運送'){data.noTransportGroup='';data.noTransportReason='';data.noTransportReasonOther='';}
                 if(data.source!=='其他')data.sourceOther='';
-                const pricing=jxPriceMedical(data);data.extraTotal=pricing.extraTotal;data.total=pricing.total;
+                for(let n=1;n<=5;n++){
+                    const fee=Number(data['manualPrice'+n]);
+                    if(!Number.isSafeInteger(fee)||fee<0||fee>1000000000){jxSelectEMSPage('cost');showToast('第 '+n+' 項自訂費用需為 0～10 億的整數。','warning','金額不合法');return;}
+                    if(fee>0&&!String(data['manualItem'+n]||'').trim()){jxSelectEMSPage('cost');showToast('第 '+n+' 項有填價格，請補上服務名稱。','warning','項目不完整');return;}
+                }
+                const pricing=jxPriceMedical(data);
+                if(!Number.isSafeInteger(pricing.total)||pricing.total<0||pricing.total>1000000000){jxSelectEMSPage('cost');showToast('費用總額不正確或超出單筆上限，請檢查數量與價格。','warning','金額不合法');return;}
+                data.extraTotal=pricing.extraTotal;data.total=pricing.total;
                 data.costLines=pricing.lines.map(([name,amount])=>({name,amount}));
             }else {
                 if(data.plan==='客製'&&!data.customPlan){showToast('請填寫客製方案內容','warning');return;}
@@ -11326,7 +11681,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             if(failures.length)showToast('部分嘉蕭資料讀取失敗，請檢查 Firestore Rules','warning','讀取結果');
         }
         function jxReportCard(r,type,pending=false){
-            const d=r.details||{},id=String(r.docId||r.id||''),encoded=encodeURIComponent(id),label=type==='medical'?'救護／轉送':'生命禮儀',patient=type==='medical'?d.patientName:d.deceasedName;
+            const d=r.details||{},id=String(r.docId||r.id||''),encoded=encodeURIComponent(id),label=type==='medical'?'EMS 救護':'生命禮儀',patient=type==='medical'?d.patientName:d.deceasedName;
             const status=String(r.reviewStatus||'approved'),badge=status==='pending'?'待審':status==='rejected'?'退件': '已核准';
             const total=type==='medical'?d.total:d.estimatedTotal;
             const buttons=[`<button type="button" onclick="viewJXReport('${type}','${encoded}',${pending})" class="rounded-lg bg-slate-700 px-3 py-2 text-sm text-white">檢視</button>`];
@@ -11334,14 +11689,17 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 buttons.push(`<button type="button" onclick="reviewJXReport('${type}','${encoded}','approve')" class="rounded-lg bg-emerald-700 px-3 py-2 text-sm text-white">審核入庫</button>`);
                 buttons.push(`<button type="button" onclick="reviewJXReport('${type}','${encoded}','reject')" class="rounded-lg bg-rose-800 px-3 py-2 text-sm text-white">退件</button>`);
             }
-            if(!pending&&canReviewJX())buttons.push(`<button type="button" onclick="deleteJXReport('${type}','${encoded}')" class="rounded-lg bg-rose-900 px-3 py-2 text-sm text-white">刪除正式報告</button>`);
+            if(canReviewJX()){
+                buttons.push(`<button type="button" onclick="changeJXReviewStatus('${type}','${encoded}',${pending})" class="rounded-lg bg-amber-700 px-3 py-2 text-sm text-white">更改審核狀態</button>`);
+                buttons.push(`<button type="button" onclick="deleteJXReport('${type}','${encoded}',${pending})" class="rounded-lg bg-rose-900 px-3 py-2 text-sm text-white">刪除報告</button>`);
+            }
             if(pending&&status==='rejected'&&String(r.authorAccount||'')===String(currentUser?.account||''))buttons.push(`<button type="button" onclick="openJXReport('${type}',decodeURIComponent('${encoded}'))" class="rounded-lg bg-teal-700 px-3 py-2 text-sm text-white">修改重新送審</button>`);
-            return `<article class="rounded-xl border border-slate-700 bg-slate-950/70 p-4 space-y-2"><div class="flex flex-wrap gap-2 justify-between"><div><span class="font-mono text-xs text-teal-300">${jxEsc(id)}</span><div class="text-sm font-bold text-white">${jxEsc(label)}｜${jxEsc(patient||'未填姓名')}</div></div><div class="text-xs text-slate-400">${jxEsc(badge)}｜${jxEsc(r.time||'')}</div></div><div class="text-xs text-slate-400">填報：${jxEsc(r.authorName||r.authorAccount||'--')}｜費用：${jxMoney(total)}</div>${status==='rejected'?`<p class="text-amber-300 text-sm">退件原因：${jxEsc(r.reviewNote||'未填')}</p>`:''}<div class="flex flex-wrap gap-2">${buttons.join('')}</div></article>`;
+            return `<article class="rounded-xl border border-slate-700 bg-slate-950/70 p-4 space-y-2"><div class="flex flex-wrap gap-2 justify-between"><div><span class="font-mono text-xs text-teal-300">${jxEsc(id)}</span><div class="text-sm font-bold text-white">${jxEsc(label)}｜${jxEsc(patient||'未填姓名')}</div></div><div class="text-xs text-slate-400">${jxEsc(badge)}｜${jxEsc(r.time||'')}</div></div><div class="text-xs text-slate-400">填報：${jxEsc(r.authorName||r.authorAccount||'--')}｜費用：${jxMoney(total)}</div>${['未付','未繳','未繳費','unpaid'].includes(String(d.paymentStatus||'').trim().toLowerCase())?'<span class="inline-flex items-center rounded-md border border-rose-500/60 bg-rose-950/80 px-2 py-1 text-xs font-bold text-rose-300">未繳費</span>':''}${status==='rejected'?`<p class="text-amber-300 text-sm">退件原因：${jxEsc(r.reviewNote||'未填')}</p>`:''}<div class="flex flex-wrap gap-2">${buttons.join('')}</div></article>`;
         }
         function renderJXReports(){
             const rights=canAccessJiaxiao(),reviewer=canReviewJX();
-            document.getElementById('jx-report-create-actions')?.classList.toggle('hidden',!isJiaxiaoMember());
-            document.querySelectorAll('.jx-member-create-btn').forEach(btn=>btn.classList.toggle('hidden',!isJiaxiaoMember()));
+            // 嘉蕭消防式操作列：固定顯示；真正寫入權限由各操作函數驗證。
+            // 不隱藏 EMS、打卡、生命禮儀按鈕：管理中心可看到完整介面。
             document.getElementById('jx-review-section')?.classList.toggle('hidden',!reviewer);
             // 一般成員可以載入「自己」的待審紀錄；審核按鈕仍只開放高層。
             if(!rights)return;
@@ -11384,15 +11742,43 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 catch(e){showToast('退件失敗：'+e.message,'error');}
             }
         }
-        async function deleteJXReport(type,encoded){
+        async function changeJXReviewStatus(type,encoded,pending=false){
+            if(!canReviewJX()||!db||!fm||!JX_COLLECTIONS[type]){showToast('無權限調整審核狀態','warning');return;}
+            const id=decodeURIComponent(encoded),cfg=JX_COLLECTIONS[type],source=pending?cfg.pending:cfg.history;
+            const r=(appData[source]||[]).find(x=>String(x.docId||x.id)===id);
+            if(!r)return;
+            const raw=prompt('輸入新的審核狀態：1＝待審、2＝已核准、3＝退件',r.reviewStatus==='pending'?'1':r.reviewStatus==='rejected'?'3':'2');
+            if(raw===null)return;
+            const next=({'1':'pending','2':'approved','3':'rejected'})[String(raw).trim()];
+            if(!next){showToast('請輸入 1、2 或 3','warning');return;}
+            let note='';
+            if(next==='rejected'){
+                const response=prompt('請填寫退件原因',r.reviewNote||'');if(response===null)return;
+                note=response.trim();if(!note){showToast('退件原因不可空白','warning');return;}
+            }
+            if(!(await showConfirm('確定將此報告審核狀態改為'+({pending:'待審',approved:'已核准',rejected:'退件'})[next]+'？','更改審核狀態','確認變更')))return;
+            try{
+                const dest=next==='approved'?cfg.history:cfg.pending,now=Date.now();
+                const updated={...r,reviewStatus:next,reviewNote:note,reviewedBy:currentUser.account,reviewedAt:now,updatedAt:now};
+                delete updated.docId;
+                const batch=fm.writeBatch(db);batch.set(fm.doc(db,dest,id),updated);
+                if(source!==dest)batch.delete(fm.doc(db,source,id));
+                await batch.commit();
+                for(const col of [cfg.pending,cfg.history])appData[col]=(appData[col]||[]).filter(x=>String(x.docId||x.id)!==id);
+                appData[dest]=[{...updated,docId:id},...(appData[dest]||[])];
+                renderJXReports();await logAdminAction('調整嘉蕭報告審核狀態',id+' → '+next);
+                showToast('審核狀態已更新','success');
+            }catch(e){showToast('狀態更新失敗：'+e.message,'error');}
+        }
+        async function deleteJXReport(type,encoded,pending=false){
             if(!canReviewJX()||!fm||!db||!JX_COLLECTIONS[type])return;
-            const id=decodeURIComponent(encoded),cfg=JX_COLLECTIONS[type];
-            const found=(appData[cfg.history]||[]).find(x=>String(x.docId||x.id)===id);
+            const id=decodeURIComponent(encoded),cfg=JX_COLLECTIONS[type],col=pending?cfg.pending:cfg.history;
+            const found=(appData[col]||[]).find(x=>String(x.docId||x.id)===id);
             if(!found)return;
-            if(!(await showConfirm('確定刪除此筆嘉蕭正式報告？刪除無法復原，請先核對案件編號。','刪除嘉蕭正式報告','確定刪除')))return;
-            try{await fm.deleteDoc(fm.doc(db,cfg.history,id));
-                appData[cfg.history]=(appData[cfg.history]||[]).filter(x=>String(x.docId||x.id)!==id);
-                await logAdminAction('刪除嘉蕭正式報告',id);
+            if(!(await showConfirm('確定永久刪除此筆嘉蕭報告？刪除無法復原，請先核對案件編號。','刪除嘉蕭報告','確定刪除')))return;
+            try{await fm.deleteDoc(fm.doc(db,col,id));
+                appData[col]=(appData[col]||[]).filter(x=>String(x.docId||x.id)!==id);
+                await logAdminAction('刪除嘉蕭報告',id);
                 renderJXReports();showToast('嘉蕭報告已刪除','success');
             }catch(e){showToast('刪除失敗：'+e.message,'error');}
         }
@@ -11401,22 +11787,98 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             const id=decodeURIComponent(encoded),cfg=JX_COLLECTIONS[type],
                 r=(appData[pending?cfg.pending:cfg.history]||[]).find(x=>String(x.docId||x.id)===id);
             if(!r)return;
-            const d=r.details||{},sections=[['案件編號',r.id],['報告類型',type==='medical'?'救護／轉送':'生命禮儀'],['送審狀態',r.reviewStatus],['填報人',r.authorName||r.authorAccount],['時間',r.time]];
+            const d=r.details||{},sections=[['案件編號',r.id],['報告類型',type==='medical'?'EMS 救護':'生命禮儀'],['送審狀態',({pending:'待審',rejected:'退件',approved:'已核准'})[r.reviewStatus]||r.reviewStatus||'未設定'],['填報人',r.authorName||r.authorAccount],['填表時間',r.time]];
+            // 報告明細一律採人類可讀的中文名稱；資料庫欄位代碼只留在儲存層。
+            const labelMap={
+                acceptedAt:'受理時間',receiver:'受理人員',participants:'參與人員',hospitalAt:'送達醫院時間',source:'案件來源',sourceOther:'案件來源－其他說明',mission:'任務類型',incidentLocation:'發生地點',
+                destination:'送往醫院或地點',transportStatus:'運送狀態',noTransportGroup:'未運送分類',noTransportReason:'未運送原因',noTransportReasonOther:'未運送其他說明',transferredTo:'轉交單位',
+                patientName:'傷病患姓名',patientId:'傷病患身分證字號',patientSex:'傷病患性別',patientSexOther:'性別－其他說明',patientAge:'傷病患年齡',gcsE:'GCS 睜眼反應 E',gcsV:'GCS 語言反應 V',gcsM:'GCS 動作反應 M',
+                sceneType:'事件地點類型',sceneTypeOther:'地點類型－其他說明',sceneRisk:'是否存在危險因素',sceneRiskOther:'危險因素－其他說明',
+                staffEMT1:'EMT-1 人數',staffEMT2:'EMT-2 人數',staffEMTP:'EMT-P 人數',staffNurse:'護理師人數',staffDoctor:'醫師人數',
+                signature1:'出勤人員簽名 1',signature2:'出勤人員簽名 2',signature3:'出勤人員簽名 3',signature4:'出勤人員簽名 4',
+                baseFee:'基本救護費用',standbyFeeType:'活動救護／駐點費用',overtimeHours:'超時時數（小時）',paymentStatus:'付款狀態',
+                care_wheelchair:'輪椅／行動不便患者（次）',care_oxygen:'醫療氧氣使用（次）',care_ecg:'心電圖監測（次）',care_iv:'靜脈點滴照護（次）',care_medication:'藥物給予（次）',
+                extraTotal:'加價總額',total:'應收總金額',
+                reportDate:'填表日期',registrar:'登記人員',deceasedName:'往生者姓名',deceasedSex:'往生者性別',deceasedSexOther:'性別－其他說明',deceasedAge:'往生者年齡',
+                deceasedIdLast5:'往生者身分證後五碼',deathAt:'死亡時間',deathLocation:'死亡地點',deathLocationOther:'死亡地點－其他說明',deathType:'死亡類型',policeInvolved:'是否警方介入',autopsy:'是否完成相驗／解剖',canProceed:'是否可進行後續禮儀',
+                plan:'選擇方案',customPlan:'客製方案項目',estimatedTotal:'預估總費用',depositPaid:'是否已收訂金'
+            };
+            const moneyFields=new Set(['baseFee','extraTotal','total','estimatedTotal']);
+            const obsoleteFields=new Set(['transportFeeType','extraKilometers','extraManual','extraNote']);
             Object.entries(d).forEach(([key,value])=>{
-                if(key==='clinical')return;
-                if(key==='costLines'&&Array.isArray(value))sections.push(['費用明細',value.map(x=>x.name+': '+jxMoney(x.amount)).join('\n')]);
-                else if(typeof value==='string'||typeof value==='number'||typeof value==='boolean')sections.push([key,value]);
+                if(key==='clinical'||key==='costLines'||key==='detailId'||obsoleteFields.has(key)||/^manual(Item|Price)[1-5]$/.test(key))return;
+                if(value===null||value===undefined||value==='')return;
+                if(typeof value==='string'||typeof value==='number'||typeof value==='boolean'){
+                    const label=labelMap[key]||'其他填報資訊';
+                    const text=moneyFields.has(key)?jxMoney(value):String(value);
+                    sections.push([label,text]);
+                }
             });
-            const clinical=d.clinical||{},clinicalList=[];
+            if(type==='medical'){
+                const serviceRows=[];
+                for(let i=1;i<=5;i++){
+                    const name=String(d['manualItem'+i]||'').trim(),price=jxNum(d,'manualPrice'+i);
+                    if(name||price)serviceRows.push((name||'未填服務名稱')+'：'+jxMoney(price));
+                }
+                if(serviceRows.length)sections.push(['自訂服務項目與價格',serviceRows.join('\n')]);
+                // 已結案報告保留原本計價明細（包含舊版歷史費用），不重新計費或覆蓋金額。
+                if(Array.isArray(d.costLines)&&d.costLines.length){
+                    const rows=d.costLines.filter(x=>x&&x.name!=null).map(x=>String(x.name)+'：'+jxMoney(x.amount));
+                    if(rows.length)sections.push(['費用明細',rows.join('\n')]);
+                }
+            }
+            const clinical=d.clinical||{},clinicalList=[],clinicalSeen=new Set();
+            const clinicalAdd=label=>{if(label&&!clinicalSeen.has(label)){clinicalSeen.add(label);clinicalList.push(label);}};
+            const clinicalGroups={nontraumaChoices:'非創傷症狀',traumaInjuries:'一般外傷',traumaNontraffic:'非交通事故',traumaTraffic:'交通事故',airway:'呼吸道處置',traumaCare:'創傷處置'};
+            const clinicalTemplate=document.getElementById('jx-ems-condition-treatment-template')?.content;
+            const templateIds=clinicalTemplate?[...clinicalTemplate.querySelectorAll('[id]')]:[];
+            const clinicalInputLabel=key=>{
+                const originalId=key.replace(/^jx-/,'');
+                const element=templateIds.find(n=>n.id===originalId);
+                const label=element?.closest('label');
+                if(!label)return '';
+                const texts=[...label.querySelectorAll('span')].filter(n=>!n.classList.contains('text-xs')||n.classList.contains('font-bold')).map(n=>n.textContent.trim()).filter(Boolean);
+                return texts.slice(0,2).join('／')||label.textContent.trim().replace(/\s+/g,' ').slice(0,50);
+            };
             Object.entries(clinical).forEach(([key,val])=>{
-                if(key.startsWith('body:')&&val)clinicalList.push('受傷部位：'+key.slice(5));
-                else if((key.startsWith('triage:')||key.startsWith('treatment:'))&&val)clinicalList.push(key.replace(/^triage:/,'現場狀況／').replace(/^treatment:/,'處置／').replaceAll(':','：'));
-                else if(key.startsWith('jx-ems-')&&!key.endsWith('-state-fields')&&typeof val==='string'&&val.trim())clinicalList.push(key.slice(7)+'：'+val);
+                if(key.startsWith('body:')&&val){clinicalAdd('受傷部位：'+key.slice(5));return;}
+                if(key.startsWith('triage:')||key.startsWith('treatment:')){
+                    if(!val)return;
+                    const parts=key.split(':'),group=parts[1],item=parts.slice(2).join(':');
+                    clinicalAdd((key.startsWith('triage:')?(clinicalGroups[group]||'現場狀況'):(clinicalGroups[group]||'處置項目'))+'：'+item);return;
+                }
+                if(key.startsWith('radio:')&&val){
+                    const parts=key.split(':'),item=parts.slice(2).join(':');
+                    const label=parts[1]?.includes('mechanism')?'受傷機轉':parts[1]?.includes('traffic')?'交通事故類型':'填報選項';
+                    clinicalAdd(label+'：'+item);return;
+                }
+                if(!key.startsWith('jx-ems-')||typeof val!=='string'||!val.trim())return;
+                // 人偶選取部位已由 body: 項目列出；隱藏同步欄位不重複顯示。
+                if(key==='jx-ems-body-map-selection'||key.endsWith('-state-fields')||key==='jx-ems-nontrauma-choices'||key==='jx-ems-trauma-injuries'||key==='jx-ems-trauma-nontraffic')return;
+                const label=clinicalInputLabel(key)||'現場／處置補充資料';
+                clinicalAdd(label+'：'+val);
             });
             if(clinicalList.length)sections.push(['現場狀況及處置項目',clinicalList.join('\n')]);
             document.getElementById('jx-view-content').innerHTML=sections.map(([label,val])=>`<div class="bg-slate-950 border border-slate-800 rounded-lg p-3"><div class="text-xs text-teal-300 mb-1">${jxEsc(label)}</div><div class="text-sm text-slate-200 whitespace-pre-wrap break-words">${jxEsc(val)}</div></div>`).join('');
             document.getElementById('modal-jx-view').classList.remove('hidden');
         }
+
+
+        // V60：前端「同一頁籤」避免快速連點重複寫入（跨裝置併發仍須 Firestore Rules/交易保護）。
+        function ntpcV60SingleFlight(action,label){
+            let busy=false;
+            return async function(...args){
+                if(busy){showToast('「'+label+'」正在處理，請勿重複點擊。','warning','請勿重複送出');return;}
+                busy=true;
+                try{return await action.apply(this,args);}
+                finally{busy=false;}
+            };
+        }
+        submitJiaxiaoClock=ntpcV60SingleFlight(submitJiaxiaoClock,'嘉蕭打卡');
+        submitPunishment=ntpcV60SingleFlight(submitPunishment,'警用獎懲');
+        submitAdminClock=ntpcV60SingleFlight(submitAdminClock,'管理中心打卡');
+        submitFeedback=ntpcV60SingleFlight(submitFeedback,'意見回報');
+        reviewJXReport=ntpcV60SingleFlight(reviewJXReport,'嘉蕭報告審核');
 
 </script>
 
@@ -11531,7 +11993,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             </div>
         </div>
         <div class="rounded-2xl border border-slate-700/60 bg-slate-950/65 p-4 space-y-3">
-            <div id="ems-body-map-summary" class="text-sm font-semibold text-slate-200">尚未選取受傷部位</div>
+            <div id="ems-body-map-summary" role="status" aria-live="polite" class="text-sm font-semibold text-slate-200">尚未選取受傷部位</div>
             <div id="ems-body-map-chips" class="flex flex-wrap gap-2"></div>
             <label class="block">
                 <span class="block text-xs font-semibold text-slate-300 mb-1.5">受傷部位尺寸／補充說明</span>
@@ -11657,12 +12119,35 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
         </section>
     <p class="text-xs text-slate-500">請依 RP 勤務實際執行內容勾選；未施行的處置無須勾選。</p>
 </section></template>
-    <!-- 嘉蕭集團：救護／生命禮儀報告獨立表單 -->
+
+    <!-- 嘉蕭集團：與消防一樣，頂部「上下班打卡」按鈕開啟獨立操作視窗 -->
+    <div id="modal-jx-clock" class="fixed inset-0 z-[75] bg-slate-950/85 hidden items-center justify-center p-3 sm:p-5" role="dialog" aria-modal="true" aria-labelledby="jx-clock-modal-title">
+        <div class="w-full max-w-md rounded-3xl border border-teal-500/35 bg-slate-900 shadow-2xl overflow-hidden">
+            <div class="flex justify-between items-center p-5 border-b border-slate-800">
+                <div><h3 id="jx-clock-modal-title" class="text-xl font-bold text-white"><i class="fa-solid fa-clock text-teal-400 mr-2"></i>嘉蕭集團上下班打卡</h3><p class="text-xs text-slate-400 mt-1">選擇本次打卡狀態並確認</p></div>
+                <button type="button" onclick="closeJiaxiaoClockModal()" class="p-3 text-slate-300 hover:text-white" aria-label="關閉嘉蕭打卡視窗"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-5 sm:p-6 space-y-4">
+                <div class="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-1"><div class="text-xs text-slate-400">打卡成員</div><div id="jx-clock-modal-member" class="text-white font-semibold">--</div><div id="jx-clock-modal-current" class="text-sm text-teal-300">正在確認打卡狀態</div></div>
+                <label class="block"><span class="block text-xs font-semibold text-slate-300 mb-2">打卡狀態</span><select id="jx-clock-modal-status" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white"><option value="上班">上班</option><option value="下班">下班</option></select></label>
+                <p class="text-xs text-slate-400">打卡成功後將寫入嘉蕭專屬紀錄；消防無人在班時，倒地通知以嘉蕭目前值班狀態判定。</p>
+                <div class="flex justify-end gap-2"><button type="button" onclick="closeJiaxiaoClockModal()" class="rounded-xl bg-slate-700 hover:bg-slate-600 text-white px-5 py-3">取消</button><button type="button" id="jx-clock-modal-confirm" onclick="confirmJiaxiaoClockModal()" class="rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-semibold px-5 py-3">確認打卡</button></div>
+            </div>
+        </div>
+    </div>
+    <!-- 醫院登記表：獨立於 EMS 案件報告，需求尚未規劃，不能送出資料 -->
+    <div id="modal-jx-hospital" class="fixed inset-0 z-[75] bg-slate-950/85 hidden items-center justify-center p-3 sm:p-5" role="dialog" aria-modal="true" aria-labelledby="jx-hospital-modal-title">
+        <div class="w-full max-w-lg rounded-3xl border border-teal-500/30 bg-slate-900 shadow-2xl overflow-hidden">
+            <div class="flex justify-between items-center p-5 border-b border-slate-800"><h3 id="jx-hospital-modal-title" class="font-bold text-xl text-white"><i class="fa-solid fa-hospital text-teal-400 mr-2"></i>嘉蕭醫院報告（預留）</h3><button type="button" onclick="closeJiaxiaoHospitalModal()" class="p-3 text-slate-300 hover:text-white" aria-label="關閉醫院登記表視窗"><i class="fa-solid fa-xmark"></i></button></div>
+            <div class="p-6 space-y-3 text-center"><i class="fa-regular fa-clipboard text-4xl text-slate-500"></i><p class="text-lg font-semibold text-white">醫院登記表內容尚未規劃</p><p class="text-sm text-slate-400">醫院登記表和嘉蕭 EMS 救護報告是兩個不同系統。這個視窗只預留入口，目前不提供填寫、送審或儲存。</p><div class="pt-3"><button type="button" onclick="closeJiaxiaoHospitalModal()" class="rounded-xl bg-slate-700 hover:bg-slate-600 text-white px-6 py-3">關閉視窗</button></div></div>
+        </div>
+    </div>
+    <!-- 嘉蕭集團：EMS 救護／生命禮儀報告獨立表單 -->
     <div id="modal-jx-report" class="fixed inset-0 z-[65] bg-slate-950/85 hidden flex items-center justify-center p-2 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="jx-modal-title">
       <div class="bg-slate-900 border border-teal-500/30 rounded-3xl w-full max-w-5xl max-h-[95dvh] flex flex-col overflow-hidden shadow-2xl">
-        <div class="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 shrink-0"><div><h3 id="jx-modal-title" class="text-xl font-bold text-white">嘉蕭集團案件報告</h3><p id="jx-modal-subtitle" class="text-xs text-slate-400">提交後進入高層審核</p></div><button type="button" onclick="closeJXReport()" class="text-slate-300 p-3" aria-label="關閉表單"><i class="fa-solid fa-xmark text-lg"></i></button></div>
+        <div class="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 shrink-0"><div><h3 id="jx-modal-title" class="text-xl font-bold text-white">嘉蕭集團案件報告</h3><p id="jx-modal-subtitle" class="text-xs text-slate-400">EMS 救護與生命禮儀是獨立報告；填寫後送高層審核</p></div><button type="button" onclick="closeJXReport()" class="text-slate-300 p-3" aria-label="關閉表單"><i class="fa-solid fa-xmark text-lg"></i></button></div>
         <div id="jx-report-form-scroll" class="overflow-y-auto p-4 sm:p-6 space-y-5 overscroll-contain"><form id="jx-report-form" class="space-y-5" autocomplete="off" onsubmit="submitJXReport(event)"><input type="hidden" name="reportType" id="jx-report-type"><input type="hidden" id="jx-report-edit-id"><div id="jx-form-content" class="space-y-5"></div>
-          <div class="sticky bottom-0 z-10 bg-slate-900/95 border-t border-slate-700 pt-3 pb-1 flex flex-col sm:flex-row gap-2 justify-end"><button type="button" onclick="closeJXReport()" class="rounded-xl bg-slate-700 text-white px-6 py-3 text-sm">取消</button><button type="submit" id="jx-submit-btn" class="rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold px-6 py-3 text-sm">送交高層審核</button></div>
+          <div class="sticky bottom-0 z-10 bg-slate-900/95 border-t border-slate-700 pt-3 pb-1 flex flex-col sm:flex-row gap-2 justify-end"><button type="button" id="jx-ems-back" class="hidden rounded-xl bg-slate-700 text-white disabled:opacity-40 px-4 py-3 text-sm" onclick="jxMoveEMSPage(-1)">← 上一類別</button><button type="button" id="jx-ems-next" class="hidden rounded-xl bg-teal-900 text-teal-100 disabled:opacity-40 px-4 py-3 text-sm" onclick="jxMoveEMSPage(1)">下一類別 →</button><button type="button" onclick="closeJXReport()" class="rounded-xl bg-slate-700 text-white px-6 py-3 text-sm">取消</button><button type="submit" id="jx-submit-btn" class="rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold px-6 py-3 text-sm">送交高層審核</button></div>
         </form></div>
       </div>
     </div>
