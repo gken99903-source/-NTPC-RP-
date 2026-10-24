@@ -174,6 +174,108 @@
 
         // Discord Webhook 功能已停用：本版本不在前端保存、發送或重試任何 Webhook。
 
+
+        // V55：所有管理寫入走 Cloudflare Access 驗證後的 Pages Functions，絕不由瀏覽器持有 Bot Token。
+        const ntpcBotTemplates={
+          vote:`## 新北市RP伺服器狀態投票 | New Taipei City Roleplay Server Status Voting
+__                                                                                                                                                                                                            __
+Ping: <@&1434889354513350767> Sorry for ping!
+- 預計開服時間Expected Opening Time: 
+- 執勤管理員 Online STAFF:
+<@使用者DC數字ID>
+- 結算時間Settlement Time: 
+### 開服門檻Threshold:
+- 警局Police:3人
+- 消防Fire:0人
+- 市民Civilian:2人`,
+          settlement:`## 新北市RP伺服器狀態公告 | New Taipei City Roplay Server Status Announcement
+Ping: <@&1434889354513350767> Sorry for ping
+__                                                                                                                                                                                                            __
+- 開服時間Opening Time: 
+- 執勤管理員Online STAFF:
+<@使用者DC數字ID>
+**- 伺服器代碼Server Code: \`\`NTPC\`\` 或使用連結加入 [傳送門](https://policeroleplay.community/join?code=NTPC&placeId=2534724415) **
+- 扮演區域Roplay Areas:全區
+- 結算時間Settlement Time:
+### 扮演統計人數
+Counting People:
+- 警局Police: 3人
+- 消防Fire: 4人
+- 市民Civilian: 2人
+__                                                                                                                                                                                                            __
+**進入前請務必詳閱 Roplay規則**`
+        };
+        let ntpcBotConsoleState=null;
+        function ntpcBotConsoleTemplate(kind){
+          document.getElementById('ntpc-bot-message-kind').value=kind;
+          document.getElementById('ntpc-bot-message-content').value=ntpcBotTemplates[kind]||'';
+          if(kind!=='normal')document.getElementById('ntpc-bot-message-channel').value='1435222492481323113';
+        }
+        function ntpcBotConsolePanelSelect(){
+          const v=document.getElementById('ntpc-bot-panel-list').value;
+          const p=(ntpcBotConsoleState?.panels||[]).find(x=>String(x.channel_id)===v);
+          if(!p)return;
+          document.getElementById('ntpc-bot-panel-title').value=p.title||'';
+          document.getElementById('ntpc-bot-panel-desc').value=p.description||'';
+          document.getElementById('ntpc-bot-panel-roles').value=(p.role_ids||[]).join(',');
+          document.getElementById('ntpc-bot-panel-lock').checked=!!p.locked;
+        }
+        function ntpcBotConsoleUseMessage(id,channel,content){
+          document.getElementById('ntpc-bot-edit-id').value=String(id);
+          document.getElementById('ntpc-bot-message-channel').value=String(channel);
+          document.getElementById('ntpc-bot-message-content').value=String(content||'');
+        }
+        async function ntpcBotConsoleRefresh(){
+          if(!currentUser||!canUseManagementDispatch(currentUser))return;
+          const status=document.getElementById('ntpc-bot-status');if(!status)return;
+          status.textContent='正在讀取 Cloudflare Bot 後端…';
+          try{
+            const res=await fetch('/api/bot-console/state',{credentials:'same-origin',cache:'no-store'});
+            const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||`HTTP ${res.status}`);
+            const s=data.snapshot||{};ntpcBotConsoleState=s;
+            const age=data.updated_at?Math.max(0,Math.round(Date.now()/1000-data.updated_at)):null;
+            status.textContent=age==null?'Bot 尚未同步任何資料。':`Bot 狀態：${age<120?'已連線':'資料較舊'}｜上次更新 ${age} 秒前｜${s.guild_name||'新北市RP'}`;
+            document.getElementById('ntpc-bot-auth').textContent='已驗證管理信箱：'+data.operator;
+            const select=document.getElementById('ntpc-bot-panel-list'),previous=select.value;
+            select.innerHTML='<option value="">選擇面板</option>'+(s.panels||[]).map(p=>`<option value="${escapeHtml(String(p.channel_id))}">${escapeHtml(p.title||'未命名')}｜#${escapeHtml(String(p.channel_id))}${p.locked?'（已鎖定）':''}</option>`).join('');
+            if((s.panels||[]).some(p=>String(p.channel_id)===previous))select.value=previous;
+            else if(s.panels?.length)select.value=s.panels[0].channel_id;
+            ntpcBotConsolePanelSelect();
+            document.getElementById('ntpc-bot-money-jobs').innerHTML=(s.money_jobs||[]).length?(s.money_jobs||[]).map(j=>`<div>#${j.id}｜${escapeHtml(j.kind)}｜$${Number(j.amount).toLocaleString()}｜${escapeHtml(j.cycle)}｜${escapeHtml(j.target)}｜下次 ${escapeHtml(j.next_at||'')}</div>`).join(''):'目前沒有啟用的排程';
+            const historyEl=document.getElementById('ntpc-bot-recent-messages');
+            historyEl.replaceChildren();
+            for(const m of (s.messages||[])){
+              const row=document.createElement('div');row.className='flex flex-wrap items-center gap-2';
+              const btn=document.createElement('button');btn.type='button';btn.className='bg-slate-800 p-2 rounded-lg hover:bg-slate-700';
+              btn.textContent='選擇 #'+String(m.message_id);btn.addEventListener('click',()=>ntpcBotConsoleUseMessage(m.message_id,m.channel_id,m.content||''));
+              const label=document.createElement('span');label.textContent=(m.kind==='normal'?'5日有效':'24小時有效')+'｜'+String(m.expire_label||'');
+              row.append(btn,label);historyEl.append(row);
+            }
+            if(!(s.messages||[]).length)historyEl.textContent='尚無本版本記錄的可編輯訊息';
+            document.getElementById('ntpc-bot-action-jobs').innerHTML=(data.jobs||[]).length?(data.jobs||[]).map(j=>`<div class="border-b border-slate-800 py-1">${new Date(j.created_at*1000).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'})}｜${escapeHtml(j.action)}｜${escapeHtml(j.status)}｜${escapeHtml(j.result||'')}<span class="text-slate-500"> · ${escapeHtml(j.operator)}</span></div>`).join(''):'尚無操作';
+          }catch(e){status.textContent='無法同步：'+e.message+'。確認 Pages Functions、D1、Cloudflare Access 與 Bot 都已部署。';}
+        }
+        async function ntpcBotConsoleSubmit(action){
+          if(!currentUser||!canUseManagementDispatch(currentUser))return;
+          const val=id=>document.getElementById(id)?.value?.trim()||'';
+          let payload={};
+          try{
+            if(action==='panel_update'){
+              payload={channel_id:val('ntpc-bot-panel-list'),title:val('ntpc-bot-panel-title'),description:val('ntpc-bot-panel-desc'),role_ids:val('ntpc-bot-panel-roles').split(/[，,\s]+/).filter(Boolean),locked:document.getElementById('ntpc-bot-panel-lock').checked};
+            }else if(action==='money_create'){
+              payload={kind:val('ntpc-bot-money-op'),cycle:val('ntpc-bot-money-cycle'),amount:Number(val('ntpc-bot-money-amount'))};payload[val('ntpc-bot-money-target-type')]=val('ntpc-bot-money-target');
+            }else if(action==='money_cancel')payload={job_id:Number(val('ntpc-bot-money-cancel-id'))};
+            else if(action==='message_send')payload={channel_id:val('ntpc-bot-message-channel'),content:val('ntpc-bot-message-content'),template_kind:val('ntpc-bot-message-kind')};
+            else if(action==='message_edit')payload={message_id:val('ntpc-bot-edit-id'),content:val('ntpc-bot-message-content')};
+            else return;
+            if(!confirm('確定將此操作送交新北 RP Discord Bot？所有操作都會留下記錄。'))return;
+            const res=await fetch('/api/bot-console/action',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({action,payload})});
+            const result=await res.json();if(!res.ok||!result.ok)throw new Error(result.error||'操作失敗');
+            showToast('操作已排入 Bot 佇列；請稍後按「同步最新設定」查看結果。','success','已送出');
+            await ntpcBotConsoleRefresh();
+          }catch(e){showToast(e.message,'error','操作失敗');}
+        }
+
 </script>
     <script>
         tailwind.config = {
@@ -396,7 +498,7 @@
             .mobile-report-actions + *, .mobile-punishment-actions + * {
                 min-width: 0;
             }
-            .police-sub-btn, .fire-sub-btn, .admin-sub-btn { min-height: 44px; touch-action: manipulation; }
+            .police-sub-btn, .fire-sub-btn, .admin-sub-btn, .jiaxiao-sub-btn { min-height: 44px; touch-action: manipulation; }
         }
 
         /* 行動裝置：案件表單使用獨立滾動面板，避免手機無法滑到最下方 */
@@ -1660,27 +1762,94 @@
                 <i class="fa-solid fa-lock text-3xl mb-3"></i><p>僅嘉蕭集團成員、民間職業高層或管理中心可以瀏覽。</p>
             </div>
             <div id="jiaxiao-content-container" class="hidden space-y-6">
-                <div class="rounded-2xl border border-teal-500/25 bg-slate-900 p-5 sm:p-7">
-                    <div class="flex items-center gap-3"><i class="fa-solid fa-building text-3xl text-teal-400"></i><div>
-                        <h2 class="text-2xl font-bold text-white">嘉蕭集團</h2>
-                        <p class="text-slate-400 text-sm mt-1">民間職業中心｜功能架構預留，實際業務項目後續再擴充。</p>
-                    </div></div>
-                </div>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
-                        <div class="flex items-center justify-between gap-2"><h3 class="font-bold text-white"><i class="fa-solid fa-clock text-teal-400 mr-2"></i>嘉蕭集團上下班打卡</h3><span id="jiaxiao-duty-state" class="text-xs text-slate-400">尚未確認</span></div>
-                        <p class="text-sm text-slate-400">為消防無人在班時的倒地通知後援名單提供依據；只通知已打卡上班的成員。</p>
-                        <div id="jiaxiao-clock-actions" class="flex flex-wrap gap-2">
-                            <button type="button" onclick="submitJiaxiaoClock('上班')" class="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 text-white text-sm font-semibold">上班打卡</button>
-                            <button type="button" onclick="submitJiaxiaoClock('下班')" class="rounded-xl bg-slate-700 hover:bg-slate-600 px-4 py-2.5 text-white text-sm font-semibold">下班打卡</button>
+                <!-- V56：嘉蕭集團採用與消防中心一致的快速功能列＋分頁式分類 -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 p-5 sm:p-6 rounded-2xl border border-teal-500/25 shadow-xl">
+                    <div>
+                        <span class="text-xs uppercase font-bold tracking-wider text-teal-300 bg-teal-500/10 px-3 py-1 rounded-full border border-teal-500/20">Jiaxiao Group</span>
+                        <h2 class="text-2xl font-bold text-white mt-2"><i class="fa-solid fa-building mr-2 text-teal-400"></i>嘉蕭集團｜勤務中心</h2>
+                        <p class="text-slate-400 text-sm mt-1">獨立救護與生命禮儀案件、審核、打卡及值勤統計；管理中心可瀏覽。</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto mobile-action-group" id="jiaxiao-quick-actions">
+                        <button type="button" onclick="switchJiaxiaoSubTab('clocks')" class="rounded-xl bg-teal-600 hover:bg-teal-500 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-clock mr-2"></i>上下班打卡</button>
+                        <button type="button" onclick="switchJiaxiaoSubTab('hospital')" class="rounded-xl border border-teal-500/35 bg-slate-800 hover:bg-slate-700 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-hospital mr-2"></i>醫院登記表</button>
+                        <div class="flex flex-wrap gap-2" id="jx-report-create-actions">
+                            <button type="button" onclick="openJXReport('medical')" class="rounded-xl bg-emerald-700 hover:bg-emerald-600 px-4 py-2.5 text-sm text-white font-semibold"><i class="fa-solid fa-truck-medical mr-1"></i>填寫救護／轉送報告</button>
+                            <button type="button" onclick="openJXReport('funeral')" class="rounded-xl bg-indigo-700 hover:bg-indigo-600 px-4 py-2.5 text-sm text-white font-semibold"><i class="fa-solid fa-file-signature mr-1"></i>填寫生命禮儀報告</button>
                         </div>
                     </div>
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
-                        <h3 class="font-bold text-white"><i class="fa-solid fa-users text-teal-400 mr-2"></i>目前上班成員 <span id="jiaxiao-duty-count" class="text-teal-300">0</span> 人</h3>
-                        <div id="jiaxiao-duty-list" class="space-y-2 text-sm text-slate-400">載入值班資料中……</div>
-                    </div>
                 </div>
-                <div class="bg-slate-900/70 border border-dashed border-slate-700 rounded-2xl p-6 text-center text-slate-400"><i class="fa-solid fa-screwdriver-wrench text-2xl mb-2"></i><p class="font-medium">其他功能尚未啟用</p><p class="text-xs mt-1">待確認實際需求後再新增，不預先建立業務資料或權限。</p></div>
+                <div class="flex gap-2 overflow-x-auto border-b border-slate-800 pb-2" role="tablist" aria-label="嘉蕭集團分類">
+                    <button type="button" id="btn-jiaxiao-hospital" data-sub="hospital" aria-controls="jx-sub-hospital" aria-selected="true" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-teal-600 text-white whitespace-nowrap"><i class="fa-solid fa-hospital mr-2"></i>醫院登記表</button>
+                    <button type="button" id="btn-jiaxiao-medical" data-sub="medical" aria-controls="jx-sub-medical" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-truck-medical mr-2"></i>救護／轉送報告</button>
+                    <button type="button" id="btn-jiaxiao-funeral" data-sub="funeral" aria-controls="jx-sub-funeral" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-file-medical mr-2"></i>生命禮儀報告</button>
+                    <button type="button" id="btn-jiaxiao-review" data-sub="review" aria-controls="jx-sub-review" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-stamp mr-2"></i>高層審核／我的送審</button>
+                    <button type="button" id="btn-jiaxiao-clocks" data-sub="clocks" aria-controls="jx-sub-clocks" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clipboard-user mr-2"></i>打卡紀錄</button>
+                    <button type="button" id="btn-jiaxiao-hours" data-sub="hours" aria-controls="jx-sub-hours" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數</button>
+                </div>
+
+                <!-- 需求尚未規劃：只保留按鈕及真正可切換的空白分頁，絕不假造醫院登記表資料 -->
+                <section id="jx-sub-hospital" role="tabpanel" aria-labelledby="btn-jiaxiao-hospital" class="rounded-2xl border border-teal-500/20 bg-slate-900 p-6 sm:p-8 space-y-4">
+                    <div class="flex items-center gap-3"><i class="fa-solid fa-hospital text-2xl text-teal-400"></i><div><h3 class="text-xl font-bold text-white">醫院登記表</h3><p class="text-sm text-slate-400 mt-1">嘉蕭集團｜獨立醫院登記區</p></div></div>
+                    <div class="rounded-xl border border-dashed border-slate-700 bg-slate-950/60 p-7 text-center space-y-3">
+                        <i class="fa-regular fa-clipboard text-3xl text-slate-500"></i>
+                        <p class="text-base font-semibold text-slate-200">醫院登記表欄位尚未規劃</p>
+                        <p class="text-sm text-slate-400">目前僅完成按鈕及分頁架構。待你提供欄位後，再加入建立、儲存、審核與查詢功能。</p>
+                        <span class="inline-flex rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-400">尚未開放填寫</span>
+                    </div>
+                </section>
+
+                <section id="jx-sub-medical" role="tabpanel" aria-labelledby="btn-jiaxiao-medical" class="hidden space-y-4">
+                    <div id="jiaxiao-reports" class="bg-slate-900 border border-teal-500/20 rounded-2xl p-4 sm:p-6 space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-truck-medical text-teal-400 mr-2"></i>嘉蕭救護／轉送案件報告</h3><p class="text-xs text-slate-400 mt-1">使用已建立的救護及計費表單；報告送審通過後列入歷史。</p></div><button type="button" onclick="openJXReport('medical')" class="jx-member-create-btn rounded-xl bg-teal-600 hover:bg-teal-500 px-4 py-2 text-sm text-white font-semibold">填寫救護／轉送報告</button></div>
+                        <button type="button" onclick="loadJXReports('history')" class="rounded-lg bg-slate-800 px-4 py-2 text-sm text-teal-300 hover:bg-slate-700"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理救護紀錄</button>
+                        <div id="jx-report-status" class="text-xs text-slate-400">為降低 Firestore 讀取量，只有按下按鈕才會載入紀錄。</div>
+                        <div id="jx-medical-history-list" class="grid grid-cols-1 gap-3 text-sm text-slate-400">尚未載入</div>
+                        <div id="jx-history-list" class="hidden" aria-hidden="true"></div>
+                    </div>
+                </section>
+                <section id="jx-sub-funeral" role="tabpanel" aria-labelledby="btn-jiaxiao-funeral" class="hidden space-y-4">
+                    <div class="bg-slate-900 border border-indigo-500/20 rounded-2xl p-4 sm:p-6 space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-file-medical text-indigo-400 mr-2"></i>嘉蕭生命禮儀案件報告</h3><p class="text-xs text-slate-400 mt-1">獨立生命禮儀案件、審核及歷史紀錄。</p></div><button type="button" onclick="openJXReport('funeral')" class="jx-member-create-btn rounded-xl bg-indigo-700 hover:bg-indigo-600 px-4 py-2 text-sm text-white font-semibold">填寫生命禮儀報告</button></div>
+                        <button type="button" onclick="loadJXReports('history')" class="rounded-lg bg-slate-800 px-4 py-2 text-sm text-indigo-300 hover:bg-slate-700"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理禮儀紀錄</button>
+                        <div id="jx-funeral-history-list" class="grid grid-cols-1 gap-3 text-sm text-slate-400">尚未載入</div>
+                    </div>
+                </section>
+                <section id="jx-sub-review" role="tabpanel" aria-labelledby="btn-jiaxiao-review" class="hidden space-y-4">
+                    <div class="bg-slate-900 border border-amber-500/20 rounded-2xl p-4 sm:p-6 space-y-4">
+                        <div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-stamp text-amber-300 mr-2"></i>嘉蕭集團｜報告送審與高層審核</h3><p class="text-xs text-slate-400 mt-1">嘉蕭成員可查看自己送出的待審案件；高層與最高管理員可審核全部案件。</p></div>
+                        <button type="button" onclick="loadJXReports('review')" id="jx-review-load-btn" class="rounded-lg bg-slate-800 px-4 py-2 text-sm text-amber-300 hover:bg-slate-700"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理待審報告</button>
+                        <div id="jx-review-section" class="space-y-2"><h4 class="font-semibold text-amber-300">待審核案件（高層專用）</h4><div id="jx-pending-list" class="grid grid-cols-1 gap-3 text-sm text-slate-400">尚未載入</div></div>
+                        <div id="jx-own-pending-section" class="space-y-2"><h4 class="font-semibold text-cyan-300">我送出的待審案件</h4><div id="jx-own-pending-list" class="grid grid-cols-1 gap-3 text-sm text-slate-400">尚未載入</div></div>
+                    </div>
+                </section>
+                <section id="jx-sub-clocks" role="tabpanel" aria-labelledby="btn-jiaxiao-clocks" class="hidden space-y-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                            <div class="flex items-center justify-between gap-2"><h3 class="font-bold text-white"><i class="fa-solid fa-clock text-teal-400 mr-2"></i>嘉蕭集團上下班打卡</h3><span id="jiaxiao-duty-state" class="text-xs text-slate-400">尚未確認</span></div>
+                            <p class="text-sm text-slate-400">打卡資訊用於值班統計與消防無人值班時的倒地通知後援名單。</p>
+                            <div id="jiaxiao-clock-actions" class="flex flex-wrap gap-2">
+                                <button type="button" onclick="submitJiaxiaoClock('上班')" class="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 text-white text-sm font-semibold">上班打卡</button>
+                                <button type="button" onclick="submitJiaxiaoClock('下班')" class="rounded-xl bg-slate-700 hover:bg-slate-600 px-4 py-2.5 text-white text-sm font-semibold">下班打卡</button>
+                            </div>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                            <h3 class="font-bold text-white"><i class="fa-solid fa-users text-teal-400 mr-2"></i>目前上班成員 <span id="jiaxiao-duty-count" class="text-teal-300">0</span> 人</h3>
+                            <div id="jiaxiao-duty-list" class="space-y-2 text-sm text-slate-400">載入值班資料中……</div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-3">
+                        <div class="flex flex-wrap items-center gap-2 justify-between"><h3 class="font-bold text-white">嘉蕭集團打卡歷史</h3><button type="button" onclick="loadJiaxiaoClockRecords()" class="bg-slate-800 hover:bg-slate-700 rounded-lg px-4 py-2 text-sm text-teal-300"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理打卡紀錄</button></div>
+                        <p id="jx-clock-load-status" class="text-xs text-slate-400">點擊才會讀取嘉蕭打卡歷史。</p>
+                        <div id="jx-clock-history-list" class="space-y-2 text-sm text-slate-400">尚未載入</div>
+                    </div>
+                </section>
+                <section id="jx-sub-hours" role="tabpanel" aria-labelledby="btn-jiaxiao-hours" class="hidden space-y-4">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-calculator text-teal-400 mr-2"></i>嘉蕭集團執勤總時數</h3><p class="text-xs text-slate-400 mt-1">依已記錄的上班／下班打卡配對計算；正在上班的時段不預先計入。</p></div><button type="button" onclick="loadJiaxiaoClockRecords()" class="rounded-lg bg-slate-800 hover:bg-slate-700 px-4 py-2 text-sm text-teal-300">載入／重新整理</button></div>
+                        <div id="jx-hours-status" class="text-xs text-slate-400">尚未載入打卡資料。</div>
+                        <div id="jx-hours-list" class="space-y-2 text-sm text-slate-400">載入後顯示已完成打卡時段的統計。</div>
+                    </div>
+                </section>
             </div>
         </section>
 
@@ -1711,6 +1880,7 @@
                 <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
                     <button id="btn-admin-users" data-sub="users" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap"><i class="fa-solid fa-users mr-2"></i>帳號與人員管理</button>
                     <button id="btn-admin-dispatch" data-sub="dispatch" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-tower-broadcast mr-2"></i>智慧派遣中心</button>
+                    <button id="btn-admin-bot-console" data-sub="bot-console" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-robot mr-2"></i>Discord Bot 控制台</button>
                     <button id="btn-admin-announcements" data-sub="announcements" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-bullhorn mr-2"></i>發布公告</button>
                     <button id="btn-admin-site-versions" data-sub="site-versions" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-code-branch mr-2"></i>版本更新</button>
                     <button id="btn-admin-clock" data-sub="clock" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-business-time mr-2"></i>管理中心打卡</button>
@@ -2057,6 +2227,50 @@
                         <section class="rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-3"><div class="flex justify-between gap-2 items-center"><h4 class="font-bold text-white"><i class="fa-solid fa-headset text-rose-400 mr-2"></i>110／119 即時派遣案件</h4><span id="ntpc-dispatch-case-count" class="text-xs text-slate-400">--</span></div><div class="text-xs text-slate-500">案源：ER:LC API 與 Discord 報案；僅限管理中心網站人工指派。</div><div id="ntpc-dispatch-cases" class="space-y-3 max-h-[600px] overflow-y-auto"><div class="text-sm text-slate-500">尚未取得資料</div></div></section>
                     </div>
                     <div class="rounded-xl bg-slate-950 border border-slate-800 p-4 text-xs text-slate-500">本版本只提供管理中心網站人工指派。指派結果寫入 Cloudflare Durable Object，不會自動通知遊戲內玩家；派遣狀態尚未寫入既有 Firebase 案件報告。</div>
+                </div>
+
+                <!-- V55 新北 RP Bot 控制台：資料源為託管 Bot；管理操作需經 Cloudflare Access + D1 後端授權。 -->
+                <div id="admin-sub-bot-console" class="hidden space-y-5">
+                    <section class="rounded-2xl bg-slate-900 border border-indigo-500/25 p-5 sm:p-6 space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3"><div><h3 class="text-xl font-bold text-white"><i class="fa-brands fa-discord text-indigo-400 mr-2"></i>新北市 RP｜Bot 控制台</h3><p class="text-xs text-slate-400 mt-1">所有動作交由貓居 Bot 執行，設定直接寫回舊有資料庫；不在網頁存放任何 Discord Token。</p></div><button type="button" onclick="ntpcBotConsoleRefresh()" class="bg-indigo-600 hover:bg-indigo-500 rounded-lg px-4 py-2 text-sm text-white">同步最新設定</button></div>
+                        <p id="ntpc-bot-status" class="text-sm text-amber-300">尚未取得 Bot 狀態。第一次使用需設定 Cloudflare Access、D1 綁定與貓居 Bot 密鑰。</p>
+                        <p id="ntpc-bot-auth" class="text-xs text-slate-500"></p>
+                    </section>
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                      <section class="rounded-2xl bg-slate-900 border border-slate-800 p-5 space-y-3">
+                        <h4 class="font-bold text-indigo-300"><i class="fa-solid fa-ticket mr-2"></i>客服票務面板設定</h4>
+                        <label class="block text-sm">選擇已建立的票務面板</label>
+                        <select id="ntpc-bot-panel-list" onchange="ntpcBotConsolePanelSelect()" class="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white"><option value="">先同步 Bot 設定</option></select>
+                        <label class="block text-xs text-slate-400">面板標題</label><input id="ntpc-bot-panel-title" maxlength="60" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="客服面板標題">
+                        <label class="block text-xs text-slate-400">面板說明</label><textarea id="ntpc-bot-panel-desc" rows="4" maxlength="1000" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="可修改面板原本的文字"></textarea>
+                        <label class="block text-xs text-slate-400">客服身分組 ID（1～5 個，以半形逗號分隔）</label><input id="ntpc-bot-panel-roles" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="角色ID,角色ID">
+                        <label class="flex items-center gap-2 text-amber-200 text-sm"><input type="checkbox" id="ntpc-bot-panel-lock" class="accent-amber-500">上鎖此票務面板，不允許再開新單</label>
+                        <button type="button" onclick="ntpcBotConsoleSubmit('panel_update')" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm">儲存並同步 Discord 面板</button>
+                        <p class="text-xs text-slate-500">更改客服身分組只影響新開的票務，避免偷偷修改已建立的客服單權限。</p>
+                      </section>
+                      <section class="rounded-2xl bg-slate-900 border border-slate-800 p-5 space-y-3">
+                        <h4 class="font-bold text-emerald-300"><i class="fa-solid fa-coins mr-2"></i>金錢自動發放／扣款</h4>
+                        <label class="text-xs text-slate-400">目前排程</label><div id="ntpc-bot-money-jobs" class="space-y-1 text-sm text-slate-300 max-h-36 overflow-y-auto">尚未同步</div>
+                        <label class="text-xs text-slate-400">操作</label><select id="ntpc-bot-money-op" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5"><option value="加錢">自動發放金錢</option><option value="扣錢">定時扣款</option></select>
+                        <div class="grid grid-cols-2 gap-2"><div><label class="text-xs text-slate-400">金額</label><input id="ntpc-bot-money-amount" type="number" min="1" max="1000000000" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5" placeholder="1000"></div><div><label class="text-xs text-slate-400">執行週期</label><select id="ntpc-bot-money-cycle" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5"><option value="週">每週</option><option value="月初">每月初</option><option value="月底">每月底</option></select></div></div>
+                        <label class="text-xs text-slate-400">指定對象類型</label><select id="ntpc-bot-money-target-type" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5"><option value="role_id">身分組</option><option value="target_id">指定使用者</option></select>
+                        <label class="text-xs text-slate-400">Discord 身分組或使用者 ID</label><input id="ntpc-bot-money-target" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5" placeholder="數字 ID">
+                        <button type="button" onclick="ntpcBotConsoleSubmit('money_create')" class="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-sm">新增自動排程</button>
+                        <div class="border-t border-slate-700 pt-3"><label class="text-xs text-slate-400">取消排程（輸入編號）</label><div class="flex gap-2"><input id="ntpc-bot-money-cancel-id" type="number" min="1" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5" placeholder="排程 #"><button type="button" onclick="ntpcBotConsoleSubmit('money_cancel')" class="px-3 rounded-lg bg-rose-800 text-white text-sm">取消</button></div></div>
+                      </section>
+                    </div>
+                    <section class="rounded-2xl bg-slate-900 border border-slate-800 p-5 space-y-3">
+                        <h4 class="font-bold text-sky-300"><i class="fa-solid fa-paper-plane mr-2"></i>指定頻道代發／五日內編輯</h4>
+                        <div class="flex flex-wrap gap-2"><button type="button" onclick="ntpcBotConsoleTemplate('vote')" class="bg-sky-900 border border-sky-700 hover:bg-sky-800 rounded-lg px-3 py-2 text-xs">貼上開服投票模板</button><button type="button" onclick="ntpcBotConsoleTemplate('settlement')" class="bg-sky-900 border border-sky-700 hover:bg-sky-800 rounded-lg px-3 py-2 text-xs">貼上投票結算模板</button><button type="button" onclick="ntpcBotConsoleTemplate('normal')" class="bg-slate-800 hover:bg-slate-700 rounded-lg px-3 py-2 text-xs">清空模板</button></div>
+                        <p class="text-xs text-amber-300">投票模板只能發布於頻道 1435222492481323113，發布後 24 小時內可修改；一般代發則為 5 日。內容可自由編輯，請手動確認時間、人數與管理員 ID。</p>
+                        <input type="hidden" id="ntpc-bot-message-kind" value="normal">
+                        <label class="block text-xs text-slate-400">目標頻道 ID</label><input id="ntpc-bot-message-channel" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5" placeholder="頻道數字 ID">
+                        <label class="block text-xs text-slate-400">訊息內容（保留 Discord Markdown）</label><textarea id="ntpc-bot-message-content" rows="13" maxlength="2000" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white font-mono text-sm" placeholder="按上方模板，或直接輸入訊息"></textarea>
+                        <div class="flex gap-3 flex-wrap"><button type="button" onclick="ntpcBotConsoleSubmit('message_send')" class="px-4 py-2 rounded-lg bg-sky-700 hover:bg-sky-600 text-white text-sm">送交 Bot 發布訊息</button><button type="button" onclick="ntpcBotConsoleSubmit('message_edit')" class="px-4 py-2 rounded-lg bg-violet-700 hover:bg-violet-600 text-white text-sm">編輯原訊息</button></div>
+                        <label class="block text-xs text-slate-400">要編輯的訊息 ID（可從以下近期清單點選）</label><input id="ntpc-bot-edit-id" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5" placeholder="Discord 訊息 ID">
+                        <div id="ntpc-bot-recent-messages" class="text-xs text-slate-400 space-y-2"></div>
+                    </section>
+                    <section class="rounded-2xl bg-slate-900 border border-slate-800 p-5 space-y-2"><h4 class="text-sm font-bold text-white">網站操作佇列與結果</h4><p class="text-xs text-slate-500">所有操作記入 1556969800348213279；「排隊中」不代表已完成。</p><div id="ntpc-bot-action-jobs" class="max-h-56 overflow-y-auto space-y-2 text-xs text-slate-300">目前沒有動作紀錄</div></section>
                 </div>
                 <div id="admin-sub-discord-webhooks" class="hidden space-y-6">
                     <div class="bg-slate-900 border border-indigo-500/20 rounded-2xl p-6 shadow-xl">
@@ -2500,7 +2714,7 @@
 <div><h5 class="text-sm font-bold text-rose-200 mb-2">一般外傷</h5><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaInjuries" value="頭部外傷"><span>頭部外傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaInjuries" value="胸部外傷"><span>胸部外傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaInjuries" value="腹部外傷"><span>腹部外傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaInjuries" value="背部外傷"><span>背部外傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaInjuries" value="肢體外傷"><span>肢體外傷</span></label></div></div>
 <div><h5 class="text-sm font-bold text-rose-200 mb-2">受傷機轉（請擇一）</h5><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-mechanism-radio" value="交通事故"><span>交通事故</span></label><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-mechanism-radio" value="非交通事故"><span>非交通事故</span></label></div></div>
 <div class="hidden space-y-3" data-ems-trauma-mechanism="交通事故"><h5 class="text-sm font-bold text-rose-200">事故類別（以傷病患身分為主）</h5><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-traffic-radio" value="汽車"><span>汽車</span></label><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-traffic-radio" value="機車"><span>機車</span></label><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-traffic-radio" value="腳踏車"><span>腳踏車</span></label><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-traffic-radio" value="行人"><span>行人</span></label><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-traffic-radio" value="其他"><span>其他</span></label></div><label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-trauma-traffic-other"><span class="text-xs font-bold text-rose-200">其他交通事故類別</span><input id="ems-trauma-traffic-other" type="text" placeholder="請輸入交通事故類別" autocomplete="off"></label></div>
-<div class="hidden space-y-3" data-ems-trauma-mechanism="非交通事故"><h5 class="text-sm font-bold text-rose-200">非交通事故類別（可複選）</h5><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="溺水"><span>溺水</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="摔跌傷"><span>摔跌傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="墜落傷"><span>墜落傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="穿刺傷"><span>穿刺傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="燒燙傷"><span>燒燙傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="電擊傷"><span>電擊傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="生物咬螫傷"><span>生物咬螫傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="到院前心肺功能停止"><span>到院前心肺功能停止</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="其他"><span>其他</span></label></div><label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-trauma-fall-height"><span class="text-xs font-bold text-rose-200">墜落高度（樓）</span><input id="ems-trauma-fall-height" type="text" placeholder="例如：3" autocomplete="off"></label><label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-trauma-burn-degree"><span class="text-xs font-bold text-rose-200">燒燙傷程度</span><input id="ems-trauma-burn-degree" type="text" placeholder="例如：2 度" autocomplete="off"></label><label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-trauma-nontraffic-other"><span class="text-xs font-bold text-rose-200">其他非交通事故說明</span><input id="ems-trauma-nontraffic-other" type="text" placeholder="請說明其他事故類型" autocomplete="off"></label></div>
+<div class="hidden space-y-3" data-ems-trauma-mechanism="非交通事故"><h5 class="text-sm font-bold text-rose-200">非交通事故類別（可複選）</h5><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="溺水"><span>溺水</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="摔跌傷"><span>摔跌傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="墜落傷"><span>墜落傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="穿刺傷"><span>穿刺傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="槍傷"><span>槍傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="燒燙傷"><span>燒燙傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="電擊傷"><span>電擊傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="生物咬螫傷"><span>生物咬螫傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="到院前心肺功能停止"><span>到院前心肺功能停止</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="其他"><span>其他</span></label></div><label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-trauma-fall-height"><span class="text-xs font-bold text-rose-200">墜落高度（樓）</span><input id="ems-trauma-fall-height" type="text" placeholder="例如：3" autocomplete="off"></label><label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-trauma-burn-degree"><span class="text-xs font-bold text-rose-200">燒燙傷程度</span><input id="ems-trauma-burn-degree" type="text" placeholder="例如：2 度" autocomplete="off"></label><label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-trauma-nontraffic-other"><span class="text-xs font-bold text-rose-200">其他非交通事故說明</span><input id="ems-trauma-nontraffic-other" type="text" placeholder="請說明其他事故類型" autocomplete="off"></label></div>
 <label class="block"><span class="block text-xs font-semibold text-slate-300 mb-1.5">創傷症狀補充說明</span><textarea id="ems-trauma-symptom" rows="2" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white" placeholder="例如：傷口位置、出血或意識狀態"></textarea></label>
 </div></div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
 <label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-complaint" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(3) 傷病患主訴</label>
@@ -2592,7 +2806,7 @@
                 <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="口咽呼吸道"><span>口咽呼吸道</span></label>
                 <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="鼻咽呼吸道"><span>鼻咽呼吸道</span></label>
                 <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="抽吸"><span>抽吸</span></label>
-                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="哈姆立克法"><span>哈姆立克法</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="哈姆立克法"><span>哈姆立克法</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="鼻導管"><span>鼻導管</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="簡單面罩"><span>簡單面罩</span></label>
                 <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="非再呼吸型面罩"><span>非再呼吸型面罩</span></label>
                 <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="BVM（正壓輔助呼吸）"><span>BVM（正壓輔助呼吸）</span></label>
                 <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="其他"><span>其他</span></label>
@@ -3254,6 +3468,8 @@
             policeClocks: [],
             fireClocks: [],
             jiaxiaoClocks: [],
+            jiaxiaoMedicalReports: [], jiaxiaoMedicalPendingReports: [],
+            jiaxiaoFuneralReports: [], jiaxiaoFuneralPendingReports: [],
             adminLogs: [],
             loginSessions: [],
             feedbackReports: [],
@@ -3406,6 +3622,10 @@
 
             document.querySelectorAll('.fire-sub-btn').forEach(btn => {
                 btn.addEventListener('click', () => switchFireSubTab(btn.getAttribute('data-sub')));
+            });
+
+            document.querySelectorAll('.jiaxiao-sub-btn').forEach(btn => {
+                btn.addEventListener('click', () => switchJiaxiaoSubTab(btn.getAttribute('data-sub')));
             });
 
             document.querySelectorAll('.admin-sub-btn').forEach(btn => {
@@ -4858,6 +5078,7 @@ async function republishAnnouncement(id) {
             if (tabId === 'faq') switchFAQCategory(document.querySelector('.faq-category-btn.active')?.getAttribute('data-faq-category') || 'info');
             if (tabId === 'notifications') renderPersonalNotifications();
             if (tabId === 'profile') renderMyProfile();
+            if (tabId === 'jiaxiao') { renderJXReports(); switchJiaxiaoSubTab('hospital'); }
             if (tabId === 'academy') {
                 renderAcademySession();
                 renderAcademyCache();
@@ -4952,18 +5173,71 @@ async function republishAnnouncement(id) {
             ntpcMapSwitch(document.getElementById('tab-fire')?.classList.contains('hidden')?'none':'fire');
         }
 
+        // 嘉蕭分頁與消防中心使用同型的選單，醫院登記表目前僅預留介面。
+        function switchJiaxiaoSubTab(sub){
+            if(!canAccessJiaxiao())return;
+            const tabs=['hospital','medical','funeral','review','clocks','hours'];
+            if(!tabs.includes(sub))sub='hospital';
+            for(const key of tabs){
+                document.getElementById('jx-sub-'+key)?.classList.toggle('hidden',key!==sub);
+                const btn=document.getElementById('btn-jiaxiao-'+key);
+                btn?.classList.toggle('bg-teal-600',key===sub);
+                btn?.classList.toggle('text-white',key===sub);
+                btn?.classList.toggle('text-slate-400',key!==sub);
+                btn?.setAttribute('aria-selected',key===sub?'true':'false');
+            }
+            if(sub==='clocks')renderJiaxiaoDuty();
+            if(sub==='hours')renderJiaxiaoClockHours();
+            if(['medical','funeral','review'].includes(sub))renderJXReports();
+        }
+        // 嘉蕭打卡按需讀取；不增加登入後自動讀取 Firebase 的頻率。
+        let jxClockHistoryLoaded=false;
+        async function loadJiaxiaoClockRecords(){
+            if(!canAccessJiaxiao()||!db||!fm)return;
+            const status=document.getElementById('jx-clock-load-status');
+            if(status)status.textContent='正在讀取嘉蕭打卡紀錄……';
+            try{
+                const snap=await fm.getDocs(fm.query(fm.collection(db,'jiaxiaoClocks'),fm.limit(2000)));
+                appData.jiaxiaoClocks=snap.docs.map(d=>({docId:d.id,...d.data()}));
+                jxClockHistoryLoaded=true;
+                recalculateDutyStatusCache();renderJiaxiaoDuty();renderJiaxiaoClockHistory();renderJiaxiaoClockHours();
+                if(status)status.textContent=`共讀取 ${appData.jiaxiaoClocks.length} 筆打卡資料${appData.jiaxiaoClocks.length>=2000?'（達 2000 筆上限，請注意資料可能不完整）':''}。`;
+            }catch(e){if(status)status.textContent='打卡讀取失敗：'+(e?.message||String(e));showToast('嘉蕭打卡讀取失敗：'+e.message,'error','讀取失敗');}
+        }
+        function renderJiaxiaoClockHistory(){
+            const el=document.getElementById('jx-clock-history-list');if(!el||!jxClockHistoryLoaded)return;
+            const rows=[...(appData?.jiaxiaoClocks||[])].sort((a,b)=>getClockTimestamp(b)-getClockTimestamp(a)).slice(0,100);
+            el.innerHTML=rows.length?rows.map(r=>`<div class="grid grid-cols-1 sm:grid-cols-3 gap-1 rounded-xl bg-slate-950 border border-slate-800 p-3"><span class="text-white font-medium">${escapeHtml(r.name||r.account||'--')}</span><span class="${r.status==='上班'?'text-emerald-400':'text-slate-300'}">${escapeHtml(r.status||'--')}</span><span class="text-xs text-slate-400">${escapeHtml(r.time||formatDateTime(getClockTimestamp(r)))}</span></div>`).join(''):'沒有打卡紀錄';
+        }
+        function renderJiaxiaoClockHours(){
+            const status=document.getElementById('jx-hours-status'),el=document.getElementById('jx-hours-list');
+            if(!el||!jxClockHistoryLoaded)return;
+            const grouped=new Map();
+            [...(appData?.jiaxiaoClocks||[])].sort((a,b)=>getClockTimestamp(a)-getClockTimestamp(b)).forEach(r=>{
+                const key=String(r.account||r.staffNumber||r.name||'').trim().toLowerCase(),t=getClockTimestamp(r);
+                if(!key||!Number.isFinite(t)||t<=0)return;
+                if(!grouped.has(key))grouped.set(key,{name:r.name||r.account||key,minutes:0,sessions:0,start:null});
+                const g=grouped.get(key);g.name=r.name||r.account||g.name;
+                if(r.status==='上班'){if(g.start===null)g.start=t;}
+                else if(r.status==='下班'&&g.start!==null){if(t>=g.start){g.minutes+=(t-g.start)/60000;g.sessions++;}g.start=null;}
+            });
+            const rows=[...grouped.values()].sort((a,b)=>b.minutes-a.minutes);
+            if(status)status.textContent='依已載入的打卡紀錄試算；未配對、正在上班的時段不計入。';
+            el.innerHTML=rows.length?rows.map((r,i)=>`<div class="flex flex-wrap items-center justify-between gap-3 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3"><span class="text-slate-200">${i+1}. ${escapeHtml(r.name)}</span><span class="text-teal-300 font-semibold">${(r.minutes/60).toFixed(1)} 小時 <span class="text-xs text-slate-400 font-normal">／${r.sessions} 次完整出勤</span></span></div>`).join(''):'沒有可計算的出勤時段';
+        }
+
         function switchAdminSubTab(sub){
-            const tabs=['users','announcements','site-versions','clock','logs','storage','duty-alerts','notification-alerts','sync-health','memo','overview','online','devices','feedback','issues','academy','jail-rules','erlc','dispatch','discord-webhooks'];
+            const tabs=['users','announcements','site-versions','clock','logs','storage','duty-alerts','notification-alerts','sync-health','memo','overview','online','devices','feedback','issues','academy','jail-rules','erlc','dispatch','bot-console','discord-webhooks'];
             const fullAdmin=!!currentUser && getEffectiveRole(currentUser)==='admin';
             const dispatchAllowed=canUseManagementDispatch(currentUser);
             const academyAllowed=!!currentUser && hasUserPermission(currentUser,'academyInstructor');
-            const allowed=fullAdmin || (sub==='dispatch' && dispatchAllowed) || (sub==='academy' && academyAllowed);
+            const allowed=fullAdmin || ((sub==='dispatch'||sub==='bot-console') && dispatchAllowed) || (sub==='academy' && academyAllowed);
             tabs.forEach(x=>{
                 document.getElementById(`admin-sub-${x}`)?.classList.add('hidden');
                 const btn=document.getElementById(`btn-admin-${x}`);
                 btn?.classList.remove('bg-purple-600','text-white');
                 // 一般管理中心職員僅見派遣；警專教官僅見考核，不擴大其餘管理分頁權限。
-                btn?.classList.toggle('hidden',!fullAdmin && !((x==='dispatch'&&dispatchAllowed)||(x==='academy'&&academyAllowed)));
+                btn?.classList.toggle('hidden',!fullAdmin && !(((x==='dispatch'||x==='bot-console')&&dispatchAllowed)||(x==='academy'&&academyAllowed)));
             });
             const denied=document.getElementById('admin-sub-permission-denied');
             if(denied) denied.classList.toggle('hidden',allowed);
@@ -4978,6 +5252,7 @@ async function republishAnnouncement(id) {
             document.getElementById(`admin-sub-${sub}`)?.classList.remove('hidden');
             document.getElementById(`btn-admin-${sub}`)?.classList.add('bg-purple-600','text-white');
             if(sub==='dispatch')ntpcDispatchShow();
+            if(sub==='bot-console')ntpcBotConsoleRefresh();
             if(sub==='online' && getEffectiveRole(currentUser)==='admin' && document.visibilityState==='visible') refreshAdminOnlineUsers();
             if(sub==='devices' && getEffectiveRole(currentUser)==='admin') renderAdminDevices();
             if(sub==='feedback' && getEffectiveRole(currentUser)==='admin') renderAdminFeedback();
@@ -5839,7 +6114,7 @@ async function republishAnnouncement(id) {
         const SECURITY_ACTION_COOLDOWN=new Map();
         function securityActionAllowed(key,cooldownMs=700){const now=Date.now(),last=SECURITY_ACTION_COOLDOWN.get(key)||0;if(now-last<cooldownMs)return false;SECURITY_ACTION_COOLDOWN.set(key,now);return true;}
         async function handleLogin(){if(!securityActionAllowed('login',900))return;await cloudDataReadyPromise;const device=getDeviceInfo();const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}try{const fingerprint=getDeviceFingerprint(device),deviceKey=getDeviceKey(device);const [blockedByFingerprint,blockedByKey]=await Promise.all([fm.getDoc(fm.doc(db,'blockedDevices',fingerprint)),fm.getDocs(fm.query(fm.collection(db,'blockedDevices'),fm.where('deviceKey','==',deviceKey)))]);const matches=[];if(blockedByFingerprint.exists())matches.push({docId:blockedByFingerprint.id,...blockedByFingerprint.data()});blockedByKey.docs.forEach(d=>{if(!matches.some(x=>String(x.docId)===String(d.id)))matches.push({docId:d.id,...d.data()});});appData.blockedDevices=matches;/* 登入失敗紀錄只在失敗時依裝置 ID 單筆讀取，不下載整個集合。 */}catch(e){console.warn('登入安全資料讀取失敗：',e);}if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}let found=null;try{const userSnap=await fm.getDoc(fm.doc(db,'users',acc));if(userSnap.exists()){const data=userSnap.data();found={docId:userSnap.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}if(!found&&isSuperAdminAccount(acc)){const all=await fm.getDocs(fm.collection(db,'users'));const d=all.docs.find(x=>isSuperAdminAccount(x.id)||isSuperAdminAccount(x.data().account));if(d){const data=d.data();found={docId:d.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}}}catch(e){showToast('帳號驗證失敗，請稍後重試：'+e.message,'error','登入失敗');return;}if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));if(!(await requireSiteAgreement(found)))return;currentUser=found;appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);resetManualReadFlags();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();if(isAcademyInstructor(currentUser)&&getEffectiveRole(currentUser)!=='admin')switchTab('academy');else switchTab('home');}
-        async function logout(){ntpcMapDisconnectAll();ntpcDispatchStop(true);resetManualReadFlags();stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','jiaxiaoClocks','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
+        async function logout(){ntpcMapDisconnectAll();ntpcDispatchStop(true);resetManualReadFlags();stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','jiaxiaoClocks','jiaxiaoMedicalReports','jiaxiaoMedicalPendingReports','jiaxiaoFuneralReports','jiaxiaoFuneralPendingReports','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
             const badge = document.getElementById('user-badge');
@@ -10753,6 +11028,396 @@ setTimeout(()=>{try{renderDashHandover();renderDashAnnouncements();refreshDutyDa
 setInterval(()=>{const pane=document.getElementById('tab-dashboard');if(currentUser&&pane&&!pane.classList.contains('hidden'))ntpcRefreshDutyHourLabels();},60000);
 window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEventListener('offline',()=>renderDashSystemStatus());
 
+        // ================================================
+        // 嘉蕭集團：獨立 EMS／禮儀報告及費用試算（不改消防原有儲存路徑）
+        // ================================================
+        const JX_COLLECTIONS={
+            medical:{pending:'jiaxiaoMedicalPendingReports',history:'jiaxiaoMedicalReports',prefix:'JXM'},
+            funeral:{pending:'jiaxiaoFuneralPendingReports',history:'jiaxiaoFuneralReports',prefix:'JXF'}
+        };
+        const JX_TREATMENT_RATES={wheelchair:500,oxygen:800,ecg:1200,iv:1200,medication:500};
+        const JX_ROLE_RATES={staffEMT1:700,staffEMT2:1000,staffEMTP:1500,staffNurse:2500,staffDoctor:5000};
+        let jxReportSaving=false;
+        let jxReportMode='medical';
+        const jxEsc=s=>escapeHtml(String(s??''));
+        const jxMoney=n=>'$'+Math.max(0,Number(n)||0).toLocaleString('en-US',{maximumFractionDigits:0});
+        const jxNum=(data,key,fallback=0)=>Math.max(0,Math.floor(Number(data?.[key]??fallback)||0));
+        const jxNowLocal=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date()).replace(' ','T');
+        function canReviewJX(u=currentUser){return !!u&&(getEffectiveRole(u)==='admin'||hasUserPermission(u,'civilianHigh'));}
+        const jxInputClass='w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white min-w-0 focus:border-teal-400 focus:outline-none';
+        function jxText(key,label,value='',attr=''){
+            return `<label class="block min-w-0"><span class="block text-xs font-semibold text-slate-300 mb-1.5">${jxEsc(label)}</span><input class="${jxInputClass}" name="${key}" value="${jxEsc(value)}" ${attr}></label>`;
+        }
+        function jxTextarea(key,label,value='',attr=''){
+            return `<label class="block min-w-0 sm:col-span-2"><span class="block text-xs font-semibold text-slate-300 mb-1.5">${jxEsc(label)}</span><textarea class="${jxInputClass}" name="${key}" rows="2" ${attr}>${jxEsc(value)}</textarea></label>`;
+        }
+        function jxSelect(key,label,opts,value='',other=false){
+            return `<label class="block min-w-0"><span class="block text-xs font-semibold text-slate-300 mb-1.5">${jxEsc(label)}</span><select name="${key}" class="${jxInputClass}"><option value="">-- 請選擇 --</option>${opts.map(x=>`<option value="${jxEsc(x)}" ${String(value)===x?'selected':''}>${jxEsc(x)}</option>`).join('')}</select></label>`+(other?jxText(key+'Other','其他說明', ''):'');
+        }
+        function jxNumber(key,label,value=0,min=0,max=99){return jxText(key,label,value,`type="number" step="1" min="${min}" max="${max}" inputmode="numeric"`);}
+        function jxCounter(key,label,value=0){return `<label class="block min-w-0"><span class="block text-xs font-semibold text-slate-300 mb-1.5">${jxEsc(label)}</span><div class="flex items-center gap-2"><button type="button" data-jx-step="-1" data-jx-counter="${key}" class="rounded-xl bg-slate-700 hover:bg-slate-600 w-12 h-11 shrink-0 text-white font-bold" aria-label="${jxEsc(label)}減一">−</button><input name="${key}" class="${jxInputClass} text-center" type="number" min="0" max="99" step="1" inputmode="numeric" value="${jxEsc(value)}"><button type="button" data-jx-step="1" data-jx-counter="${key}" class="rounded-xl bg-slate-700 hover:bg-slate-600 w-12 h-11 shrink-0 text-white font-bold" aria-label="${jxEsc(label)}加一">＋</button></div></label>`;}
+        function jxSection(title,html,desc='') {return `<section class="bg-slate-950/60 rounded-2xl border border-slate-700/65 p-4 sm:p-5 space-y-4"><div><h4 class="font-bold text-teal-300 text-base">${jxEsc(title)}</h4>${desc?`<p class="text-xs text-slate-400 mt-1">${jxEsc(desc)}</p>`:''}</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4">${html}</div></section>`;}
+        function jxBaseMedical(d={}){
+            const dt=d.acceptedAt||jxNowLocal();
+            return jxSection('一、派遣資料',
+                jxText('acceptedAt','受理時間',dt,'type="datetime-local" required')+jxText('receiver','受理人員',d.receiver??currentUser?.name??'','required')+
+                jxText('participants','參與人員',d.participants||'')+jxText('hospitalAt','送達醫院時間',d.hospitalAt||'','type="datetime-local"')+
+                jxSelect('source','案件來源',['民眾','家屬','公司','政府','警員','其他'],d.source||'',true)+
+                jxSelect('mission','任務類型',['一般救護','轉院任務','出院接送','駐點待命'],d.mission||'一般救護')+
+                jxText('incidentLocation','發生地點',d.incidentLocation||'','required')+jxText('destination','送往醫院或地點',d.destination||'嘉蕭醫學大學 附設嘉蕭醫院')+
+                jxSelect('transportStatus','運送狀態',['已送醫','沒有運送','轉交其他單位'],d.transportStatus||'已送醫')+
+                jxSelect('noTransportGroup','未運送分類（與 EMS 相同）',['未接觸','有接觸','出勤待命'],d.noTransportGroup||'')+
+                jxSelect('noTransportReason','未運送原因',['未發現','誤報','中途取消','拒送','警察處理','現場死亡','火警','支援勤務','其他'],d.noTransportReason||'',true)+
+                jxText('transferredTo','轉交其他單位名稱',d.transferredTo||'')
+            )+jxSection('二、傷病患資料',
+                jxText('patientName','姓名',d.patientName||'','required')+jxText('patientId','身分證字號（RP 虛構資料）',d.patientId||'')+
+                jxSelect('patientSex','性別',['男','女','不明','其他'],d.patientSex||'',true)+jxText('patientAge','年齡（約）',d.patientAge||'','placeholder="例如：約25歲"')+
+                jxSelect('gcsE','GCS E',['1','2','3','4'],d.gcsE||'')+jxSelect('gcsV','GCS V',['1','2','3','4','5'],d.gcsV||'')+
+                jxSelect('gcsM','GCS M',['1','2','3','4','5','6'],d.gcsM||'')
+            );
+        }
+        function jxMedicalStaff(d={}){
+            return jxSection('五、出勤狀況',
+                jxSelect('sceneType','事件地點類型',['住家','公共場所','娛樂場所','其他'],d.sceneType||'',true)+
+                jxSelect('sceneRisk','是否存在危險因素',['無','暴力','不明風險','其他'],d.sceneRisk||'',true)+
+                jxCounter('staffEMT1','EMT-1 人數',d.staffEMT1??1,0,99)+jxCounter('staffEMT2','EMT-2 人數',d.staffEMT2??1,0,99)+
+                jxCounter('staffEMTP','EMT-P 人數',d.staffEMTP??0,0,99)+jxCounter('staffNurse','護理師人數',d.staffNurse??0,0,99)+jxCounter('staffDoctor','醫師人數',d.staffDoctor??0,0,99)+
+                ['signature1','signature2','signature3','signature4'].map((x,i)=>jxText(x,'出勤人員簽名 '+(i+1),d[x]||'')).join('')
+            );
+        }
+        function jxMedicalCosts(d={}){
+            const care=[['wheelchair','輪椅／行動不便患者',500],['oxygen','醫療氧氣使用',800],['ecg','心電圖監測',1200],['iv','靜脈點滴照護',1200],['medication','藥物給予',500]];
+            return jxSection('六、出勤費用',
+                jxText('baseFee','基本費用（$）',d.baseFee??8000,'type="number" min="0" step="1" required')+
+                jxSelect('transportFeeType','交通／轉送加價',['不加價','市區短程轉送','市區中程轉送','長途醫療轉送'],d.transportFeeType||'不加價')+
+                jxNumber('extraKilometers','超出里程（每公里 $100）',d.extraKilometers??0,0,9999)+
+                jxSelect('standbyFeeType','活動救護／駐點費用',['不加價','小型活動半天','小型活動整天','大型活動每場','長期駐點每月'],d.standbyFeeType||'不加價')+
+                jxNumber('overtimeHours','超時（每小時 $1,200）',d.overtimeHours??0,0,999)+
+                jxNumber('extraManual','其他加價金額（$）',d.extraManual??0,0,99999999)+
+                jxTextarea('extraNote','加價項目補充',d.extraNote||'')+
+                `<div class="sm:col-span-2"><span class="block text-xs font-semibold text-slate-300 mb-2">特殊醫療與照護項目（依次數計費）</span><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">${care.map(([k,label,fee])=>`<div class="rounded-xl border border-slate-700 bg-slate-900 p-3">${jxCounter('care_'+k,label+'（'+jxMoney(fee)+'／次）',d['care_'+k]||0)}</div>`).join('')}</div></div>`+
+                `<div class="sm:col-span-2 rounded-xl border border-teal-500/40 bg-teal-950/40 p-4 space-y-2"><h5 class="text-teal-300 font-bold">自動試算明細</h5><div id="jx-cost-lines" class="space-y-1 text-sm text-slate-300"></div><div class="border-t border-teal-500/30 pt-3 flex justify-between text-lg font-bold text-white"><span>總金額</span><output id="jx-grand-total" class="text-teal-300">$8,000</output></div><p class="text-[11px] text-slate-400">前 2 位 EMT 已含於基本費，第 3 位起按 EMT-1 $700／EMT-2 $1,000／EMT-P $1,500 加收；護理師 $2,500、醫師 $5,000 另計。長途轉送起價 $6,000。</p></div>`+
+                jxSelect('paymentStatus','付款狀態',['已付','未付'],d.paymentStatus||'未付')
+            );
+        }
+        function jxFuneralForm(d={}){
+            return jxSection('一、基本案件資訊',
+                jxText('detailId','明細編號',d.detailId||'')+jxText('reportDate','填表日期',d.reportDate||jxNowLocal().slice(0,10),'type="date" required')+
+                jxText('registrar','登記人員',d.registrar??currentUser?.name??'','required')+jxText('participants','參與人員',d.participants||'')+
+                jxSelect('source','案件來源',['醫院','警方','家屬','其他'],d.source||'',true)
+            )+jxSection('二、往生者資料',
+                jxText('deceasedName','姓名',d.deceasedName||'','required')+jxSelect('deceasedSex','性別',['男','女','其他'],d.deceasedSex||'',true)+
+                jxText('deceasedAge','年齡',d.deceasedAge||'','inputmode="numeric"')+jxText('deceasedIdLast5','身分證後五碼（RP 虛構資料）',d.deceasedIdLast5||'','maxlength="5" pattern="[0-9A-Za-z]{5}"')+
+                jxText('deathAt','死亡時間',d.deathAt||'','type="datetime-local"')+jxSelect('deathLocation','死亡地點',['醫院','住家','公共場所','其他'],d.deathLocation||'',true)+
+                jxSelect('deathType','死亡類型',['自然死亡','意外死亡','非自然死亡'],d.deathType||'')
+            )+jxSection('三、案件狀態確認',
+                jxSelect('policeInvolved','是否警方介入',['是','否'],d.policeInvolved||'')+
+                jxSelect('autopsy','是否完成相驗／解剖',['是','否','不需要'],d.autopsy||'')+
+                jxSelect('canProceed','是否可進行後續禮儀',['可','暫緩'],d.canProceed||'暫緩')
+            )+jxSection('四、費用與方案',
+                jxSelect('plan','選擇方案',['經濟型','標準型','尊榮型','客製'],d.plan||'')+
+                jxTextarea('customPlan','客製方案項目',d.customPlan||'')+
+                jxText('estimatedTotal','預估總費用（$）',d.estimatedTotal??'','type="number" min="0" step="1"')+
+                jxSelect('depositPaid','是否已收訂金',['是','否'],d.depositPaid||'否')
+            )+'<p class="text-xs text-amber-300">禮儀方案未提供正式定價，本表不預設方案價格，由填報人輸入實際預估費用。</p>';
+        }
+        function jxSyncClinicalUI(){
+            const host=document.getElementById('jx-form-content');if(!host)return;
+            const checked=id=>!!host.querySelector('#'+id)?.checked;
+            const trauma=checked('jx-ems-trauma'),nontrauma=checked('jx-ems-nontrauma');
+            const mechanism=host.querySelector('[name="jx-ems-trauma-mechanism-radio"]:checked')?.value||'';
+            const traffic=host.querySelector('[name="jx-ems-trauma-traffic-radio"]:checked')?.value||'';
+            const choice=(g,v)=>!![...host.querySelectorAll('[data-ems-triage-choice="'+g+'"]:checked')].find(el=>el.value===v);
+            host.querySelectorAll('[data-ems-reveal]').forEach(panel=>{
+                const flag=checked(panel.dataset.emsReveal);
+                panel.classList.toggle('hidden',!flag);
+                panel.querySelectorAll('input,select,textarea').forEach(el=>el.disabled=!flag);
+            });
+            host.querySelectorAll('[data-ems-trauma-mechanism]').forEach(panel=>{
+                const flag=trauma&&panel.dataset.emsTraumaMechanism===mechanism;
+                panel.classList.toggle('hidden',!flag);
+                panel.querySelectorAll('input').forEach(el=>el.disabled=!flag);
+            });
+            const show={
+                'jx-ems-nontrauma-other':nontrauma&&choice('nontraumaChoices','其他'),
+                'jx-ems-trauma-traffic-other':trauma&&mechanism==='交通事故'&&traffic==='其他',
+                'jx-ems-trauma-fall-height':trauma&&mechanism==='非交通事故'&&choice('traumaNontraffic','墜落傷'),
+                'jx-ems-trauma-burn-degree':trauma&&mechanism==='非交通事故'&&choice('traumaNontraffic','燒燙傷'),
+                'jx-ems-trauma-nontraffic-other':trauma&&mechanism==='非交通事故'&&choice('traumaNontraffic','其他')
+            };
+            host.querySelectorAll('[data-ems-triage-detail]').forEach(panel=>{
+                const flag=!!show[panel.dataset.emsTriageDetail];panel.classList.toggle('hidden',!flag);
+                panel.querySelectorAll('input,textarea').forEach(el=>el.disabled=!flag);
+            });
+            host.querySelectorAll('[data-ems-treatment-detail]').forEach(panel=>{
+                const flag=[...host.querySelectorAll('[data-ems-treatment-choice="'+panel.dataset.emsTreatmentDetail+'"]:checked')].some(el=>el.value===panel.dataset.emsTreatmentTrigger);
+                panel.classList.toggle('hidden',!flag);panel.querySelectorAll('input,select,textarea').forEach(el=>el.disabled=!flag);
+            });
+            // Non-trauma defaults to the acute tab; a selector can switch without touching EMS form.
+        }
+        function jxCaptureClinical(){
+            const host=document.getElementById('jx-form-content'),clinical={};
+            if(!host)return clinical;
+            host.querySelectorAll('[id^="jx-ems-"]').forEach(el=>{
+                if(el.type==='checkbox'||el.type==='radio')clinical[el.id]=el.checked;
+                else if(el.matches('input,textarea,select'))clinical[el.id]=String(el.value||'').trim();
+            });
+            host.querySelectorAll('input[type="radio"]').forEach(el=>clinical['radio:'+el.name+':'+el.value]=!!el.checked);
+            host.querySelectorAll('[data-ems-triage-choice],[data-ems-treatment-choice]').forEach(el=>{
+                const type=el.dataset.emsTriageChoice?'triage':'treatment',group=el.dataset.emsTriageChoice||el.dataset.emsTreatmentChoice;
+                clinical[type+':'+group+':'+el.value]=!!el.checked;
+            });
+            host.querySelectorAll('[data-ems-body-part]').forEach(el=>clinical['body:'+el.dataset.emsBodyPart]=el.getAttribute('aria-pressed')==='true');
+            return clinical;
+        }
+        function jxFormData(){
+            const form=document.getElementById('jx-report-form'),fd=new FormData(form),data={};
+            for(const [k,v] of fd.entries())if(!k.startsWith('jx-ems-'))data[k]=String(v).trim();
+            if(jxReportMode==='medical'){
+                for(const k of ['staffEMT1','staffEMT2','staffEMTP','staffNurse','staffDoctor','extraKilometers','overtimeHours','extraManual','baseFee'])data[k]=Math.max(0,Number(data[k])||0);
+                Object.keys(JX_TREATMENT_RATES).forEach(k=>data['care_'+k]=jxNum(data,'care_'+k));
+                data.clinical=jxCaptureClinical();
+            }
+            return data;
+        }
+        function jxPriceMedical(data){
+            const base=Math.max(0,Number(data.baseFee)||0),lines=[['基本費',base]],
+                transport={'不加價':0,'市區短程轉送':3000,'市區中程轉送':4500,'長途醫療轉送':6000},
+                standby={'不加價':0,'小型活動半天':8000,'小型活動整天':13000,'大型活動每場':30000,'長期駐點每月':120000};
+            const t=transport[data.transportFeeType]||0;if(t)lines.push([data.transportFeeType,t]);
+            if(jxNum(data,'extraKilometers'))lines.push(['超出里程 '+jxNum(data,'extraKilometers')+' 公里',jxNum(data,'extraKilometers')*100]);
+            const stand=standby[data.standbyFeeType]||0;if(stand)lines.push([data.standbyFeeType,stand]);
+            if(jxNum(data,'overtimeHours'))lines.push(['超時 '+jxNum(data,'overtimeHours')+' 小時',jxNum(data,'overtimeHours')*1200]);
+            let emtIncluded=2;
+            [['staffEMT1','EMT-1'],['staffEMT2','EMT-2'],['staffEMTP','EMT-P']].forEach(([key,label])=>{
+                const n=jxNum(data,key),free=Math.min(n,emtIncluded),charge=n-free;emtIncluded-=free;
+                if(charge)lines.push([label+' 額外 '+charge+' 人',charge*JX_ROLE_RATES[key]]);
+            });
+            [['staffNurse','護理師'],['staffDoctor','醫師']].forEach(([key,label])=>{const n=jxNum(data,key);if(n)lines.push([label+' '+n+' 人',n*JX_ROLE_RATES[key]]);});
+            Object.entries(JX_TREATMENT_RATES).forEach(([key,rate])=>{if(jxNum(data,'care_'+key))lines.push([({wheelchair:'輪椅／行動不便患者',oxygen:'醫療氧氣',ecg:'心電圖監測',iv:'靜脈點滴照護',medication:'藥物給予'})[key]+' × '+jxNum(data,'care_'+key),rate*jxNum(data,'care_'+key)]);});
+            if(jxNum(data,'extraManual'))lines.push(['其他加價'+(data.extraNote?'（'+data.extraNote+'）':''),jxNum(data,'extraManual')]);
+            return {lines,total:lines.reduce((a,[,n])=>a+n,0),extraTotal:lines.slice(1).reduce((a,[,n])=>a+n,0)};
+        }
+        function jxSyncReportExtras(){
+            const host=document.getElementById('jx-form-content');if(!host)return;
+            const value=name=>host.querySelector('[name="'+name+'"]')?.value||'';
+            const toggle=(name,visible)=>{
+                const input=host.querySelector('[name="'+name+'"]'),label=input?.closest('label');
+                if(label){label.classList.toggle('hidden',!visible);if(!visible&&input)input.disabled=true;else if(input)input.disabled=false;}
+            };
+            const medical=jxReportMode==='medical',notTransport=medical&&value('transportStatus')==='沒有運送';
+            toggle('noTransportGroup',notTransport);
+            toggle('noTransportReason',notTransport);
+            toggle('noTransportReasonOther',notTransport&&value('noTransportReason')==='其他');
+            toggle('transferredTo',medical&&value('transportStatus')==='轉交其他單位');
+            toggle('sourceOther',value('source')==='其他');
+            toggle('sceneTypeOther',medical&&value('sceneType')==='其他');
+            toggle('sceneRiskOther',medical&&value('sceneRisk')==='其他');
+            toggle('patientSexOther',medical&&value('patientSex')==='其他');
+            toggle('deceasedSexOther',!medical&&value('deceasedSex')==='其他');
+            toggle('deathLocationOther',!medical&&value('deathLocation')==='其他');
+            toggle('customPlan',!medical&&value('plan')==='客製');
+        }
+        function jxRecalculate(){
+            if(jxReportMode!=='medical')return;
+            const data=jxFormData(),result=jxPriceMedical(data),host=document.getElementById('jx-cost-lines');
+            if(host)host.innerHTML=result.lines.map(([name,cost])=>`<div class="flex items-start justify-between gap-2"><span>${jxEsc(name)}</span><span class="tabular-nums shrink-0">${jxMoney(cost)}</span></div>`).join('');
+            const total=document.getElementById('jx-grand-total');if(total)total.textContent=jxMoney(result.total);
+        }
+        function openJXReport(type,id=''){
+            if(!JX_COLLECTIONS[type]||!canAccessJiaxiao()){showToast('沒有嘉蕭集團報告權限','warning');return;}
+            const list=appData[JX_COLLECTIONS[type].pending]||[],record=id?list.find(r=>String(r.docId||r.id)===String(id)):null;
+            if(!isJiaxiaoMember()){showToast('只有嘉蕭成員可以填寫案件報告','warning');return;}
+            if(record&&String(record.authorAccount||'')!==String(currentUser?.account||'')&&!canReviewJX()){showToast('無權修改其他人的報告','warning');return;}
+            if(record&&record.reviewStatus==='pending'&&!canReviewJX()){showToast('待審期間無法修改案件','warning');return;}
+            jxReportMode=type;
+            document.getElementById('jx-report-type').value=type;
+            document.getElementById('jx-report-edit-id').value=record?.docId||'';
+            document.getElementById('jx-modal-title').textContent=type==='medical'?'嘉蕭救護／轉送案件報告':'嘉蕭生命禮儀案件報告';
+            const host=document.getElementById('jx-form-content'),data=record?.details||{};
+            host.innerHTML=type==='medical'?jxBaseMedical(data)+jxMedicalStaff(data)+jxMedicalCosts(data):jxFuneralForm(data);
+            host.insertAdjacentHTML('afterbegin',`<div class="bg-slate-950/80 rounded-xl border border-teal-500/30 p-3 text-sm text-teal-200">案件編號：${jxEsc(record?.id||'提交後自動產生（救護 JXM／禮儀 JXF）')}</div>`);
+            host.querySelectorAll('[name$="Other"]').forEach(el=>{if(data[el.name]!=null)el.value=String(data[el.name]);});
+            // Put the copied EMS condition/treatment panels between dispatch/patient and staff/cost.
+            if(type==='medical'){
+                const staffSection=[...host.querySelectorAll('section')].find(x=>x.textContent.includes('五、出勤狀況'));
+                const tmp=document.createElement('div');tmp.className='space-y-4';
+                // populate standalone clone in the temp element without coupling EMS report handlers
+                const template=document.getElementById('jx-ems-condition-treatment-template');
+                if(template){const frag=template.content.cloneNode(true);frag.querySelectorAll('[data-ems-form-page]').forEach(p=>{p.classList.remove('hidden');p.removeAttribute('data-ems-form-page');});frag.querySelectorAll('[id]').forEach(el=>el.id='jx-'+el.id);frag.querySelectorAll('[name]').forEach(el=>el.name='jx-'+el.name);frag.querySelectorAll('[for]').forEach(el=>el.htmlFor='jx-'+el.htmlFor);frag.querySelectorAll('[data-ems-reveal]').forEach(el=>el.dataset.emsReveal='jx-'+el.dataset.emsReveal);frag.querySelectorAll('[data-ems-triage-detail]').forEach(el=>el.dataset.emsTriageDetail='jx-'+el.dataset.emsTriageDetail);tmp.appendChild(frag);}
+                host.insertBefore(tmp,staffSection);
+                const clinical=data.clinical||{};
+                tmp.querySelectorAll('[id^="jx-ems-"]').forEach(el=>{if(!Object.prototype.hasOwnProperty.call(clinical,el.id))return;if(el.type==='checkbox'||el.type==='radio')el.checked=!!clinical[el.id];else el.value=String(clinical[el.id]||'');});
+                tmp.querySelectorAll('input[type="radio"]').forEach(el=>{el.checked=!!clinical['radio:'+el.name+':'+el.value];});
+                tmp.querySelectorAll('[data-ems-triage-choice],[data-ems-treatment-choice]').forEach(el=>{const g=el.dataset.emsTriageChoice||el.dataset.emsTreatmentChoice;const type=el.dataset.emsTriageChoice?'triage':'treatment';el.checked=!!clinical[type+':'+g+':'+el.value];});
+                tmp.querySelectorAll('[data-ems-body-part]').forEach(el=>{const on=!!clinical['body:'+el.dataset.emsBodyPart];el.setAttribute('aria-pressed',on?'true':'false');el.classList.toggle('is-selected',on);});
+                jxSyncClinicalUI();jxRecalculate();
+            }
+            jxSyncReportExtras();
+            document.getElementById('jx-submit-btn').textContent=record?'重新提交審核':'送交高層審核';
+            document.getElementById('modal-jx-report').classList.remove('hidden');
+        }
+        function closeJXReport(){document.getElementById('modal-jx-report')?.classList.add('hidden');}
+        // JX form is generated at runtime, so one delegated handler covers all fields.
+        document.addEventListener('input',event=>{if(event.target.closest('#jx-report-form'))jxRecalculate();});
+        document.addEventListener('click',event=>{if(!event.target.closest('#jx-report-form'))return;
+            const counter=event.target.closest('[data-jx-counter]');if(counter){const input=document.querySelector('#jx-report-form [name="'+counter.dataset.jxCounter+'"]');if(input){input.value=Math.max(0,Math.min(99,Number(input.value||0)+Number(counter.dataset.jxStep||0)));jxRecalculate();}return;}
+            const body=event.target.closest('[data-ems-body-part]');
+            if(body){const on=body.getAttribute('aria-pressed')==='true';body.setAttribute('aria-pressed',on?'false':'true');body.classList.toggle('is-selected',!on);return;}
+            const tab=event.target.closest('[data-ems-nontrauma-tab]');
+            if(tab){const host=document.getElementById('jx-form-content');host.querySelectorAll('[data-ems-nontrauma-tab]').forEach(el=>el.classList.toggle('is-active',el===tab));host.querySelectorAll('[data-ems-nontrauma-panel]').forEach(el=>el.classList.toggle('hidden',el.dataset.emsNontraumaPanel!==tab.dataset.emsNontraumaTab));}
+            if(event.target?.id==='jx-ems-body-map-clear-btn'){document.getElementById('jx-form-content').querySelectorAll('[data-ems-body-part]').forEach(el=>{el.setAttribute('aria-pressed','false');el.classList.remove('is-selected');});}
+        });
+        document.addEventListener('change',event=>{if(!event.target.closest('#jx-report-form'))return;
+            const el=event.target;
+            if(el.matches('[data-ems-triage-main]')&&el.checked){const other=document.getElementById(el.id==='jx-ems-trauma'?'jx-ems-nontrauma':'jx-ems-trauma');if(other)other.checked=false;}
+            jxSyncReportExtras();jxSyncClinicalUI();jxRecalculate();
+        });
+        function jxUniqueId(type){return JX_COLLECTIONS[type].prefix+'-'+jxNowLocal().slice(0,10).replace(/-/g,'')+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,7).toUpperCase();}
+        async function submitJXReport(event){
+            event.preventDefault();if(jxReportSaving)return;
+            if(!isJiaxiaoMember()||!fm||!db){showToast('尚未登入或無嘉蕭報告提交權限','warning');return;}
+            const form=document.getElementById('jx-report-form');if(!form.reportValidity())return;
+            const type=jxReportMode,config=JX_COLLECTIONS[type],data=jxFormData();
+            if(!config)return;
+            if(type==='medical'){
+                if(data.transportStatus==='沒有運送'&&(!data.noTransportGroup||!data.noTransportReason)){showToast('請選擇未運送分類與原因','warning');return;}
+                if(data.transportStatus==='沒有運送'&&data.noTransportReason==='其他'&&!data.noTransportReasonOther){showToast('請填寫未運送的其他原因','warning');return;}
+                if(data.transportStatus==='轉交其他單位'&&!data.transferredTo){showToast('請填寫轉交單位','warning');return;}
+                if(!['已送醫','轉交其他單位'].includes(data.transportStatus))data.destination='';
+                if(data.transportStatus!=='沒有運送'){data.noTransportGroup='';data.noTransportReason='';data.noTransportReasonOther='';}
+                if(data.source!=='其他')data.sourceOther='';
+                const pricing=jxPriceMedical(data);data.extraTotal=pricing.extraTotal;data.total=pricing.total;
+                data.costLines=pricing.lines.map(([name,amount])=>({name,amount}));
+            }else {
+                if(data.plan==='客製'&&!data.customPlan){showToast('請填寫客製方案內容','warning');return;}
+                if(data.deceasedIdLast5&&!/^[a-z0-9]{5}$/i.test(data.deceasedIdLast5)){showToast('身分證後五碼需恰好五碼','warning');return;}
+                data.estimatedTotal=Math.max(0,Number(data.estimatedTotal)||0);
+            }
+            const id=document.getElementById('jx-report-edit-id').value||jxUniqueId(type),prior=(appData[config.pending]||[]).find(x=>String(x.docId||x.id)===id);
+            if(prior&&prior.authorAccount!==currentUser.account&&!canReviewJX()){showToast('不允許修改別人的案件','warning');return;}
+            jxReportSaving=true;const btn=document.getElementById('jx-submit-btn');if(btn){btn.disabled=true;btn.textContent='送審中……';}
+            try{
+                const now=Date.now();const obj={id,docId:id,reportType:type,details:data,authorAccount:prior?.authorAccount||currentUser.account,authorName:prior?.authorName||currentUser.name||currentUser.account,
+                    timestamp:prior?.timestamp||now,updatedAt:now,reviewStatus:'pending',reviewedAt:null,reviewedBy:'',reviewNote:'',time:formatDateTime(now)};
+                await fm.setDoc(fm.doc(db,config.pending,id),obj);
+                appData[config.pending]=[obj,...(appData[config.pending]||[]).filter(x=>String(x.id||x.docId)!==id)];
+                renderJXReports();closeJXReport();showToast('嘉蕭報告已送交高層審核','success','送件成功');
+            }catch(e){showToast('嘉蕭報告送審失敗：'+e.message,'error','操作失敗');}
+            finally{jxReportSaving=false;if(btn){btn.disabled=false;btn.textContent='送交高層審核';}}
+        }
+        async function loadJXReports(view='history'){
+            if(!canAccessJiaxiao()||!fm||!db)return;
+            const host=document.getElementById('jx-report-status');if(host)host.textContent='正在讀取嘉蕭報告……';
+            const collectionNames=view==='review'?['jiaxiaoMedicalPendingReports','jiaxiaoFuneralPendingReports']:
+                ['jiaxiaoMedicalReports','jiaxiaoFuneralReports','jiaxiaoMedicalPendingReports','jiaxiaoFuneralPendingReports'];
+            const results=await Promise.allSettled(collectionNames.map(async col=>{
+                // 非嘉蕭高層只能按自己的帳號查詢待審報告，避免全量抓取別人的未審資料。
+                const ownOnly=!canReviewJX() && col.includes('PendingReports');
+                const q=ownOnly
+                    ? fm.query(fm.collection(db,col),fm.where('authorAccount','==',currentUser.account),fm.limit(200))
+                    : fm.query(fm.collection(db,col),fm.limit(200));
+                const snap=await fm.getDocs(q);return {col,rows:snap.docs.map(doc=>({docId:doc.id,...doc.data()}))};
+            }));
+            let successes=0,failures=[];
+            results.forEach((result,i)=>{if(result.status==='fulfilled'){appData[result.value.col]=result.value.rows;successes++;}else failures.push(collectionNames[i]+': '+(result.reason?.message||String(result.reason)));});
+            renderJXReports();
+            if(host)host.textContent=`${successes} 個集合已更新${failures.length?'；讀取失敗：'+failures.join('；'):''}`;
+            if(failures.length)showToast('部分嘉蕭資料讀取失敗，請檢查 Firestore Rules','warning','讀取結果');
+        }
+        function jxReportCard(r,type,pending=false){
+            const d=r.details||{},id=String(r.docId||r.id||''),encoded=encodeURIComponent(id),label=type==='medical'?'救護／轉送':'生命禮儀',patient=type==='medical'?d.patientName:d.deceasedName;
+            const status=String(r.reviewStatus||'approved'),badge=status==='pending'?'待審':status==='rejected'?'退件': '已核准';
+            const total=type==='medical'?d.total:d.estimatedTotal;
+            const buttons=[`<button type="button" onclick="viewJXReport('${type}','${encoded}',${pending})" class="rounded-lg bg-slate-700 px-3 py-2 text-sm text-white">檢視</button>`];
+            if(pending&&status==='pending'&&canReviewJX()){
+                buttons.push(`<button type="button" onclick="reviewJXReport('${type}','${encoded}','approve')" class="rounded-lg bg-emerald-700 px-3 py-2 text-sm text-white">審核入庫</button>`);
+                buttons.push(`<button type="button" onclick="reviewJXReport('${type}','${encoded}','reject')" class="rounded-lg bg-rose-800 px-3 py-2 text-sm text-white">退件</button>`);
+            }
+            if(!pending&&canReviewJX())buttons.push(`<button type="button" onclick="deleteJXReport('${type}','${encoded}')" class="rounded-lg bg-rose-900 px-3 py-2 text-sm text-white">刪除正式報告</button>`);
+            if(pending&&status==='rejected'&&String(r.authorAccount||'')===String(currentUser?.account||''))buttons.push(`<button type="button" onclick="openJXReport('${type}',decodeURIComponent('${encoded}'))" class="rounded-lg bg-teal-700 px-3 py-2 text-sm text-white">修改重新送審</button>`);
+            return `<article class="rounded-xl border border-slate-700 bg-slate-950/70 p-4 space-y-2"><div class="flex flex-wrap gap-2 justify-between"><div><span class="font-mono text-xs text-teal-300">${jxEsc(id)}</span><div class="text-sm font-bold text-white">${jxEsc(label)}｜${jxEsc(patient||'未填姓名')}</div></div><div class="text-xs text-slate-400">${jxEsc(badge)}｜${jxEsc(r.time||'')}</div></div><div class="text-xs text-slate-400">填報：${jxEsc(r.authorName||r.authorAccount||'--')}｜費用：${jxMoney(total)}</div>${status==='rejected'?`<p class="text-amber-300 text-sm">退件原因：${jxEsc(r.reviewNote||'未填')}</p>`:''}<div class="flex flex-wrap gap-2">${buttons.join('')}</div></article>`;
+        }
+        function renderJXReports(){
+            const rights=canAccessJiaxiao(),reviewer=canReviewJX();
+            document.getElementById('jx-report-create-actions')?.classList.toggle('hidden',!isJiaxiaoMember());
+            document.querySelectorAll('.jx-member-create-btn').forEach(btn=>btn.classList.toggle('hidden',!isJiaxiaoMember()));
+            document.getElementById('jx-review-section')?.classList.toggle('hidden',!reviewer);
+            // 一般成員可以載入「自己」的待審紀錄；審核按鈕仍只開放高層。
+            if(!rights)return;
+            const pending=Object.entries(JX_COLLECTIONS).flatMap(([type,cols])=>(appData[cols.pending]||[]).filter(r=>r.reviewStatus==='pending').map(r=>({r,type}))).sort((a,b)=>Number(b.r.updatedAt||0)-Number(a.r.updatedAt||0));
+            const history=Object.entries(JX_COLLECTIONS).flatMap(([type,cols])=>[
+                ...(appData[cols.history]||[]).map(r=>({r,type,pending:false})),
+                ...(appData[cols.pending]||[]).filter(r=>r.reviewStatus==='rejected').map(r=>({r,type,pending:true}))
+            ]).sort((a,b)=>Number(b.r.updatedAt||b.r.timestamp||0)-Number(a.r.updatedAt||a.r.timestamp||0));
+            const p=document.getElementById('jx-pending-list');if(p)p.innerHTML=pending.length?pending.map(({r,type})=>jxReportCard(r,type,true)).join(''):'目前沒有待審案件（或尚未按下載入）。';
+            const own=document.getElementById('jx-own-pending-list');
+            if(own){const mine=pending.filter(x=>String(x.r.authorAccount||'')===String(currentUser?.account||''));own.innerHTML=mine.length?mine.map(({r,type})=>jxReportCard(r,type,true)).join(''):'目前沒有送審中的案件（或尚未按下載入）。';}
+            document.getElementById('jx-own-pending-section')?.classList.toggle('hidden',!isJiaxiaoMember());
+            const h=document.getElementById('jx-history-list');if(h)h.innerHTML=history.length?history.map(({r,type,pending})=>jxReportCard(r,type,pending)).join(''):'目前沒有歷史報告（或尚未按下載入）。';
+            for(const type of ['medical','funeral']){
+                const list=document.getElementById('jx-'+type+'-history-list');
+                const rows=history.filter(item=>item.type===type);
+                if(list)list.innerHTML=rows.length?rows.map(({r,type,pending})=>jxReportCard(r,type,pending)).join(''):'目前沒有歷史報告（或尚未按下載入）。';
+            }
+        }
+        async function reviewJXReport(type,encoded,action){
+            if(!canReviewJX()||!fm||!db||!JX_COLLECTIONS[type]){showToast('只有嘉蕭高層／最高管理員可審核','warning');return;}
+            const id=decodeURIComponent(encoded),cfg=JX_COLLECTIONS[type];
+            const r=(appData[cfg.pending]||[]).find(x=>String(x.docId||x.id)===id);
+            if(!r||r.reviewStatus!=='pending')return;
+            if(action==='approve'){
+                if(!(await showConfirm('確認審核通過並移入嘉蕭正式歷史報告？','嘉蕭報告審核','核准入庫')))return;
+                try{
+                    const now=Date.now(),obj={...r,reviewStatus:'approved',reviewedAt:now,reviewedBy:currentUser.account,updatedAt:now};
+                    const batch=fm.writeBatch(db);batch.set(fm.doc(db,cfg.history,id),obj);batch.delete(fm.doc(db,cfg.pending,id));await batch.commit();
+                    appData[cfg.pending]=(appData[cfg.pending]||[]).filter(x=>String(x.docId||x.id)!==id);
+                    appData[cfg.history]=[obj,...(appData[cfg.history]||[]).filter(x=>String(x.docId||x.id)!==id)];
+                    renderJXReports();await logAdminAction('嘉蕭案件審核通過',id);showToast('嘉蕭報告已審核入庫','success');
+                }catch(e){showToast('審核失敗：'+e.message,'error');}
+            }else if(action==='reject'){
+                const reason=prompt('請輸入退件原因（必填）');if(reason===null)return;
+                if(!String(reason).trim()){showToast('退件原因不得為空','warning');return;}
+                try{const now=Date.now();await fm.updateDoc(fm.doc(db,cfg.pending,id),{reviewStatus:'rejected',reviewNote:String(reason).trim().slice(0,1000),reviewedBy:currentUser.account,reviewedAt:now,updatedAt:now});
+                    Object.assign(r,{reviewStatus:'rejected',reviewNote:String(reason).trim().slice(0,1000),reviewedBy:currentUser.account,reviewedAt:now,updatedAt:now});
+                    renderJXReports();await logAdminAction('嘉蕭案件退件',id);showToast('案件已退件，可由填報人修改後重新送審','success');}
+                catch(e){showToast('退件失敗：'+e.message,'error');}
+            }
+        }
+        async function deleteJXReport(type,encoded){
+            if(!canReviewJX()||!fm||!db||!JX_COLLECTIONS[type])return;
+            const id=decodeURIComponent(encoded),cfg=JX_COLLECTIONS[type];
+            const found=(appData[cfg.history]||[]).find(x=>String(x.docId||x.id)===id);
+            if(!found)return;
+            if(!(await showConfirm('確定刪除此筆嘉蕭正式報告？刪除無法復原，請先核對案件編號。','刪除嘉蕭正式報告','確定刪除')))return;
+            try{await fm.deleteDoc(fm.doc(db,cfg.history,id));
+                appData[cfg.history]=(appData[cfg.history]||[]).filter(x=>String(x.docId||x.id)!==id);
+                await logAdminAction('刪除嘉蕭正式報告',id);
+                renderJXReports();showToast('嘉蕭報告已刪除','success');
+            }catch(e){showToast('刪除失敗：'+e.message,'error');}
+        }
+        function viewJXReport(type,encoded,pending=false){
+            if(!canAccessJiaxiao()||!JX_COLLECTIONS[type])return;
+            const id=decodeURIComponent(encoded),cfg=JX_COLLECTIONS[type],
+                r=(appData[pending?cfg.pending:cfg.history]||[]).find(x=>String(x.docId||x.id)===id);
+            if(!r)return;
+            const d=r.details||{},sections=[['案件編號',r.id],['報告類型',type==='medical'?'救護／轉送':'生命禮儀'],['送審狀態',r.reviewStatus],['填報人',r.authorName||r.authorAccount],['時間',r.time]];
+            Object.entries(d).forEach(([key,value])=>{
+                if(key==='clinical')return;
+                if(key==='costLines'&&Array.isArray(value))sections.push(['費用明細',value.map(x=>x.name+': '+jxMoney(x.amount)).join('\n')]);
+                else if(typeof value==='string'||typeof value==='number'||typeof value==='boolean')sections.push([key,value]);
+            });
+            const clinical=d.clinical||{},clinicalList=[];
+            Object.entries(clinical).forEach(([key,val])=>{
+                if(key.startsWith('body:')&&val)clinicalList.push('受傷部位：'+key.slice(5));
+                else if((key.startsWith('triage:')||key.startsWith('treatment:'))&&val)clinicalList.push(key.replace(/^triage:/,'現場狀況／').replace(/^treatment:/,'處置／').replaceAll(':','：'));
+                else if(key.startsWith('jx-ems-')&&!key.endsWith('-state-fields')&&typeof val==='string'&&val.trim())clinicalList.push(key.slice(7)+'：'+val);
+            });
+            if(clinicalList.length)sections.push(['現場狀況及處置項目',clinicalList.join('\n')]);
+            document.getElementById('jx-view-content').innerHTML=sections.map(([label,val])=>`<div class="bg-slate-950 border border-slate-800 rounded-lg p-3"><div class="text-xs text-teal-300 mb-1">${jxEsc(label)}</div><div class="text-sm text-slate-200 whitespace-pre-wrap break-words">${jxEsc(val)}</div></div>`).join('');
+            document.getElementById('modal-jx-view').classList.remove('hidden');
+        }
+
 </script>
 
     <!-- 專生考核：通緝模擬完全獨立於正式通緝發布，不觸發任何雲端寫入或通知 -->
@@ -10781,6 +11446,227 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
         </div>
     </div>
 
+
+    <template id="jx-ems-condition-treatment-template"><section data-ems-form-page="condition" class="hidden rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-4">
+<div hidden id="ems-triage-state-fields"><input type="hidden" id="ems-nontrauma-choices"><input type="hidden" id="ems-trauma-injuries"><input type="hidden" id="ems-trauma-mechanism"><input type="hidden" id="ems-trauma-traffic-role"><input type="hidden" id="ems-trauma-nontraffic"></div>
+    <div><h4 class="font-bold text-rose-300 text-base">三、現場狀況</h4><p class="text-xs text-slate-400 mt-1">先選「非創傷」或「創傷」，再於各分類中勾選症狀、事故類別與必要補充內容。</p></div>
+    <div class="space-y-3"><p class="text-xs text-slate-400">請先勾選勤務類別，選項將依分類展開；同一案件以一個主類別為主。</p><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3 space-y-3">
+<label class="ems-triage-main"><input id="ems-nontrauma" type="checkbox" data-ems-triage-main="nontrauma"><span>非創傷</span><span class="text-xs font-normal text-slate-400">急病／一般疾病</span></label>
+<div data-ems-reveal="ems-nontrauma" class="hidden space-y-4 px-1">
+<div class="flex flex-wrap gap-2"><button class="ems-triage-subtab is-active" type="button" data-ems-nontrauma-tab="acute">急病</button><button class="ems-triage-subtab" type="button" data-ems-nontrauma-tab="general">一般疾病</button></div>
+<div class="ems-triage-panel" data-ems-nontrauma-panel="acute"><p class="text-xs text-slate-400 mb-3">可複選急病症狀</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="呼吸問題（喘／呼吸急促）"><span>呼吸問題（喘／呼吸急促）</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="呼吸道問題（異物哽塞）"><span>呼吸道問題（異物哽塞）</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="昏迷（意識不清）"><span>昏迷（意識不清）</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="胸痛／胸悶"><span>胸痛／胸悶</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="腹痛"><span>腹痛</span></label></div></div>
+<div class="ems-triage-panel hidden" data-ems-nontrauma-panel="general"><p class="text-xs text-slate-400 mb-3">可複選一般疾病症狀</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="頭痛／頭暈／昏倒／昏厥"><span>頭痛／頭暈／昏倒／昏厥</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="發燒"><span>發燒</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="噁心／嘔吐／腹瀉"><span>噁心／嘔吐／腹瀉</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="肢體無力"><span>肢體無力</span></label></div><p class="ems-triage-divider">其他一般疾病／特殊狀況</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="疑似毒藥物中毒"><span>疑似毒藥物中毒</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="疑似一氧化碳中毒"><span>疑似一氧化碳中毒</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="癲癇／抽搐"><span>癲癇／抽搐</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="路倒"><span>路倒</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="行為急症／精神異常"><span>行為急症／精神異常</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="孕婦急產"><span>孕婦急產</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="到院前心肺功能停止"><span>到院前心肺功能停止</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="nontraumaChoices" value="其他"><span>其他</span></label></div></div>
+<label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-nontrauma-other"><span class="text-xs font-bold text-rose-200">其他非創傷原因</span><input id="ems-nontrauma-other" type="text" placeholder="請說明其他非創傷原因" autocomplete="off"></label>
+<label class="block"><span class="block text-xs font-semibold text-slate-300 mb-1.5">非創傷症狀補充說明</span><textarea id="ems-nontrauma-symptom" rows="2" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white" placeholder="可補充主訴、發作時間等"></textarea></label>
+</div></div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3 space-y-3">
+<label class="ems-triage-main"><input id="ems-trauma" type="checkbox" data-ems-triage-main="trauma"><span>創傷</span><span class="text-xs font-normal text-slate-400">部位／受傷機轉／事故類別</span></label>
+<div data-ems-reveal="ems-trauma" class="hidden space-y-4 px-1">
+<div><h5 class="text-sm font-bold text-rose-200 mb-2">一般外傷</h5><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaInjuries" value="頭部外傷"><span>頭部外傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaInjuries" value="胸部外傷"><span>胸部外傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaInjuries" value="腹部外傷"><span>腹部外傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaInjuries" value="背部外傷"><span>背部外傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaInjuries" value="肢體外傷"><span>肢體外傷</span></label></div></div>
+<div><h5 class="text-sm font-bold text-rose-200 mb-2">受傷機轉（請擇一）</h5><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-mechanism-radio" value="交通事故"><span>交通事故</span></label><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-mechanism-radio" value="非交通事故"><span>非交通事故</span></label></div></div>
+<div class="hidden space-y-3" data-ems-trauma-mechanism="交通事故"><h5 class="text-sm font-bold text-rose-200">事故類別（以傷病患身分為主）</h5><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-traffic-radio" value="汽車"><span>汽車</span></label><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-traffic-radio" value="機車"><span>機車</span></label><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-traffic-radio" value="腳踏車"><span>腳踏車</span></label><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-traffic-radio" value="行人"><span>行人</span></label><label class="ems-tablet-choice"><input type="radio" name="ems-trauma-traffic-radio" value="其他"><span>其他</span></label></div><label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-trauma-traffic-other"><span class="text-xs font-bold text-rose-200">其他交通事故類別</span><input id="ems-trauma-traffic-other" type="text" placeholder="請輸入交通事故類別" autocomplete="off"></label></div>
+<div class="hidden space-y-3" data-ems-trauma-mechanism="非交通事故"><h5 class="text-sm font-bold text-rose-200">非交通事故類別（可複選）</h5><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="溺水"><span>溺水</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="摔跌傷"><span>摔跌傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="墜落傷"><span>墜落傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="穿刺傷"><span>穿刺傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="槍傷"><span>槍傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="燒燙傷"><span>燒燙傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="電擊傷"><span>電擊傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="生物咬螫傷"><span>生物咬螫傷</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="到院前心肺功能停止"><span>到院前心肺功能停止</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-triage-choice="traumaNontraffic" value="其他"><span>其他</span></label></div><label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-trauma-fall-height"><span class="text-xs font-bold text-rose-200">墜落高度（樓）</span><input id="ems-trauma-fall-height" type="text" placeholder="例如：3" autocomplete="off"></label><label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-trauma-burn-degree"><span class="text-xs font-bold text-rose-200">燒燙傷程度</span><input id="ems-trauma-burn-degree" type="text" placeholder="例如：2 度" autocomplete="off"></label><label class="ems-triage-detail block hidden" data-ems-triage-detail="ems-trauma-nontraffic-other"><span class="text-xs font-bold text-rose-200">其他非交通事故說明</span><input id="ems-trauma-nontraffic-other" type="text" placeholder="請說明其他事故類型" autocomplete="off"></label></div>
+<label class="block"><span class="block text-xs font-semibold text-slate-300 mb-1.5">創傷症狀補充說明</span><textarea id="ems-trauma-symptom" rows="2" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white" placeholder="例如：傷口位置、出血或意識狀態"></textarea></label>
+</div></div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
+<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-complaint" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(3) 傷病患主訴</label>
+<div data-ems-reveal="ems-complaint" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">感覺哪裡不舒服？</span><input id="ems-complaint-where" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">感覺怎麼的不舒服？</span><input id="ems-complaint-how" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">大約不舒服有多久了？</span><input id="ems-complaint-duration" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">還有其他地方不舒服嗎？</span><input id="ems-complaint-other" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></label><label class="block sm:col-span-2"><span class="block text-xs font-semibold text-slate-300 mb-1.5">評估頸椎是否損傷？</span><input id="ems-cervical" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">創傷患者適用</span></label></div></div>
+
+</div><div class="rounded-xl border border-slate-700/60 bg-slate-950/65 p-3">
+<label class="flex gap-3 items-center cursor-pointer text-sm text-slate-200 font-semibold"><input id="ems-history" type="checkbox" data-ems-option-group="" class="h-4 w-4 rounded accent-rose-500">(4) 傷病患病史</label>
+<div data-ems-reveal="ems-history" class="hidden pt-3 pl-1 border-t border-slate-800 mt-3"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">A. 過去病史</span><input id="ems-past-history" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">未知請填「不清楚」</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">B. 藥物史</span><input id="ems-medication-history" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">未知請填「不清楚」</span></label><label class="block "><span class="block text-xs font-semibold text-slate-300 mb-1.5">C. 過敏史</span><input id="ems-allergy-history" type="text" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"><span class="block text-[11px] text-slate-500 mt-1">未知請填「不清楚」</span></label></div></div>
+
+</div></div>
+    <div class="border-t border-rose-500/20 pt-5 mt-5 space-y-4">
+        <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h5 class="text-sm font-bold text-rose-200">受傷部位標記（Roblox 模型）</h5>
+                <p class="text-xs text-slate-400 mt-1">可直接點擊正面／背面部位，選取後該部位會紅色閃爍；再次點擊可取消。手部與腿部分為上下段。</p>
+            </div>
+            <button type="button" id="ems-body-map-clear-btn" class="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-xs font-semibold text-slate-200 hover:border-rose-400 hover:text-rose-200">清除全部標記</button>
+        </div>
+        <input id="ems-body-map-selection" type="hidden">
+        <div class="ems-body-map-shell">
+            <div class="ems-body-card">
+                <div class="text-center text-xs font-semibold tracking-wide text-slate-300 mb-3">正面</div>
+                <svg viewBox="0 0 240 430" class="ems-body-figure" aria-label="EMS 受傷部位正面圖">
+                    <g data-ems-body-part="前-頭部" role="button" tabindex="0" aria-label="切換受傷部位：前-頭部" aria-pressed="false"><rect class="ems-body-region" x="92" y="12" width="56" height="54" rx="18"></rect></g>
+                    <g data-ems-body-part="前-頸部" role="button" tabindex="0" aria-label="切換受傷部位：前-頸部" aria-pressed="false"><rect class="ems-body-region" x="107" y="66" width="26" height="18" rx="8"></rect></g>
+                    <g data-ems-body-part="前-胸部" role="button" tabindex="0" aria-label="切換受傷部位：前-胸部" aria-pressed="false"><rect class="ems-body-region" x="76" y="84" width="88" height="70" rx="12"></rect></g>
+                    <g data-ems-body-part="前-腹部" role="button" tabindex="0" aria-label="切換受傷部位：前-腹部" aria-pressed="false"><rect class="ems-body-region" x="84" y="154" width="72" height="56" rx="10"></rect></g>
+                    <g data-ems-body-part="前-骨盆" role="button" tabindex="0" aria-label="切換受傷部位：前-骨盆" aria-pressed="false"><rect class="ems-body-region" x="87" y="210" width="66" height="40" rx="10"></rect></g>
+                    <g data-ems-body-part="前-左上臂" role="button" tabindex="0" aria-label="切換受傷部位：前-左上臂" aria-pressed="false"><rect class="ems-body-region" x="36" y="92" width="34" height="72" rx="12"></rect></g>
+                    <g data-ems-body-part="前-左前臂" role="button" tabindex="0" aria-label="切換受傷部位：前-左前臂" aria-pressed="false"><rect class="ems-body-region" x="34" y="165" width="30" height="66" rx="12"></rect></g>
+                    <g data-ems-body-part="前-左手" role="button" tabindex="0" aria-label="切換受傷部位：前-左手" aria-pressed="false"><rect class="ems-body-region" x="32" y="232" width="30" height="32" rx="12"></rect></g>
+                    <g data-ems-body-part="前-右上臂" role="button" tabindex="0" aria-label="切換受傷部位：前-右上臂" aria-pressed="false"><rect class="ems-body-region" x="170" y="92" width="34" height="72" rx="12"></rect></g>
+                    <g data-ems-body-part="前-右前臂" role="button" tabindex="0" aria-label="切換受傷部位：前-右前臂" aria-pressed="false"><rect class="ems-body-region" x="176" y="165" width="30" height="66" rx="12"></rect></g>
+                    <g data-ems-body-part="前-右手" role="button" tabindex="0" aria-label="切換受傷部位：前-右手" aria-pressed="false"><rect class="ems-body-region" x="178" y="232" width="30" height="32" rx="12"></rect></g>
+                    <g data-ems-body-part="前-左大腿" role="button" tabindex="0" aria-label="切換受傷部位：前-左大腿" aria-pressed="false"><rect class="ems-body-region" x="86" y="252" width="28" height="88" rx="12"></rect></g>
+                    <g data-ems-body-part="前-左小腿" role="button" tabindex="0" aria-label="切換受傷部位：前-左小腿" aria-pressed="false"><rect class="ems-body-region" x="86" y="341" width="28" height="62" rx="12"></rect></g>
+                    <g data-ems-body-part="前-左腳" role="button" tabindex="0" aria-label="切換受傷部位：前-左腳" aria-pressed="false"><rect class="ems-body-region" x="80" y="404" width="40" height="18" rx="9"></rect></g>
+                    <g data-ems-body-part="前-右大腿" role="button" tabindex="0" aria-label="切換受傷部位：前-右大腿" aria-pressed="false"><rect class="ems-body-region" x="126" y="252" width="28" height="88" rx="12"></rect></g>
+                    <g data-ems-body-part="前-右小腿" role="button" tabindex="0" aria-label="切換受傷部位：前-右小腿" aria-pressed="false"><rect class="ems-body-region" x="126" y="341" width="28" height="62" rx="12"></rect></g>
+                    <g data-ems-body-part="前-右腳" role="button" tabindex="0" aria-label="切換受傷部位：前-右腳" aria-pressed="false"><rect class="ems-body-region" x="120" y="404" width="40" height="18" rx="9"></rect></g>
+                </svg>
+            </div>
+            <div class="ems-body-card">
+                <div class="text-center text-xs font-semibold tracking-wide text-slate-300 mb-3">背面</div>
+                <svg viewBox="0 0 240 430" class="ems-body-figure" aria-label="EMS 受傷部位背面圖">
+                    <g data-ems-body-part="後-頭部" role="button" tabindex="0" aria-label="切換受傷部位：後-頭部" aria-pressed="false"><rect class="ems-body-region" x="92" y="12" width="56" height="54" rx="18"></rect></g>
+                    <g data-ems-body-part="後-頸部" role="button" tabindex="0" aria-label="切換受傷部位：後-頸部" aria-pressed="false"><rect class="ems-body-region" x="107" y="66" width="26" height="18" rx="8"></rect></g>
+                    <g data-ems-body-part="後-上背" role="button" tabindex="0" aria-label="切換受傷部位：後-上背" aria-pressed="false"><rect class="ems-body-region" x="76" y="84" width="88" height="68" rx="12"></rect></g>
+                    <g data-ems-body-part="後-下背" role="button" tabindex="0" aria-label="切換受傷部位：後-下背" aria-pressed="false"><rect class="ems-body-region" x="84" y="152" width="72" height="54" rx="10"></rect></g>
+                    <g data-ems-body-part="後-臀部" role="button" tabindex="0" aria-label="切換受傷部位：後-臀部" aria-pressed="false"><rect class="ems-body-region" x="87" y="206" width="66" height="44" rx="10"></rect></g>
+                    <g data-ems-body-part="後-左上臂" role="button" tabindex="0" aria-label="切換受傷部位：後-左上臂" aria-pressed="false"><rect class="ems-body-region" x="36" y="92" width="34" height="72" rx="12"></rect></g>
+                    <g data-ems-body-part="後-左前臂" role="button" tabindex="0" aria-label="切換受傷部位：後-左前臂" aria-pressed="false"><rect class="ems-body-region" x="34" y="165" width="30" height="66" rx="12"></rect></g>
+                    <g data-ems-body-part="後-左手" role="button" tabindex="0" aria-label="切換受傷部位：後-左手" aria-pressed="false"><rect class="ems-body-region" x="32" y="232" width="30" height="32" rx="12"></rect></g>
+                    <g data-ems-body-part="後-右上臂" role="button" tabindex="0" aria-label="切換受傷部位：後-右上臂" aria-pressed="false"><rect class="ems-body-region" x="170" y="92" width="34" height="72" rx="12"></rect></g>
+                    <g data-ems-body-part="後-右前臂" role="button" tabindex="0" aria-label="切換受傷部位：後-右前臂" aria-pressed="false"><rect class="ems-body-region" x="176" y="165" width="30" height="66" rx="12"></rect></g>
+                    <g data-ems-body-part="後-右手" role="button" tabindex="0" aria-label="切換受傷部位：後-右手" aria-pressed="false"><rect class="ems-body-region" x="178" y="232" width="30" height="32" rx="12"></rect></g>
+                    <g data-ems-body-part="後-左大腿" role="button" tabindex="0" aria-label="切換受傷部位：後-左大腿" aria-pressed="false"><rect class="ems-body-region" x="86" y="252" width="28" height="88" rx="12"></rect></g>
+                    <g data-ems-body-part="後-左小腿" role="button" tabindex="0" aria-label="切換受傷部位：後-左小腿" aria-pressed="false"><rect class="ems-body-region" x="86" y="341" width="28" height="62" rx="12"></rect></g>
+                    <g data-ems-body-part="後-左腳" role="button" tabindex="0" aria-label="切換受傷部位：後-左腳" aria-pressed="false"><rect class="ems-body-region" x="80" y="404" width="40" height="18" rx="9"></rect></g>
+                    <g data-ems-body-part="後-右大腿" role="button" tabindex="0" aria-label="切換受傷部位：後-右大腿" aria-pressed="false"><rect class="ems-body-region" x="126" y="252" width="28" height="88" rx="12"></rect></g>
+                    <g data-ems-body-part="後-右小腿" role="button" tabindex="0" aria-label="切換受傷部位：後-右小腿" aria-pressed="false"><rect class="ems-body-region" x="126" y="341" width="28" height="62" rx="12"></rect></g>
+                    <g data-ems-body-part="後-右腳" role="button" tabindex="0" aria-label="切換受傷部位：後-右腳" aria-pressed="false"><rect class="ems-body-region" x="120" y="404" width="40" height="18" rx="9"></rect></g>
+                </svg>
+            </div>
+        </div>
+        <div class="rounded-2xl border border-slate-700/60 bg-slate-950/65 p-4 space-y-3">
+            <div id="ems-body-map-summary" class="text-sm font-semibold text-slate-200">尚未選取受傷部位</div>
+            <div id="ems-body-map-chips" class="flex flex-wrap gap-2"></div>
+            <label class="block">
+                <span class="block text-xs font-semibold text-slate-300 mb-1.5">受傷部位尺寸／補充說明</span>
+                <textarea id="ems-body-map-note" rows="3" placeholder="例如：左前臂擦傷約 6x2 cm、前胸紅腫 4x4 cm。" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40"></textarea>
+            </label>
+        </div>
+    </div>
+    </section><section data-ems-form-page="treatment" class="hidden rounded-2xl border border-slate-700/65 bg-slate-900/75 p-4 sm:p-5 space-y-5">
+    <div><h4 class="font-bold text-rose-300 text-base">四、處置項目</h4><p class="text-xs text-slate-400 mt-1">依 EMS 平板分七類記錄，所有選項可直接點按。選擇「其他」、CPR、電擊去顫或特定藥物時，會展開相應的補充回答框。</p></div>
+    <div hidden id="ems-treatment-state-fields">
+        <input type="hidden" id="ems-airway-treatment">
+        <input type="hidden" id="ems-trauma-care">
+        <input type="hidden" id="ems-transport-method">
+        <input type="hidden" id="ems-transport-position">
+        <input type="hidden" id="ems-cpr-actions">
+        <input type="hidden" id="ems-medication-actions">
+        <input type="hidden" id="ems-other-care">
+    </div>
+        <section class="ems-treatment-group rounded-2xl border border-slate-700/65 bg-slate-950/60 p-4 space-y-3" aria-labelledby="ems-treatment-heading-airwayTreatment">
+            <div class="flex flex-wrap items-baseline gap-2"><h5 id="ems-treatment-heading-airwayTreatment" class="font-bold text-rose-200 text-sm sm:text-base">基本呼吸道／呼吸處置</h5><span class="text-[11px] text-slate-500">（可複選）</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="口咽呼吸道"><span>口咽呼吸道</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="鼻咽呼吸道"><span>鼻咽呼吸道</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="抽吸"><span>抽吸</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="哈姆立克法"><span>哈姆立克法</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="鼻導管"><span>鼻導管</span></label><label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="簡單面罩"><span>簡單面罩</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="非再呼吸型面罩"><span>非再呼吸型面罩</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="BVM（正壓輔助呼吸）"><span>BVM（正壓輔助呼吸）</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="airwayTreatment" value="其他"><span>其他</span></label>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="airwayTreatment" data-ems-treatment-trigger="其他">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">其他呼吸道／呼吸處置說明</span>
+                <input id="ems-airway-other" type="text" maxlength="250" placeholder="請說明其他處置項目" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label></div>
+        </section>
+        <section class="ems-treatment-group rounded-2xl border border-slate-700/65 bg-slate-950/60 p-4 space-y-3" aria-labelledby="ems-treatment-heading-traumaCare">
+            <div class="flex flex-wrap items-baseline gap-2"><h5 id="ems-treatment-heading-traumaCare" class="font-bold text-rose-200 text-sm sm:text-base">創傷處置</h5><span class="text-[11px] text-slate-500">（可複選）</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="traumaCare" value="頸圈"><span>頸圈</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="traumaCare" value="清洗傷口"><span>清洗傷口</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="traumaCare" value="止血、包紮"><span>止血、包紮</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="traumaCare" value="止血帶"><span>止血帶</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="traumaCare" value="骨折固定"><span>骨折固定</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="traumaCare" value="長背板固定"><span>長背板固定</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="traumaCare" value="其他"><span>其他</span></label>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="traumaCare" data-ems-treatment-trigger="其他">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">其他創傷處置說明</span>
+                <input id="ems-trauma-care-other" type="text" maxlength="250" placeholder="請說明其他創傷處置" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label></div>
+        </section>
+        <section class="ems-treatment-group rounded-2xl border border-slate-700/65 bg-slate-950/60 p-4 space-y-3" aria-labelledby="ems-treatment-heading-transportMethod">
+            <div class="flex flex-wrap items-baseline gap-2"><h5 id="ems-treatment-heading-transportMethod" class="font-bold text-rose-200 text-sm sm:text-base">搬運</h5><span class="text-[11px] text-slate-500">（可複選）</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="transportMethod" value="自行上車"><span>自行上車</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="transportMethod" value="以適當方式搬運"><span>以適當方式搬運</span></label>
+            </div>
+            
+        </section>
+        <section class="ems-treatment-group rounded-2xl border border-slate-700/65 bg-slate-950/60 p-4 space-y-3" aria-labelledby="ems-treatment-heading-transportPosition">
+            <div class="flex flex-wrap items-baseline gap-2"><h5 id="ems-treatment-heading-transportPosition" class="font-bold text-rose-200 text-sm sm:text-base">特定後送姿勢</h5><span class="text-[11px] text-slate-500">（側躺請依實際姿勢勾選左側或右側）</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="transportPosition" value="平躺"><span>平躺</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="transportPosition" value="半坐臥"><span>半坐臥</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="transportPosition" value="左側躺"><span>左側躺</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="transportPosition" value="右側躺"><span>右側躺</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="transportPosition" value="下肢抬高"><span>下肢抬高</span></label>
+            </div>
+            
+        </section>
+        <section class="ems-treatment-group rounded-2xl border border-slate-700/65 bg-slate-950/60 p-4 space-y-3" aria-labelledby="ems-treatment-heading-cprActions">
+            <div class="flex flex-wrap items-baseline gap-2"><h5 id="ems-treatment-heading-cprActions" class="font-bold text-rose-200 text-sm sm:text-base">心肺復甦術</h5><span class="text-[11px] text-slate-500">（可複選；有次數、部位或其他項目時會出現填寫欄）</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="cprActions" value="自動心肺復甦機（MCPR）"><span>自動心肺復甦機（MCPR）</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="cprActions" value="CPR"><span>CPR</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="cprActions" value="使用AED"><span>使用AED</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="cprActions" value="電擊去顫"><span>電擊去顫</span></label>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="cprActions" data-ems-treatment-trigger="CPR">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">CPR 施行時間（分鐘）</span>
+                <input id="ems-cpr-minutes" type="number" min="0" max="9999" step="1" inputmode="numeric" placeholder="請輸入分鐘數" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label>            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="cprActions" data-ems-treatment-trigger="電擊去顫">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">電擊去顫次數（次）</span>
+                <input id="ems-defib-shocks" type="number" min="0" max="9999" step="1" inputmode="numeric" placeholder="請輸入電擊次數" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label></div>
+        </section>
+        <section class="ems-treatment-group rounded-2xl border border-slate-700/65 bg-slate-950/60 p-4 space-y-3" aria-labelledby="ems-treatment-heading-medicationActions">
+            <div class="flex flex-wrap items-baseline gap-2"><h5 id="ems-treatment-heading-medicationActions" class="font-bold text-rose-200 text-sm sm:text-base">藥物處置</h5><span class="text-[11px] text-slate-500">（可複選；有次數、部位或其他項目時會出現填寫欄）</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="medicationActions" value="靜脈輸液"><span>靜脈輸液</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="medicationActions" value="給予口服葡萄糖液／粉"><span>給予口服葡萄糖液／粉</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="medicationActions" value="協助使用Aspirin"><span>協助使用Aspirin</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="medicationActions" value="協助使用NTG含片"><span>協助使用NTG含片</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="medicationActions" value="協助使用支氣管擴張劑"><span>協助使用支氣管擴張劑</span></label>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="medicationActions" data-ems-treatment-trigger="靜脈輸液">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">靜脈輸液部位</span>
+                <input id="ems-iv-site" type="text" maxlength="250" placeholder="例如：左手背" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label>            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="medicationActions" data-ems-treatment-trigger="靜脈輸液">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">輸液名稱／種類</span>
+                <input id="ems-iv-fluid" type="text" maxlength="250" placeholder="例如：生理食鹽水" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label>            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="medicationActions" data-ems-treatment-trigger="協助使用NTG含片">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">協助使用 NTG 含片數量（片）</span>
+                <input id="ems-ntg-tablets" type="number" min="0" max="9999" step="1" inputmode="numeric" placeholder="請輸入片數" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label>            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="medicationActions" data-ems-treatment-trigger="協助使用支氣管擴張劑">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">協助使用支氣管擴張劑次數（次）</span>
+                <input id="ems-bronchodilator-times" type="number" min="0" max="9999" step="1" inputmode="numeric" placeholder="請輸入次數" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label></div>
+        </section>
+        <section class="ems-treatment-group rounded-2xl border border-slate-700/65 bg-slate-950/60 p-4 space-y-3" aria-labelledby="ems-treatment-heading-otherCare">
+            <div class="flex flex-wrap items-baseline gap-2"><h5 id="ems-treatment-heading-otherCare" class="font-bold text-rose-200 text-sm sm:text-base">其他處置</h5><span class="text-[11px] text-slate-500">（可複選）</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="otherCare" value="保暖"><span>保暖</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="otherCare" value="心理支持"><span>心理支持</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="otherCare" value="急產接生"><span>急產接生</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="otherCare" value="約束帶"><span>約束帶</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="otherCare" value="灌洗眼睛"><span>灌洗眼睛</span></label>
+                <label class="ems-tablet-choice"><input type="checkbox" data-ems-treatment-choice="otherCare" value="其他"><span>其他</span></label>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">            <label class="ems-treatment-detail hidden" data-ems-treatment-detail="otherCare" data-ems-treatment-trigger="其他">
+                <span class="block text-xs font-semibold text-rose-200 mb-1.5">其他處置說明</span>
+                <input id="ems-other-care-other" type="text" maxlength="250" placeholder="請說明其他處置" disabled class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400/40">
+            </label></div>
+        </section>
+    <p class="text-xs text-slate-500">請依 RP 勤務實際執行內容勾選；未施行的處置無須勾選。</p>
+</section></template>
+    <!-- 嘉蕭集團：救護／生命禮儀報告獨立表單 -->
+    <div id="modal-jx-report" class="fixed inset-0 z-[65] bg-slate-950/85 hidden flex items-center justify-center p-2 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="jx-modal-title">
+      <div class="bg-slate-900 border border-teal-500/30 rounded-3xl w-full max-w-5xl max-h-[95dvh] flex flex-col overflow-hidden shadow-2xl">
+        <div class="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 shrink-0"><div><h3 id="jx-modal-title" class="text-xl font-bold text-white">嘉蕭集團案件報告</h3><p id="jx-modal-subtitle" class="text-xs text-slate-400">提交後進入高層審核</p></div><button type="button" onclick="closeJXReport()" class="text-slate-300 p-3" aria-label="關閉表單"><i class="fa-solid fa-xmark text-lg"></i></button></div>
+        <div id="jx-report-form-scroll" class="overflow-y-auto p-4 sm:p-6 space-y-5 overscroll-contain"><form id="jx-report-form" class="space-y-5" autocomplete="off" onsubmit="submitJXReport(event)"><input type="hidden" name="reportType" id="jx-report-type"><input type="hidden" id="jx-report-edit-id"><div id="jx-form-content" class="space-y-5"></div>
+          <div class="sticky bottom-0 z-10 bg-slate-900/95 border-t border-slate-700 pt-3 pb-1 flex flex-col sm:flex-row gap-2 justify-end"><button type="button" onclick="closeJXReport()" class="rounded-xl bg-slate-700 text-white px-6 py-3 text-sm">取消</button><button type="submit" id="jx-submit-btn" class="rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold px-6 py-3 text-sm">送交高層審核</button></div>
+        </form></div>
+      </div>
+    </div>
+    <div id="modal-jx-view" class="fixed inset-0 z-[65] bg-slate-950/85 hidden flex items-center justify-center p-3 sm:p-5" role="dialog" aria-modal="true" aria-label="嘉蕭報告明細"><div class="bg-slate-900 border border-teal-500/25 rounded-3xl w-full max-w-3xl max-h-[93dvh] flex flex-col overflow-hidden"><div class="p-5 border-b border-slate-800 flex items-center justify-between"><h3 class="font-bold text-white">嘉蕭報告明細</h3><button onclick="document.getElementById('modal-jx-view').classList.add('hidden')" class="p-2 text-white">✕</button></div><div id="jx-view-content" class="p-5 overflow-y-auto space-y-4"></div></div></div>
     <div id="modal-academy-code-management" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl"><div class="flex items-center justify-between p-5 border-b border-slate-800"><div><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-list-check text-indigo-400 mr-2"></i>專生考核代碼管理</h3><p class="text-xs text-slate-500 mt-1">管理層可查看與刪除雲端考核代碼。</p></div><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-academy-code-management"><i class="fa-solid fa-xmark text-lg"></i></button></div><div id="management-academy-code-list" class="p-5 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto max-h-[75vh]"></div></div></div>
 
     <div id="modal-admin-clock" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl"><div class="flex justify-between items-center"><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-business-time text-purple-400 mr-2"></i>管理中心打卡</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-admin-clock"><i class="fa-solid fa-xmark"></i></button></div><div class="bg-slate-950 border border-slate-800 rounded-2xl p-4"><div class="text-xs text-slate-500">目前管理員</div><div id="admin-clock-user-preview" class="mt-1 font-bold text-white">--</div></div><div><label class="block text-xs font-semibold text-slate-400 mb-2">打卡狀態</label><select id="admin-clock-status" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-white"><option value="上班">上班</option><option value="下班">下班</option></select></div><div><label class="block text-xs font-semibold text-slate-400 mb-2">備註（可選）</label><textarea id="admin-clock-remark" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white" placeholder="例如：晚間值勤、臨時加班"></textarea></div><button id="submit-admin-clock-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white py-3 rounded-xl font-semibold">確認打卡</button></div></div>
