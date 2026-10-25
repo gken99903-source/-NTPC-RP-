@@ -1024,28 +1024,26 @@ input, textarea, select, button { accent-color:#38bdf8; }
 #modal-report .ntpc-police-report-shell * {scroll-behavior:auto;}
 
 
-/* V83：警務頂部分類按鈕統一透明底，保留細框與選取提示 */
-#btn-police-reports, #btn-police-review, #ntpc-ticket-nav,
-#btn-police-punishments, #btn-police-clocks, #btn-police-hours,
-#btn-police-citizen, #btn-police-vehicles, #btn-police-wanted {
+/* V84：只有交通罰單入口移除常駐青色背景；選取時仍為藍底 */
+#ntpc-ticket-nav:not(.ntpc-ticket-selected) {
     background: transparent !important;
     background-color: transparent !important;
     background-image: none !important;
+    color: #94a3b8 !important;
+    border: 1px solid rgba(51,65,85,.8) !important;
     box-shadow: none !important;
-    border: 1px solid rgba(100, 116, 139, .32) !important;
 }
-#btn-police-reports:hover, #btn-police-review:hover, #ntpc-ticket-nav:hover,
-#btn-police-punishments:hover, #btn-police-clocks:hover, #btn-police-hours:hover,
-#btn-police-citizen:hover, #btn-police-vehicles:hover, #btn-police-wanted:hover {
+#ntpc-ticket-nav:not(.ntpc-ticket-selected):hover {
     background: transparent !important;
-    border-color: rgba(125, 211, 252, .58) !important;
-    color: #e2e8f0 !important;
+    border-color: rgba(100,116,139,.8) !important;
+    color: #fff !important;
 }
-/* JS 切換分類時會為選中的普通按鈕加入 bg-blue-600，改以線條辨識 */
-.police-sub-btn.bg-blue-600 {
-    color: #7dd3fc !important;
-    border-color: rgba(56, 189, 248, .8) !important;
-    box-shadow: inset 0 -2px 0 #38bdf8 !important;
+#ntpc-ticket-nav.ntpc-ticket-selected {
+    background: #2563eb !important;
+    background-image: none !important;
+    color: #fff !important;
+    border: 1px solid #2563eb !important;
+    box-shadow: none !important;
 }
 
 </style>
@@ -5585,6 +5583,8 @@ async function republishAnnouncement(id) {
                 const btn = document.getElementById(`btn-police-${s}`);
                 if (btn) btn.className = "police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap";
             });
+            // 罰單按鈕維持原有 id，隨分類同步藍色選取狀態。
+            document.getElementById('ntpc-ticket-nav')?.classList.toggle('ntpc-ticket-selected', sub === 'tickets');
             const target = document.getElementById(`police-sub-${sub}`);
             if (target) target.classList.remove('hidden');
             const activeBtn = document.getElementById(`btn-police-${sub}`);
