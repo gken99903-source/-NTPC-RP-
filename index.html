@@ -812,6 +812,214 @@ __                                                                              
         #police-review-list .font-mono, #fire-review-list .font-mono,
         #police-reports-list .font-mono, #fire-reports-list .font-mono,
         #tab-notifications .font-mono { overflow-wrap: anywhere; word-break: break-all; }
+
+/* V71 — NTPC RP / POLICE REPORT + GLOBAL VISUAL REFINEMENT */
+:root {
+  --ntpc-panel: #0b1427; --ntpc-border: rgba(118,145,186,.22);
+  --ntpc-cyan: #36dbef; --ntpc-focus: #61a8ff;
+}
+/* Important: the visible chevron is the *actual clickable picker indicator*, not a background overlay. */
+input:is([type="date"],[type="time"],[type="datetime-local"],[type="month"],[type="week"]) {
+  color-scheme: dark;
+  min-height: 2.8rem;
+  background-image: none !important;
+  padding-right: .85rem !important;
+}
+input:is([type="date"],[type="time"],[type="datetime-local"],[type="month"],[type="week"])::-webkit-calendar-picker-indicator {
+  opacity: 1 !important;
+  display: block;
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  box-sizing: content-box;
+  padding: 6px;
+  margin: 0 1px 0 8px;
+  border: 1px solid rgba(125,160,205,.32);
+  border-radius: 11px;
+  background-color: rgba(48,74,109,.32);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 18px 18px;
+  filter: none !important;
+  transition: background-color .18s, border-color .18s;
+}
+input:is([type="date"],[type="time"],[type="datetime-local"],[type="month"],[type="week"])::-webkit-calendar-picker-indicator:hover {
+  background-color: rgba(64,113,173,.42);
+  border-color: rgba(103,195,241,.65);
+}
+/* Restrained system-wide surface and field polish; no DOM restructuring or event changes. */
+body { letter-spacing: .006em; }
+:where(main,section,article,aside) :where(.bg-slate-900,.bg-slate-800) {
+  border-color: var(--ntpc-border);
+}
+:where(main,section,article,aside) :where(.rounded-2xl,.rounded-3xl):is(.bg-slate-900,.bg-slate-800) {
+  box-shadow: 0 14px 38px rgba(0,0,0,.14), inset 0 1px 0 rgba(186,221,255,.035);
+}
+:where(main,section,article,aside) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,select) {
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+:where(main,section,article,aside) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,select):focus {
+  border-color: rgba(85,189,244,.73) !important;
+  box-shadow: 0 0 0 3px rgba(41,151,222,.13);
+  outline: none;
+}
+:where(main,section,article,aside) button:not(:disabled) { transition: transform .16s ease,filter .16s ease,box-shadow .16s ease; }
+@media (hover:hover) and (prefers-reduced-motion:no-preference) {
+  :where(main,section,article,aside) button:not(:disabled):hover { filter: brightness(1.095); }
+  :where(main,section,article,aside) button:not(:disabled):active { transform: translateY(1px); }
+}
+/* Police-specific panels: clear cyan section identity, subtle surface separation. */
+#police-content-container :where(.rounded-2xl,.rounded-3xl),
+#police-reports-list > *, #police-review-list > * {
+  border-color: rgba(73,137,196,.3);
+}
+#police-content-container :where(h2,h3,h4) { letter-spacing: .018em; }
+#police-content-container :where(h2,h3) i { filter: drop-shadow(0 0 7px rgba(56,189,248,.19)); }
+#police-content-container :where(input,textarea,select) { background-color: rgba(2,10,28,.82); }
+#police-content-container :where(button.bg-blue-600,button.bg-indigo-600) {
+  box-shadow: 0 6px 19px rgba(37,99,235,.15), inset 0 1px rgba(255,255,255,.12);
+}
+/* Dialogs and responsive vertical spacing */
+[role="dialog"] :where(.bg-slate-900,.bg-slate-800) { border-color: rgba(110,146,194,.3); }
+[role="dialog"] :where(h2,h3) { letter-spacing: .02em; }
+@media(max-width:640px) {
+  :where(main,section,article,aside) :where(.rounded-2xl,.rounded-3xl) { border-radius: 16px; }
+  input:is([type="date"],[type="time"],[type="datetime-local"])::-webkit-calendar-picker-indicator { margin-left: 3px; }
+}
+@media(prefers-reduced-motion:reduce) { :where(main,section,article,aside) button { transition:none!important; } }
+
+/* V72 · NTPC RP / Unified technology design system · visual-only */
+:root { --ntpc-ui-accent:#48c8f3; --ntpc-ui-accent2:#6876f8; --ntpc-ui-surface:#0c1830; --ntpc-ui-border:rgba(111,164,209,.23); }
+body { background-color:#050b1a; background-image:radial-gradient(ellipse 72% 46% at 9% -9%,rgba(19,99,187,.15),transparent 75%),radial-gradient(ellipse 58% 42% at 98% 4%,rgba(73,61,154,.12),transparent 74%); }
+/* Cards: keep original semantic background but build a consistent premium stroke / depth */
+:where(main,section,article,aside) :is(.bg-slate-900,.bg-slate-800).rounded-2xl,
+:where(main,section,article,aside) :is(.bg-slate-900,.bg-slate-800).rounded-3xl {
+ border:1px solid var(--ntpc-ui-border); box-shadow:0 17px 44px rgba(0,5,18,.2), inset 0 1px rgba(190,230,255,.045);
+ background-image:linear-gradient(155deg,rgba(33,64,108,.09),transparent 48%); }
+:where(main,section,article,aside) :is(.bg-slate-900,.bg-slate-800).rounded-2xl:hover,
+:where(main,section,article,aside) :is(.bg-slate-900,.bg-slate-800).rounded-3xl:hover { border-color:rgba(102,181,237,.34); }
+/* Inputs, search, forms */
+:where(main,section,article,aside,[role="dialog"]) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,select) {
+ border-color:rgba(96,133,181,.3); background-color:rgba(3,11,28,.86); color:#e9f3ff; transition:border-color .2s,box-shadow .2s,background-color .2s; }
+:where(main,section,article,aside,[role="dialog"]) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,select):not(:disabled):not([readonly]):focus {
+ border-color:rgba(69,190,247,.83)!important; box-shadow:0 0 0 3px rgba(29,160,225,.14),0 5px 20px rgba(0,10,32,.21); outline:none; }
+:where(main,section,article,aside,[role="dialog"]) input::placeholder,
+:where(main,section,article,aside,[role="dialog"]) textarea::placeholder {color:#7184a3;opacity:1;}
+:where(main,section,article,aside,[role="dialog"]) :is(input,textarea,select):disabled {opacity:.55;}
+:where(main,section,article,aside,[role="dialog"]) :is(input,textarea,select)[readonly] {background-color:rgba(18,35,59,.55);color:#9eb4cb;}
+/* Buttons, no layout changes */
+:where(main,section,article,aside,[role="dialog"]) button {transition:background-color .18s,border-color .18s,filter .18s,box-shadow .18s,transform .18s;}
+:where(main,section,article,aside,[role="dialog"]) button:is(.bg-blue-600,.bg-indigo-600,.bg-cyan-600,.bg-teal-600) {box-shadow:0 7px 22px rgba(43,108,233,.17),inset 0 1px rgba(255,255,255,.16);}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+ :where(main,section,article,aside,[role="dialog"]) button:not(:disabled):hover{filter:brightness(1.12);}
+ :where(main,section,article,aside,[role="dialog"]) button:not(:disabled):active{transform:translateY(1px);}}
+/* Navigational chips and data displays */
+:where(main,section,article,aside) :is(.police-sub-btn,.fire-sub-btn,.admin-sub-btn) {border:1px solid rgba(130,168,217,.17);border-radius:12px;}
+:where(main,section,article,aside) :is(.police-sub-btn,.fire-sub-btn,.admin-sub-btn):focus-visible {outline:2px solid #67d3f6;outline-offset:3px;}
+#police-reports-list > *, #police-review-list > * {border:1px solid rgba(76,152,222,.27);box-shadow:0 10px 28px rgba(0,8,26,.2);}
+#police-reports-list > *:hover,#police-review-list > *:hover{border-color:rgba(72,199,243,.48);}
+/* Modal surface, edge glow, consistent heading */
+[id^="modal-"] > .bg-slate-900,[id^="modal-"] > .mobile-modal-scroll,[id^="modal-"] > div.bg-slate-900 {
+ border:1px solid rgba(98,172,229,.34);box-shadow:0 26px 90px rgba(0,3,15,.54),inset 0 1px rgba(196,238,255,.07);}
+[id^="modal-"] :is(h2,h3){letter-spacing:.012em;}
+[id^="modal-"] .close-modal-btn{border-radius:12px;}
+[id^="modal-"] .close-modal-btn:hover{background-color:rgba(96,165,250,.11);}
+/* Police report: true information hierarchy and larger, comfortable writing surface */
+#modal-report .ntpc-police-report-shell{max-height:min(94dvh,1000px);overflow-y:auto;scrollbar-color:#385574 #0a1428;
+ background:linear-gradient(160deg,rgba(20,40,73,.97),rgba(8,17,36,.98) 39%,rgba(10,21,42,.98));}
+#modal-report .ntpc-police-report-shell > .flex:first-child{position:sticky;top:-1.25rem;z-index:3;padding:12px 0 16px;margin-top:-2px;background:linear-gradient(180deg,#10213c 78%,rgba(16,33,60,0));border-bottom:1px solid rgba(72,158,215,.18);}
+#modal-report #report-modal-title{font-size:1.25rem;letter-spacing:.015em;}
+#modal-report .ntpc-police-form-content{display:flex;flex-direction:column;gap:1.05rem;}
+#modal-report .ntpc-police-form-content > :is(.grid,#police-suspect-fields,#police-report-extra-fields,#police-violation-fields){margin-top:0;}
+#modal-report .ntpc-form-section-title{display:flex;gap:12px;align-items:center;border-bottom:1px solid rgba(103,163,219,.24);padding:20px 2px 11px;margin:2px 0 0;}
+#modal-report .ntpc-form-section-title:first-child{padding-top:3px;}
+#modal-report .ntpc-section-index{display:grid;place-items:center;flex-shrink:0;width:36px;height:36px;border:1px solid rgba(76,209,246,.42);border-radius:11px;background:linear-gradient(160deg,rgba(31,127,186,.28),rgba(26,91,145,.12));color:#7ee3fa;font:700 13px ui-monospace,monospace;box-shadow:inset 0 1px rgba(255,255,255,.05);}
+#modal-report .ntpc-section-index-amber{color:#fcd38b;border-color:rgba(245,158,11,.45);background:rgba(137,89,16,.16);}
+#modal-report .ntpc-form-section-title strong{display:block;color:#e6f6ff;font-size:15px;letter-spacing:.045em;}
+#modal-report .ntpc-form-section-title small{display:block;font-size:10px;letter-spacing:.075em;color:#7c99b8;margin-top:3px;}
+#modal-report :is(#police-report-extra-fields,#police-violation-fields){padding:20px;border-radius:17px;}
+#modal-report #police-report-extra-fields{background:linear-gradient(140deg,rgba(10,31,57,.85),rgba(5,15,35,.92));border-color:rgba(45,156,223,.25);}
+#modal-report #police-violation-fields{background:linear-gradient(145deg,rgba(47,31,23,.36),rgba(5,15,35,.91));border-color:rgba(218,166,88,.25);}
+#modal-report #report-title {min-height:52px;font-size:15px;font-weight:600;}
+#modal-report #report-content{min-height:138px;line-height:1.8;resize:vertical;}
+#modal-report #submit-report-btn{min-height:52px;font-weight:700;letter-spacing:.04em;background-image:linear-gradient(110deg,#1555c7,#307aea 55%,#2971d9);box-shadow:0 10px 27px rgba(30,105,225,.2);}
+#modal-report-detail #detail-meta-grid{background:linear-gradient(140deg,rgba(19,42,74,.5),rgba(3,13,30,.87));border-color:rgba(97,163,216,.28);}
+#modal-report-detail #detail-content{border-color:rgba(76,152,222,.25);line-height:1.8;}
+/* Department accent without affecting functionality */
+#police-content-container :is(h2,h3) i{filter:drop-shadow(0 0 8px rgba(68,194,245,.24));}
+#fire-content-container :is(h2,h3) i{filter:drop-shadow(0 0 8px rgba(251,113,133,.17));}
+@media(max-width:640px){
+ #modal-report{padding:6px;}
+ #modal-report .ntpc-police-report-shell{border-radius:20px;padding:17px;max-height:97dvh;}
+ #modal-report .ntpc-police-report-shell > .flex:first-child{top:-17px;padding-top:13px;}
+ #modal-report .ntpc-form-section-title{gap:9px;}
+ #modal-report .ntpc-form-section-title small{font-size:9px;letter-spacing:.02em;}
+ #modal-report :is(#police-report-extra-fields,#police-violation-fields){padding:14px;}
+}
+@media(prefers-reduced-motion:reduce){:where(main,section,article,aside,[role="dialog"]) button{transition:none!important;}}
+
+
+/* V2.0 使用體驗改善：輕量化互動與視覺統一，不修改既有資料行為 */
+:root { --ntpc-accent:#38bdf8; --ntpc-border:rgba(148,163,184,.18); }
+html { scroll-padding-top: 88px; }
+body { -webkit-tap-highlight-color: transparent; }
+input, textarea, select, button { accent-color:#38bdf8; }
+:where(input:not([type="checkbox"]):not([type="radio"]),textarea,select):focus-visible {
+    outline:2px solid rgba(56,189,248,.78);
+    outline-offset:1px;
+    box-shadow:0 0 0 4px rgba(56,189,248,.09);
+}
+:where(button,[role="button"],a):focus-visible { outline:2px solid #7dd3fc; outline-offset:3px; }
+:where(button):not(:disabled) { touch-action:manipulation; }
+:where(.bg-slate-900,.bg-slate-950) { background-image:linear-gradient(135deg,rgba(56,189,248,.018),transparent 48%); }
+:where(section,article) h2, :where(section,article) h3 { text-wrap:balance; }
+:where(.rounded-2xl,.rounded-3xl) { transition:border-color .15s ease,box-shadow .15s ease; }
+:where(input,textarea,select):disabled { cursor:not-allowed; opacity:.55; }
+.ntpc-field-count { font-size:11px; color:#94a3b8; text-align:right; margin-top:4px; font-variant-numeric:tabular-nums; }
+.ntpc-field-count[data-near="true"] { color:#fbbf24; }
+#ntpc-back-to-top {
+    position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:45;
+    width:44px;height:44px;border-radius:14px;background:rgba(15,23,42,.93);
+    color:#e0f2fe;border:1px solid rgba(56,189,248,.40);
+    box-shadow:0 12px 28px rgba(0,0,0,.32);
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;visibility:hidden;transform:translateY(10px);
+    transition:opacity .2s ease,transform .2s ease,visibility .2s;
+}
+#ntpc-back-to-top.ntpc-show {opacity:1;visibility:visible;transform:none;}
+#ntpc-back-to-top:hover {background:#164e63;border-color:#7dd3fc;}
+@media(max-width:640px) {
+  #ntpc-back-to-top {right:12px;bottom:calc(72px + env(safe-area-inset-bottom));width:42px;height:42px;}
+  :where(input,select,textarea) {font-size:max(16px,1rem);}
+  :where(button,[role="button"]) {min-height:36px;}
+  :where(.rounded-3xl) {border-radius:20px;}
+}
+@media(prefers-reduced-motion:reduce) {#ntpc-back-to-top,.rounded-2xl,.rounded-3xl {transition:none!important;}}
+
+
+/* V75: police report scrolling performance: remove expensive backdrop rasterization */
+#modal-report { backdrop-filter:none !important; -webkit-backdrop-filter:none !important; background-color:rgba(2,6,23,.88) !important; }
+#modal-report .ntpc-police-report-shell {
+    background:#0d1b32 !important;
+    background-image:none !important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    scroll-behavior:auto;
+    box-shadow:0 14px 38px rgba(0,0,0,.38) !important;
+}
+#modal-report .ntpc-police-report-shell > .flex:first-child {
+    background:#10213c !important;
+    box-shadow:none !important;
+}
+#modal-report #police-report-extra-fields,
+#modal-report #police-violation-fields { background-image:none !important; }
+#modal-report :is(input,textarea,select,button) { transition-property:border-color,background-color,color !important; transition-duration:120ms !important; }
+#modal-report :is(input,textarea,select,button):hover {filter:none !important;}
+#modal-report .ntpc-police-report-shell * {scroll-behavior:auto;}
+
 </style>
 
     <script type="module">
@@ -1469,6 +1677,16 @@ __                                                                              
                             <li>管理員開啟派遣分頁並連線 Worker 後，前景每 5 秒讀取共用快取的最新位置，避免各瀏覽器直接頻繁查詢 ER:LC 或 Firestore。</li>
                             <li>接收緊急報案後，管理中心可參考單位位置選擇線上警消、進行人工指派與結案。</li>
                             <li>僅允許管理中心於網站手動指派與結案；系統不執行自動派遣，也不向遊戲發送私人訊息。</li>
+                            <li>警務及消防報告持續支援案件送審、高層審核、退件、紀錄查閱及依權限管理案件；正式紀錄改以按鈕觸發讀取，降低不必要的 Firestore 讀取。</li>
+                            <li>嘉蕭集團新增獨立勤務中心、上下班打卡、EMS 救護與生命禮儀報告，以及各自的送審及歷史紀錄；管理中心成員可填寫嘉蕭報告。</li>
+                            <li>嘉蕭 EMS 與消防救護表單調整類別、受傷部位標記、EMT 人數與服務費用欄位，移除不再使用的轉送項目；改善報告明細中文名稱顯示。</li>
+                            <li>嘉蕭 EMS、生命禮儀報告增加繳費狀態顯示，未繳費案件標示紅色提醒；生命禮儀明細精簡，移除多餘的明細編號。</li>
+                            <li>嘉蕭報告支援管理權限下的刪除及審核狀態調整；嘉蕭打卡提供值班人數、紀錄管理及刪除功能。</li>
+                            <li>管理中心整合 Bot 控制台，透過 Pages Functions 與 D1 連線；管理員以網站帳號搭配獨立管理密鑰驗證，不在 HTML 保存 Discord Token。</li>
+                            <li>專生考核系統維持警消考核代碼生成與管理，並新增 30 分鐘到期後的清單移除與具權限時的 Firestore 過期紀錄清理。</li>
+                            <li>市民資料採查詢時才讀取，整合保險狀態顯示及管理紀錄；警消、個人資料、管理中心延續既有權限分級與手動載入機制。</li>
+                            <li>視覺介面統一深色科技風格，改善警務報告章節、表單欄位、卡片、按鈕、審核區、日期時間開啟圖示及手機版排版。</li>
+                            <li>本次介面再加入回頂端捷徑、字數提醒、必填錯誤定位與鍵盤操作輔助；上述介面優化不額外增加 Firestore 背景讀取。</li>
                             <li>承襲 V1.9.4 EMS 五區塊、受傷部位標記、七大處置分類、預設醫院以及既有警務／消防／管理中心功能。</li>
                             <li>派遣查詢與發送需另外部署並設定具權限保護的 Cloudflare Worker；僅更新 HTML 不會直接啟用 API 派遣。</li>
                         </ul>
@@ -3088,7 +3306,7 @@ __                                                                              
     <div id="modal-ems-detail" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4"><div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl max-h-[92vh] overflow-y-auto"><div class="flex justify-between items-center"><h3 id="ems-detail-title" class="text-xl font-bold text-white">EMS救護出勤報告</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-ems-detail"><i class="fa-solid fa-xmark"></i></button></div><span id="ems-detail-id" class="text-xs text-rose-400 font-mono"></span><div id="ems-detail-fields" class="space-y-4 mt-4"></div><div id="ems-detail-treatment-wrap" class="mt-4"><div class="text-xs text-slate-400 mb-2">舊版給予處置</div><div id="ems-detail-treatment" class="bg-slate-950 border border-slate-800 rounded-xl p-4 whitespace-pre-wrap text-sm text-slate-200"></div></div><div class="mt-4"><div class="text-xs text-slate-400 mb-2">高層批示</div><div id="ems-remark-history" class="space-y-2"></div><div id="ems-detail-action-bar" class="flex flex-wrap gap-2 pt-2"></div></div></div></div>
     <!-- Report Modal -->
     <div id="modal-report" class="mobile-modal-overlay fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="mobile-modal-scroll bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
+        <div class="mobile-modal-scroll ntpc-police-report-shell bg-slate-900 border border-slate-800 rounded-3xl max-w-3xl w-full p-5 sm:p-8 space-y-6 shadow-2xl relative">
             <div class="flex justify-between items-center">
                 <h3 id="report-modal-title" class="text-xl font-bold text-white flex items-center space-x-2">
                     <i class="fa-solid fa-file-pen text-blue-500"></i>
@@ -3096,7 +3314,8 @@ __                                                                              
                 </h3>
                 <button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-report"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <div class="space-y-4">
+            <div class="space-y-4 ntpc-police-form-content">
+                <div class="ntpc-form-section-title"><span class="ntpc-section-index">01</span><div><strong>案件基本資料</strong><small>CASE INFORMATION · 案件識別與填寫人</small></div></div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件編號</label>
                     <input type="text" id="report-case-id" readonly class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 font-mono cursor-not-allowed">
@@ -3118,6 +3337,7 @@ __                                                                              
                     <label for="report-title" class="block text-xs font-semibold uppercase tracking-wider text-slate-200 mb-2">案件主述（標題）</label>
                     <input type="text" id="report-title" maxlength="160" autocomplete="off" placeholder="請輸入案件主述／標題" class="block w-full min-w-0 min-h-[48px] bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-base sm:text-sm text-white focus:outline-none focus:border-blue-500">
                 </div>
+                <div class="ntpc-form-section-title"><span class="ntpc-section-index">02</span><div><strong>涉案對象</strong><small>SUBJECT DETAILS · 身分與車輛資訊</small></div></div>
                 <div id="police-suspect-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯身分證件 ID</label>
@@ -3133,6 +3353,7 @@ __                                                                              
                     </div>
                 </div>
 
+                <div class="ntpc-form-section-title"><span class="ntpc-section-index">03</span><div><strong>勤務協調</strong><small>DISPATCH & SUPPORT · 地點、指揮及支援</small></div></div>
                 <div id="police-report-extra-fields" class="space-y-4 bg-slate-950/70 border border-blue-500/20 rounded-2xl p-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件地點郵遞區號</label><input type="text" id="report-postal-code" placeholder="郵遞區號，可留空" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div>
@@ -3148,6 +3369,7 @@ __                                                                              
                     </div></details></div>
                 </div>
 
+                <div class="ntpc-form-section-title"><span class="ntpc-section-index ntpc-section-index-amber">04</span><div><strong>案件條例與刑期</strong><small>VIOLATIONS · 選擇條例並核對系統計算</small></div></div>
                 <div id="police-violation-fields" class="space-y-3 bg-slate-950/70 border border-amber-500/20 rounded-2xl p-4">
                     <div class="flex items-center justify-between gap-3"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">違反條例（可複選、可搜尋，可不填）</label><p class="text-[11px] text-slate-500 mt-1">選填；勾選後自動計算總監獄時間；組織犯罪刑罰加重⅓。</p></div><span id="report-jail-total" class="shrink-0 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold">總計 0 分鐘</span></div>
                     <input id="report-violation-search" type="search" oninput="filterViolationOptions('report')" placeholder="搜尋條例名稱..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500">
@@ -3160,6 +3382,7 @@ __                                                                              
                 </div>
 
                 <div>
+                    <div class="ntpc-form-section-title"><span class="ntpc-section-index">05</span><div><strong>案件經過與附件</strong><small>CASE NARRATIVE · 處理紀錄及相關影片</small></div></div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細案件經過與處理結果</label>
                     <textarea id="report-content" rows="4" placeholder="請詳細敘述案件經過..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-blue-500"></textarea>
                 </div>
@@ -5856,6 +6079,33 @@ async function republishAnnouncement(id) {
             return { code, type, expiresAt };
         }
 
+        // V73：只在管理員已登入時清除過期代碼；不對未授權使用者發起資料庫刪除。
+        let academyCleanupRunning = false;
+        let academyLastCleanup = 0;
+        function academyCodeIsExpired(row, now = Date.now()) {
+            if (!row || !row.code) return false;
+            const expiry = Number(row.expiresAt);
+            return Number.isFinite(expiry) && expiry > 0 && expiry <= now;
+        }
+        async function cleanupExpiredAcademyCodes(rows) {
+            const now = Date.now();
+            const expired = (Array.isArray(rows) ? rows : []).filter(row => academyCodeIsExpired(row, now));
+            if (!expired.length || !isManagementUser() || !fm || !db || academyCleanupRunning) return;
+            academyCleanupRunning = true;
+            try {
+                // 只對已知過期文件寫入；個別失敗不阻斷其餘清理。失敗的文件稍後可重試。
+                let failed = 0;
+                for (const row of expired) {
+                    try {
+                        await fm.deleteDoc(fm.doc(db, 'academyCodes', String(row.docId || row.code)));
+                    } catch (err) {
+                        failed++;
+                        console.warn('過期考核代碼清理失敗：', err);
+                    }
+                }
+                if (failed) console.warn(`有 ${failed} 筆過期考核代碼尚未能從雲端刪除，請檢查 academyCodes 的刪除權限。`);
+            } finally { academyCleanupRunning = false; academyLastCleanup = Date.now(); }
+        }
         async function loadAcademyCodes() {
             let cloudRows = Array.isArray(appData.academyCodes) ? appData.academyCodes.filter(x => x && x.code) : [];
             try {
@@ -5863,19 +6113,26 @@ async function republishAnnouncement(id) {
                     const snap = await fm.getDocs(fm.collection(db, 'academyCodes'));
                     cloudRows = snap.docs.map(d => ({docId:d.id, ...d.data()})).filter(x => x && x.code);
                 }
-            } catch (e) {}
+            } catch (e) { console.warn('考核代碼雲端讀取失敗：', e); }
             let localRows = [];
             try { localRows = JSON.parse(localStorage.getItem('ntpcrp_academy_codes') || '[]'); } catch (e) { localRows = []; }
+            const now = Date.now();
+            window.__academyLoadedCloudCodes = cloudRows;
             const merged = [...cloudRows];
-            localRows.forEach(row => { if(row && row.code && !merged.some(x=>x.code===row.code)) merged.push(row); });
-            appData.academyCodes = merged;
+            localRows.forEach(row => { if (row && row.code && !merged.some(x => x.code === row.code)) merged.push(row); });
+            const active = merged.filter(row => row && row.code && Number(row.expiresAt) > now);
+            appData.academyCodes = active;
+            // 清除舊本機快取，不再讓過期項目重新同步到 Firestore。
+            try { localStorage.setItem('ntpcrp_academy_codes', JSON.stringify(active.slice(-30))); } catch (e) {}
             if (fm && db && isManagementUser()) {
+                // 保留舊版有效本機代碼的同步能力，過期代碼永遠不再上傳。
                 for (const row of localRows) {
-                    if (!row?.code || cloudRows.some(x=>x.code===row.code)) continue;
-                    try { await fm.setDoc(fm.doc(db,'academyCodes',row.code), row); } catch(e) {}
+                    if (!row?.code || Number(row.expiresAt) <= now || cloudRows.some(x => x.code === row.code)) continue;
+                    try { await fm.setDoc(fm.doc(db, 'academyCodes', row.code), row); } catch (e) {}
                 }
+                await cleanupExpiredAcademyCodes(cloudRows);
             }
-            return merged.filter(x => x && x.code && Number(x.expiresAt) > 0 || x && x.code);
+            return active;
         }
 
         function saveAcademyCodes(rows) {
@@ -5936,11 +6193,12 @@ async function republishAnnouncement(id) {
 
         function renderAcademyCodeCards(host, rows, management = false) {
             if (!host) return;
+            rows = (rows || []).filter(row => Number(row.expiresAt) > Date.now());
             if (!rows.length) { host.innerHTML = '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">目前沒有可瀏覽的考核代碼。</div>'; return; }
             host.innerHTML = rows.map(row => {
                 const remain = Math.max(0, Number(row.expiresAt) - Date.now());
                 const mins = Math.floor(remain / 60000), secs = Math.floor((remain % 60000) / 1000), expired = remain <= 0;
-                return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                return `<div data-academy-card class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
                     <div class="flex items-center justify-between gap-3"><span class="text-xs font-bold ${row.type === 'police' ? 'text-blue-400' : 'text-red-400'}">${row.type === 'police' ? '警務考核' : '消防考核'}</span><span data-academy-countdown="${Number(row.expiresAt)||0}" class="text-[11px] ${expired ? 'text-rose-400' : 'text-emerald-400'}">${expired ? '已過期' : `剩餘 ${mins}分 ${String(secs).padStart(2,'0')}秒`}</span></div>
                     <div class="mt-3 font-mono text-sm text-white break-all">${escapeHtml(row.code||'--')}</div>
                     <div class="mt-2 text-[11px] text-slate-500">生成：${escapeHtml(formatDateTime(row.createdAt))}　有效至：${escapeHtml(formatDateTime(row.expiresAt))}　生成者：${escapeHtml(row.creator || '--')}</div>
@@ -5950,14 +6208,31 @@ async function republishAnnouncement(id) {
         }
 
         function updateAcademyCountdowns() {
-            // 秒數只更新文字，不重建卡片、不重新呼叫 loadAcademyCodes()/Firestore。
+            // 每秒只改倒數文字；到期時立即移除卡片，不逐秒查詢 Firestore。
+            let hasExpired = false;
             document.querySelectorAll('[data-academy-countdown]').forEach(el => {
                 const remain = Math.max(0, Number(el.dataset.academyCountdown || 0) - Date.now());
-                const expired = remain <= 0;
-                el.textContent = expired ? '已過期' : `剩餘 ${Math.floor(remain/60000)}分 ${String(Math.floor(remain%60000/1000)).padStart(2,'0')}秒`;
-                el.classList.toggle('text-rose-400', expired);
-                el.classList.toggle('text-emerald-400', !expired);
+                if (remain <= 0) {
+                    el.closest('[data-academy-card]')?.remove();
+                    hasExpired = true;
+                    return;
+                }
+                el.textContent = `剩餘 ${Math.floor(remain / 60000)}分 ${String(Math.floor(remain % 60000 / 1000)).padStart(2, '0')}秒`;
             });
+            if (hasExpired) {
+                appData.academyCodes = (appData.academyCodes || []).filter(row => !academyCodeIsExpired(row));
+                saveAcademyCodes(appData.academyCodes);
+                for (const id of ['admin-academy-code-list','management-academy-code-list']) {
+                    const host = document.getElementById(id);
+                    if (host && !host.querySelector('[data-academy-card]')) host.innerHTML = '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">目前沒有可瀏覽的考核代碼。</div>';
+                }
+            }
+            // 每分鐘最多一次清理已載入的過期資料；後端刪除需有管理員權限。
+            if (isManagementUser() && fm && db && Date.now() - academyLastCleanup > 60000 && !academyCleanupRunning) {
+                academyLastCleanup = Date.now();
+                const expired = (window.__academyLoadedCloudCodes || []).filter(row => academyCodeIsExpired(row));
+                if (expired.length) void cleanupExpiredAcademyCodes(expired);
+            }
         }
         function updateAcademySessionCountdown() {
             if (!academyExamSession) return;
@@ -12229,5 +12504,53 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             </div>
         </div>
     </footer>
+
+<!-- V2.0：不增加外部資源或資料庫讀取的便利互動 -->
+<script>
+(() => {
+    'use strict';
+    const setup = () => {
+        if (!document.body || document.getElementById('ntpc-back-to-top')) return;
+        const back = document.createElement('button');
+        back.id='ntpc-back-to-top';
+        back.type='button';
+        back.setAttribute('aria-label','回到頁面頂端');
+        back.title='回到頂端';
+        back.innerHTML='<i class="fa-solid fa-arrow-up" aria-hidden="true"></i>';
+        document.body.appendChild(back);
+        const update = () => back.classList.toggle('ntpc-show',window.scrollY>480);
+        window.addEventListener('scroll',update,{passive:true});
+        back.addEventListener('click',()=>window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}));
+        update();
+        // 只在使用者聚焦有 maxlength 的文字區域時建立計數器，不變更表單資料。
+        document.addEventListener('focusin', e => {
+            const el=e.target;
+            if (!(el instanceof HTMLTextAreaElement) || !el.maxLength || el.maxLength<1 || !el.parentElement) return;
+            if (el.dataset.ntpcCountBound==='1') return;
+            el.dataset.ntpcCountBound='1';
+            const hint=document.createElement('div');
+            hint.className='ntpc-field-count';
+            hint.setAttribute('aria-live','off');
+            el.insertAdjacentElement('afterend',hint);
+            const refresh=()=>{
+                const current=el.value.length, max=el.maxLength;
+                hint.textContent=`${current} / ${max} 字`;
+                hint.dataset.near=String(current >= max*.9);
+            };
+            el.addEventListener('input',refresh);
+            refresh();
+        });
+        // 借用瀏覽器原生必填檢查，提示使用者問題欄位位置。
+        document.addEventListener('invalid', e=>{
+            const el=e.target;
+            if (!(el instanceof HTMLElement)) return;
+            try {el.scrollIntoView({block:'center',behavior:'auto'});} catch {}
+        },true);
+    };
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',setup,{once:true});
+    else setup();
+})();
+</script>
+
 </body>
 </html>
