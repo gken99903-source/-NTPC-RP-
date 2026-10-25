@@ -2165,6 +2165,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                     </div>
                     <div class="flex items-center justify-center flex-wrap gap-2 mobile-action-group w-full md:w-auto" id="jiaxiao-quick-actions">
                         <button type="button" id="jx-clock-modal-btn" onclick="openJiaxiaoClockModal()" aria-haspopup="dialog" aria-controls="modal-jx-clock" class="jx-member-create-btn rounded-xl bg-teal-600 hover:bg-teal-500 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-clock mr-2"></i>上下班打卡</button>
+                        <button type="button" id="jx-retro-clock-modal-btn" onclick="openJiaxiaoRetroClockModal()" aria-haspopup="dialog" aria-controls="modal-jx-clock" class="jx-member-create-btn rounded-xl border border-sky-500/45 bg-sky-950/35 hover:bg-sky-900/40 px-4 py-2.5 text-sky-200 text-sm font-semibold"><i class="fa-solid fa-clock-rotate-left mr-2"></i>補打卡登記</button>
                         <button type="button" id="jx-hospital-modal-btn" onclick="openJiaxiaoHospitalModal()" aria-haspopup="dialog" aria-controls="modal-jx-hospital" class="rounded-xl border border-teal-500/35 bg-slate-800 hover:bg-slate-700 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-hospital mr-2"></i>填寫醫院報告</button>
                         <div class="contents" id="jx-report-create-actions">
                             <button type="button" onclick="openJXReport('medical')" aria-haspopup="dialog" aria-controls="modal-jx-report" class="rounded-xl bg-emerald-700 hover:bg-emerald-600 px-4 py-2.5 text-sm text-white font-semibold"><i class="fa-solid fa-truck-medical mr-1"></i>填寫 EMS 救護報告</button>
@@ -2237,7 +2238,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                             <div class="flex items-center justify-between gap-2"><h3 class="font-bold text-white"><i class="fa-solid fa-clock text-teal-400 mr-2"></i>嘉蕭集團上下班打卡</h3><span id="jiaxiao-duty-state" class="text-xs text-slate-400">尚未確認</span></div>
                             <p class="text-sm text-slate-400">打卡資訊用於值班統計與消防無人值班時的倒地通知後援名單。</p>
                             <div id="jiaxiao-clock-actions" class="flex flex-wrap gap-2">
-                                <button type="button" onclick="openJiaxiaoClockModal()" aria-haspopup="dialog" aria-controls="modal-jx-clock" class="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-arrow-up-right-from-square mr-2"></i>開啟上下班打卡視窗</button>
+                                <button type="button" onclick="openJiaxiaoClockModal()" aria-haspopup="dialog" aria-controls="modal-jx-clock" class="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-arrow-up-right-from-square mr-2"></i>開啟上下班打卡視窗</button> <button type="button" onclick="openJiaxiaoRetroClockModal()" aria-haspopup="dialog" aria-controls="modal-jx-clock" class="rounded-xl bg-sky-900/40 border border-sky-600/50 hover:bg-sky-800/40 px-4 py-2.5 text-sky-200 text-sm font-semibold"><i class="fa-solid fa-clock-rotate-left mr-2"></i>補打卡</button>
                             </div>
                         </div>
                         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
@@ -3573,7 +3574,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                 </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位 (最多可勾選兩個)</label>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位（可複選，不限數量）</label>
                     <div class="grid grid-cols-3 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
                         <label class="flex items-center space-x-2 text-sm text-slate-200 cursor-pointer">
                             <input type="checkbox" name="edit-user-units" value="police" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600">
@@ -3698,7 +3699,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                 </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位 (最多可勾選兩個)</label>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位（可複選，不限數量）</label>
                     <div class="grid grid-cols-3 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
                         <label class="flex items-center space-x-2 text-sm text-slate-200 cursor-pointer">
                             <input type="checkbox" name="new-user-units" value="police" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600">
@@ -5784,12 +5785,12 @@ async function republishAnnouncement(id) {
                 result[section.dataset.jxRepeatSection]=records;
             });return result;
         }
-        let jxHospitalActiveType=null,jxHospitalSaving=false;
+        let jxHospitalActiveType=null,jxHospitalSaving=false,jxHospitalEditingRecord=null;
         function openJiaxiaoHospitalModal(){
             if(!canWriteJXReport()){showToast('只有嘉蕭或管理中心成員可以填寫醫院紀錄','warning');return;}
             jxShowDialog('modal-jx-hospital');
         }
-        function closeJiaxiaoHospitalModal(){jxHospitalStopBillingTicker();jxHideDialog('modal-jx-hospital');}
+        function closeJiaxiaoHospitalModal(){jxHospitalStopBillingTicker();jxHospitalEditingRecord=null;jxHideDialog('modal-jx-hospital');}
         function jxHospitalEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
         // 嘉蕭身分資料：只在使用者手動輸入末五碼後查詢，不預先下載市民集合。
         let jxIdentityLookupSerial=0;
@@ -5837,8 +5838,10 @@ async function republishAnnouncement(id) {
         });
         function jxHospitalChoose(type){
             if(!JX_HOSPITAL_SECTIONS[type])return;
+            jxHospitalEditingRecord=null;
             jxHospitalActiveType=type;
             const f=document.getElementById('jx-hospital-form');f.reset();f.classList.remove('hidden');
+            document.getElementById('jx-hospital-save-button').textContent='儲存醫院紀錄';
             document.getElementById('jx-hospital-form-hint').textContent='目前填寫：'+JX_HOSPITAL_NAMES[type]+'｜送出後寫入獨立醫院紀錄';
             const field=(item)=>{
                 const [id,label,kind='text',required=0]=item,req=required?' required':'',classes='w-full mt-1 rounded-xl border border-slate-700 bg-slate-950 p-3 text-white outline-none focus:border-teal-400';
@@ -5885,6 +5888,57 @@ async function republishAnnouncement(id) {
             jxHospitalStopBillingTicker();
             if(type==='admission')jxHospitalBillingTicker=setInterval(()=>{if(!document.getElementById('modal-jx-hospital')?.classList.contains('hidden'))jxHospitalUpdateBilling();},30000);
             jxHospitalUpdateBilling();
+        }
+        // V96：所有嘉蕭醫院紀錄可沿用原填寫表單修改。保留原文件 ID 與營收台帳 ID。
+        function jxHospitalEditRecord(record){
+            if(!record||!record.id||!canWriteJXReport()){
+                showToast('沒有權限編輯醫院紀錄','warning');return;
+            }
+            const account=String(currentUser?.account||'').toLowerCase();
+            if(!canReviewJX()&&String(record.authorAccount||'').toLowerCase()!==account){
+                showToast('只有原填報人或嘉蕭高層可以修改此紀錄','warning');return;
+            }
+            const type=record.category==='registration'?'registration':record.category;
+            if(!JX_HOSPITAL_SECTIONS[type]){showToast('找不到可編輯的醫院表單','warning');return;}
+            openJiaxiaoHospitalModal();
+            jxHospitalChoose(type);
+            const form=document.getElementById('jx-hospital-form');
+            const d=record.details||{};
+            // 住院多筆醫療紀錄：還原每類最多十筆，舊版只有一筆的資料仍可讀取。
+            if(type==='admission'){
+                for(const section of form.querySelectorAll('[data-jx-repeat-section]')){
+                    const key=section.dataset.jxRepeatSection;
+                    const fieldNames=(JX_HOSPITAL_SECTIONS.admission.find(([label])=>label===key)?.[1]||[]).map(x=>x[0]);
+                    let entries=Array.isArray(d.repeatRecords?.[key])?d.repeatRecords[key].slice(0,JX_REPEAT_LIMIT):[];
+                    if(!entries.length)entries=[Object.fromEntries(fieldNames.map(k=>[k,d[k]??'']))];
+                    const add=section.querySelector('[data-jx-add-repeat]');
+                    for(let i=1;i<entries.length;i++)jxHospitalAppendSection(add);
+                    const items=section.querySelectorAll('[data-jx-repeat-index]');
+                    entries.forEach((entry,i)=>{
+                        const item=items[i];if(!item)return;
+                        item.querySelectorAll('[data-jx-repeat-key]').forEach(el=>{el.value=String(entry?.[el.dataset.jxRepeatKey]??'');});
+                    });
+                }
+            }
+            for(const [key,value] of Object.entries(d)){
+                if(key==='repeatRecords'||key==='priceQuantities')continue;
+                const el=form.elements.namedItem(key);
+                if(!el||!('value' in el))continue;
+                if(el.type==='checkbox')el.checked=!!value;
+                else el.value=String(value??'');
+            }
+            if(type==='receipt'&&Array.isArray(d.priceQuantities)){
+                form.querySelectorAll('[data-jx-price-index]').forEach(el=>{el.value=String(d.priceQuantities[Number(el.dataset.jxPriceIndex)]||0);});
+            }
+            if(type==='registration'&&record.method==='線上掛號'&&form.elements.method)form.elements.method.value='線上掛號';
+            jxHospitalEditingRecord={
+                id:String(record.id),sourceCollection:record.__collection||JX_HOSPITAL_COLLECTIONS[record.category],
+                original:record
+            };
+            document.getElementById('jx-hospital-form-hint').textContent='編輯現有'+JX_HOSPITAL_NAMES[type]+'紀錄｜保留原編號，儲存時同步更新相關費用台帳';
+            document.getElementById('jx-hospital-save-button').textContent='儲存修改';
+            jxHospitalUpdateBilling();
+            form.scrollIntoView({block:'nearest',behavior:'auto'});
         }
         function jxHospitalGetDetails(form,type){
             const details={};
@@ -5949,17 +6003,32 @@ async function republishAnnouncement(id) {
             const collection=type==='registration'&&details.method==='線上掛號'?JX_HOSPITAL_COLLECTIONS.online:JX_HOSPITAL_COLLECTIONS[type];
             jxHospitalSaving=true;const btn=document.getElementById('jx-hospital-save-button');btn.disabled=true;
             try{
-                const id='JXH-'+Date.now()+'-'+Math.random().toString(36).slice(2,9),createdAt=Date.now();
-                const obj={id,category:type,method:details.method||null,details,createdAt,authorAccount:currentUser.account,authorName:currentUser.name||currentUser.account};
+                const edit=jxHospitalEditingRecord;
+                const id=edit?.id||('JXH-'+Date.now()+'-'+Math.random().toString(36).slice(2,9));
+                const now=Date.now(),prior=edit?.original||{};
+                const obj={id,category:type,method:details.method||null,details,
+                    createdAt:prior.createdAt||now,authorAccount:prior.authorAccount||currentUser.account,
+                    authorName:prior.authorName||currentUser.name||currentUser.account,
+                    updatedAt:now,editedBy:currentUser.account,editCount:Number(prior.editCount||0)+(edit?1:0)};
                 const batch=fm.writeBatch(db);
                 batch.set(fm.doc(db,collection,id),obj);
-                // 單據與營收台帳同批提交，避免只寫入其中一邊；進行中的住院不記營收。
+                if(edit?.sourceCollection&&edit.sourceCollection!==collection)batch.delete(fm.doc(db,edit.sourceCollection,id));
+                // 同一 ID 更新或撤銷台帳，不會因編輯而再次新增營收項目。
                 if(billing&&billing.settled!==false){
                     const ledger=jxHospitalLedgerEntry(obj,billing,type==='registration'&&details.method==='線上掛號'?'online':type);
                     batch.set(fm.doc(db,JX_FINANCIAL_COLLECTION,id),ledger);
+                }else if(edit){
+                    batch.delete(fm.doc(db,JX_FINANCIAL_COLLECTION,id));
                 }
                 await batch.commit();
-                showToast('醫院紀錄已儲存'+(type==='admission'&&!billing?.settled?'（尚未出院，未列入營收）':''),'success');
+                if(jxHospitalRecordsCache.loaded){
+                    const displayedCollection=JX_HOSPITAL_COLLECTIONS[jxHospitalRecordsCache.type];
+                    jxHospitalRecordsCache.rows=jxHospitalRecordsCache.rows.filter(x=>String(x.id)!==id);
+                    if(displayedCollection===collection)jxHospitalRecordsCache.rows.unshift({...obj,__collection:collection});
+                    jxHospitalRenderRecords();
+                }
+                if(edit){try{await logAdminAction('嘉蕭醫院紀錄編輯',id);}catch(logError){console.warn('醫院編輯紀錄 LOG 失敗（資料已儲存）',logError);}}
+                showToast((edit?'醫院紀錄已更新':'醫院紀錄已儲存')+(type==='admission'&&!billing?.settled?'（尚未出院，未列入營收）':''),'success');
                 closeJiaxiaoHospitalModal();f.reset();
                 const result=document.getElementById('jx-hospital-record-status');if(result)result.textContent='資料已儲存；請點選分類重新載入。';
             }catch(error){console.error('醫院紀錄儲存失敗',error);showToast('醫院紀錄儲存失敗：'+error.message,'error');}
@@ -6136,6 +6205,16 @@ async function republishAnnouncement(id) {
                 const meta=document.createElement('p');meta.className='text-xs text-slate-400';meta.textContent=`${new Date(r.createdAt||0).toLocaleString('zh-TW')}｜${r.authorName||r.authorAccount||'--'}`;card.appendChild(meta);
                 const view=document.createElement('button');view.type='button';view.className='rounded-xl bg-slate-800 border border-slate-700 hover:border-teal-500 px-4 py-2 text-sm text-teal-200';view.textContent='放大檢視原始表單';
                 view.addEventListener('click',()=>jxViewHospitalRecord(r));card.appendChild(view);
+                if(canWriteJXReport()&&(canReviewJX()||String(r.authorAccount||'').toLowerCase()===String(currentUser?.account||'').toLowerCase())){
+                    const edit=document.createElement('button');edit.type='button';
+                    edit.className='ml-2 rounded-xl border border-sky-500/40 bg-sky-950/25 hover:bg-sky-900/35 px-4 py-2 text-sm text-sky-200';
+                    edit.textContent='編輯紀錄';edit.addEventListener('click',()=>jxHospitalEditRecord(r));card.appendChild(edit);
+                }
+                if(jxHospitalMayDelete(r)){
+                    const remove=document.createElement('button');remove.type='button';
+                    remove.className='ml-2 rounded-xl border border-rose-500/40 bg-rose-950/20 hover:bg-rose-900/35 px-4 py-2 text-sm text-rose-300';
+                    remove.textContent='刪除紀錄';remove.addEventListener('click',()=>jxHospitalDeleteRecord(r));card.appendChild(remove);
+                }
                 if(type==='admission'){
                     const settled=r.details?.billingStatus==='settled'||!!r.details?.dischargeDate;
                     const label=document.createElement('p');label.className='text-xs '+(settled?'text-emerald-300':'text-amber-300');label.textContent=settled?'住院已出院結算':'住院進行中，尚未列入營收';card.appendChild(label);
@@ -6145,6 +6224,47 @@ async function republishAnnouncement(id) {
                 }
                 host.appendChild(card);
             }
+        }
+        // V97：刪除醫院紀錄連同原 ID 收費台帳一併移除，不留下殘缺的月營收數據。
+        // 已收費／已結算的紀錄僅高層或管理員可刪，未收費紀錄允許填報本人管理。
+        function jxHospitalHasAccounting(record){
+            const d=record?.details||{};
+            return record?.category==='receipt'||d.feeCollected===true||d.billingStatus==='settled'||
+                (Array.isArray(d.billingItems)&&d.billingItems.length>0&&Number(d.total||0)>0)||Number(d.total||0)>0;
+        }
+        function jxHospitalMayDelete(record){
+            if(!record||!canWriteJXReport()||!currentUser)return false;
+            if(canReviewJX())return true;
+            if(jxHospitalHasAccounting(record))return false;
+            return String(record.authorAccount||'').trim().toLowerCase()===String(currentUser.account||'').trim().toLowerCase();
+        }
+        let jxHospitalDeleteBusy=false;
+        async function jxHospitalDeleteRecord(record){
+            if(jxHospitalDeleteBusy||!db||!fm||!jxHospitalMayDelete(record)){
+                showToast('沒有刪除此筆醫院紀錄的權限；已收費或已結算資料需高層處理','warning','權限不足');return;
+            }
+            const id=String(record.id||'');
+            const collectionName=String(record.__collection||JX_HOSPITAL_COLLECTIONS[record.category]||'');
+            if(!id||!Object.values(JX_HOSPITAL_COLLECTIONS).includes(collectionName))return;
+            const hasAccounts=jxHospitalHasAccounting(record);
+            const confirmText='確定要刪除「'+(JX_HOSPITAL_NAMES[record.category]||'醫院')+'」：'+(record.details?.name||'未填姓名')+'（'+id+'）？'
+                +(hasAccounts?'\n\n這張紀錄含計費資料，對應的月營收台帳也會一起移除並影響統計。':'')
+                +'\n\n此操作無法復原，請確認。';
+            if(!(await showConfirm(confirmText,'刪除嘉蕭醫院紀錄','確定永久刪除')))return;
+            jxHospitalDeleteBusy=true;
+            try{
+                const batch=fm.writeBatch(db);
+                batch.delete(fm.doc(db,collectionName,id));
+                // 以相同單據 ID 同步刪除台帳，避免帳面殘留。
+                batch.delete(fm.doc(db,JX_FINANCIAL_COLLECTION,id));
+                await batch.commit();
+                jxHospitalRecordsCache.rows=jxHospitalRecordsCache.rows.filter(x=>!(String(x.id)===id&&String(x.__collection||collectionName)===collectionName));
+                jxHospitalRenderRecords();
+                try{await logAdminAction('刪除嘉蕭醫院紀錄',id,(JX_HOSPITAL_NAMES[record.category]||'醫院')+'｜'+(record.details?.name||'')+(hasAccounts?'｜含計費資料':''));}
+                catch(logError){console.warn('醫院紀錄已刪除，但 LOG 送出失敗',logError);showToast('紀錄已刪除，但操作 LOG 寫入失敗，請通知管理員','warning');return;}
+                showToast('醫院紀錄及相關收費台帳已刪除；月營收請重新查詢','success','刪除完成');
+            }catch(error){console.error('刪除醫院紀錄失敗',error);showToast('刪除失敗：'+(error?.message||error),'error');}
+            finally{jxHospitalDeleteBusy=false;}
         }
         // 只更新已載入的線上掛號時間標籤，不觸發 Firestore 網路查詢。
         setInterval(()=>{
@@ -6161,7 +6281,7 @@ async function republishAnnouncement(id) {
             status.textContent='正在讀取'+JX_HOSPITAL_NAMES[type]+'紀錄……';host.replaceChildren();
             try{
                 const snap=await fm.getDocs(fm.query(fm.collection(db,JX_HOSPITAL_COLLECTIONS[type]),fm.limit(150)));
-                jxHospitalRecordsCache.rows=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+                jxHospitalRecordsCache.rows=snap.docs.map(d=>({id:d.id,...d.data(),__collection:JX_HOSPITAL_COLLECTIONS[type]})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
                 jxHospitalRecordsCache.loaded=true;
                 jxHospitalRenderRecords();
             }catch(error){status.textContent='讀取失敗：'+error.message;showToast('醫院紀錄讀取失敗，請檢查 Firestore 權限','error');}
@@ -6217,9 +6337,30 @@ async function republishAnnouncement(id) {
             if(who)who.textContent=(currentUser?.name||currentUser?.account||'--')+'（'+(currentUser?.account||'')+'）';
             const current=document.getElementById('jx-clock-modal-current');if(current)current.textContent=onDuty?'目前已上班':'目前未上班';
             const select=document.getElementById('jx-clock-modal-status');if(select)select.value=onDuty?'下班':'上班';
+            jxClockRetroMode=false;
+            const form=document.getElementById('jx-clock-retro-fields');if(form)form.classList.add('hidden');
+            document.getElementById('jx-clock-modal-title').innerHTML='<i class="fa-solid fa-clock text-teal-400 mr-2"></i>嘉蕭集團上下班打卡';
+            document.getElementById('jx-clock-modal-confirm').textContent='確認打卡';
             jxShowDialog('modal-jx-clock');
         }
-        function closeJiaxiaoClockModal(){jxHideDialog('modal-jx-clock');}
+        let jxClockRetroMode=false;
+        function openJiaxiaoRetroClockModal(){
+            if(!canWriteJXReport()){showToast('只有嘉蕭或管理中心授權人員可以補打卡','warning','權限不足');return;}
+            jxClockRetroMode=true;
+            const now=new Date(),pad=n=>String(n).padStart(2,'0');
+            const member=document.getElementById('jx-clock-modal-member');if(member)member.textContent=(currentUser.name||currentUser.account)+'（'+currentUser.account+'）';
+            document.getElementById('jx-clock-modal-current').textContent='補打卡只補登指定時間，不會覆蓋其他原始打卡紀錄。';
+            document.getElementById('jx-clock-modal-title').innerHTML='<i class="fa-solid fa-clock-rotate-left text-sky-400 mr-2"></i>嘉蕭集團補打卡登記';
+            document.getElementById('jx-clock-modal-confirm').textContent='確認補打卡';
+            document.getElementById('jx-clock-retro-fields').classList.remove('hidden');
+            document.getElementById('jx-clock-retro-date').value=[now.getFullYear(),pad(now.getMonth()+1),pad(now.getDate())].join('-');
+            document.getElementById('jx-clock-retro-time').value=pad(now.getHours())+':'+pad(now.getMinutes());
+            document.getElementById('jx-clock-retro-reason').value='';
+            const own=buildLatestDutyMap(appData?.jiaxiaoClocks||[]).get(String(currentUser.account).toLowerCase());
+            document.getElementById('jx-clock-modal-status').value=own?.status==='上班'?'下班':'上班';
+            jxShowDialog('modal-jx-clock');
+        }
+        function closeJiaxiaoClockModal(){jxClockRetroMode=false;jxHideDialog('modal-jx-clock');}
         let jxClockModalBusy=false;
         async function confirmJiaxiaoClockModal(){
             if(jxClockModalBusy)return;
@@ -6227,8 +6368,47 @@ async function republishAnnouncement(id) {
             if(!['上班','下班'].includes(status))return;
             jxClockModalBusy=true;
             const button=document.getElementById('jx-clock-modal-confirm');if(button)button.disabled=true;
-            try{const saved=await submitJiaxiaoClock(status);if(saved===true)closeJiaxiaoClockModal();}
+            try{const saved=jxClockRetroMode?await submitJiaxiaoRetroClock(status):await submitJiaxiaoClock(status);if(saved===true)closeJiaxiaoClockModal();}
             finally{jxClockModalBusy=false;if(button)button.disabled=false;}
+        }
+        // 嘉蕭補打卡：以帳號等值查詢核對歷史，避免每次補登讀取所有單位打卡。
+        async function submitJiaxiaoRetroClock(status){
+            if(!canWriteJXReport()||!db||!fm){showToast('目前無法補打卡','warning');return false;}
+            const day=String(document.getElementById('jx-clock-retro-date')?.value||'');
+            const hour=String(document.getElementById('jx-clock-retro-time')?.value||'');
+            const reason=String(document.getElementById('jx-clock-retro-reason')?.value||'').trim();
+            const at=new Date(day+'T'+hour).getTime();
+            if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||!/^\d{2}:\d{2}$/.test(hour)||!Number.isFinite(at)){
+                showToast('請正確選擇補打卡日期與時間','warning');return false;
+            }
+            if(at>Date.now()){showToast('補打卡不能填寫未來的時間','warning');return false;}
+            if(!reason){showToast('請填寫補打卡原因','warning');return false;}
+            try{
+                const account=String(currentUser.account||'');
+                const snap=await fm.getDocs(fm.query(fm.collection(db,'jiaxiaoClocks'),fm.where('account','==',account),fm.limit(2000)));
+                if(snap.size>=2000){showToast('歷史打卡已達檢查上限，請由管理員確認後再補登','warning');return false;}
+                const sorted=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>getClockTimestamp(a)-getClockTimestamp(b));
+                if(sorted.some(r=>Math.abs(getClockTimestamp(r)-at)<60000)){
+                    showToast('此分鐘已存在打卡紀錄，請確認日期時間','warning','避免重複');return false;
+                }
+                const older=sorted.filter(r=>getClockTimestamp(r)<at).at(-1);
+                const newer=sorted.find(r=>getClockTimestamp(r)>at);
+                if(older?.status===status||newer?.status===status){
+                    showToast('補登後會出現連續兩筆「'+status+'」，請先核對前後的上下班紀錄','warning','出勤順序異常');return false;
+                }
+                const id='JXCLK-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+                const data={id,account,name:currentUser.name||account,staffNumber:currentUser.staffNumber||'',
+                    status,timestamp:at,time:formatDateTime(at)+' (補打卡)',isRetro:true,
+                    remark:'補打卡原因：'+reason,retroReason:reason,recordedAt:Date.now(),recordedBy:account};
+                await fm.setDoc(fm.doc(db,'jiaxiaoClocks',id),data);
+                appData.jiaxiaoClocks=appData.jiaxiaoClocks||[];
+                appData.jiaxiaoClocks.push({docId:id,...data});
+                recalculateDutyStatusCache();renderJiaxiaoDuty();
+                if(jxClockHistoryLoaded){renderJiaxiaoClockHistory();renderJiaxiaoClockHours();}
+                try{await logAdminAction('嘉蕭補打卡',id,status+'｜'+formatDateTime(at)+'｜原因：'+reason);}
+                catch(e){console.warn('補打卡成功但 LOG 寫入失敗',e);}
+                showToast('補打卡已完成，請在打卡紀錄確認','success');return true;
+            }catch(e){showToast('嘉蕭補打卡失敗：'+(e?.message||e),'error');return false;}
         }
         // 嘉蕭打卡按需讀取；不增加登入後自動讀取 Firebase 的頻率。
         let jxClockHistoryLoaded=false;
@@ -6263,7 +6443,7 @@ async function republishAnnouncement(id) {
             const rows=[...(appData?.jiaxiaoClocks||[])].sort((a,b)=>getClockTimestamp(b)-getClockTimestamp(a)).filter(r=>!term||jxSearchKey([r.name,r.account,r.staffNumber,r.status,r.time].join(' ')).includes(term)).slice(0,100);
             const duty=jiaxiaoDutyRows(),summary=document.getElementById('jx-clock-duty-summary');
             if(summary)summary.innerHTML=`<strong>目前值班人數：${duty.length} 人</strong><div class="mt-1 text-xs text-slate-300">${duty.length?duty.map(r=>escapeHtml(r.name||r.account||'--')).join('、'):'目前無人值班'}</div>`;
-            el.innerHTML=rows.length?rows.map(r=>`<div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-950 border border-slate-800 p-3"><div class="flex flex-col sm:flex-row sm:items-center gap-2"><span class="text-white font-medium">${escapeHtml(r.name||r.account||'--')}</span><span class="${r.status==='上班'?'text-emerald-400':'text-slate-300'}">${escapeHtml(r.status||'--')}</span><span class="text-xs text-slate-400">${escapeHtml(r.time||formatDateTime(getClockTimestamp(r)))}</span></div>${canReviewJX()?`<button type="button" class="rounded-lg border border-rose-600/60 bg-rose-950/50 px-3 py-1.5 text-xs text-rose-300" onclick="deleteJiaxiaoClockRecord('${encodeURIComponent(String(r.docId||r.id||''))}')">刪除紀錄</button>`:''}</div>`).join(''):(term?'沒有符合搜尋的打卡紀錄':'沒有打卡紀錄');
+            el.innerHTML=rows.length?rows.map(r=>`<div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-950 border border-slate-800 p-3"><div class="flex flex-col sm:flex-row sm:items-center gap-2"><span class="text-white font-medium">${escapeHtml(r.name||r.account||'--')}</span><span class="${r.status==='上班'?'text-emerald-400':'text-slate-300'}">${escapeHtml(r.status||'--')}</span><span class="text-xs text-slate-400">${escapeHtml(r.time||formatDateTime(getClockTimestamp(r)))}</span>${r.isRetro?'<span class="text-xs text-sky-300">補打卡</span>':''}${r.retroReason?`<span class="text-xs text-slate-400">原因：${escapeHtml(r.retroReason)}</span>`:''}</div>${canReviewJX()?`<button type="button" class="rounded-lg border border-rose-600/60 bg-rose-950/50 px-3 py-1.5 text-xs text-rose-300" onclick="deleteJiaxiaoClockRecord('${encodeURIComponent(String(r.docId||r.id||''))}')">刪除紀錄</button>`:''}</div>`).join(''):(term?'沒有符合搜尋的打卡紀錄':'沒有打卡紀錄');
         }
         function jxSearchClocks(){renderJiaxiaoDuty();renderJiaxiaoClockHistory();}
         function renderJiaxiaoClockHours(){
@@ -11286,7 +11466,6 @@ async function republishAnnouncement(id) {
             const units=Array.from(document.querySelectorAll('input[name="new-user-units"]:checked')).map(x=>x.value);
             const policeDivision=document.getElementById('new-user-police-division').value, fireDivision=document.getElementById('new-user-fire-division').value;
             if (!account || !name || !pass || !units.length || !permissions.length) { showToast('請完整填寫帳號、名稱、密碼並至少勾選一個單位。','error','資料不完整'); return; }
-            if (units.length>2) { showToast('每個帳號最多只能勾選兩個單位。','warning','資料不符合'); return; }
             if (isSuperAdminAccount(account)) { showToast('Dsuensx 為系統最高權限保護帳號。','warning','操作受限'); return; }
             if (!validateUnitSelections(units,policeDivision,fireDivision)) return;
             if (appData.users.some(u=>String(u.account).toLowerCase()===account.toLowerCase())) { showToast('此帳號／編號已存在。','warning','帳號重複'); return; }
@@ -11330,10 +11509,9 @@ async function republishAnnouncement(id) {
             const pass=document.getElementById('edit-user-password-input').value.trim(); const staffNumber=document.getElementById('edit-user-staff-number-input')?.value.trim()||''; const robloxId=String(document.getElementById('edit-user-roblox-id-input')?.value||'').trim();
             let units=Array.from(document.querySelectorAll('input[name="edit-user-units"]:checked')).map(x=>x.value);
             const policeDivision=document.getElementById('edit-user-police-division').value || '新莊分局', fireDivision=document.getElementById('edit-user-fire-division').value;
-            if (superTarget) { account='Dsuensx'; role='admin'; permissions=['admin']; units=['admin','police']; }
+            if (superTarget) { account='Dsuensx'; role='admin'; permissions=['admin']; units=[...new Set(['admin','police',...units])]; }
             if (appData.users.find(x=>x.account===origAccount)?.role==='admin' || role==='admin') account=origAccount;
             if (!account || !name || !units.length || !permissions.length) { showToast('請完整填寫帳號、名稱並至少勾選一個單位。','error','資料不完整'); return; }
-            if (units.length>2 && !superTarget) { showToast('每個帳號最多只能勾選兩個單位。','warning','資料不符合'); return; }
             if (!validateUnitSelections(units,policeDivision,fireDivision)) return;
             const u=appData.users.find(x=>x.account===origAccount); if(!u) return;
             if (robloxId && appData.users.some(x=>x.account!==origAccount && String(x.robloxId||'').trim()===robloxId)) { showToast('此 ROBLOX ID 已綁定其他帳號。','warning','ROBLOX ID 重複'); return; }
@@ -12680,10 +12858,17 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
         }
         function openJXReport(type,id=''){
             if(!JX_COLLECTIONS[type]||!canAccessJiaxiao()){showToast('沒有嘉蕭集團報告權限','warning');return;}
-            const list=appData[JX_COLLECTIONS[type].pending]||[],record=id?list.find(r=>String(r.docId||r.id)===String(id)):null;
+            const cfg=JX_COLLECTIONS[type];
+            const pendingRecord=id?(appData[cfg.pending]||[]).find(r=>String(r.docId||r.id)===String(id)):null;
+            const approvedRecord=id?(appData[cfg.history]||[]).find(r=>String(r.docId||r.id)===String(id)):null;
+            const record=pendingRecord||approvedRecord||null;
+            if(id&&!record){showToast('請先載入原始報告，再進行編輯','warning');return;}
             if(!canWriteJXReport()){showToast('只有嘉蕭或管理中心成員可以填寫案件報告','warning');return;}
             if(record&&String(record.authorAccount||'')!==String(currentUser?.account||'')&&!canReviewJX()){showToast('無權修改其他人的報告','warning');return;}
             if(record&&record.reviewStatus==='pending'&&!canReviewJX()){showToast('待審期間無法修改案件','warning');return;}
+            if(approvedRecord&&pendingRecord&&pendingRecord.reviewStatus==='pending'&&!canReviewJX()){
+                showToast('這份已核准報告的修改版本正在審核，請先完成審核','warning');return;
+            }
             jxReportMode=type;
             document.getElementById('jx-report-type').value=type;
             document.getElementById('jx-report-edit-id').value=record?.docId||'';
@@ -12723,7 +12908,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 document.getElementById('jx-ems-next')?.classList.add('hidden');
             }
             jxSyncReportExtras();
-            document.getElementById('jx-submit-btn').textContent=record?'重新提交審核':'送交高層審核';
+            document.getElementById('jx-submit-btn').textContent=record?'儲存修改並送交高層複審':'送交高層審核';
             document.getElementById('modal-jx-report').classList.remove('hidden');
         }
         function closeJXReport(){document.getElementById('modal-jx-report')?.classList.add('hidden');}
@@ -12783,12 +12968,16 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 if(data.deceasedIdLast5&&!/^[a-z0-9]{5}$/i.test(data.deceasedIdLast5)){showToast('身分證後五碼需恰好五碼','warning');return;}
                 data.estimatedTotal=Math.max(0,Number(data.estimatedTotal)||0);
             }
-            const id=document.getElementById('jx-report-edit-id').value||jxUniqueId(type),prior=(appData[config.pending]||[]).find(x=>String(x.docId||x.id)===id);
+            const id=document.getElementById('jx-report-edit-id').value||jxUniqueId(type);
+            const prior=(appData[config.pending]||[]).find(x=>String(x.docId||x.id)===id)
+                ||(appData[config.history]||[]).find(x=>String(x.docId||x.id)===id);
             if(prior&&prior.authorAccount!==currentUser.account&&!canReviewJX()){showToast('不允許修改別人的案件','warning');return;}
             jxReportSaving=true;const btn=document.getElementById('jx-submit-btn');if(btn){btn.disabled=true;btn.textContent='送審中……';}
             try{
                 const now=Date.now();const obj={id,docId:id,reportType:type,details:data,authorAccount:prior?.authorAccount||currentUser.account,authorName:prior?.authorName||currentUser.name||currentUser.account,
-                    timestamp:prior?.timestamp||now,updatedAt:now,reviewStatus:'pending',reviewedAt:null,reviewedBy:'',reviewNote:'',time:formatDateTime(now)};
+                    timestamp:prior?.timestamp||now,updatedAt:now,reviewStatus:'pending',reviewedAt:null,reviewedBy:'',reviewNote:'',time:formatDateTime(now),
+                    revisionOfApproved:!!(appData[config.history]||[]).some(x=>String(x.docId||x.id)===id),
+                    lastEditedBy:currentUser.account,editCount:Number(prior?.editCount||0)+(prior?1:0)};
                 await fm.setDoc(fm.doc(db,config.pending,id),obj);
                 appData[config.pending]=[obj,...(appData[config.pending]||[]).filter(x=>String(x.id||x.docId)!==id)];
                 renderJXReports();closeJXReport();showToast('嘉蕭報告已送交高層審核','success','送件成功');
@@ -12820,6 +13009,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             const d=r.details||{},id=String(r.docId||r.id||''),encoded=encodeURIComponent(id),label=type==='medical'?'EMS 救護':'生命禮儀',patient=type==='medical'?d.patientName:d.deceasedName;
             const status=String(r.reviewStatus||'approved'),badge=status==='pending'?'待審':status==='rejected'?'退件': '已核准';
             const total=type==='medical'?d.total:d.estimatedTotal;
+            const hasDraft=!pending&&(appData[JX_COLLECTIONS[type].pending]||[]).some(x=>String(x.docId||x.id)===id&&x.reviewStatus==='pending');
             const buttons=[`<button type="button" onclick="viewJXReport('${type}','${encoded}',${pending})" class="rounded-lg bg-slate-700 px-3 py-2 text-sm text-white">檢視</button>`];
             if(pending&&status==='pending'&&canReviewJX()){
                 buttons.push(`<button type="button" onclick="reviewJXReport('${type}','${encoded}','approve')" class="rounded-lg bg-emerald-700 px-3 py-2 text-sm text-white">審核入庫</button>`);
@@ -12829,8 +13019,10 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 buttons.push(`<button type="button" onclick="changeJXReviewStatus('${type}','${encoded}',${pending})" class="rounded-lg bg-amber-700 px-3 py-2 text-sm text-white">更改審核狀態</button>`);
                 buttons.push(`<button type="button" onclick="deleteJXReport('${type}','${encoded}',${pending})" class="rounded-lg bg-rose-900 px-3 py-2 text-sm text-white">刪除報告</button>`);
             }
-            if(pending&&status==='rejected'&&String(r.authorAccount||'')===String(currentUser?.account||''))buttons.push(`<button type="button" onclick="openJXReport('${type}',decodeURIComponent('${encoded}'))" class="rounded-lg bg-teal-700 px-3 py-2 text-sm text-white">修改重新送審</button>`);
-            return `<article class="rounded-xl border border-slate-700 bg-slate-950/70 p-4 space-y-2"><div class="flex flex-wrap gap-2 justify-between"><div><span class="font-mono text-xs text-teal-300">${jxEsc(id)}</span><div class="text-sm font-bold text-white">${jxEsc(label)}｜${jxEsc(patient||'未填姓名')}</div></div><div class="text-xs text-slate-400">${jxEsc(badge)}｜${jxEsc(r.time||'')}</div></div><div class="text-xs text-slate-400">填報：${jxEsc(r.authorName||r.authorAccount||'--')}｜費用：${jxMoney(total)}</div>${['未付','未繳','未繳費','unpaid'].includes(String(d.paymentStatus||'').trim().toLowerCase())?'<span class="inline-flex items-center rounded-md border border-rose-500/60 bg-rose-950/80 px-2 py-1 text-xs font-bold text-rose-300">未繳費</span>':''}${status==='rejected'?`<p class="text-amber-300 text-sm">退件原因：${jxEsc(r.reviewNote||'未填')}</p>`:''}<div class="flex flex-wrap gap-2">${buttons.join('')}</div></article>`;
+            const isOwner=String(r.authorAccount||'').toLowerCase()===String(currentUser?.account||'').toLowerCase();
+            const editable=canWriteJXReport()&&(canReviewJX()||isOwner)&&(status!=='pending'||canReviewJX())&&(!hasDraft||canReviewJX());
+            if(editable)buttons.push(`<button type="button" onclick="openJXReport('${type}',decodeURIComponent('${encoded}'))" class="rounded-lg border border-sky-500/40 bg-sky-950/30 px-3 py-2 text-sm text-sky-200">${status==='rejected'?'編輯並重新送審':'編輯報告'}</button>`);
+            return `<article class="rounded-xl border border-slate-700 bg-slate-950/70 p-4 space-y-2"><div class="flex flex-wrap gap-2 justify-between"><div><span class="font-mono text-xs text-teal-300">${jxEsc(id)}</span><div class="text-sm font-bold text-white">${jxEsc(label)}｜${jxEsc(patient||'未填姓名')}</div></div><div class="text-xs text-slate-400">${jxEsc(badge)}｜${jxEsc(r.time||'')}</div></div><div class="text-xs text-slate-400">填報：${jxEsc(r.authorName||r.authorAccount||'--')}｜費用：${jxMoney(total)}</div>${['未付','未繳','未繳費','unpaid'].includes(String(d.paymentStatus||'').trim().toLowerCase())?'<span class="inline-flex items-center rounded-md border border-rose-500/60 bg-rose-950/80 px-2 py-1 text-xs font-bold text-rose-300">未繳費</span>':''}${status==='rejected'?`<p class="text-amber-300 text-sm">退件原因：${jxEsc(r.reviewNote||'未填')}</p>`:''}${hasDraft?'<p class="text-amber-200 text-xs">有修改版本待審核：正式報告保持原核准內容</p>':''}<div class="flex flex-wrap gap-2">${buttons.join('')}</div></article>`;
         }
         function renderJXReports(){
             const rights=canAccessJiaxiao(),reviewer=canReviewJX();
@@ -12864,6 +13056,27 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 if(list)list.innerHTML=rows.length?rows.map(({r,type,pending})=>jxReportCard(r,type,pending)).join(''):(search?'沒有符合搜尋條件的歷史報告':'目前沒有歷史報告（或尚未按下載入）。');
             }
         }
+        // V96：退件原因使用和警察審核相同風格的獨立模態視窗。
+        function jxAskRejectReason(initial=''){
+            return new Promise(resolve=>{
+                const overlay=document.getElementById('modal-jx-reject'),field=document.getElementById('jx-reject-reason');
+                const error=document.getElementById('jx-reject-error');
+                if(!overlay||!field){resolve(null);return;}
+                field.value=String(initial||'').slice(0,1000);error.classList.add('hidden');overlay.classList.remove('hidden');
+                let settled=false;
+                const cancel=document.getElementById('jx-reject-cancel'),ok=document.getElementById('jx-reject-confirm'),cross=document.getElementById('jx-reject-x');
+                const finish=value=>{if(settled)return;settled=true;overlay.classList.add('hidden');
+                    cancel.removeEventListener('click',stop);cross.removeEventListener('click',stop);ok.removeEventListener('click',submit);
+                    overlay.removeEventListener('click',background);document.removeEventListener('keydown',key);resolve(value);};
+                const stop=()=>finish(null),submit=()=>{const value=field.value.trim();
+                    if(!value){error.classList.remove('hidden');field.focus();return;}
+                    finish(value);};
+                const background=e=>{if(e.target===overlay)stop();};
+                const key=e=>{if(e.key==='Escape'){e.preventDefault();stop();}};
+                cancel.addEventListener('click',stop);cross.addEventListener('click',stop);ok.addEventListener('click',submit);
+                overlay.addEventListener('click',background);document.addEventListener('keydown',key);field.focus();
+            });
+        }
         async function reviewJXReport(type,encoded,action){
             if(!canReviewJX()||!fm||!db||!JX_COLLECTIONS[type]){showToast('只有嘉蕭高層／最高管理員可審核','warning');return;}
             const id=decodeURIComponent(encoded),cfg=JX_COLLECTIONS[type];
@@ -12879,8 +13092,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                     renderJXReports();await logAdminAction('嘉蕭案件審核通過',id);showToast('嘉蕭報告已審核入庫','success');
                 }catch(e){showToast('審核失敗：'+e.message,'error');}
             }else if(action==='reject'){
-                const reason=prompt('請輸入退件原因（必填）');if(reason===null)return;
-                if(!String(reason).trim()){showToast('退件原因不得為空','warning');return;}
+                const reason=await jxAskRejectReason();if(reason===null)return;
                 try{const now=Date.now();await fm.updateDoc(fm.doc(db,cfg.pending,id),{reviewStatus:'rejected',reviewNote:String(reason).trim().slice(0,1000),reviewedBy:currentUser.account,reviewedAt:now,updatedAt:now});
                     Object.assign(r,{reviewStatus:'rejected',reviewNote:String(reason).trim().slice(0,1000),reviewedBy:currentUser.account,reviewedAt:now,updatedAt:now});
                     renderJXReports();await logAdminAction('嘉蕭案件退件',id);showToast('案件已退件，可由填報人修改後重新送審','success');}
@@ -12922,8 +13134,8 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             if(!next)return;
             let note='';
             if(next==='rejected'){
-                const response=prompt('請填寫退件原因',r.reviewNote||'');if(response===null)return;
-                note=response.trim();if(!note){showToast('退件原因不可空白','warning');return;}
+                const response=await jxAskRejectReason(r.reviewNote||'');if(response===null)return;
+                note=response;
             }
             if(!(await showConfirm('確定將此報告審核狀態改為'+({pending:'待審',approved:'已核准',rejected:'退件'})[next]+'？','更改審核狀態','確認變更')))return;
             try{
@@ -13328,6 +13540,15 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             <div class="p-5 sm:p-6 space-y-4">
                 <div class="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-1"><div class="text-xs text-slate-400">打卡成員</div><div id="jx-clock-modal-member" class="text-white font-semibold">--</div><div id="jx-clock-modal-current" class="text-sm text-teal-300">正在確認打卡狀態</div></div>
                 <label class="block"><span class="block text-xs font-semibold text-slate-300 mb-2">打卡狀態</span><select id="jx-clock-modal-status" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white"><option value="上班">上班</option><option value="下班">下班</option></select></label>
+                <div id="jx-clock-retro-fields" class="hidden space-y-3 rounded-xl border border-sky-500/30 bg-sky-950/15 p-4">
+                    <p class="text-sm font-semibold text-sky-200">補登先前實際出勤時間</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label class="block text-xs text-slate-300">補打卡日期 <input id="jx-clock-retro-date" type="date" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white"></label>
+                        <label class="block text-xs text-slate-300">補打卡時間 <input id="jx-clock-retro-time" type="time" step="60" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white"></label>
+                    </div>
+                    <label class="block text-xs text-slate-300">補打卡原因（必填） <textarea id="jx-clock-retro-reason" maxlength="300" rows="2" placeholder="例如：執勤結束後忘記打卡" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white resize-y"></textarea></label>
+                    <p class="text-xs text-sky-200/80">只能補登自己的出勤；不能補登未來時間或重複的時間／狀態。系統保留實際補登時間及操作人。</p>
+                </div>
                 <p class="text-xs text-slate-400">打卡成功後將寫入嘉蕭專屬紀錄；消防無人在班時，倒地通知以嘉蕭目前值班狀態判定。</p>
                 <div class="flex justify-end gap-2"><button type="button" onclick="closeJiaxiaoClockModal()" class="rounded-xl bg-slate-700 hover:bg-slate-600 text-white px-5 py-3">取消</button><button type="button" id="jx-clock-modal-confirm" onclick="confirmJiaxiaoClockModal()" class="rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-semibold px-5 py-3">確認打卡</button></div>
             </div>
@@ -13465,5 +13686,16 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
     <div class="border-t border-slate-700 pt-5 space-y-3"><div class="flex items-center justify-between gap-3"><h3 class="font-semibold text-white">我的交通罰單紀錄</h3><button type="button" onclick="ntpcTicketLoad()" class="rounded-lg bg-slate-800 px-3 py-2 text-sm">載入／重新整理</button></div><p class="text-xs text-slate-500">按鈕才讀取紀錄；罰單核准與退件請至「警務 → 高層審核系統」操作。</p><div id="ntpc-ticket-list" class="space-y-3 text-slate-400 text-sm">尚未載入。</div></div>
   </div>
 </div>
+
+    <!-- V96：嘉蕭審核退件採警務同款自製對話框，不使用瀏覽器 prompt。 -->
+    <div id="modal-jx-reject" class="fixed inset-0 z-[120] bg-slate-950/85 backdrop-blur-sm hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="jx-reject-title">
+      <div class="w-full max-w-lg bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl space-y-5">
+        <div class="flex items-center justify-between gap-3"><h3 id="jx-reject-title" class="text-xl font-bold text-white"><i class="fa-solid fa-rotate-left text-rose-400 mr-2"></i>嘉蕭報告退件</h3><button id="jx-reject-x" type="button" class="p-2 text-slate-300 hover:text-white" aria-label="取消退件"><i class="fa-solid fa-xmark"></i></button></div>
+        <p class="text-sm text-slate-400">請清楚說明需要修改的內容，退件後將通知填報人重新送審。</p>
+        <label class="block text-xs font-semibold text-slate-300">退件原因（必填）<textarea id="jx-reject-reason" maxlength="1000" rows="5" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 p-4 text-white focus:border-rose-500 focus:outline-none" placeholder="請輸入退件原因（最多 1000 字）"></textarea></label>
+        <p id="jx-reject-error" class="hidden text-sm text-rose-300" role="alert">退件原因不得為空。</p>
+        <div class="grid grid-cols-2 gap-3"><button id="jx-reject-cancel" type="button" class="rounded-xl bg-slate-700 hover:bg-slate-600 p-3 text-white">取消</button><button id="jx-reject-confirm" type="button" class="rounded-xl bg-rose-700 hover:bg-rose-600 p-3 text-white font-bold">確認退件</button></div>
+      </div>
+    </div>
 </body>
 </html>
