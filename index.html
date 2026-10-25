@@ -1312,7 +1312,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                         <button id="police-report-modal-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
                             <i class="fa-solid fa-file-pen"></i><span>填寫案件報告</span>
                         </button>
-                        <button type="button" onclick="ntpcTicketOpen()" class="bg-cyan-900/50 hover:bg-cyan-800/70 border border-cyan-400/35 text-cyan-100 px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2"><i class="fa-solid fa-file-invoice-dollar"></i><span>填寫交通罰單</span></button>
+                        <button type="button" onclick="ntpcTicketCreate()" class="bg-cyan-900/50 hover:bg-cyan-800/70 border border-cyan-400/35 text-cyan-100 px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2"><i class="fa-solid fa-file-invoice-dollar"></i><span>填寫交通罰單</span></button>
                         <button id="police-erlc-audio-toggle" type="button" onclick="toggleERLCAudio()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2" title="只影響本裝置／本瀏覽器"><i class="fa-solid fa-volume-high"></i><span>警報音效：開啟</span></button>
                         <button id="police-page-refresh-btn" type="button" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2" title="重新整理網站頁面">
                             <i class="fa-solid fa-rotate"></i><span>刷新頁面</span>
@@ -1326,7 +1326,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                 <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
                     <button id="btn-police-reports" data-sub="reports" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史案件報告庫</button>
                     <button id="btn-police-review" data-sub="review" class="police-sub-btn hidden px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-stamp mr-2"></i>高層審核系統 <span id="police-review-tab-badge" class="ml-1 inline-flex min-w-[20px] h-5 px-1.5 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">0</span></button>
-                    <button type="button" id="ntpc-ticket-nav" onclick="ntpcTicketOpen()" class="px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap bg-cyan-900/35 text-cyan-200 border border-cyan-500/30 hover:bg-cyan-900/65"><i class="fa-solid fa-file-invoice-dollar mr-2"></i>交通罰單管理</button>
+                    <button type="button" id="ntpc-ticket-nav" onclick="switchPoliceSubTab('tickets');ntpcTicketLoad()" class="px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap bg-cyan-900/35 text-cyan-200 border border-cyan-500/30 hover:bg-cyan-900/65"><i class="fa-solid fa-file-invoice-dollar mr-2"></i>交通罰單管理</button>
                     <button id="btn-police-punishments" data-sub="punishments" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-gavel mr-2"></i>警用獎懲專區</button>
                     <button id="btn-police-clocks" data-sub="clocks" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clipboard-user mr-2"></i>即時出勤打卡紀錄</button>
                     <button id="btn-police-hours" data-sub="hours" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數統計</button>
@@ -1365,6 +1365,18 @@ input, textarea, select, button { accent-color:#38bdf8; }
                       <div id="ntpc-ticket-review-list" class="space-y-3 text-sm text-slate-400">尚未載入罰單。</div>
                     </section>
                 </div>
+
+                <section id="police-sub-tickets" class="hidden space-y-4">
+                  <div class="rounded-2xl border border-cyan-500/25 bg-slate-900/75 p-5 sm:p-6 space-y-3">
+                    <div class="flex flex-wrap justify-between items-center gap-3">
+                      <div><h3 class="text-lg font-bold text-cyan-100"><i class="fa-solid fa-clock-rotate-left mr-2"></i>近三日交通罰單歷史紀錄</h3><p class="text-xs text-slate-400 mt-1">比照歷史案件報告庫，僅按鈕載入；一般警員查看本人，高層可查看全體。未發布的待審／退件罰單可編輯。</p></div>
+                      <div class="flex flex-wrap gap-2"><button type="button" onclick="ntpcTicketCreate()" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm text-white font-semibold">＋ 填寫罰單</button><button type="button" onclick="ntpcTicketLoad()" class="rounded-lg bg-slate-700 hover:bg-slate-600 px-4 py-2.5 text-sm text-white font-semibold">載入／重新整理</button></div>
+                    </div>
+                    <input id="ntpc-ticket-search" type="search" oninput="ntpcTicketRender()" placeholder="搜尋罰單編號、受罰人、車牌、開單警員…" class="w-full rounded-xl bg-slate-950 border border-slate-700 p-3 text-white" aria-label="搜尋近三日交通罰單">
+                    <div id="ntpc-ticket-history-count" class="text-xs text-slate-400">尚未載入。</div>
+                  </div>
+                  <div id="ntpc-ticket-history-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-400">請點擊「載入／重新整理」。</div>
+                </section>
 
                 <div id="police-sub-punishments" class="hidden space-y-4">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -5539,7 +5551,7 @@ async function republishAnnouncement(id) {
                 showToast('高層審核系統僅限警察高層、高階成員與管理中心使用。', 'warning', '權限不足');
                 sub = 'reports';
             }
-            ['reports', 'review', 'punishments', 'clocks', 'hours', 'citizen', 'vehicles', 'wanted'].forEach(s => {
+            ['reports', 'review', 'tickets', 'punishments', 'clocks', 'hours', 'citizen', 'vehicles', 'wanted'].forEach(s => {
                 const el = document.getElementById(`police-sub-${s}`);
                 if (el) el.classList.add('hidden');
                 const btn = document.getElementById(`btn-police-${s}`);
@@ -8227,6 +8239,8 @@ async function republishAnnouncement(id) {
         // V76 交通罰單獨立模組。實際角色授權必須由 Firestore Security Rules 強制驗證。
         const NTPC_TICKET_COLLECTION='policeTrafficTickets';
         let ntpcTicketRows=[];
+        let ntpcTicketEditId=null;
+        const ntpcTicketThreeDays=()=>Date.now()-3*24*60*60*1000;
         function ntpcTicketReviewer(){ return canReviewPoliceReports(); }
         function ntpcTicketOpen(){
             if(!currentUser || !(userHasUnit('police') || currentUser.role==='admin')){showToast('僅限警務與管理中心成員。','warning');return;}
@@ -8235,7 +8249,8 @@ async function republishAnnouncement(id) {
             if(!document.querySelector('.ntpc-ticket-line'))ntpcTicketAddLine();
             if(!form.elements.occurred.value){const date=new Date();form.elements.occurred.value=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);} if(!form.elements.issuedDate.value){const date=new Date();form.elements.issuedDate.value=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,10);} if(!form.elements.issuingUnit.value) form.elements.issuingUnit.value=String(currentUser?.unit||currentUser?.department||'交通分隊');if(!form.elements.officerName.value)form.elements.officerName.value=String(currentUser?.name||'');
         }
-        function ntpcTicketClose(){ document.getElementById('ntpc-ticket-modal').classList.add('hidden'); }
+        function ntpcTicketClose(){ document.getElementById('ntpc-ticket-modal').classList.add('hidden');ntpcTicketEditId=null; }
+        function ntpcTicketCreate(){ntpcTicketEditId=null;const f=document.getElementById('ntpc-ticket-form');f.reset();document.getElementById('ntpc-ticket-items').replaceChildren();ntpcTicketAddLine();ntpcTicketTotal();document.getElementById('ntpc-ticket-submit').textContent='送交警務高層審核';ntpcTicketOpen();}
         function ntpcTicketAddLine(){
             const row=document.createElement('div');row.className='ntpc-ticket-line grid grid-cols-[1fr_130px_auto] gap-2';
             row.innerHTML='<input aria-label="違規條例" placeholder="違規條例名稱" maxlength="100" required class="min-w-0 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"><input aria-label="罰鍰" type="number" min="1" max="99999999" step="1" placeholder="金額" required class="min-w-0 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"><button type="button" class="rounded-lg bg-red-900/40 px-3" aria-label="移除條例">✕</button>';
@@ -8256,9 +8271,14 @@ async function republishAnnouncement(id) {
             if(!/^\d{4}-\d{2}-\d{2}$/.test(issuedDate)){showToast('請填寫有效的開立日期。','warning');return;}
             const btn=document.getElementById('ntpc-ticket-submit');btn.disabled=true;
             try{
-                const ref=fm.doc(fm.collection(db,NTPC_TICKET_COLLECTION));
+                const ref=ntpcTicketEditId?fm.doc(db,NTPC_TICKET_COLLECTION,ntpcTicketEditId):fm.doc(fm.collection(db,NTPC_TICKET_COLLECTION));
                 const ts=Date.now(),data={id:ref.id,ticketNo:'NTPC-T-'+new Date(ts).toISOString().slice(0,10).replace(/-/g,'')+'-'+ref.id.slice(0,6).toUpperCase(),person:f.elements.person.value.trim(),discordId,issuedDate,issuingUnit:f.elements.issuingUnit.value.trim(),officerName:f.elements.officerName.value.trim(),officerTitle:f.elements.officerTitle.value.trim(),badgeNumber:f.elements.badgeNumber.value.trim(),supervisor:f.elements.supervisor.value.trim(),identity:f.elements.identity.value.trim(),plate:f.elements.plate.value.trim(),occurred:f.elements.occurred.value,location:f.elements.location.value.trim(),description:f.elements.description.value.trim(),evidence:f.elements.evidence.value.trim(),items:lines,total,authorAccount:String(currentUser.account||''),authorName:String(currentUser.name||''),createdAt:ts,updatedAt:ts,reviewStatus:'pending',paymentStatus:'unpaid',publishStatus:'none'};
-                await fm.setDoc(ref,data);f.reset();document.getElementById('ntpc-ticket-items').innerHTML='';ntpcTicketAddLine();ntpcTicketTotal();showToast('交通罰單已送交高層審核。','success');await ntpcTicketLoad();
+                if(ntpcTicketEditId){
+                    const original=ntpcTicketRows.find(x=>x.docId===ntpcTicketEditId);
+                    if(!original||!ntpcTicketCanEdit(original))throw Error('此罰單已發布或不具編輯權限');
+                    await fm.runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error('找不到罰單');const previous=snap.data();if(!['pending','rejected'].includes(previous.reviewStatus)||!['none','failed'].includes(previous.publishStatus||'none'))throw Error('審核或發布狀態已變更，請重新整理');tx.update(ref,{...data,id:previous.id||ref.id,ticketNo:previous.ticketNo||data.ticketNo,createdAt:previous.createdAt||ts,authorAccount:previous.authorAccount,authorName:previous.authorName,reviewStatus:'pending',publishStatus:'none',reviewNote:'',reviewedBy:'',reviewedAt:null,editBy:currentUser.account,editAt:ts});});
+                }else{await fm.setDoc(ref,data);}
+                ntpcTicketEditId=null;f.reset();document.getElementById('ntpc-ticket-items').innerHTML='';ntpcTicketAddLine();ntpcTicketTotal();document.getElementById('ntpc-ticket-submit').textContent='送交警務高層審核';showToast('交通罰單已送交高層審核。','success');ntpcTicketClose();await ntpcTicketLoad();
             }catch(e){showToast('送審失敗：'+e.message,'error');}finally{btn.disabled=false;}
         }
         function ntpcTicketEscape(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -8267,9 +8287,29 @@ async function republishAnnouncement(id) {
             if(kind==='review')return ({pending:'待審核',approved:'已核准',rejected:'已退件'})[s]||'狀態未知';
             return ({none:'尚未發布',pending:'等待發文',publishing:'發文中',published:'已發布',failed:'發文失敗'})[s]||'尚未發布';
         }
+        function ntpcTicketCanEdit(t){
+            if(!t||!currentUser)return false;
+            const own=String(t.authorAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase();
+            return (own||ntpcTicketReviewer()) && ['pending','rejected'].includes(t.reviewStatus) && ['none','failed'].includes(t.publishStatus||'none');
+        }
+        function ntpcTicketEdit(id){
+            const t=ntpcTicketRows.find(x=>x.docId===id);
+            if(!ntpcTicketCanEdit(t)){showToast('僅可修改本人或高層可管理的未發布、待審／退件罰單。','warning');return;}
+            ntpcTicketEditId=id;
+            const f=document.getElementById('ntpc-ticket-form');f.reset();
+            for(const name of ['person','discordId','identity','plate','occurred','location','description','issuingUnit','officerName','officerTitle','badgeNumber','issuedDate','supervisor','evidence']){
+                if(f.elements[name])f.elements[name].value=String(t[name]||'');
+            }
+            document.getElementById('ntpc-ticket-items').replaceChildren();
+            for(const entry of t.items||[]){ntpcTicketAddLine();const row=document.querySelector('#ntpc-ticket-items .ntpc-ticket-line:last-child');row.querySelector('input:not([type=number])').value=entry.name||'';row.querySelector('input[type=number]').value=entry.amount||'';}
+            if(!(t.items||[]).length)ntpcTicketAddLine();
+            ntpcTicketTotal();document.getElementById('ntpc-ticket-submit').textContent='儲存修改並重新送審';
+            ntpcTicketOpen();
+        }
         function ntpcTicketRender(){
             const mineHost=document.getElementById('ntpc-ticket-list');
             const reviewHost=document.getElementById('ntpc-ticket-review-list');
+            const historyHost=document.getElementById('ntpc-ticket-history-list');
             const ownAccount=String(currentUser?.account||'').trim().toLowerCase();
             const mine=ntpcTicketRows.filter(t=>String(t.authorAccount||'').trim().toLowerCase()===ownAccount);
             const canReview=ntpcTicketReviewer();
@@ -8294,6 +8334,18 @@ async function republishAnnouncement(id) {
                 }
             };
             draw(mineHost,mine,false);
+            if(historyHost){
+                const needle=(document.getElementById('ntpc-ticket-search')?.value||'').trim().toLowerCase();
+                const recent=ntpcTicketRows.filter(t=>Number(t.createdAt||0)>=ntpcTicketThreeDays() && (canReview||String(t.authorAccount||'').trim().toLowerCase()===ownAccount))
+                    .filter(t=>!needle||[t.ticketNo,t.person,t.plate,t.officerName,t.identity,t.authorName].some(v=>String(v||'').toLowerCase().includes(needle)));
+                document.getElementById('ntpc-ticket-history-count').textContent=`近三日符合條件 ${recent.length} 張罰單`;
+                draw(historyHost,recent,false);
+                for(let i=0;i<recent.length;i++){
+                    const t=recent[i],card=historyHost.children[i];
+                    if(!card || !ntpcTicketCanEdit(t))continue;
+                    const b=document.createElement('button');b.type='button';b.className='mt-2 rounded-lg bg-blue-700 hover:bg-blue-600 px-4 py-2 text-white text-xs font-semibold';b.textContent='編輯罰單';b.onclick=()=>ntpcTicketEdit(t.docId);card.appendChild(b);
+                }
+            }
             if(canReview)draw(reviewHost,pending,true);
             else if(reviewHost)reviewHost.textContent='僅警務高層可查閱及審核罰單。';
         }
@@ -8303,7 +8355,7 @@ async function republishAnnouncement(id) {
             if(mineHost)mineHost.textContent='載入中…';
             if(reviewHost&&ntpcTicketReviewer())reviewHost.textContent='載入中…';
             try{
-                const q=ntpcTicketReviewer()?fm.query(fm.collection(db,NTPC_TICKET_COLLECTION),fm.limit(150)):fm.query(fm.collection(db,NTPC_TICKET_COLLECTION),fm.where('authorAccount','==',currentUser.account),fm.limit(150));
+                const q=ntpcTicketReviewer()?fm.query(fm.collection(db,NTPC_TICKET_COLLECTION),fm.where('createdAt','>=',ntpcTicketThreeDays()),fm.limit(150)):fm.query(fm.collection(db,NTPC_TICKET_COLLECTION),fm.where('authorAccount','==',currentUser.account),fm.limit(150));
                 const snapshot=await fm.getDocs(q);
                 ntpcTicketRows=snapshot.docs.map(d=>({docId:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
                 ntpcTicketRender();
