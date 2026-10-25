@@ -1356,6 +1356,14 @@ input, textarea, select, button { accent-color:#38bdf8; }
                         </div>
                     </div>
                     <div id="police-review-list" class="grid grid-cols-1 gap-4"></div>
+                    <!-- 交通罰單的審核按鈕只在高層審核分頁提供 -->
+                    <section id="ntpc-ticket-review-section" class="rounded-2xl border border-cyan-500/20 bg-slate-900/70 p-4 sm:p-6 space-y-4">
+                      <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-file-invoice-dollar text-cyan-300 mr-2"></i>交通罰單高層審核</h3><p class="text-xs text-slate-400 mt-1">只在此處審核罰單；審核通過後才交由 Bot 排程論壇發文。</p></div>
+                        <button type="button" onclick="ntpcTicketLoad()" class="rounded-lg bg-cyan-800 hover:bg-cyan-700 px-4 py-2 text-sm font-semibold text-white">載入／重新整理罰單</button>
+                      </div>
+                      <div id="ntpc-ticket-review-list" class="space-y-3 text-sm text-slate-400">尚未載入罰單。</div>
+                    </section>
                 </div>
 
                 <div id="police-sub-punishments" class="hidden space-y-4">
@@ -8254,25 +8262,55 @@ async function republishAnnouncement(id) {
             }catch(e){showToast('送審失敗：'+e.message,'error');}finally{btn.disabled=false;}
         }
         function ntpcTicketEscape(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-        async function ntpcTicketLoad(){
-            const host=document.getElementById('ntpc-ticket-list');if(!currentUser||!fm||!db)return;
-            host.textContent='載入中…';
-            try{
-                const q=ntpcTicketReviewer()?fm.query(fm.collection(db,NTPC_TICKET_COLLECTION),fm.limit(150)):fm.query(fm.collection(db,NTPC_TICKET_COLLECTION),fm.where('authorAccount','==',currentUser.account),fm.limit(150));
-                const snapshot=await fm.getDocs(q);ntpcTicketRows=snapshot.docs.map(d=>({docId:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-                host.innerHTML=ntpcTicketRows.length?'':'尚無交通罰單紀錄。';
-                for(const t of ntpcTicketRows){
+        function ntpcTicketStatusLabel(status,kind){
+            const s=String(status||'').toLowerCase();
+            if(kind==='review')return ({pending:'待審核',approved:'已核准',rejected:'已退件'})[s]||'狀態未知';
+            return ({none:'尚未發布',pending:'等待發文',publishing:'發文中',published:'已發布',failed:'發文失敗'})[s]||'尚未發布';
+        }
+        function ntpcTicketRender(){
+            const mineHost=document.getElementById('ntpc-ticket-list');
+            const reviewHost=document.getElementById('ntpc-ticket-review-list');
+            const ownAccount=String(currentUser?.account||'').trim().toLowerCase();
+            const mine=ntpcTicketRows.filter(t=>String(t.authorAccount||'').trim().toLowerCase()===ownAccount);
+            const canReview=ntpcTicketReviewer();
+            const pending=canReview?ntpcTicketRows.filter(t=>t.reviewStatus==='pending'):[];
+            const draw=(host,rows,showActions)=>{
+                if(!host)return;
+                host.replaceChildren();
+                if(!rows.length){host.textContent=showActions?'目前沒有待審核交通罰單。':'目前沒有自己的交通罰單紀錄。';return;}
+                for(const t of rows){
                     const card=document.createElement('article');card.className='rounded-xl bg-slate-950/70 border border-slate-700 p-4 space-y-2';
                     const items=(t.items||[]).map(i=>`${ntpcTicketEscape(i.name)}：NT$${Number(i.amount||0).toLocaleString('en-US')}`).join('<br>');
-                    card.innerHTML=`<div class="flex justify-between flex-wrap gap-2"><strong class="text-cyan-200">${ntpcTicketEscape(t.ticketNo||t.docId)}</strong><span>${ntpcTicketEscape(t.reviewStatus)} ／ ${ntpcTicketEscape(t.publishStatus||'none')}</span></div><div>${ntpcTicketEscape(t.person)}｜${ntpcTicketEscape(t.location)}</div><div class="text-xs text-slate-300">${items}</div><strong>總罰鍰 NT$${Number(t.total||0).toLocaleString('en-US')}</strong><div class="text-xs text-slate-500">開立：${ntpcTicketEscape(t.authorName)} · ${ntpcTicketEscape(t.occurred)}</div>`;
+                    const reviewText=ntpcTicketStatusLabel(t.reviewStatus,'review');
+                    const publishText=ntpcTicketStatusLabel(t.publishStatus,'publish');
+                    const color=t.reviewStatus==='pending'?'text-amber-300':t.reviewStatus==='approved'?'text-emerald-300':'text-rose-300';
+                    card.innerHTML=`<div class="flex justify-between items-center flex-wrap gap-2"><strong class="text-cyan-200">${ntpcTicketEscape(t.ticketNo||t.docId)}</strong><div class="flex flex-wrap gap-2"><span class="rounded-full border border-slate-600 bg-slate-800/70 px-2.5 py-1 text-xs font-semibold ${color}">${reviewText}</span><span class="rounded-full border border-slate-600 bg-slate-800/70 px-2.5 py-1 text-xs text-slate-300">${publishText}</span></div></div><div>${ntpcTicketEscape(t.person)}｜${ntpcTicketEscape(t.location)}</div><div class="text-xs text-slate-300">${items}</div><strong>總罰鍰 NT$${Number(t.total||0).toLocaleString('en-US')}</strong><div class="text-xs text-slate-500">開立：${ntpcTicketEscape(t.authorName)} · ${ntpcTicketEscape(t.occurred)}</div>`;
                     if(t.discordThreadId){const a=document.createElement('a');a.href=`https://discord.com/channels/${encodeURIComponent(t.discordGuildId||'')}/${encodeURIComponent(t.discordThreadId)}`;a.target='_blank';a.rel='noopener noreferrer';a.className='text-sm text-cyan-300 underline block';a.textContent='查看 Discord 論壇貼文';card.appendChild(a);}
-                    if(ntpcTicketReviewer()&&t.reviewStatus==='pending'){
-                        const box=document.createElement('div');box.className='flex gap-2';
-                        for(const [label,action,cls] of [['核准並排程發文','approved','bg-emerald-700'],['退件','rejected','bg-amber-700']]){const b=document.createElement('button');b.type='button';b.className=`rounded-lg px-3 py-2 text-xs ${cls}`;b.textContent=label;b.onclick=()=>ntpcTicketReview(t.docId,action);box.appendChild(b);}card.appendChild(box);
+                    if(showActions&&canReview&&t.reviewStatus==='pending'){
+                        const box=document.createElement('div');box.className='flex flex-wrap gap-2';
+                        for(const [label,action,cls] of [['核准並排程發文','approved','bg-emerald-700'],['退件','rejected','bg-amber-700']]){const btn=document.createElement('button');btn.type='button';btn.className=`rounded-lg px-3 py-2 text-xs ${cls}`;btn.textContent=label;btn.onclick=()=>ntpcTicketReview(t.docId,action);box.appendChild(btn);}card.appendChild(box);
                     }
                     host.appendChild(card);
                 }
-            }catch(e){host.textContent='載入失敗：'+e.message;}
+            };
+            draw(mineHost,mine,false);
+            if(canReview)draw(reviewHost,pending,true);
+            else if(reviewHost)reviewHost.textContent='僅警務高層可查閱及審核罰單。';
+        }
+        async function ntpcTicketLoad(){
+            const mineHost=document.getElementById('ntpc-ticket-list'),reviewHost=document.getElementById('ntpc-ticket-review-list');
+            if(!currentUser||!fm||!db)return;
+            if(mineHost)mineHost.textContent='載入中…';
+            if(reviewHost&&ntpcTicketReviewer())reviewHost.textContent='載入中…';
+            try{
+                const q=ntpcTicketReviewer()?fm.query(fm.collection(db,NTPC_TICKET_COLLECTION),fm.limit(150)):fm.query(fm.collection(db,NTPC_TICKET_COLLECTION),fm.where('authorAccount','==',currentUser.account),fm.limit(150));
+                const snapshot=await fm.getDocs(q);
+                ntpcTicketRows=snapshot.docs.map(d=>({docId:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+                ntpcTicketRender();
+            }catch(e){
+                if(mineHost)mineHost.textContent='載入失敗：'+e.message;
+                if(reviewHost&&ntpcTicketReviewer())reviewHost.textContent='載入失敗：'+e.message;
+            }
         }
         async function ntpcTicketReview(id,decision){
             if(!ntpcTicketReviewer()||!fm||!db)return;
@@ -12759,7 +12797,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
       <label class="block text-sm text-slate-300">證據連結（選填）<input name="evidence" type="url" maxlength="500" placeholder="https://" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
       <div class="flex justify-end"><button type="submit" id="ntpc-ticket-submit" class="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 font-semibold">送交警務高層審核</button></div>
     </form>
-    <div class="border-t border-slate-700 pt-5 space-y-3"><div class="flex items-center justify-between gap-3"><h3 class="font-semibold text-white">交通罰單紀錄與審核</h3><button type="button" onclick="ntpcTicketLoad()" class="rounded-lg bg-slate-800 px-3 py-2 text-sm">載入／重新整理</button></div><p class="text-xs text-slate-500">按鈕才讀取資料；一般警員僅顯示自己開立的罰單，高層可查看與審核全部罰單。</p><div id="ntpc-ticket-list" class="space-y-3 text-slate-400 text-sm">尚未載入。</div></div>
+    <div class="border-t border-slate-700 pt-5 space-y-3"><div class="flex items-center justify-between gap-3"><h3 class="font-semibold text-white">我的交通罰單紀錄</h3><button type="button" onclick="ntpcTicketLoad()" class="rounded-lg bg-slate-800 px-3 py-2 text-sm">載入／重新整理</button></div><p class="text-xs text-slate-500">按鈕才讀取紀錄；罰單核准與退件請至「警務 → 高層審核系統」操作。</p><div id="ntpc-ticket-list" class="space-y-3 text-slate-400 text-sm">尚未載入。</div></div>
   </div>
 </div>
 </body>
