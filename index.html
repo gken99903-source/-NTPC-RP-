@@ -4364,10 +4364,12 @@ const loginOpenBtn = document.getElementById('login-modal-open-btn');
 
         function getPunishmentItems(p) {
             if (!p) return [];
-            if (Array.isArray(p.items)) return p.items.map(String).filter(Boolean);
-            if (Array.isArray(p.item)) return p.item.map(String).filter(Boolean);
+            // 兼容舊資料「警告」，顯示及統計統一使用「申誡」；不修改既有 Firestore 紀錄。
+            const rename = item => String(item).trim().replace(/^警告(?=x[1-5]$)/, '申誡');
+            if (Array.isArray(p.items)) return p.items.map(rename).filter(Boolean);
+            if (Array.isArray(p.item)) return p.item.map(rename).filter(Boolean);
             const raw = String(p.item || '').trim();
-            return raw ? raw.split(/[、,，]/).map(x => x.trim()).filter(Boolean) : [];
+            return raw ? raw.split(/[、,，]/).map(rename).filter(Boolean) : [];
         }
 
         function isSuspendedUser(account) {
@@ -6900,12 +6902,12 @@ async function republishAnnouncement(id) {
         }
 
         const REWARD_ITEMS = ['嘉獎x1','嘉獎x2','嘉獎x3','嘉獎x4','嘉獎x5','小功x1','小功x2','小功x3','小功x4','小功x5','大功x1','大功x2','大功x3','大功x4','大功x5'];
-        const PUNISHMENT_ITEMS = ['警告x1','警告x2','警告x3','警告x4','警告x5','小過x1','小過x2','小過x3','小過x4','小過x5','大過x1','大過x2','大過x3','大過x4','大過x5','停職調查'];
+        const PUNISHMENT_ITEMS = ['申誡x1','申誡x2','申誡x3','申誡x4','申誡x5','小過x1','小過x2','小過x3','小過x4','小過x5','大過x1','大過x2','大過x3','大過x4','大過x5','停職調查'];
 
         function normalizeSelectedItems(selected) {
-            const legacy={申誡一次:'警告x1',申誡二次:'警告x2',記過一次:'小過x1',記過二次:'小過x2',大過一次:'大過x1',停職處分:'停職調查'};
+            const legacy={申誡一次:'申誡x1',申誡二次:'申誡x2',記過一次:'小過x1',記過二次:'小過x2',大過一次:'大過x1',停職處分:'停職調查'};
             const arr=Array.isArray(selected)?selected:String(selected||'').split(/[、,，]/).map(x=>x.trim()).filter(Boolean);
-            return arr.map(x=>legacy[x]||x).filter(Boolean);
+            return arr.map(x=>String(legacy[x]||x).replace(/^警告(?=x[1-5]$)/,'申誡')).filter(Boolean);
         }
         function getSelectedPunishmentItems(containerId='punish-item') {
             const c=document.getElementById(containerId); return c?Array.from(c.querySelectorAll('input[data-punish-item]:checked')).map(x=>x.value):[];
@@ -8727,8 +8729,8 @@ async function republishAnnouncement(id) {
                 const member=String(p.memberName||'').toLowerCase();
                 return memberId.includes(q)||memberAccount.includes(q)||member.includes(q);
             });container.innerHTML='';
-            const totals={嘉獎:0,小功:0,大功:0,警告:0,小過:0,大過:0,停職調查:0};filtered.forEach(p=>getPunishmentItems(p).forEach(item=>{const m=String(item).match(/^(嘉獎|小功|大功|警告|小過|大過)x(\d+)$/);if(m)totals[m[1]]+=Number(m[2]);else if(item==='停職調查')totals.停職調查++;}));
-            if(summary)summary.innerHTML=Object.entries(totals).map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${k}</span><span class="text-xl font-bold ${['警告','小過','大過','停職調查'].includes(k)?'text-rose-400':'text-emerald-400'}">${v}</span><span class="text-[10px] text-slate-500">次</span></div>`).join('');
+            const totals={嘉獎:0,小功:0,大功:0,申誡:0,小過:0,大過:0,停職調查:0};filtered.forEach(p=>getPunishmentItems(p).forEach(item=>{const m=String(item).match(/^(嘉獎|小功|大功|申誡|小過|大過)x(\d+)$/);if(m)totals[m[1]]+=Number(m[2]);else if(item==='停職調查')totals.停職調查++;}));
+            if(summary)summary.innerHTML=Object.entries(totals).map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${k}</span><span class="text-xl font-bold ${['申誡','小過','大過','停職調查'].includes(k)?'text-rose-400':'text-emerald-400'}">${v}</span><span class="text-[10px] text-slate-500">次</span></div>`).join('');
             if(!filtered.length){container.innerHTML='<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">沒有找到符合管理編號的獎懲紀錄。</div>';return;}
             filtered.forEach(p=>{const key=p.docId||p.id,items=getPunishmentItems(p),reward=String(p.type||'punishment')==='reward',edit=canModifyPunishment(p),card=document.createElement('div');card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4';card.innerHTML=`<div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2"><span class="px-3 py-1 rounded-full text-xs font-semibold ${reward?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20':'bg-rose-500/10 text-rose-400 border border-rose-500/20'} font-mono">${p.id||key}</span><span class="px-3 py-1 rounded-full text-xs font-bold ${reward?'bg-emerald-500/20 text-emerald-400':'bg-red-500/20 text-red-400'}">${reward?'獎勵':'懲處'}｜${items.join('、')||'未填寫'}</span></div><span class="text-xs text-slate-400">${p.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs bg-slate-950 p-3 rounded-xl"><div><span class="text-slate-500 block">被獎懲員警</span><b>${p.memberName||'未知'}（管理編號：${p.memberId||'--'}）</b></div><div><span class="text-slate-500 block">發布部門</span>${p.department||'--'}</div><div><span class="text-slate-500 block">登記帳號</span><span class="font-mono text-cyan-400">${p.authorAccount||'舊資料'}</span></div></div><div class="text-sm text-slate-300 line-clamp-3">${p.reason||'未提供事由。'}</div><div class="flex flex-wrap justify-between gap-2 border-t border-slate-800 pt-2"><button onclick="viewPunishmentDetail('${key}')" class="px-3 py-2 text-xs text-amber-400 rounded-lg hover:bg-amber-500/10"><i class="fa-solid fa-expand mr-1"></i>點擊放大檢視</button><div class="flex gap-2">${edit?`<button onclick="openEditPunishmentModal('${key}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs">修改</button>`:''}${canDeletePunishment()?`<button onclick="deletePunishment('${key}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">移除</button>`:''}</div></div>`;container.appendChild(card);});
         }
