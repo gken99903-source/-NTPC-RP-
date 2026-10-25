@@ -7343,6 +7343,7 @@ async function republishAnnouncement(id) {
                 if(epoch!==lookupDemandEpoch||!currentUser||currentUser.account!==account)return;
                 if(status)status.textContent=`本次從雲端查詢到 ${rawRows.length} 筆${full?'（進階包含搜尋）':result.numericContainsScan?'（數字包含搜尋）':'（索引搜尋）'}${result.truncated?'；結果可能不完整，請縮小條件':''}${result.partial?'；部分條件失敗':''}${type==='citizen'&&citizenCaseLookupState.error?'；相關案件讀取失敗，請確認權限後重新查詢':''}。`;
                 renderLookupSystems();
+                ntpcPlayWantedLookupAlert(type, rawRows);
                 if(result.truncated)showToast('符合條件的資料較多，僅顯示部分結果；可縮小條件或改用進階搜尋。','warning','資料筆數提醒');
             }catch(e){
                 console.error(`${type} 查詢失敗：`,e);
@@ -7388,6 +7389,34 @@ async function republishAnnouncement(id) {
             return wanted?1:0;
         }
         function sortCitizenSearchResults(records){return [...records].sort((a,b)=>citizenDisplayRank(a)-citizenDisplayRank(b));}
+        // V82：只有按下雲端「查詢」且結果命中已載入的有效通緝資料才播放。
+        // 採用網站原本的警報音效開關，不增加 Firestore 查詢或背景監聽。
+        const ntpcWantedLookupSound = new Audio('/y1627.wav');
+        ntpcWantedLookupSound.preload = 'none';
+        let ntpcWantedLookupSoundLastAt = 0;
+        function ntpcPlayWantedLookupAlert(type, rows){
+            try {
+                if (!erlcAudioEnabled || !Array.isArray(rows) || !rows.length) return;
+                const wantedIds = new Set((appData.wantedRecords || [])
+                    .filter(w => isWantedActive(w))
+                    .map(w => String(getLastFive(w.id5) || ''))
+                    .filter(id => /^\d{5}$/.test(id)));
+                if (!wantedIds.size) return;
+                const hit = rows.some(r => {
+                    const id = String(getLastFive(r.id5) || '');
+                    return /^\d{5}$/.test(id) && wantedIds.has(id) &&
+                        (type === 'vehicles' || !r.deceased);
+                });
+                if (!hit || Date.now() - ntpcWantedLookupSoundLastAt < 2000) return;
+                ntpcWantedLookupSoundLastAt = Date.now();
+                ntpcWantedLookupSound.pause();
+                ntpcWantedLookupSound.currentTime = 0;
+                const playResult = ntpcWantedLookupSound.play();
+                if (playResult && typeof playResult.catch === 'function') {
+                    playResult.catch(err => console.info('通緝提示音未播放（請確認 y1627.wav 已部署且瀏覽器允許音效）:', err));
+                }
+            } catch (err) { console.warn('通緝查詢音效異常:', err); }
+        }
         function searchCitizenRecords(){
             if(!lookupAccessible('citizen'))return;
             const c=document.getElementById('citizen-results'); if(!c)return;
