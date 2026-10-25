@@ -1312,6 +1312,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                         <button id="police-report-modal-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
                             <i class="fa-solid fa-file-pen"></i><span>填寫案件報告</span>
                         </button>
+                        <button type="button" onclick="ntpcTicketOpen()" class="bg-cyan-900/50 hover:bg-cyan-800/70 border border-cyan-400/35 text-cyan-100 px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2"><i class="fa-solid fa-file-invoice-dollar"></i><span>填寫交通罰單</span></button>
                         <button id="police-erlc-audio-toggle" type="button" onclick="toggleERLCAudio()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2" title="只影響本裝置／本瀏覽器"><i class="fa-solid fa-volume-high"></i><span>警報音效：開啟</span></button>
                         <button id="police-page-refresh-btn" type="button" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2" title="重新整理網站頁面">
                             <i class="fa-solid fa-rotate"></i><span>刷新頁面</span>
@@ -1325,6 +1326,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                 <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
                     <button id="btn-police-reports" data-sub="reports" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史案件報告庫</button>
                     <button id="btn-police-review" data-sub="review" class="police-sub-btn hidden px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-stamp mr-2"></i>高層審核系統 <span id="police-review-tab-badge" class="ml-1 inline-flex min-w-[20px] h-5 px-1.5 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">0</span></button>
+                    <button type="button" id="ntpc-ticket-nav" onclick="ntpcTicketOpen()" class="px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap bg-cyan-900/35 text-cyan-200 border border-cyan-500/30 hover:bg-cyan-900/65"><i class="fa-solid fa-file-invoice-dollar mr-2"></i>交通罰單管理</button>
                     <button id="btn-police-punishments" data-sub="punishments" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-gavel mr-2"></i>警用獎懲專區</button>
                     <button id="btn-police-clocks" data-sub="clocks" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clipboard-user mr-2"></i>即時出勤打卡紀錄</button>
                     <button id="btn-police-hours" data-sub="hours" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數統計</button>
@@ -2117,7 +2119,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                     </div>
                     <div class="flex items-center justify-center flex-wrap gap-2 mobile-action-group w-full md:w-auto" id="jiaxiao-quick-actions">
                         <button type="button" id="jx-clock-modal-btn" onclick="openJiaxiaoClockModal()" aria-haspopup="dialog" aria-controls="modal-jx-clock" class="jx-member-create-btn rounded-xl bg-teal-600 hover:bg-teal-500 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-clock mr-2"></i>上下班打卡</button>
-                        <button type="button" id="jx-hospital-modal-btn" onclick="openJiaxiaoHospitalModal()" aria-haspopup="dialog" aria-controls="modal-jx-hospital" class="rounded-xl border border-teal-500/35 bg-slate-800 hover:bg-slate-700 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-hospital mr-2"></i>填寫醫院報告（預留）</button>
+                        <button type="button" id="jx-hospital-modal-btn" onclick="openJiaxiaoHospitalModal()" aria-haspopup="dialog" aria-controls="modal-jx-hospital" class="rounded-xl border border-teal-500/35 bg-slate-800 hover:bg-slate-700 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-hospital mr-2"></i>填寫醫院報告</button>
                         <div class="contents" id="jx-report-create-actions">
                             <button type="button" onclick="openJXReport('medical')" aria-haspopup="dialog" aria-controls="modal-jx-report" class="rounded-xl bg-emerald-700 hover:bg-emerald-600 px-4 py-2.5 text-sm text-white font-semibold"><i class="fa-solid fa-truck-medical mr-1"></i>填寫 EMS 救護報告</button>
                             <button type="button" onclick="openJXReport('funeral')" aria-haspopup="dialog" aria-controls="modal-jx-report" class="rounded-xl bg-indigo-700 hover:bg-indigo-600 px-4 py-2.5 text-sm text-white font-semibold"><i class="fa-solid fa-file-signature mr-1"></i>填寫生命禮儀報告</button>
@@ -2125,7 +2127,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                     </div>
                 </div>
                 <div class="flex gap-2 overflow-x-auto border-b border-slate-800 pb-2" role="tablist" aria-label="嘉蕭集團分類">
-                    <button type="button" id="btn-jiaxiao-hospital" data-sub="hospital" aria-controls="jx-sub-hospital" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-hospital mr-2"></i>醫院報告（尚未開放）</button>
+                    <button type="button" id="btn-jiaxiao-hospital" data-sub="hospital" aria-controls="jx-sub-hospital" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-hospital mr-2"></i>醫院報告／登記紀錄</button>
                     <button type="button" id="btn-jiaxiao-medical" data-sub="medical" aria-controls="jx-sub-medical" aria-selected="true" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-teal-600 text-white whitespace-nowrap"><i class="fa-solid fa-truck-medical mr-2"></i>EMS 歷史報告</button>
                     <button type="button" id="btn-jiaxiao-funeral" data-sub="funeral" aria-controls="jx-sub-funeral" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-file-medical mr-2"></i>生命禮儀歷史報告</button>
                     <button type="button" id="btn-jiaxiao-review" data-sub="review" aria-controls="jx-sub-review" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-stamp mr-2"></i>高層審核／我的送審</button>
@@ -2133,15 +2135,16 @@ input, textarea, select, button { accent-color:#38bdf8; }
                     <button type="button" id="btn-jiaxiao-hours" data-sub="hours" aria-controls="jx-sub-hours" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數</button>
                 </div>
 
-                <!-- 需求尚未規劃：只保留按鈕及真正可切換的空白分頁，絕不假造醫院登記表資料 -->
-                <section id="jx-sub-hospital" role="tabpanel" aria-labelledby="btn-jiaxiao-hospital" class="hidden rounded-2xl border border-teal-500/20 bg-slate-900 p-6 sm:p-8 space-y-4">
-                    <div class="flex items-center gap-3"><i class="fa-solid fa-hospital text-2xl text-teal-400"></i><div><h3 class="text-xl font-bold text-white">醫院報告（預留）</h3><p class="text-sm text-slate-400 mt-1">嘉蕭集團｜獨立醫院登記區</p></div></div>
-                    <div class="rounded-xl border border-dashed border-slate-700 bg-slate-950/60 p-7 text-center space-y-3">
-                        <i class="fa-regular fa-clipboard text-3xl text-slate-500"></i>
-                        <p class="text-base font-semibold text-slate-200">醫院登記表欄位尚未規劃</p>
-                        <p class="text-sm text-slate-400">這是「醫院登記表」的獨立預留分類，並非 EMS 救護報告。待提供醫院欄位後再新增表單，現階段不會建立空白報告。</p>
-                        <span class="inline-flex rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-400">尚未開放填寫</span>
+                <section id="jx-sub-hospital" role="tabpanel" aria-labelledby="btn-jiaxiao-hospital" class="hidden rounded-2xl border border-teal-500/20 bg-slate-900 p-5 sm:p-7 space-y-4">
+                    <div class="flex flex-wrap justify-between items-center gap-3"><div><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-hospital text-teal-400 mr-2"></i>嘉蕭醫院｜紀錄中心</h3><p class="text-sm text-slate-400 mt-1">四種獨立表單；按鈕才載入 Firestore 資料，線上掛號採獨立集合。</p></div><button type="button" onclick="openJiaxiaoHospitalModal()" class="rounded-xl bg-teal-700 hover:bg-teal-600 px-4 py-2.5 text-white font-medium">新增醫院紀錄</button></div>
+                    <div class="flex flex-wrap gap-2" id="jx-hospital-record-tabs">
+                      <button type="button" onclick="jxHospitalLoad('visit')" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2">病患就診紀錄</button>
+                      <button type="button" onclick="jxHospitalLoad('registration')" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2">現場掛號紀錄</button>
+                      <button type="button" onclick="jxHospitalLoad('online')" class="rounded-lg border border-sky-600/40 bg-sky-900/30 px-3 py-2 text-sky-200"><i class="fa-solid fa-globe mr-1"></i>線上掛號紀錄</button>
+                      <button type="button" onclick="jxHospitalLoad('admission')" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2">住院紀錄</button>
+                      <button type="button" onclick="jxHospitalLoad('receipt')" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2">醫院收據</button>
                     </div>
+                    <div id="jx-hospital-record-status" class="text-xs text-slate-400">尚未讀取紀錄</div><div id="jx-hospital-record-results" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                 </section>
 
                 <section id="jx-sub-medical" role="tabpanel" aria-labelledby="btn-jiaxiao-medical" class="space-y-4">
@@ -5585,11 +5588,108 @@ async function republishAnnouncement(id) {
         // 嘉蕭操作採消防中心同款彈窗，次分類只供查詢歷史／審核，不做表單入口跳轉。
         function jxShowDialog(id){const el=document.getElementById(id);if(el){el.classList.remove('hidden');el.classList.add('flex');}}
         function jxHideDialog(id){const el=document.getElementById(id);if(el){el.classList.add('hidden');el.classList.remove('flex');}}
+        // 嘉蕭醫院：每一種類型獨立集合，線上掛號不混入現場掛號清單。
+        const JX_HOSPITAL_COLLECTIONS={visit:'jiaxiaoHospitalVisits',registration:'jiaxiaoHospitalRegistrations',online:'jiaxiaoHospitalOnlineRegistrations',admission:'jiaxiaoHospitalAdmissions',receipt:'jiaxiaoHospitalReceipts'};
+        const JX_HOSPITAL_NAMES={visit:'病患就診',registration:'掛號登記',online:'線上掛號',admission:'住院登記',receipt:'醫院收據'};
+        const JX_HOSPITAL_SECTIONS={
+            visit:[['病患資料',[['name','姓名','text',1],['identity','身分證字號','text',1],['gender','性別','gender'],['age','年齡','number'],['birthday','出生日期','date'],['visitAt','掛號時間','datetime-local'],['visitType','就診類型','options:初診|回診|急診'],['department','就診科別','text',1],['complaint','主訴 / 症狀','textarea',1]]],['處置人員姓名',[['triageNurse','分診護理師'],['physician','主治醫師'],['cashier','經辦櫃台']]]],
+            registration:[['掛號資訊',[['registeredAt','掛號時間','datetime-local',1],['department','就診科別','text',1],['method','掛號方式','options:現場掛號|線上掛號',1]]],['病患資料',[['name','患者姓名','text',1],['identity','身分證字號','text',1],['gender','性別','gender'],['age','年齡','number'],['birthday','出生日期','date']]],['櫃台紀錄',[['registrationFee','掛號費','money'],['cashier','經辦人員','text',1]]]],
+            admission:[['患者資料',[['name','患者姓名','text',1],['identity','身分證字號','text',1],['gender','性別','gender'],['age','年齡','number']]],['生命徵象紀錄',[['vitalsDate','日期','date'],['vitalsTime','時間','time'],['temperature','體溫'],['bloodPressure','血壓'],['heartRate','心跳'],['oxygen','血氧'],['vitalsNurse','護理人員']]],['住院資料',[['admissionReason','入院原因','textarea',1],['admissionDate','入院日期','date',1],['dischargeDate','出院日期','date'],['physician','主治醫師'],['roomType','病房類型','options:普通病房|單人病房|ICU']]],['醫師巡房紀錄',[['roundDate','日期','date'],['roundDoctor','醫師'],['assessment','病情評估','textarea'],['treatmentPlan','治療計畫','textarea']]],['護理紀錄',[['nursingDate','日期','date'],['nursingTime','時間','time'],['nursingContent','護理內容','textarea'],['nurse','護理師']]],['檢查紀錄',[['examItem','檢查項目'],['examDate','日期','date'],['examResult','結果','textarea']]],['治療紀錄',[['therapyDate','日期','date'],['therapyItem','治療項目'],['therapyBy','負責人']]],['藥物紀錄',[['drugDate','日期','date'],['drugName','藥物名稱'],['dose','劑量'],['administeredBy','給藥人員']]],['處置人員姓名',[['leadDoctor','主治醫師'],['nurse1','護理師 1'],['nurse2','護理師 2'],['nurse3','護理師 3']]]],
+            receipt:[['患者資料',[['name','患者姓名','text',1],['gender','性別','gender'],['identity','身分證字號','text',1],['birthday','出生日期','date'],['visitDate','就診日期','date',1],['department','就醫科別'],['physician','主治醫師']]],['健保申報項目',[['consultation','診察費','money'],['drug','藥費','money'],['pharmacy','藥事服務費','money'],['injection','注射費','money'],['lab','檢驗費','money'],['exam','檢查費','money'],['surgery','處置手術費','money'],['materials','材料費','money'],['bed','病床費','money'],['nursing','護理費','money']]],['自付費用項目',[['registrationFee','掛號費','money'],['basicCopay','基本部分負擔','money'],['drugCopay','藥品部分負擔','money'],['otherCopay','其他部分負擔','money'],['otherSelfPay','其他自費金額','money']]]]
+        };
+        let jxHospitalActiveType=null,jxHospitalSaving=false;
         function openJiaxiaoHospitalModal(){
-            if(!canAccessJiaxiao()){showToast('沒有嘉蕭集團瀏覽權限','warning');return;}
+            if(!canWriteJXReport()){showToast('只有嘉蕭或管理中心成員可以填寫醫院紀錄','warning');return;}
             jxShowDialog('modal-jx-hospital');
         }
         function closeJiaxiaoHospitalModal(){jxHideDialog('modal-jx-hospital');}
+        function jxHospitalEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+        function jxHospitalChoose(type){
+            if(!JX_HOSPITAL_SECTIONS[type])return;
+            jxHospitalActiveType=type;
+            const f=document.getElementById('jx-hospital-form');f.reset();f.classList.remove('hidden');
+            document.getElementById('jx-hospital-form-hint').textContent='目前填寫：'+JX_HOSPITAL_NAMES[type]+'｜送出後寫入獨立醫院紀錄';
+            const field=(item)=>{
+                const [id,label,kind='text',required=0]=item,req=required?' required':'',classes='w-full mt-1 rounded-xl border border-slate-700 bg-slate-950 p-3 text-white outline-none focus:border-teal-400';
+                let input='';
+                if(kind==='textarea')input=`<textarea name="${id}" rows="3" maxlength="3000" ${req} class="${classes}"></textarea>`;
+                else if(kind==='gender'||kind.startsWith('options:')){
+                    const opts=kind==='gender'?['男','女']:kind.slice(8).split('|');
+                    input=`<select name="${id}" ${req} class="${classes}"><option value="">請選擇</option>${opts.map(x=>`<option value="${jxHospitalEsc(x)}">${jxHospitalEsc(x)}</option>`).join('')}</select>`;
+                }else input=`<input name="${id}" type="${kind==='money'||kind==='number'?'number':kind}" ${kind==='money'?'min="0" max="999999999" step="1"':kind==='number'?'min="0" max="130" step="1"':''} ${req} class="${classes}">`;
+                return `<label class="block text-sm text-slate-300">${jxHospitalEsc(label)}${required?' <span class="text-rose-400">*</span>':''}${input}</label>`;
+            };
+            const sections=JX_HOSPITAL_SECTIONS[type].map(([title,items])=>`<section class="rounded-2xl border border-slate-700/65 bg-slate-950/50 p-4 sm:p-5"><h4 class="mb-4 font-semibold text-teal-300">${jxHospitalEsc(title)}</h4><div class="grid grid-cols-1 sm:grid-cols-2 gap-4">${items.map(field).join('')}</div></section>`).join('');
+            document.getElementById('jx-hospital-form-fields').innerHTML=sections+(type==='receipt'?'<section class="rounded-2xl border border-teal-500/35 bg-teal-900/10 p-5 space-y-2"><h4 class="font-semibold text-teal-200">嘉蕭醫學大學 附設嘉蕭醫院｜收據試算</h4><div id="jx-hospital-money-summary" class="text-sm text-slate-200 whitespace-pre-line"></div></section>':'');
+            if(type==='registration')f.elements.registrationFee.value='400';
+            const now=new Date(),local=new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString();
+            for(const el of f.querySelectorAll('[type="datetime-local"]'))if(!el.value)el.value=local.slice(0,16);
+            if(f.elements.visitDate)f.elements.visitDate.value=local.slice(0,10);
+            if(f.elements.admissionDate)f.elements.admissionDate.value=local.slice(0,10);
+            f.oninput=()=>{if(type==='receipt')jxHospitalReceiptTotal();};
+            if(type==='receipt')jxHospitalReceiptTotal();
+        }
+        function jxHospitalReceiptTotal(){
+            const form=document.getElementById('jx-hospital-form'),v=k=>Number(form.elements[k]?.value||0);
+            const healthcare=['consultation','drug','pharmacy','injection','lab','exam','surgery','materials','bed','nursing'].reduce((t,k)=>t+v(k),0);
+            const copay=['basicCopay','drugCopay','otherCopay'].reduce((t,k)=>t+v(k),0);
+            const selfpay=v('registrationFee')+v('otherSelfPay');
+            const total=copay+selfpay;
+            const el=document.getElementById('jx-hospital-money-summary');if(el)el.textContent=`健保申報：NT$${healthcare.toLocaleString()}\n部分負擔金額：NT$${copay.toLocaleString()}\n其他自費金額（含掛號費）：NT$${selfpay.toLocaleString()}\n應繳金額：NT$${total.toLocaleString()}`;
+            return {healthcare,copay,selfpay,total};
+        }
+        async function jxHospitalSave(event){
+            event.preventDefault();
+            if(jxHospitalSaving||!canWriteJXReport()||!fm||!db)return;
+            const type=jxHospitalActiveType;if(!JX_HOSPITAL_SECTIONS[type])return;
+            const f=event.target,details={};
+            for(const [_,items] of JX_HOSPITAL_SECTIONS[type])for(const [key,__,kind='text'] of items){
+                const raw=f.elements[key]?.value??'';
+                if(['money','number'].includes(kind)){
+                    const n=raw===''?0:Number(raw);if(!Number.isSafeInteger(n)||n<0){showToast('金額或年齡格式有誤','warning');return;}details[key]=n;
+                }else details[key]=String(raw).trim();
+            }
+            if(type==='registration'&&!['現場掛號','線上掛號'].includes(details.method)){showToast('請先選擇掛號方式','warning');return;}
+            if(type==='receipt'){
+                const totals=jxHospitalReceiptTotal();if(!Object.values(totals).every(Number.isSafeInteger)){showToast('收據金額超過允許範圍','warning');return;}
+                Object.assign(details,totals,{hospitalName:'嘉蕭醫學大學 附設嘉蕭醫院'});
+            }
+            const collection=type==='registration'&&details.method==='線上掛號'?JX_HOSPITAL_COLLECTIONS.online:JX_HOSPITAL_COLLECTIONS[type];
+            jxHospitalSaving=true;const btn=document.getElementById('jx-hospital-save-button');btn.disabled=true;
+            try{
+                const id='JXH-'+Date.now()+'-'+Math.random().toString(36).slice(2,9);
+                const obj={id,category:type,method:details.method||null,details,createdAt:Date.now(),authorAccount:currentUser.account,authorName:currentUser.name||currentUser.account};
+                await fm.setDoc(fm.doc(db,collection,id),obj);
+                showToast((details.method==='線上掛號'?'線上掛號':'醫院')+'紀錄已儲存','success');closeJiaxiaoHospitalModal();f.reset();
+                const result=document.getElementById('jx-hospital-record-status');if(result)result.textContent='資料已儲存；請點選對應的紀錄分類重新載入。';
+            }catch(error){console.error('醫院紀錄儲存失敗',error);showToast('醫院紀錄儲存失敗：'+error.message,'error');}
+            finally{jxHospitalSaving=false;btn.disabled=false;}
+        }
+        async function jxHospitalLoad(type){
+            if(!canAccessJiaxiao()||!fm||!db||!JX_HOSPITAL_COLLECTIONS[type])return;
+            const status=document.getElementById('jx-hospital-record-status'),host=document.getElementById('jx-hospital-record-results');
+            status.textContent='正在讀取'+JX_HOSPITAL_NAMES[type]+'紀錄……';host.replaceChildren();
+            try{
+                const snap=await fm.getDocs(fm.query(fm.collection(db,JX_HOSPITAL_COLLECTIONS[type]),fm.limit(150)));
+                const items=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+                status.textContent=`${JX_HOSPITAL_NAMES[type]}：共載入 ${items.length} 筆（最多 150 筆）`;
+                if(!items.length){host.textContent='目前沒有紀錄';return;}
+                for(const r of items){
+                    const card=document.createElement('article');card.className='rounded-xl border border-slate-700 bg-slate-950/55 p-4 space-y-2';
+                    const heading=document.createElement('h4');heading.className='font-semibold text-teal-300';heading.textContent=(r.details?.name||'未填姓名')+'｜'+JX_HOSPITAL_NAMES[type];card.appendChild(heading);
+                    const meta=document.createElement('p');meta.className='text-xs text-slate-400';meta.textContent=`${new Date(r.createdAt||0).toLocaleString('zh-TW')}｜${r.authorName||r.authorAccount||'--'}`;card.appendChild(meta);
+                    const detail=document.createElement('details');const summary=document.createElement('summary');summary.textContent='查看完整明細';summary.className='cursor-pointer text-sm text-sky-300';detail.appendChild(summary);
+                    const body=document.createElement('div');body.className='mt-3 grid gap-2';
+                    const labels=new Map(JX_HOSPITAL_SECTIONS[r.category||type]?.flatMap(([_,items])=>items.map(([key,label])=>[key,label]))||[]);
+                    for(const [key,value] of Object.entries(r.details||{})){
+                        if(key==='hospitalName'||!labels.has(key))continue;
+                        const item=document.createElement('div');item.className='text-sm text-slate-300 break-words';
+                        item.textContent=`${labels.get(key)}：${value==null?'':value}`;body.appendChild(item);
+                    }
+                    detail.appendChild(body);card.appendChild(detail);host.appendChild(card);
+                }
+            }catch(error){status.textContent='讀取失敗：'+error.message;showToast('醫院紀錄讀取失敗，請檢查 Firestore 權限','error');}
+        }
         function openJiaxiaoClockModal(){
             if(!isJiaxiaoMember()){showToast('只有嘉蕭集團成員可以打卡','warning','權限不足');return;}
             const own=buildLatestDutyMap(appData?.jiaxiaoClocks||[]).get(String(currentUser?.account||'').toLowerCase());
@@ -8115,7 +8215,78 @@ async function republishAnnouncement(id) {
             }catch(e){showToast('消防案件審核失敗：'+e.message,'error','操作失敗');}
         }
         function openRejectFirePending(caseId){if(!canReviewFireReports()){showToast('只有消防高層與管理中心可以退件。','warning','權限不足');return;}document.getElementById('review-reject-case-id').value=caseId;document.getElementById('review-reject-dept').value='fire';document.getElementById('review-reject-reason').value='';document.getElementById('modal-review-reject').classList.remove('hidden');}
-                function canReviewPoliceReports(){ const role=getEffectiveRole(currentUser); return !!currentUser && (role==='admin' || ((role==='high' || role==='senior') && userHasUnit('police'))); }
+        
+        // V76 交通罰單獨立模組。實際角色授權必須由 Firestore Security Rules 強制驗證。
+        const NTPC_TICKET_COLLECTION='policeTrafficTickets';
+        let ntpcTicketRows=[];
+        function ntpcTicketReviewer(){ return canReviewPoliceReports(); }
+        function ntpcTicketOpen(){
+            if(!currentUser || !(userHasUnit('police') || currentUser.role==='admin')){showToast('僅限警務與管理中心成員。','warning');return;}
+            document.getElementById('ntpc-ticket-modal').classList.remove('hidden');
+            const form=document.getElementById('ntpc-ticket-form');
+            if(!document.querySelector('.ntpc-ticket-line'))ntpcTicketAddLine();
+            if(!form.elements.occurred.value){const date=new Date();form.elements.occurred.value=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);} if(!form.elements.issuedDate.value){const date=new Date();form.elements.issuedDate.value=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,10);} if(!form.elements.issuingUnit.value) form.elements.issuingUnit.value=String(currentUser?.unit||currentUser?.department||'交通分隊');if(!form.elements.officerName.value)form.elements.officerName.value=String(currentUser?.name||'');
+        }
+        function ntpcTicketClose(){ document.getElementById('ntpc-ticket-modal').classList.add('hidden'); }
+        function ntpcTicketAddLine(){
+            const row=document.createElement('div');row.className='ntpc-ticket-line grid grid-cols-[1fr_130px_auto] gap-2';
+            row.innerHTML='<input aria-label="違規條例" placeholder="違規條例名稱" maxlength="100" required class="min-w-0 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"><input aria-label="罰鍰" type="number" min="1" max="99999999" step="1" placeholder="金額" required class="min-w-0 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"><button type="button" class="rounded-lg bg-red-900/40 px-3" aria-label="移除條例">✕</button>';
+            row.querySelector('button').addEventListener('click',()=>{row.remove();ntpcTicketTotal()});
+            row.querySelector('input[type=number]').addEventListener('input',ntpcTicketTotal);
+            document.getElementById('ntpc-ticket-items').appendChild(row);
+        }
+        function ntpcTicketLines(){return [...document.querySelectorAll('.ntpc-ticket-line')].map(r=>({name:r.querySelector('input:not([type=number])').value.trim(),amount:Number(r.querySelector('input[type=number]').value)}));}
+        function ntpcTicketTotal(){document.getElementById('ntpc-ticket-total').textContent=ntpcTicketLines().reduce((a,b)=>a+(Number.isFinite(b.amount)?b.amount:0),0).toLocaleString('en-US');}
+        async function ntpcTicketSubmit(event){
+            event.preventDefault();if(!currentUser || !(userHasUnit('police')||currentUser.role==='admin') || !fm||!db)return;
+            const f=event.target,lines=ntpcTicketLines();
+            if(!lines.length || lines.some(x=>!x.name||!Number.isSafeInteger(x.amount)||x.amount<1||x.amount>99999999)){showToast('請完整填寫每筆違規條例及有效金額。','warning');return;}
+            const total=lines.reduce((a,b)=>a+b.amount,0);if(!Number.isSafeInteger(total)||total>999999999){showToast('罰鍰總額超出限制。','warning');return;}
+            const discordId=String(f.elements.discordId.value||'').trim().replace(/^<@!?(\d+)>$/,'$1');
+            if(!/^\d{17,21}$/.test(discordId)){showToast('受罰人 Discord 請輸入使用者 ID（17～21 位），不要輸入暱稱。','warning');return;}
+            const issuedDate=f.elements.issuedDate.value;
+            if(!/^\d{4}-\d{2}-\d{2}$/.test(issuedDate)){showToast('請填寫有效的開立日期。','warning');return;}
+            const btn=document.getElementById('ntpc-ticket-submit');btn.disabled=true;
+            try{
+                const ref=fm.doc(fm.collection(db,NTPC_TICKET_COLLECTION));
+                const ts=Date.now(),data={id:ref.id,ticketNo:'NTPC-T-'+new Date(ts).toISOString().slice(0,10).replace(/-/g,'')+'-'+ref.id.slice(0,6).toUpperCase(),person:f.elements.person.value.trim(),discordId,issuedDate,issuingUnit:f.elements.issuingUnit.value.trim(),officerName:f.elements.officerName.value.trim(),officerTitle:f.elements.officerTitle.value.trim(),badgeNumber:f.elements.badgeNumber.value.trim(),supervisor:f.elements.supervisor.value.trim(),identity:f.elements.identity.value.trim(),plate:f.elements.plate.value.trim(),occurred:f.elements.occurred.value,location:f.elements.location.value.trim(),description:f.elements.description.value.trim(),evidence:f.elements.evidence.value.trim(),items:lines,total,authorAccount:String(currentUser.account||''),authorName:String(currentUser.name||''),createdAt:ts,updatedAt:ts,reviewStatus:'pending',paymentStatus:'unpaid',publishStatus:'none'};
+                await fm.setDoc(ref,data);f.reset();document.getElementById('ntpc-ticket-items').innerHTML='';ntpcTicketAddLine();ntpcTicketTotal();showToast('交通罰單已送交高層審核。','success');await ntpcTicketLoad();
+            }catch(e){showToast('送審失敗：'+e.message,'error');}finally{btn.disabled=false;}
+        }
+        function ntpcTicketEscape(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+        async function ntpcTicketLoad(){
+            const host=document.getElementById('ntpc-ticket-list');if(!currentUser||!fm||!db)return;
+            host.textContent='載入中…';
+            try{
+                const q=ntpcTicketReviewer()?fm.query(fm.collection(db,NTPC_TICKET_COLLECTION),fm.limit(150)):fm.query(fm.collection(db,NTPC_TICKET_COLLECTION),fm.where('authorAccount','==',currentUser.account),fm.limit(150));
+                const snapshot=await fm.getDocs(q);ntpcTicketRows=snapshot.docs.map(d=>({docId:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+                host.innerHTML=ntpcTicketRows.length?'':'尚無交通罰單紀錄。';
+                for(const t of ntpcTicketRows){
+                    const card=document.createElement('article');card.className='rounded-xl bg-slate-950/70 border border-slate-700 p-4 space-y-2';
+                    const items=(t.items||[]).map(i=>`${ntpcTicketEscape(i.name)}：NT$${Number(i.amount||0).toLocaleString('en-US')}`).join('<br>');
+                    card.innerHTML=`<div class="flex justify-between flex-wrap gap-2"><strong class="text-cyan-200">${ntpcTicketEscape(t.ticketNo||t.docId)}</strong><span>${ntpcTicketEscape(t.reviewStatus)} ／ ${ntpcTicketEscape(t.publishStatus||'none')}</span></div><div>${ntpcTicketEscape(t.person)}｜${ntpcTicketEscape(t.location)}</div><div class="text-xs text-slate-300">${items}</div><strong>總罰鍰 NT$${Number(t.total||0).toLocaleString('en-US')}</strong><div class="text-xs text-slate-500">開立：${ntpcTicketEscape(t.authorName)} · ${ntpcTicketEscape(t.occurred)}</div>`;
+                    if(t.discordThreadId){const a=document.createElement('a');a.href=`https://discord.com/channels/${encodeURIComponent(t.discordGuildId||'')}/${encodeURIComponent(t.discordThreadId)}`;a.target='_blank';a.rel='noopener noreferrer';a.className='text-sm text-cyan-300 underline block';a.textContent='查看 Discord 論壇貼文';card.appendChild(a);}
+                    if(ntpcTicketReviewer()&&t.reviewStatus==='pending'){
+                        const box=document.createElement('div');box.className='flex gap-2';
+                        for(const [label,action,cls] of [['核准並排程發文','approved','bg-emerald-700'],['退件','rejected','bg-amber-700']]){const b=document.createElement('button');b.type='button';b.className=`rounded-lg px-3 py-2 text-xs ${cls}`;b.textContent=label;b.onclick=()=>ntpcTicketReview(t.docId,action);box.appendChild(b);}card.appendChild(box);
+                    }
+                    host.appendChild(card);
+                }
+            }catch(e){host.textContent='載入失敗：'+e.message;}
+        }
+        async function ntpcTicketReview(id,decision){
+            if(!ntpcTicketReviewer()||!fm||!db)return;
+            const t=ntpcTicketRows.find(x=>x.docId===id);if(!t||t.reviewStatus!=='pending')return;
+            if(!(await showConfirm(decision==='approved'?'核准後會由 Bot 自動建立 Discord 論壇貼文，確定嗎？':'確定退回此交通罰單？','確認審核','確定')))return;
+            const note=decision==='rejected'?prompt('請填寫退件原因：'):'';if(decision==='rejected'&&(!note||!note.trim()))return;
+            try{
+                // Transaction prevents duplicate approval by two reviewers. Rules should restrict this transition server-side.
+                const ref=fm.doc(db,NTPC_TICKET_COLLECTION,id);
+                await fm.runTransaction(db,async tr=>{const snap=await tr.get(ref);if(!snap.exists()||snap.data().reviewStatus!=='pending')throw Error('此罰單已經審核或不存在');tr.update(ref,{reviewStatus:decision,reviewedBy:String(currentUser.account),reviewedAt:Date.now(),reviewNote:note||'',updatedAt:Date.now(),publishStatus:decision==='approved'?'pending':'none'});});
+                showToast(decision==='approved'?'已核准，等待 Bot 建立論壇貼文。':'罰單已退件。','success');await ntpcTicketLoad();
+            }catch(e){showToast('審核失敗：'+e.message,'error');}
+        }
+        function canReviewPoliceReports(){ const role=getEffectiveRole(currentUser); return !!currentUser && (role==='admin' || ((role==='high' || role==='senior') && userHasUnit('police'))); }
         function canEditReviewStatus(dept){
             if(!currentUser)return false;
             if(currentUser.role==='admin')return true;
@@ -12460,11 +12631,20 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             </div>
         </div>
     </div>
-    <!-- 醫院登記表：獨立於 EMS 案件報告，需求尚未規劃，不能送出資料 -->
+    <!-- 嘉蕭醫院：就診／掛號／住院／收據四種獨立表單 -->
     <div id="modal-jx-hospital" class="fixed inset-0 z-[75] bg-slate-950/85 hidden items-center justify-center p-3 sm:p-5" role="dialog" aria-modal="true" aria-labelledby="jx-hospital-modal-title">
-        <div class="w-full max-w-lg rounded-3xl border border-teal-500/30 bg-slate-900 shadow-2xl overflow-hidden">
-            <div class="flex justify-between items-center p-5 border-b border-slate-800"><h3 id="jx-hospital-modal-title" class="font-bold text-xl text-white"><i class="fa-solid fa-hospital text-teal-400 mr-2"></i>嘉蕭醫院報告（預留）</h3><button type="button" onclick="closeJiaxiaoHospitalModal()" class="p-3 text-slate-300 hover:text-white" aria-label="關閉醫院登記表視窗"><i class="fa-solid fa-xmark"></i></button></div>
-            <div class="p-6 space-y-3 text-center"><i class="fa-regular fa-clipboard text-4xl text-slate-500"></i><p class="text-lg font-semibold text-white">醫院登記表內容尚未規劃</p><p class="text-sm text-slate-400">醫院登記表和嘉蕭 EMS 救護報告是兩個不同系統。這個視窗只預留入口，目前不提供填寫、送審或儲存。</p><div class="pt-3"><button type="button" onclick="closeJiaxiaoHospitalModal()" class="rounded-xl bg-slate-700 hover:bg-slate-600 text-white px-6 py-3">關閉視窗</button></div></div>
+        <div class="w-full max-w-5xl max-h-[94dvh] flex flex-col rounded-3xl border border-teal-500/30 bg-slate-900 shadow-2xl overflow-hidden">
+            <div class="flex justify-between items-center p-4 sm:p-5 border-b border-slate-800"><h3 id="jx-hospital-modal-title" class="font-bold text-xl text-white"><i class="fa-solid fa-hospital text-teal-400 mr-2"></i>嘉蕭醫院｜填寫報告</h3><button type="button" onclick="closeJiaxiaoHospitalModal()" class="p-3 text-slate-300 hover:text-white" aria-label="關閉醫院報告"><i class="fa-solid fa-xmark"></i></button></div>
+            <div class="p-4 sm:p-5 overflow-y-auto space-y-4 overscroll-contain">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="jx-hospital-type-buttons">
+                    <button type="button" onclick="jxHospitalChoose('visit')" class="rounded-xl bg-teal-800/50 hover:bg-teal-700 px-3 py-3 text-sm">病患就診</button>
+                    <button type="button" onclick="jxHospitalChoose('registration')" class="rounded-xl bg-sky-900/50 hover:bg-sky-800 px-3 py-3 text-sm">掛號登記</button>
+                    <button type="button" onclick="jxHospitalChoose('admission')" class="rounded-xl bg-indigo-900/50 hover:bg-indigo-800 px-3 py-3 text-sm">住院登記</button>
+                    <button type="button" onclick="jxHospitalChoose('receipt')" class="rounded-xl bg-amber-900/50 hover:bg-amber-800 px-3 py-3 text-sm">醫院收據</button>
+                </div>
+                <p id="jx-hospital-form-hint" class="text-sm text-slate-400">請先選擇要填寫的表單類型。</p>
+                <form id="jx-hospital-form" onsubmit="jxHospitalSave(event)" class="hidden space-y-4"><div id="jx-hospital-form-fields" class="space-y-4"></div><div class="flex justify-end gap-2"><button type="button" onclick="closeJiaxiaoHospitalModal()" class="rounded-xl bg-slate-700 px-5 py-3">取消</button><button id="jx-hospital-save-button" type="submit" class="rounded-xl bg-teal-600 hover:bg-teal-500 font-semibold text-white px-6 py-3">儲存醫院紀錄</button></div></form>
+            </div>
         </div>
     </div>
     <!-- 嘉蕭集團：EMS 救護／生命禮儀報告獨立表單 -->
@@ -12552,5 +12732,35 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
 })();
 </script>
 
+
+<!-- 交通罰單獨立視窗；僅按需查詢，沒有持續 Firestore 監聽 -->
+<div id="ntpc-ticket-modal" class="hidden fixed inset-0 z-[180] bg-slate-950/90 p-3 sm:p-6 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="ntpc-ticket-title">
+  <div class="mx-auto max-w-5xl bg-slate-900 border border-cyan-500/25 rounded-2xl shadow-2xl p-5 sm:p-8 space-y-6">
+    <div class="flex items-start justify-between gap-3"><div><h2 id="ntpc-ticket-title" class="text-xl font-bold text-white"><i class="fa-solid fa-file-invoice-dollar text-cyan-400 mr-2"></i>警務交通罰單系統</h2><p class="text-xs text-slate-400 mt-1">填寫送審 → 警務高層核准 → Bot 發布 Discord 論壇貼文。未核准不公開。</p></div><button type="button" onclick="ntpcTicketClose()" class="rounded-lg bg-slate-800 px-3 py-2" aria-label="關閉">✕</button></div>
+    <form id="ntpc-ticket-form" onsubmit="ntpcTicketSubmit(event)" class="space-y-4">
+      <div class="grid sm:grid-cols-2 gap-4">
+        <label class="text-sm text-slate-300">違規人 RP 名稱 *<input name="person" required maxlength="60" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
+        <label class="text-sm text-slate-300">受罰人 Discord 使用者 ID *<input name="discordId" required inputmode="numeric" pattern="[0-9]{17,21}" maxlength="21" placeholder="可在 Discord 開發者模式複製使用者 ID" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
+        <label class="text-sm text-slate-300">身分證末五碼（貼文標題） *<input name="identity" required maxlength="5" minlength="5" pattern="[0-9]{5}" inputmode="numeric" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
+        <label class="text-sm text-slate-300">車牌號碼（選填）<input name="plate" maxlength="30" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
+        <label class="text-sm text-slate-300">違規時間 *<input name="occurred" type="datetime-local" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
+        <label class="text-sm text-slate-300 sm:col-span-2">違規地點 *<input name="location" required maxlength="150" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
+      </div>
+      <div class="rounded-xl border border-slate-700 p-4 space-y-2"><div class="flex items-center justify-between"><label class="font-semibold text-cyan-200">違規條例及罰款 *</label><button type="button" onclick="ntpcTicketAddLine()" class="rounded-lg bg-cyan-800 px-3 py-2 text-sm">＋ 新增條例</button></div><div id="ntpc-ticket-items" class="space-y-2"></div><div class="text-right font-bold">總罰鍰：NT$ <span id="ntpc-ticket-total">0</span></div></div>
+      <label class="block text-sm text-slate-300">違規描述 *<textarea name="description" required maxlength="1600" rows="3" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"></textarea></label>
+      <div class="rounded-xl border border-cyan-500/25 p-4 space-y-3"><h3 class="text-cyan-200 font-semibold">舉發單位與開單警員</h3><div class="grid sm:grid-cols-2 gap-4">
+        <label class="text-sm text-slate-300">舉發單位 *<input name="issuingUnit" required maxlength="80" placeholder="交通分隊" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
+        <label class="text-sm text-slate-300">警員姓名 *<input name="officerName" required maxlength="80" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
+        <label class="text-sm text-slate-300">職稱 *<input name="officerTitle" required maxlength="80" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
+        <label class="text-sm text-slate-300">臂章號碼 *<input name="badgeNumber" required maxlength="40" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
+        <label class="text-sm text-slate-300">開立日期 *<input name="issuedDate" type="date" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
+        <label class="text-sm text-slate-300">單位主管 *<input name="supervisor" required maxlength="80" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
+      </div></div>
+      <label class="block text-sm text-slate-300">證據連結（選填）<input name="evidence" type="url" maxlength="500" placeholder="https://" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
+      <div class="flex justify-end"><button type="submit" id="ntpc-ticket-submit" class="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 font-semibold">送交警務高層審核</button></div>
+    </form>
+    <div class="border-t border-slate-700 pt-5 space-y-3"><div class="flex items-center justify-between gap-3"><h3 class="font-semibold text-white">交通罰單紀錄與審核</h3><button type="button" onclick="ntpcTicketLoad()" class="rounded-lg bg-slate-800 px-3 py-2 text-sm">載入／重新整理</button></div><p class="text-xs text-slate-500">按鈕才讀取資料；一般警員僅顯示自己開立的罰單，高層可查看與審核全部罰單。</p><div id="ntpc-ticket-list" class="space-y-3 text-slate-400 text-sm">尚未載入。</div></div>
+  </div>
+</div>
 </body>
 </html>
