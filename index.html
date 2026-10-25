@@ -1572,6 +1572,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                         <button id="fire-retro-clock-modal-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-blue-600/30 transition flex items-center space-x-2">
                             <i class="fa-solid fa-clock-rotate-left"></i><span>補打卡登記 (自訂日期/時分)</span>
                         </button>
+                        <button id="fire-punish-modal-btn" type="button" class="bg-amber-700/80 hover:bg-amber-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium border border-amber-500/35"><i class="fa-solid fa-award mr-2"></i>發布消防獎懲</button>
                         <button id="fire-report-modal-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
                             <i class="fa-solid fa-file-pen"></i><span>填寫消防案件報告</span>
                         </button>
@@ -1588,6 +1589,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                     <button id="btn-fire-reports" data-sub="reports" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史消防案件報告</button>
                     <button id="btn-fire-review" data-sub="review" class="fire-sub-btn hidden px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-stamp mr-2"></i>高層審核系統 <span id="fire-review-tab-badge" class="ml-1 inline-flex min-w-[20px] h-5 px-1.5 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">0</span></button>
                     <button id="btn-fire-ems" data-sub="ems" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-truck-medical mr-2"></i>EMS救護出勤報告</button>
+                    <button id="btn-fire-punishments" data-sub="punishments" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-gavel mr-2"></i>消防獎懲專區</button>
                     <button id="btn-fire-clocks" data-sub="clocks" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clipboard-user mr-2"></i>消防出勤打卡紀錄</button>
                     <button id="btn-fire-hours" data-sub="hours" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數統計</button>
                 </div>
@@ -1624,6 +1626,13 @@ input, textarea, select, button { accent-color:#38bdf8; }
                     </div>
                     <div id="ems-reports-list" class="grid grid-cols-1 gap-4"></div>
                 </div>
+                <section id="fire-sub-punishments" class="hidden space-y-4">
+                    <div class="rounded-2xl bg-slate-900 border border-slate-800 p-5 flex flex-wrap justify-between items-center gap-3"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-award text-amber-400 mr-2"></i>消防獎懲公告專區</h3><p class="text-xs text-slate-400 mt-1">獨立消防獎懲紀錄；高階長官、高階成員與管理中心可登記。</p></div><div class="flex flex-wrap gap-2"><button type="button" id="fire-punish-load" class="rounded-lg bg-slate-700 text-white px-4 py-2 text-sm">載入／重新整理</button><button type="button" id="fire-punish-create" class="rounded-lg bg-amber-600 text-white px-4 py-2 text-sm hidden">＋ 登記獎懲</button></div></div>
+                    <input type="search" id="fire-punish-search" placeholder="搜尋隊員姓名／管理編號／獎懲事由" class="w-full rounded-xl bg-slate-950 border border-slate-700 p-3 text-white">
+                    <div id="fire-punish-summary" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2"></div>
+                    <div id="fire-punish-list" class="grid gap-3 text-sm text-slate-400">按「載入／重新整理」取得消防獎懲。</div>
+                </section>
+
                 <div id="fire-sub-clocks" class="hidden space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div><h3 class="text-lg font-bold text-slate-200">消防隊員出勤打卡歷史與狀態</h3><p class="text-xs text-slate-500 mt-1">點擊目前值勤人數，可檢視執勤中的隊員與時長。</p></div>
@@ -2898,6 +2907,20 @@ input, textarea, select, button { accent-color:#38bdf8; }
         </div>
     </div>
 
+    <!-- 消防獎懲：獨立資料，避免與警務獎懲紀錄互相影響 -->
+    <div id="modal-fire-punishment" class="fixed inset-0 z-[65] hidden bg-slate-950/85 flex items-center justify-center p-3" role="dialog" aria-modal="true" aria-label="消防獎懲登記">
+      <form id="fire-punish-form" class="bg-slate-900 border border-amber-500/25 rounded-2xl w-full max-w-xl p-5 space-y-4 max-h-[92dvh] overflow-y-auto">
+        <div class="flex justify-between items-center"><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-award text-amber-400 mr-2"></i><span id="fire-punish-form-title">發布消防獎懲</span></h3><button type="button" id="fire-punish-cancel-top" class="text-slate-300 p-2" aria-label="關閉">✕</button></div>
+        <label class="block text-sm text-slate-300">被獎懲隊員（可選清單或填入資料）<select id="fire-punish-member" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"><option value="">請選擇隊員</option></select></label>
+        <div class="grid grid-cols-2 gap-3"><label class="text-sm text-slate-300">隊員姓名<input id="fire-punish-name" maxlength="60" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"></label><label class="text-sm text-slate-300">管理編號<input id="fire-punish-staff" maxlength="32" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"></label></div>
+        <div class="grid grid-cols-2 gap-3"><label class="text-sm text-slate-300">獎懲類型<select id="fire-punish-type" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"><option value="reward">獎勵</option><option value="punishment">懲處</option></select></label><label class="text-sm text-slate-300">發布單位<input id="fire-punish-unit" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" value="新北市政府消防局"></label></div>
+        <div><label class="block text-sm text-slate-300 mb-2">獎懲項目（可複選）</label><div id="fire-punish-items" class="grid grid-cols-2 sm:grid-cols-3 gap-2 rounded-xl bg-slate-950 p-3 border border-slate-800"></div></div>
+        <div class="grid grid-cols-2 gap-3"><label class="text-sm text-slate-300">登記長官<input id="fire-punish-author" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"></label><label class="text-sm text-slate-300">職稱<input id="fire-punish-position" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"></label></div>
+        <label class="block text-sm text-slate-300">獎懲事由<textarea id="fire-punish-reason" rows="4" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"></textarea></label>
+        <div class="flex gap-2 justify-end"><button type="button" id="fire-punish-cancel" class="rounded-xl bg-slate-700 px-4 py-3 text-white">取消</button><button type="submit" id="fire-punish-save" class="rounded-xl bg-amber-600 px-5 py-3 font-semibold text-white">儲存消防獎懲</button></div>
+      </form>
+    </div>
+
     <!-- Police Reward & Punishment Modal -->
     <div id="modal-punishment" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
@@ -4148,6 +4171,14 @@ const loginOpenBtn = document.getElementById('login-modal-open-btn');
             const fireRetroClockBtn = document.getElementById('fire-retro-clock-modal-btn');
             if (fireRetroClockBtn) fireRetroClockBtn.addEventListener('click', () => openClockModal('fire', true));
 
+            document.getElementById('fire-punish-modal-btn')?.addEventListener('click',()=>ntpcOpenFirePunishment());
+            document.getElementById('fire-punish-create')?.addEventListener('click',()=>ntpcOpenFirePunishment());
+            document.getElementById('fire-punish-load')?.addEventListener('click',ntpcLoadFirePunishments);
+            document.getElementById('fire-punish-search')?.addEventListener('input',ntpcRenderFirePunishments);
+            document.getElementById('fire-punish-member')?.addEventListener('change',ntpcFirePunishmentMemberSelected);
+            document.getElementById('fire-punish-type')?.addEventListener('change',ntpcFirePunishmentOptions);
+            document.getElementById('fire-punish-form')?.addEventListener('submit',ntpcSaveFirePunishment);
+            for(const key of ['fire-punish-cancel','fire-punish-cancel-top']) document.getElementById(key)?.addEventListener('click',()=>document.getElementById('modal-fire-punishment').classList.add('hidden'));
             const fireReportBtn = document.getElementById('fire-report-modal-btn');
             if (fireReportBtn) fireReportBtn.addEventListener('click', () => openReportModal('fire'));
             const fireEmsBtn = document.getElementById('fire-ems-modal-btn');
@@ -5593,6 +5624,114 @@ async function republishAnnouncement(id) {
             ntpcMapSwitch(document.getElementById('tab-police')?.classList.contains('hidden')?'none':'police');
         }
 
+        // V85：消防獎懲獨立讀寫，手動載入避免額外 Firestore 讀取。
+        let ntpcFirePunishments = [];
+        let ntpcFirePunishmentLoaded = false;
+        let ntpcFirePunishSaving = false;
+        let ntpcFirePunishEditId = '';
+        const ntpcFireRewards = REWARD_ITEMS;
+        const ntpcFirePenalties = PUNISHMENT_ITEMS;
+        function ntpcCanPublishFirePunishment(){
+            const role=getEffectiveRole(currentUser);
+            return !!currentUser && (role==='admin'||((role==='high'||role==='senior')&&userHasUnit('fire')));
+        }
+        function ntpcFirePunishmentMemberSelected(){
+            const sel=document.getElementById('fire-punish-member'),opt=sel?.selectedOptions?.[0];
+            if(!opt?.value)return;
+            document.getElementById('fire-punish-name').value=opt.dataset.name||'';
+            document.getElementById('fire-punish-staff').value=opt.dataset.staff||'';
+        }
+        function ntpcFirePunishmentRoster(){
+            const map=new Map(), add=(acc,name,staff)=>{const key=String(acc||staff||'').trim();if(!key)return;if(!map.has(key))map.set(key,{account:String(acc||''),name:String(name||''),staff:String(staff||'')});};
+            (appData.users||[]).filter(u=>{const un=Array.isArray(u.units)?u.units:[u.unit];return un.includes('fire');}).forEach(u=>add(u.account,u.name,u.staffNumber));
+            (appData.fireClocks||[]).forEach(c=>add(c.account||c.userAccount,c.name,c.staffNumber||c.memberNumber||c.number));
+            return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'zh-TW'));
+        }
+        function ntpcFirePunishmentOptions(){
+            const type=document.getElementById('fire-punish-type').value,wrap=document.getElementById('fire-punish-items');
+            const old=new Set([...wrap.querySelectorAll('input:checked')].map(x=>x.value));
+            wrap.replaceChildren();
+            (type==='reward'?ntpcFireRewards:ntpcFirePenalties).forEach(item=>{
+                const lab=document.createElement('label');lab.className='flex gap-2 items-center rounded-lg border border-slate-800 px-2 py-2 text-xs text-slate-200';
+                const check=document.createElement('input');check.type='checkbox';check.value=item;check.className='accent-amber-500';check.checked=old.has(item);
+                lab.append(check,document.createTextNode(item));wrap.append(lab);
+            });
+        }
+        function ntpcOpenFirePunishment(row=null){
+            if(!ntpcCanPublishFirePunishment()){showToast('僅消防高層、高階成員及管理中心可登記消防獎懲。','warning','權限不足');return;}
+            ntpcFirePunishEditId=row?.docId||'';
+            const form=document.getElementById('fire-punish-form');form.reset();
+            document.getElementById('fire-punish-form-title').textContent=row?'編輯消防獎懲':'發布消防獎懲';
+            const select=document.getElementById('fire-punish-member');select.replaceChildren(new Option('請選擇隊員（也可自行填寫）',''));
+            ntpcFirePunishmentRoster().forEach(u=>{const opt=new Option(`${u.name||u.account}（${u.staff||u.account}）`,u.account||u.staff);opt.dataset.name=u.name;opt.dataset.staff=u.staff;select.add(opt);});
+            const values={'fire-punish-name':row?.memberName||'','fire-punish-staff':row?.memberId||'','fire-punish-type':row?.type||'reward','fire-punish-unit':row?.department||'新北市政府消防局','fire-punish-author':row?.authorName||currentUser?.name||'','fire-punish-position':row?.authorPos||'','fire-punish-reason':row?.reason||''};
+            Object.entries(values).forEach(([k,v])=>{document.getElementById(k).value=v;});
+            ntpcFirePunishmentOptions();
+            const selected=new Set(normalizeSelectedItems(row?.items||[]));
+            document.querySelectorAll('#fire-punish-items input').forEach(el=>el.checked=selected.has(el.value));
+            document.getElementById('modal-fire-punishment').classList.remove('hidden');
+        }
+        async function ntpcLoadFirePunishments(){
+            if(!currentUser||!(getEffectiveRole(currentUser)==='admin'||userHasUnit('fire')))return;
+            const label=document.getElementById('fire-punish-list');label.textContent='正在載入消防獎懲…';
+            try{
+                const snap=await fm.getDocs(fm.collection(db,'firePunishments'));
+                ntpcFirePunishments=snap.docs.map(d=>({docId:d.id,...d.data()}));
+                ntpcFirePunishmentLoaded=true;ntpcRenderFirePunishments();
+            }catch(e){label.textContent='載入失敗：'+e.message;}
+        }
+        function ntpcRenderFirePunishments(){
+            const wrap=document.getElementById('fire-punish-list'),summary=document.getElementById('fire-punish-summary');if(!wrap)return;
+            document.getElementById('fire-punish-create')?.classList.toggle('hidden',!ntpcCanPublishFirePunishment());
+            if(!ntpcFirePunishmentLoaded)return;
+            const keyword=String(document.getElementById('fire-punish-search')?.value||'').trim().toLowerCase();
+            const filtered=ntpcFirePunishments.filter(p=>[p.memberName,p.memberId,p.reason,p.department].some(v=>String(v||'').toLowerCase().includes(keyword))).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+            const total={嘉獎:0,小功:0,大功:0,申誡:0,小過:0,大過:0,停職調查:0};
+            for(const p of filtered)for(const raw of normalizeSelectedItems(p.items||p.item)){
+                const m=raw.match(/^(嘉獎|小功|大功|申誡|小過|大過)x(\d+)$/);if(m)total[m[1]]+=Number(m[2]);else if(raw==='停職調查')total.停職調查++;
+            }
+            summary.replaceChildren();for(const [name,count] of Object.entries(total)){const node=document.createElement('div');node.className='rounded-xl border border-slate-800 bg-slate-900 p-3 text-center';node.textContent=`${name}　${count} 次`;summary.append(node);}
+            wrap.replaceChildren();if(!filtered.length){wrap.textContent='目前沒有符合條件的消防獎懲紀錄。';return;}
+            for(const p of filtered){
+                const card=document.createElement('article');card.className='rounded-xl border border-slate-700 bg-slate-900 p-4 space-y-2';
+                const head=document.createElement('div');head.className='flex flex-wrap justify-between gap-2 font-bold text-slate-100';
+                const title=document.createElement('span');title.textContent=`${p.memberName||'未知隊員'}（${p.memberId||'--'}）｜${p.type==='reward'?'獎勵':'懲處'}`;
+                const time=document.createElement('span');time.className='text-xs text-slate-400';time.textContent=p.time||'';head.append(title,time);
+                const items=document.createElement('div');items.className='text-amber-300 text-sm';items.textContent=normalizeSelectedItems(p.items||p.item).join('、');
+                const reason=document.createElement('p');reason.className='text-sm text-slate-300 whitespace-pre-wrap';reason.textContent=p.reason||'';
+                const foot=document.createElement('p');foot.className='text-xs text-slate-500';foot.textContent=`發布單位：${p.department||'--'}｜長官：${p.authorName||'--'}｜職稱：${p.authorPos||'--'}`;
+                card.append(head,items,reason,foot);
+                if(ntpcCanPublishFirePunishment()){
+                    const actions=document.createElement('div');actions.className='flex gap-2 pt-2';
+                    const edit=document.createElement('button');edit.type='button';edit.className='rounded-lg bg-slate-700 px-3 py-2 text-xs text-white';edit.textContent='修改';edit.addEventListener('click',()=>ntpcOpenFirePunishment(p));
+                    const del=document.createElement('button');del.type='button';del.className='rounded-lg bg-red-900/40 px-3 py-2 text-xs text-rose-300';del.textContent='移除';del.addEventListener('click',async()=>{
+                        if(!ntpcCanPublishFirePunishment())return;
+                        if(!(await showConfirm('確定移除這筆消防獎懲？','刪除消防獎懲','確定刪除')))return;
+                        try{await fm.deleteDoc(fm.doc(db,'firePunishments',p.docId));ntpcFirePunishments=ntpcFirePunishments.filter(x=>x.docId!==p.docId);ntpcRenderFirePunishments();showToast('已移除消防獎懲。','success','已刪除');}catch(e){showToast('移除失敗：'+e.message,'error','錯誤');}
+                    });actions.append(edit,del);card.append(actions);
+                }
+                wrap.append(card);
+            }
+        }
+        async function ntpcSaveFirePunishment(event){
+            event.preventDefault();if(ntpcFirePunishSaving)return;
+            if(!ntpcCanPublishFirePunishment()){showToast('消防獎懲登記權限不足。','error','權限不足');return;}
+            const v=id=>document.getElementById(id).value.trim(),items=[...document.querySelectorAll('#fire-punish-items input:checked')].map(el=>el.value);
+            if(!items.length){showToast('請至少選擇一項獎懲。','warning','資料不完整');return;}
+            ntpcFirePunishSaving=true;document.getElementById('fire-punish-save').disabled=true;
+            const now=Date.now();const memberSel=document.getElementById('fire-punish-member');
+            const payload={memberName:v('fire-punish-name'),memberId:v('fire-punish-staff'),memberAccount:memberSel.value||'',type:v('fire-punish-type'),items,item:items.join('、'),department:v('fire-punish-unit'),authorName:v('fire-punish-author'),authorPos:v('fire-punish-position'),authorAccount:currentUser.account,reason:v('fire-punish-reason'),time:formatDateTime(now)};
+            try{
+                const id=ntpcFirePunishEditId||`FPN-${now}-${Math.random().toString(36).slice(2,7)}`;
+                const doc=fm.doc(db,'firePunishments',id);
+                if(ntpcFirePunishEditId)await fm.updateDoc(doc,{...payload,updatedAt:now,updatedBy:currentUser.account});
+                else await fm.setDoc(doc,{...payload,id,timestamp:now});
+                if(ntpcFirePunishmentLoaded){const existing=ntpcFirePunishments.find(x=>x.docId===id);if(existing)Object.assign(existing,payload);else ntpcFirePunishments.unshift({...payload,docId:id,id,timestamp:now});ntpcRenderFirePunishments();}
+                document.getElementById('modal-fire-punishment').classList.add('hidden');showToast('消防獎懲已成功儲存。','success','成功');
+            }catch(e){showToast('消防獎懲寫入失敗：'+e.message,'error','失敗');}
+            finally{ntpcFirePunishSaving=false;document.getElementById('fire-punish-save').disabled=false;}
+        }
+
         function switchFireSubTab(sub) {
             // 地圖已集中於管理中心；舊的路由請求安全地回到案件列表。
             if (sub === 'map') sub = 'reports';
@@ -5600,7 +5739,7 @@ async function republishAnnouncement(id) {
                 showToast('高層審核系統僅限消防高層、高階成員與管理中心使用。', 'warning', '權限不足');
                 sub = 'reports';
             }
-            ['reports', 'review', 'ems', 'clocks', 'hours'].forEach(s => {
+            ['reports', 'review', 'ems', 'punishments', 'clocks', 'hours'].forEach(s => {
                 const el = document.getElementById(`fire-sub-${s}`);
                 if (el) el.classList.add('hidden');
                 const btn = document.getElementById(`btn-fire-${s}`);
@@ -5612,6 +5751,7 @@ async function republishAnnouncement(id) {
             if (activeBtn) activeBtn.className = "fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white whitespace-nowrap";
             if(sub==='review') renderFireReview();
             if(sub==='hours') populateFireHoursMemberSelect();
+            if(sub==='punishments') ntpcRenderFirePunishments();
             ntpcMapSwitch(document.getElementById('tab-fire')?.classList.contains('hidden')?'none':'fire');
         }
 
@@ -6900,12 +7040,12 @@ async function republishAnnouncement(id) {
         }
 
         const REWARD_ITEMS = ['嘉獎x1','嘉獎x2','嘉獎x3','嘉獎x4','嘉獎x5','小功x1','小功x2','小功x3','小功x4','小功x5','大功x1','大功x2','大功x3','大功x4','大功x5'];
-        const PUNISHMENT_ITEMS = ['警告x1','警告x2','警告x3','警告x4','警告x5','小過x1','小過x2','小過x3','小過x4','小過x5','大過x1','大過x2','大過x3','大過x4','大過x5','停職調查'];
+        const PUNISHMENT_ITEMS = ['申誡x1','申誡x2','申誡x3','申誡x4','申誡x5','小過x1','小過x2','小過x3','小過x4','小過x5','大過x1','大過x2','大過x3','大過x4','大過x5','停職調查'];
 
         function normalizeSelectedItems(selected) {
-            const legacy={申誡一次:'警告x1',申誡二次:'警告x2',記過一次:'小過x1',記過二次:'小過x2',大過一次:'大過x1',停職處分:'停職調查'};
+            const legacy={申誡一次:'申誡x1',申誡二次:'申誡x2',記過一次:'小過x1',記過二次:'小過x2',大過一次:'大過x1',停職處分:'停職調查'};
             const arr=Array.isArray(selected)?selected:String(selected||'').split(/[、,，]/).map(x=>x.trim()).filter(Boolean);
-            return arr.map(x=>legacy[x]||x).filter(Boolean);
+            return arr.map(x=>{const v=legacy[x]||x;return /^警告x[1-5]$/.test(v)?v.replace("警告","申誡"):v;}).filter(Boolean);
         }
         function getSelectedPunishmentItems(containerId='punish-item') {
             const c=document.getElementById(containerId); return c?Array.from(c.querySelectorAll('input[data-punish-item]:checked')).map(x=>x.value):[];
@@ -8727,8 +8867,8 @@ async function republishAnnouncement(id) {
                 const member=String(p.memberName||'').toLowerCase();
                 return memberId.includes(q)||memberAccount.includes(q)||member.includes(q);
             });container.innerHTML='';
-            const totals={嘉獎:0,小功:0,大功:0,警告:0,小過:0,大過:0,停職調查:0};filtered.forEach(p=>getPunishmentItems(p).forEach(item=>{const m=String(item).match(/^(嘉獎|小功|大功|警告|小過|大過)x(\d+)$/);if(m)totals[m[1]]+=Number(m[2]);else if(item==='停職調查')totals.停職調查++;}));
-            if(summary)summary.innerHTML=Object.entries(totals).map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${k}</span><span class="text-xl font-bold ${['警告','小過','大過','停職調查'].includes(k)?'text-rose-400':'text-emerald-400'}">${v}</span><span class="text-[10px] text-slate-500">次</span></div>`).join('');
+            const totals={嘉獎:0,小功:0,大功:0,申誡:0,小過:0,大過:0,停職調查:0};filtered.forEach(p=>getPunishmentItems(p).forEach(item=>{const m=String(item).match(/^(嘉獎|小功|大功|申誡|小過|大過)x(\d+)$/);if(m)totals[m[1]]+=Number(m[2]);else if(item==='停職調查')totals.停職調查++;}));
+            if(summary)summary.innerHTML=Object.entries(totals).map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${k}</span><span class="text-xl font-bold ${['申誡','小過','大過','停職調查'].includes(k)?'text-rose-400':'text-emerald-400'}">${v}</span><span class="text-[10px] text-slate-500">次</span></div>`).join('');
             if(!filtered.length){container.innerHTML='<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">沒有找到符合管理編號的獎懲紀錄。</div>';return;}
             filtered.forEach(p=>{const key=p.docId||p.id,items=getPunishmentItems(p),reward=String(p.type||'punishment')==='reward',edit=canModifyPunishment(p),card=document.createElement('div');card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4';card.innerHTML=`<div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2"><span class="px-3 py-1 rounded-full text-xs font-semibold ${reward?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20':'bg-rose-500/10 text-rose-400 border border-rose-500/20'} font-mono">${p.id||key}</span><span class="px-3 py-1 rounded-full text-xs font-bold ${reward?'bg-emerald-500/20 text-emerald-400':'bg-red-500/20 text-red-400'}">${reward?'獎勵':'懲處'}｜${items.join('、')||'未填寫'}</span></div><span class="text-xs text-slate-400">${p.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs bg-slate-950 p-3 rounded-xl"><div><span class="text-slate-500 block">被獎懲員警</span><b>${p.memberName||'未知'}（管理編號：${p.memberId||'--'}）</b></div><div><span class="text-slate-500 block">發布部門</span>${p.department||'--'}</div><div><span class="text-slate-500 block">登記帳號</span><span class="font-mono text-cyan-400">${p.authorAccount||'舊資料'}</span></div></div><div class="text-sm text-slate-300 line-clamp-3">${p.reason||'未提供事由。'}</div><div class="flex flex-wrap justify-between gap-2 border-t border-slate-800 pt-2"><button onclick="viewPunishmentDetail('${key}')" class="px-3 py-2 text-xs text-amber-400 rounded-lg hover:bg-amber-500/10"><i class="fa-solid fa-expand mr-1"></i>點擊放大檢視</button><div class="flex gap-2">${edit?`<button onclick="openEditPunishmentModal('${key}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs">修改</button>`:''}${canDeletePunishment()?`<button onclick="deletePunishment('${key}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">移除</button>`:''}</div></div>`;container.appendChild(card);});
         }
