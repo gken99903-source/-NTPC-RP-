@@ -229,7 +229,7 @@ __                                                                              
           const id=document.getElementById('ntpc-bot-panel-channel-id').value.trim();
           ntpcBotConsolePickPanel(id);
         }
-        function ntpcBotConsoleRenderPanels(){
+        function ntpcBotConsoleRenderPanels(){ntpcBotConsoleRenderOtherPanels();
           const panels=ntpcBotConsoleState?.panels||[],q=(document.getElementById('ntpc-bot-panel-search').value||'').trim().toLowerCase();
           const found=panels.filter(p=>(String(p.title||'')+' '+String(p.channel_id||'')).toLowerCase().includes(q));
           document.getElementById('ntpc-bot-panel-count').textContent=found.length+'/'+panels.length+' 張';
@@ -240,6 +240,21 @@ __                                                                              
             const title=document.createElement('strong');title.className='block text-indigo-200';title.textContent=String(p.title||'未命名')+(p.locked?' 🔒 已鎖定':'');
             const id=document.createElement('small');id.className='block text-slate-400 font-mono mt-1';id.textContent='頻道 ID：'+String(p.channel_id);
             btn.append(title,id);btn.onclick=()=>ntpcBotConsolePickPanel(p.channel_id);host.append(btn);
+          }
+        }
+        function ntpcBotConsoleRenderOtherPanels(){
+          const host=document.getElementById('ntpc-bot-other-panels');if(!host)return;
+          const list=(ntpcBotConsoleState?.other_panels||[]);
+          const q=String(document.getElementById('ntpc-bot-panel-search')?.value||'').trim().toLowerCase();
+          const matching=list.filter(p=>(String(p.title||'')+' '+String(p.channel_id||'')+' '+String(p.origin||'')).toLowerCase().includes(q));
+          host.replaceChildren();
+          if(!matching.length){host.textContent=list.length?'沒有符合搜尋條件的其他面板':'Bot 尚未提供其他面板目錄';return;}
+          for(const p of matching){
+            const row=document.createElement('div');row.className='flex flex-wrap justify-between gap-2 bg-slate-900 rounded-lg p-3';
+            const label=document.createElement('span');label.textContent=String(p.title||'票務面板')+'｜'+String(p.origin||'');
+            const a=document.createElement('a');a.className='text-cyan-300 underline';a.target='_blank';a.rel='noopener noreferrer';
+            a.href='https://discord.com/channels/'+String(1434729354474291232)+'/'+encodeURIComponent(String(p.channel_id||''));
+            a.textContent='#'+String(p.channel_id||'');row.append(label,a);host.append(row);
           }
         }
         function ntpcBotConsolePickMoney(id){
@@ -349,7 +364,7 @@ __                                                                              
             ntpcBotConsolePanelSelect();
 
              ntpcBotConsoleRenderPanels();
-             ntpcBotConsoleRenderMoney();
+             ntpcBotConsoleRenderMoney();ntpcBotConsoleRenderOtherPanels();
             const historyEl=document.getElementById('ntpc-bot-recent-messages');
             historyEl.replaceChildren();
             for(const m of (s.messages||[])){
@@ -938,6 +953,12 @@ body { background-color:#050b1a; background-image:radial-gradient(ellipse 72% 46
 #modal-report .ntpc-police-form-content{display:flex;flex-direction:column;gap:1.05rem;}
 #modal-report .ntpc-police-form-content > :is(.grid,#police-suspect-fields,#police-report-extra-fields,#police-violation-fields){margin-top:0;}
 #modal-report .ntpc-form-section-title{display:flex;gap:12px;align-items:center;border-bottom:1px solid rgba(103,163,219,.24);padding:20px 2px 11px;margin:2px 0 0;}
+/* V103: Tailwind .hidden was overridden by the more specific display:flex above. */
+#modal-report .ntpc-form-section-title.hidden,
+#modal-report [data-police-only-section].hidden,
+#modal-report #police-suspect-fields.hidden,
+#modal-report #police-report-extra-fields.hidden,
+#modal-report #police-violation-fields.hidden {display:none!important;}
 #modal-report .ntpc-form-section-title:first-child{padding-top:3px;}
 #modal-report .ntpc-section-index{display:grid;place-items:center;flex-shrink:0;width:36px;height:36px;border:1px solid rgba(76,209,246,.42);border-radius:11px;background:linear-gradient(160deg,rgba(31,127,186,.28),rgba(26,91,145,.12));color:#7ee3fa;font:700 13px ui-monospace,monospace;box-shadow:inset 0 1px rgba(255,255,255,.05);}
 #modal-report .ntpc-section-index-amber{color:#fcd38b;border-color:rgba(245,158,11,.45);background:rgba(137,89,16,.16);}
@@ -1046,6 +1067,9 @@ input, textarea, select, button { accent-color:#38bdf8; }
     box-shadow: none !important;
 }
 
+
+/* V97 可讀取的原生日期時間快捷鍵 */
+.ntpc-now-btn{margin-left:6px;padding:7px 10px;border-radius:9px;border:1px solid rgba(103,232,249,.3);color:#a5f3fc;background:rgba(8,47,73,.6);font-size:12px;font-weight:600;white-space:nowrap}.ntpc-now-btn:hover{background:#155e75}
 </style>
 
     <script type="module">
@@ -1267,10 +1291,10 @@ input, textarea, select, button { accent-color:#38bdf8; }
                         <div class="flex items-center gap-2 text-emerald-300 font-bold">
                             <i class="fa-solid fa-satellite-dish"></i><span id="home-latest-update-label">V2.0 最新更新</span>
                         </div>
-                        <p class="text-slate-400 text-sm mt-2 leading-relaxed">本版本新增 ER:LC 智慧派遣中心，在管理中心分頁開啟並連線後每 5 秒更新線上警消位置；透過 Cloudflare Worker 共用 API 快取，避免反覆讀寫 Firestore。</p>
+                        <p class="text-slate-400 text-sm mt-2 leading-relaxed">近期更新整合消防獎懲、嘉蕭醫院、車輛管理與保險業務；Bot 活躍統計改為依 ER:LC 人數自動開始及結算。</p>
                     </div>
                     <p id="home-latest-update-summary" class="text-xs text-slate-500 mt-2">ER:LC 智慧派遣與 5 秒位置查看｜提供即時單位位置與網站人工指派；不發送遊戲私訊。</p>
-                    <button type="button" data-tab="update-log" class="tab-shortcut-btn shrink-0 px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-200 text-sm font-semibold transition">查看完整更新紀錄</button>
+                    <button type="button" data-tab="update-log" class="tab-shortcut-btn shrink-0 px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-200 text-sm font-semibold transition">查看本次更新內容</button>
                 </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1338,7 +1362,6 @@ input, textarea, select, button { accent-color:#38bdf8; }
                         <button id="police-report-modal-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
                             <i class="fa-solid fa-file-pen"></i><span>填寫案件報告</span>
                         </button>
-                        <button type="button" onclick="ntpcTicketCreate()" class="bg-cyan-900/50 hover:bg-cyan-800/70 border border-cyan-400/35 text-cyan-100 px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2"><i class="fa-solid fa-file-invoice-dollar"></i><span>填寫交通罰單</span></button>
                         <button id="police-erlc-audio-toggle" type="button" onclick="toggleERLCAudio()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2" title="只影響本裝置／本瀏覽器"><i class="fa-solid fa-volume-high"></i><span>警報音效：開啟</span></button>
                         <button id="police-page-refresh-btn" type="button" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2" title="重新整理網站頁面">
                             <i class="fa-solid fa-rotate"></i><span>刷新頁面</span>
@@ -1352,7 +1375,6 @@ input, textarea, select, button { accent-color:#38bdf8; }
                 <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
                     <button id="btn-police-reports" data-sub="reports" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史案件報告庫</button>
                     <button id="btn-police-review" data-sub="review" class="police-sub-btn hidden px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-stamp mr-2"></i>高層審核系統 <span id="police-review-tab-badge" class="ml-1 inline-flex min-w-[20px] h-5 px-1.5 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">0</span></button>
-                    <button type="button" id="ntpc-ticket-nav" onclick="switchPoliceSubTab('tickets');ntpcTicketLoad()" class="px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap bg-cyan-900/35 text-cyan-200 border border-cyan-500/30 hover:bg-cyan-900/65"><i class="fa-solid fa-file-invoice-dollar mr-2"></i>交通罰單管理</button>
                     <button id="btn-police-punishments" data-sub="punishments" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-gavel mr-2"></i>警用獎懲專區</button>
                     <button id="btn-police-clocks" data-sub="clocks" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clipboard-user mr-2"></i>即時出勤打卡紀錄</button>
                     <button id="btn-police-hours" data-sub="hours" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數統計</button>
@@ -1382,27 +1404,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                         </div>
                     </div>
                     <div id="police-review-list" class="grid grid-cols-1 gap-4"></div>
-                    <!-- 交通罰單的審核按鈕只在高層審核分頁提供 -->
-                    <section id="ntpc-ticket-review-section" class="rounded-2xl border border-cyan-500/20 bg-slate-900/70 p-4 sm:p-6 space-y-4">
-                      <div class="flex flex-wrap items-center justify-between gap-3">
-                        <div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-file-invoice-dollar text-cyan-300 mr-2"></i>交通罰單高層審核</h3><p class="text-xs text-slate-400 mt-1">只在此處審核罰單；審核通過後才交由 Bot 排程論壇發文。</p></div>
-                        <button type="button" onclick="ntpcTicketLoad()" class="rounded-lg bg-cyan-800 hover:bg-cyan-700 px-4 py-2 text-sm font-semibold text-white">載入／重新整理罰單</button>
-                      </div>
-                      <div id="ntpc-ticket-review-list" class="space-y-3 text-sm text-slate-400">尚未載入罰單。</div>
-                    </section>
                 </div>
-
-                <section id="police-sub-tickets" class="hidden space-y-4">
-                  <div class="rounded-2xl border border-cyan-500/25 bg-slate-900/75 p-5 sm:p-6 space-y-3">
-                    <div class="flex flex-wrap justify-between items-center gap-3">
-                      <div><h3 class="text-lg font-bold text-cyan-100"><i class="fa-solid fa-clock-rotate-left mr-2"></i>近三日交通罰單歷史紀錄</h3><p class="text-xs text-slate-400 mt-1">比照歷史案件報告庫，僅按鈕載入；一般警員查看本人，高層可查看全體。未發布的待審／退件罰單可編輯。</p></div>
-                      <div class="flex flex-wrap gap-2"><button type="button" onclick="ntpcTicketCreate()" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm text-white font-semibold">＋ 填寫罰單</button><button type="button" onclick="ntpcTicketLoad()" class="rounded-lg bg-slate-700 hover:bg-slate-600 px-4 py-2.5 text-sm text-white font-semibold">載入／重新整理</button></div>
-                    </div>
-                    <input id="ntpc-ticket-search" type="search" oninput="ntpcTicketRender()" placeholder="搜尋罰單編號、受罰人、車牌、開單警員…" class="w-full rounded-xl bg-slate-950 border border-slate-700 p-3 text-white" aria-label="搜尋近三日交通罰單">
-                    <div id="ntpc-ticket-history-count" class="text-xs text-slate-400">尚未載入。</div>
-                  </div>
-                  <div id="ntpc-ticket-history-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-400">請點擊「載入／重新整理」。</div>
-                </section>
 
                 <div id="police-sub-punishments" class="hidden space-y-4">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -1572,6 +1574,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                         <button id="fire-retro-clock-modal-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-blue-600/30 transition flex items-center space-x-2">
                             <i class="fa-solid fa-clock-rotate-left"></i><span>補打卡登記 (自訂日期/時分)</span>
                         </button>
+                        <button id="fire-punish-modal-btn" type="button" class="bg-amber-700/80 hover:bg-amber-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium border border-amber-500/35"><i class="fa-solid fa-award mr-2"></i>發布消防獎懲</button>
                         <button id="fire-report-modal-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center space-x-2">
                             <i class="fa-solid fa-file-pen"></i><span>填寫消防案件報告</span>
                         </button>
@@ -1588,6 +1591,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                     <button id="btn-fire-reports" data-sub="reports" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史消防案件報告</button>
                     <button id="btn-fire-review" data-sub="review" class="fire-sub-btn hidden px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-stamp mr-2"></i>高層審核系統 <span id="fire-review-tab-badge" class="ml-1 inline-flex min-w-[20px] h-5 px-1.5 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">0</span></button>
                     <button id="btn-fire-ems" data-sub="ems" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-truck-medical mr-2"></i>EMS救護出勤報告</button>
+                    <button id="btn-fire-punishments" data-sub="punishments" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-gavel mr-2"></i>消防獎懲專區</button>
                     <button id="btn-fire-clocks" data-sub="clocks" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-clipboard-user mr-2"></i>消防出勤打卡紀錄</button>
                     <button id="btn-fire-hours" data-sub="hours" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-calculator mr-2"></i>執勤總時數統計</button>
                 </div>
@@ -1624,6 +1628,13 @@ input, textarea, select, button { accent-color:#38bdf8; }
                     </div>
                     <div id="ems-reports-list" class="grid grid-cols-1 gap-4"></div>
                 </div>
+                <section id="fire-sub-punishments" class="hidden space-y-4">
+                    <div class="rounded-2xl bg-slate-900 border border-slate-800 p-5 flex flex-wrap justify-between items-center gap-3"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-award text-amber-400 mr-2"></i>消防獎懲公告專區</h3><p class="text-xs text-slate-400 mt-1">獨立消防獎懲紀錄；高階長官、高階成員與管理中心可登記。</p></div><div class="flex flex-wrap gap-2"><button type="button" id="fire-punish-load" class="rounded-lg bg-slate-700 text-white px-4 py-2 text-sm">載入／重新整理</button><button type="button" id="fire-punish-create" class="rounded-lg bg-amber-600 text-white px-4 py-2 text-sm hidden">＋ 登記獎懲</button></div></div>
+                    <input type="search" id="fire-punish-search" placeholder="搜尋隊員姓名／管理編號／獎懲事由" class="w-full rounded-xl bg-slate-950 border border-slate-700 p-3 text-white">
+                    <div id="fire-punish-summary" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2"></div>
+                    <div id="fire-punish-list" class="grid gap-3 text-sm text-slate-400">按「載入／重新整理」取得消防獎懲。</div>
+                </section>
+
                 <div id="fire-sub-clocks" class="hidden space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div><h3 class="text-lg font-bold text-slate-200">消防隊員出勤打卡歷史與狀態</h3><p class="text-xs text-slate-500 mt-1">點擊目前值勤人數，可檢視執勤中的隊員與時長。</p></div>
@@ -1702,7 +1713,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                             </div>
                             <div>
                                 <h2 class="text-2xl font-bold text-white">系統更新紀錄</h2>
-                                <p class="text-sm text-slate-500 mt-1">新北市 RP 3.0 公職服務系統各版本功能變更與重要修正。</p>
+                                <p class="text-sm text-slate-500 mt-1">只顯示目前最新版本的更新重點；舊版歷史紀錄不在此清單逐版重複顯示。</p>
                             </div>
                         </div>
                     </div>
@@ -1711,34 +1722,28 @@ input, textarea, select, button { accent-color:#38bdf8; }
 
                 <div id="dynamic-update-log" class="space-y-4"></div>
                 <div class="space-y-4">
-                    <article class="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+                    <article id="ntpc-update-summary-latest" class="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                             <div>
                                 <h3 class="text-lg font-bold text-white">V2.0</h3>
-                                <p class="text-xs text-emerald-300 mt-1">ER:LC 智慧派遣、警消／全員地圖與每 5 秒位置更新</p>
+                                <p class="text-xs text-emerald-300 mt-1">近期功能整合與穩定性修正</p>
                             </div>
                             <span class="text-xs font-semibold text-emerald-300">目前版本</span>
                         </div>
-                        <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
-                            <li>管理中心新增 ER:LC 智慧派遣面板，可查看線上警消隊伍、郵遞區號、座標及待命狀態。</li>
-                            <li>警務中心、消防中心新增各自專屬的座標圖；管理中心新增全員座標圖及隊伍篩選，市民標示 Roblox ID，警消人員優先標示網站綁定的個人編號。</li>
-                            <li>管理員開啟派遣分頁並連線 Worker 後，前景每 5 秒讀取共用快取的最新位置，避免各瀏覽器直接頻繁查詢 ER:LC 或 Firestore。</li>
-                            <li>接收緊急報案後，管理中心可參考單位位置選擇線上警消、進行人工指派與結案。</li>
-                            <li>僅允許管理中心於網站手動指派與結案；系統不執行自動派遣，也不向遊戲發送私人訊息。</li>
-                            <li>警務及消防報告持續支援案件送審、高層審核、退件、紀錄查閱及依權限管理案件；正式紀錄改以按鈕觸發讀取，降低不必要的 Firestore 讀取。</li>
-                            <li>嘉蕭集團新增獨立勤務中心、上下班打卡、EMS 救護與生命禮儀報告，以及各自的送審及歷史紀錄；管理中心成員可填寫嘉蕭報告。</li>
-                            <li>嘉蕭 EMS 與消防救護表單調整類別、受傷部位標記、EMT 人數與服務費用欄位，移除不再使用的轉送項目；改善報告明細中文名稱顯示。</li>
-                            <li>嘉蕭 EMS、生命禮儀報告增加繳費狀態顯示，未繳費案件標示紅色提醒；生命禮儀明細精簡，移除多餘的明細編號。</li>
-                            <li>嘉蕭報告支援管理權限下的刪除及審核狀態調整；嘉蕭打卡提供值班人數、紀錄管理及刪除功能。</li>
-                            <li>管理中心整合 Bot 控制台，透過 Pages Functions 與 D1 連線；管理員以網站帳號搭配獨立管理密鑰驗證，不在 HTML 保存 Discord Token。</li>
-                            <li>專生考核系統維持警消考核代碼生成與管理，並新增 30 分鐘到期後的清單移除與具權限時的 Firestore 過期紀錄清理。</li>
-                            <li>市民資料採查詢時才讀取，整合保險狀態顯示及管理紀錄；警消、個人資料、管理中心延續既有權限分級與手動載入機制。</li>
-                            <li>視覺介面統一深色科技風格，改善警務報告章節、表單欄位、卡片、按鈕、審核區、日期時間開啟圖示及手機版排版。</li>
-                            <li>本次介面再加入回頂端捷徑、字數提醒、必填錯誤定位與鍵盤操作輔助；上述介面優化不額外增加 Firestore 背景讀取。</li>
-                            <li>承襲 V1.9.4 EMS 五區塊、受傷部位標記、七大處置分類、預設醫院以及既有警務／消防／管理中心功能。</li>
-                            <li>派遣查詢與發送需另外部署並設定具權限保護的 Cloudflare Worker；僅更新 HTML 不會直接啟用 API 派遣。</li>
+                                                <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
+                            <li>消防加入獨立獎懲管理與累計查詢，和警察獎懲分開保存；警察懲處名稱統一為「申誡」。修正消防獎懲初始化順序，避免影響登入。</li>
+                            <li>車輛查詢新增吊銷至指定日期、原因及操作者紀錄；個人中心提供所屬部門獎懲累計。</li>
+                            <li>保險管理移除公務車保險項目，維持其餘保險類型；Bot 保險開單支援自動辦理、直接轉人工服務，客服可存取相關票務頻道。</li>
+                            <li>嘉蕭 EMS、生命禮儀與醫院紀錄支援搜尋、檢視與可授權編輯；退件原因使用網站自製輸入視窗。</li>
+                            <li>嘉蕭醫院支援線上掛號逾時標籤、住院多筆醫療紀錄、五分鐘病房計費、健保與自費分帳，以及按月份查詢營收明細。</li>
+                            <li>消防勤務時數查詢改善人員識別，避免不同成員共用編號時誤合併；消防報告隱藏警務專用欄位。</li>
+                            <li>EMS 及消防相關時間欄位提供「套用現在時間」捷徑，仍可手動修改；強化表單操作、報告清單顯示及重複送出防護。</li>
+                            <li>管理中心新增回報提醒與 Bot 票務面板總覽，包括銀行、入境、駕照及保險等模組。</li>
+                            <li>Bot 活躍統計改為 ER:LC 達到 5 人即自動開始、降至 1～4 人不中斷，確認人數歸零後自動結算並發布各單位前五名；取消手動開服／關服指令，不再依賴網站狀態輪詢。</li>
+                            <li>改善介面互動、搜尋、各部門報告處理與後台同步穩定性；保留原有資料與權限分級。</li>
                         </ul>
                     </article>
+                    <div id="ntpc-legacy-updates" class="hidden" aria-hidden="true">
                     <article class="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                             <div>
@@ -1878,10 +1883,11 @@ input, textarea, select, button { accent-color:#38bdf8; }
                             <li>持續整合公告、案件、通知、管理中心與雲端資料同步功能。</li>
                         </ul>
                     </article>
+                    </div><!-- historical records intentionally hidden from latest-only changelog -->
                 </div>
 
                 <div class="mt-6 pt-5 border-t border-slate-800 text-xs text-slate-500">
-                    更新紀錄為網站版本變更摘要；實際修正可能包含多項細部穩定性與錯誤修復。
+                    此頁僅列最新更新重點。既有功能及資料庫紀錄仍予保留。
                 </div>
             </div>
         </section>
@@ -2081,6 +2087,10 @@ input, textarea, select, button { accent-color:#38bdf8; }
                             <div id="profile-units" class="mt-2 font-semibold text-slate-200">--</div>
                         </div>
                     </div>
+                    <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5" id="ntpc-profile-awards-box">
+                        <div class="flex flex-wrap items-center justify-between gap-2"><h3 class="font-semibold text-cyan-300">我的部門獎懲累計</h3><button type="button" onclick="ntpcProfileLoadAwards()" class="px-3 py-2 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg">載入／重新整理</button></div>
+                        <div id="ntpc-profile-awards-result" class="text-sm text-slate-400 mt-3">按「載入」讀取本人獎懲，並分開計算警察與消防紀錄。</div>
+                    </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="bg-gradient-to-br from-blue-500/10 to-slate-950 border border-blue-500/20 rounded-2xl p-6">
                             <span class="text-xs text-slate-400">總值勤時數</span>
@@ -2165,7 +2175,6 @@ input, textarea, select, button { accent-color:#38bdf8; }
                     </div>
                     <div class="flex items-center justify-center flex-wrap gap-2 mobile-action-group w-full md:w-auto" id="jiaxiao-quick-actions">
                         <button type="button" id="jx-clock-modal-btn" onclick="openJiaxiaoClockModal()" aria-haspopup="dialog" aria-controls="modal-jx-clock" class="jx-member-create-btn rounded-xl bg-teal-600 hover:bg-teal-500 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-clock mr-2"></i>上下班打卡</button>
-                        <button type="button" id="jx-retro-clock-modal-btn" onclick="openJiaxiaoRetroClockModal()" aria-haspopup="dialog" aria-controls="modal-jx-clock" class="jx-member-create-btn rounded-xl border border-sky-500/45 bg-sky-950/35 hover:bg-sky-900/40 px-4 py-2.5 text-sky-200 text-sm font-semibold"><i class="fa-solid fa-clock-rotate-left mr-2"></i>補打卡登記</button>
                         <button type="button" id="jx-hospital-modal-btn" onclick="openJiaxiaoHospitalModal()" aria-haspopup="dialog" aria-controls="modal-jx-hospital" class="rounded-xl border border-teal-500/35 bg-slate-800 hover:bg-slate-700 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-hospital mr-2"></i>填寫醫院報告</button>
                         <div class="contents" id="jx-report-create-actions">
                             <button type="button" onclick="openJXReport('medical')" aria-haspopup="dialog" aria-controls="modal-jx-report" class="rounded-xl bg-emerald-700 hover:bg-emerald-600 px-4 py-2.5 text-sm text-white font-semibold"><i class="fa-solid fa-truck-medical mr-1"></i>填寫 EMS 救護報告</button>
@@ -2238,7 +2247,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                             <div class="flex items-center justify-between gap-2"><h3 class="font-bold text-white"><i class="fa-solid fa-clock text-teal-400 mr-2"></i>嘉蕭集團上下班打卡</h3><span id="jiaxiao-duty-state" class="text-xs text-slate-400">尚未確認</span></div>
                             <p class="text-sm text-slate-400">打卡資訊用於值班統計與消防無人值班時的倒地通知後援名單。</p>
                             <div id="jiaxiao-clock-actions" class="flex flex-wrap gap-2">
-                                <button type="button" onclick="openJiaxiaoClockModal()" aria-haspopup="dialog" aria-controls="modal-jx-clock" class="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-arrow-up-right-from-square mr-2"></i>開啟上下班打卡視窗</button> <button type="button" onclick="openJiaxiaoRetroClockModal()" aria-haspopup="dialog" aria-controls="modal-jx-clock" class="rounded-xl bg-sky-900/40 border border-sky-600/50 hover:bg-sky-800/40 px-4 py-2.5 text-sky-200 text-sm font-semibold"><i class="fa-solid fa-clock-rotate-left mr-2"></i>補打卡</button>
+                                <button type="button" onclick="openJiaxiaoClockModal()" aria-haspopup="dialog" aria-controls="modal-jx-clock" class="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 text-white text-sm font-semibold"><i class="fa-solid fa-arrow-up-right-from-square mr-2"></i>開啟上下班打卡視窗</button>
                             </div>
                         </div>
                         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
@@ -2572,7 +2581,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                             <div class="flex items-center justify-between gap-3 flex-wrap">
                                 <div>
                                     <div class="text-sm font-bold text-white"><i class="fa-solid fa-power-off text-emerald-400 mr-2"></i>ER:LC 伺服器狀況</div>
-                                    <div class="text-xs text-slate-500 mt-1">關服時 Worker 不會呼叫 ER:LC API；開服後恢復死亡即時偵測與 10 分鐘歷史事件掃描。</div>
+                                    <div class="text-xs text-slate-500 mt-1">本開關只控制網站 ER:LC Worker 監控；Bot 活躍統計獨立以遊戲在線人數自動開始或結算。</div>
                                 </div>
                                 <span id="erlc-server-status-badge" class="text-xs px-3 py-1.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">🔴 關服中</span>
                             </div>
@@ -2651,6 +2660,11 @@ input, textarea, select, button { accent-color:#38bdf8; }
                         <div class="flex flex-wrap items-center justify-between gap-2"><label class="block text-sm">全部客服票務面板</label><span id="ntpc-bot-panel-count" class="text-xs text-indigo-300">尚未同步</span></div>
                          <input id="ntpc-bot-panel-search" type="search" oninput="ntpcBotConsoleRenderPanels()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="搜尋標題或頻道 ID">
                          <div id="ntpc-bot-panel-cards" class="space-y-2 max-h-64 overflow-y-auto border border-slate-800 rounded-lg p-2 text-sm"><span class="text-slate-400">尚未同步</span></div>
+<div class="mt-3 rounded-xl border border-slate-700 bg-slate-950/60 p-3">
+  <div class="text-sm font-semibold text-cyan-300">其他票務與業務面板（唯讀）</div>
+  <p class="text-xs text-slate-500 mt-1">含銀行、入境、駕照、保險、薪資面板。此清單用來檢視位置；不會將其他面板誤當成一般客服面板覆蓋設定。</p>
+  <div id="ntpc-bot-other-panels" class="mt-2 space-y-2 max-h-64 overflow-y-auto text-xs text-slate-300">請同步 Bot 後端後載入。</div>
+</div>
                          <label class="block text-sm">選擇或輸入票務面板頻道 ID</label>
                          <div class="flex flex-col sm:flex-row gap-2"><input id="ntpc-bot-panel-channel-id" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-mono" placeholder="貼上頻道 ID"><button type="button" onclick="ntpcBotConsoleLoadPanelById()" class="rounded-lg bg-slate-800 hover:bg-slate-700 px-4 py-2 whitespace-nowrap">載入 ID</button></div>
                         <select id="ntpc-bot-panel-list" onchange="ntpcBotConsolePanelSelect()" class="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white"><option value="">先同步 Bot 設定</option></select>
@@ -2906,6 +2920,20 @@ input, textarea, select, button { accent-color:#38bdf8; }
             <button id="save-lookup-post-btn" type="button" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition">儲存資料</button>
         </div>
     </div>
+    <!-- 消防獎懲：獨立資料，避免與警務獎懲紀錄互相影響 -->
+    <div id="modal-fire-punishment" class="fixed inset-0 z-[65] hidden bg-slate-950/85 flex items-center justify-center p-3" role="dialog" aria-modal="true" aria-label="消防獎懲登記">
+      <form id="fire-punish-form" class="bg-slate-900 border border-amber-500/25 rounded-2xl w-full max-w-xl p-5 space-y-4 max-h-[92dvh] overflow-y-auto">
+        <div class="flex justify-between items-center"><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-award text-amber-400 mr-2"></i><span id="fire-punish-form-title">發布消防獎懲</span></h3><button type="button" id="fire-punish-cancel-top" class="text-slate-300 p-2" aria-label="關閉">✕</button></div>
+        <label class="block text-sm text-slate-300">被獎懲隊員（可選清單或填入資料）<select id="fire-punish-member" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"><option value="">請選擇隊員</option></select></label>
+        <div class="grid grid-cols-2 gap-3"><label class="text-sm text-slate-300">隊員姓名<input id="fire-punish-name" maxlength="60" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"></label><label class="text-sm text-slate-300">管理編號<input id="fire-punish-staff" maxlength="32" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"></label></div>
+        <div class="grid grid-cols-2 gap-3"><label class="text-sm text-slate-300">獎懲類型<select id="fire-punish-type" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"><option value="reward">獎勵</option><option value="punishment">懲處</option></select></label><label class="text-sm text-slate-300">發布單位<input id="fire-punish-unit" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" value="新北市政府消防局"></label></div>
+        <div><label class="block text-sm text-slate-300 mb-2">獎懲項目（可複選）</label><div id="fire-punish-items" class="grid grid-cols-2 sm:grid-cols-3 gap-2 rounded-xl bg-slate-950 p-3 border border-slate-800"></div></div>
+        <div class="grid grid-cols-2 gap-3"><label class="text-sm text-slate-300">登記長官<input id="fire-punish-author" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"></label><label class="text-sm text-slate-300">職稱<input id="fire-punish-position" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"></label></div>
+        <label class="block text-sm text-slate-300">獎懲事由<textarea id="fire-punish-reason" rows="4" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"></textarea></label>
+        <div class="flex gap-2 justify-end"><button type="button" id="fire-punish-cancel" class="rounded-xl bg-slate-700 px-4 py-3 text-white">取消</button><button type="submit" id="fire-punish-save" class="rounded-xl bg-amber-600 px-5 py-3 font-semibold text-white">儲存消防獎懲</button></div>
+      </form>
+    </div>
+
     <div id="modal-lookup-detail" class="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-3xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[92vh] overflow-y-auto">
             <div class="flex justify-between items-center"><h3 id="lookup-detail-title" class="text-xl font-bold text-white">資料詳細</h3><button class="close-modal-btn text-slate-400 hover:text-white p-2" data-modal="modal-lookup-detail"><i class="fa-solid fa-xmark text-xl"></i></button></div>
@@ -3404,7 +3432,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                     <label for="report-title" class="block text-xs font-semibold uppercase tracking-wider text-slate-200 mb-2">案件主述（標題）</label>
                     <input type="text" id="report-title" maxlength="160" autocomplete="off" placeholder="請輸入案件主述／標題" class="block w-full min-w-0 min-h-[48px] bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-base sm:text-sm text-white focus:outline-none focus:border-blue-500">
                 </div>
-                <div class="ntpc-form-section-title"><span class="ntpc-section-index">02</span><div><strong>涉案對象</strong><small>SUBJECT DETAILS · 身分與車輛資訊</small></div></div>
+                <div class="ntpc-form-section-title" data-police-only-section="1"><span class="ntpc-section-index">02</span><div><strong>涉案對象</strong><small>SUBJECT DETAILS · 身分與車輛資訊</small></div></div>
                 <div id="police-suspect-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯身分證件 ID</label>
@@ -3420,7 +3448,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                     </div>
                 </div>
 
-                <div class="ntpc-form-section-title"><span class="ntpc-section-index">03</span><div><strong>勤務協調</strong><small>DISPATCH & SUPPORT · 地點、指揮及支援</small></div></div>
+                <div class="ntpc-form-section-title" data-police-only-section="1"><span class="ntpc-section-index">03</span><div><strong>勤務協調</strong><small>DISPATCH & SUPPORT · 地點、指揮及支援</small></div></div>
                 <div id="police-report-extra-fields" class="space-y-4 bg-slate-950/70 border border-blue-500/20 rounded-2xl p-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件地點郵遞區號</label><input type="text" id="report-postal-code" placeholder="郵遞區號，可留空" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div>
@@ -3436,7 +3464,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                     </div></details></div>
                 </div>
 
-                <div class="ntpc-form-section-title"><span class="ntpc-section-index ntpc-section-index-amber">04</span><div><strong>案件條例與刑期</strong><small>VIOLATIONS · 選擇條例並核對系統計算</small></div></div>
+                <div class="ntpc-form-section-title" data-police-only-section="1"><span class="ntpc-section-index ntpc-section-index-amber">04</span><div><strong>案件條例與刑期</strong><small>VIOLATIONS · 選擇條例並核對系統計算</small></div></div>
                 <div id="police-violation-fields" class="space-y-3 bg-slate-950/70 border border-amber-500/20 rounded-2xl p-4">
                     <div class="flex items-center justify-between gap-3"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">違反條例（可複選、可搜尋，可不填）</label><p class="text-[11px] text-slate-500 mt-1">選填；勾選後自動計算總監獄時間；組織犯罪刑罰加重⅓。</p></div><span id="report-jail-total" class="shrink-0 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold">總計 0 分鐘</span></div>
                     <input id="report-violation-search" type="search" oninput="filterViolationOptions('report')" placeholder="搜尋條例名稱..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500">
@@ -3449,7 +3477,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                 </div>
 
                 <div>
-                    <div class="ntpc-form-section-title"><span class="ntpc-section-index">05</span><div><strong>案件經過與附件</strong><small>CASE NARRATIVE · 處理紀錄及相關影片</small></div></div>
+                    <div id="report-narrative-section" class="ntpc-form-section-title"><span class="ntpc-section-index">05</span><div><strong>案件經過與附件</strong><small>CASE NARRATIVE · 處理紀錄及相關影片</small></div></div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細案件經過與處理結果</label>
                     <textarea id="report-content" rows="4" placeholder="請詳細敘述案件經過..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-blue-500"></textarea>
                 </div>
@@ -3574,7 +3602,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                 </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位（可複選，不限數量）</label>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位 (最多可勾選兩個)</label>
                     <div class="grid grid-cols-3 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
                         <label class="flex items-center space-x-2 text-sm text-slate-200 cursor-pointer">
                             <input type="checkbox" name="edit-user-units" value="police" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600">
@@ -3699,7 +3727,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                 </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位（可複選，不限數量）</label>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位 (最多可勾選兩個)</label>
                     <div class="grid grid-cols-3 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
                         <label class="flex items-center space-x-2 text-sm text-slate-200 cursor-pointer">
                             <input type="checkbox" name="new-user-units" value="police" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600">
@@ -4166,6 +4194,14 @@ const loginOpenBtn = document.getElementById('login-modal-open-btn');
             const fireRetroClockBtn = document.getElementById('fire-retro-clock-modal-btn');
             if (fireRetroClockBtn) fireRetroClockBtn.addEventListener('click', () => openClockModal('fire', true));
 
+            document.getElementById('fire-punish-modal-btn')?.addEventListener('click',()=>ntpcOpenFirePunishment());
+            document.getElementById('fire-punish-create')?.addEventListener('click',()=>ntpcOpenFirePunishment());
+            document.getElementById('fire-punish-load')?.addEventListener('click',ntpcLoadFirePunishments);
+            document.getElementById('fire-punish-search')?.addEventListener('input',ntpcRenderFirePunishments);
+            document.getElementById('fire-punish-member')?.addEventListener('change',ntpcFirePunishmentMemberSelected);
+            document.getElementById('fire-punish-type')?.addEventListener('change',ntpcFirePunishmentOptions);
+            document.getElementById('fire-punish-form')?.addEventListener('submit',ntpcSaveFirePunishment);
+            for(const key of ['fire-punish-cancel','fire-punish-cancel-top']) document.getElementById(key)?.addEventListener('click',()=>document.getElementById('modal-fire-punishment').classList.add('hidden'));
             const fireReportBtn = document.getElementById('fire-report-modal-btn');
             if (fireReportBtn) fireReportBtn.addEventListener('click', () => openReportModal('fire'));
             const fireEmsBtn = document.getElementById('fire-ems-modal-btn');
@@ -4551,8 +4587,8 @@ function compareSiteVersion(a, b){
         }
         // 本 HTML 固定內建 V2.0。雲端舊版發布紀錄不可覆蓋較新的已部署版本。
         const NTPC_BUNDLED_SITE_VERSION={
-            version:'V2.0',title:'ER:LC 智慧派遣與每 5 秒位置更新',
-            summary:'V2.0 新增 ER:LC 智慧派遣中心，可查看線上勤務人員位置、選擇最近待命單位，並由管理中心在網站人工指派（不發送 :pm）；保留 V1.9.4 既有功能。'
+            version:'V2.0',title:'嘉蕭醫院、消防獎懲與系統穩定性整合',
+            summary:'近期修正消防獎懲登入初始化、消防時數人員判斷，加入車輛吊銷與個人獎懲，整合嘉蕭醫院計費、保險及票務操作；Bot 依 ER:LC 線上人數自動開始及結算活躍統計。'
         };
         function getCurrentSiteVersion(){
             const rows=sortSiteVersions((appData.siteVersions||[]).filter(v=>v&&v.active!==false));
@@ -4577,7 +4613,10 @@ function compareSiteVersion(a, b){
         function renderDynamicUpdateLog(){
             const host=document.getElementById('dynamic-update-log'); if(!host)return;
             const rows=sortSiteVersions((appData.siteVersions||[]).filter(v=>v&&v.active!==false&&compareSiteVersion(v.version,NTPC_BUNDLED_SITE_VERSION.version)>0));
-            host.innerHTML=rows.length?rows.map((v,i)=>{const details=Array.isArray(v.details)?v.details:(String(v.details||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean));return `<article class="rounded-2xl border ${i===0?'border-emerald-500/30 bg-emerald-500/5':i===1?'border-red-500/25 bg-red-500/5':'border-slate-800 bg-slate-950/60'} p-5"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3"><div><h3 class="text-lg font-bold text-white">${escapeHtml(v.version||'--')}</h3><p class="text-xs ${i===0?'text-emerald-300':i===1?'text-red-300':'text-slate-500'} mt-1">${escapeHtml(v.title||'版本更新')}</p></div><span class="text-xs font-semibold ${i===0?'text-emerald-300':i===1?'text-red-300':'text-slate-500'}">${i===0?'目前版本':i===1?'前一版本':formatDateTime(v.publishedAt||v.createdAt)}</span></div><p class="text-sm text-slate-300 mb-3">${escapeHtml(v.summary||'')}</p>${details.length?`<ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">${details.map(d=>`<li>${escapeHtml(d)}</li>`).join('')}</ul>`:''}</article>`;}).join('') : '';
+            const current=rows.slice(0,1);
+            const bundled=document.getElementById('ntpc-update-summary-latest');
+            if(bundled)bundled.classList.toggle('hidden',current.length>0);
+            host.innerHTML=current.length?current.map((v,i)=>{const details=Array.isArray(v.details)?v.details:(String(v.details||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean));return `<article class="rounded-2xl border ${i===0?'border-emerald-500/30 bg-emerald-500/5':i===1?'border-red-500/25 bg-red-500/5':'border-slate-800 bg-slate-950/60'} p-5"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3"><div><h3 class="text-lg font-bold text-white">${escapeHtml(v.version||'--')}</h3><p class="text-xs ${i===0?'text-emerald-300':i===1?'text-red-300':'text-slate-500'} mt-1">${escapeHtml(v.title||'版本更新')}</p></div><span class="text-xs font-semibold ${i===0?'text-emerald-300':i===1?'text-red-300':'text-slate-500'}">${i===0?'目前版本':i===1?'前一版本':formatDateTime(v.publishedAt||v.createdAt)}</span></div><p class="text-sm text-slate-300 mb-3">${escapeHtml(v.summary||'')}</p>${details.length?`<ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">${details.map(d=>`<li>${escapeHtml(d)}</li>`).join('')}</ul>`:''}</article>`;}).join('') : '';
         }
         function resetSiteVersionForm(){
             ['site-version-edit-id','site-version-number','site-version-title','site-version-summary','site-version-details'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
@@ -4802,7 +4841,7 @@ async function republishAnnouncement(id) {
                     const police = admin || userHasUnit('police');
                     const fire = admin || userHasUnit('fire');
                     const common = new Set(['reportNotifications','dutyHandoverNotes','announcements','siteVersions']);
-                    const policeOnly = new Set(['policeReports','policePendingReports','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords']);
+                    const policeOnly = new Set(['policeReports','policePendingReports','policePunishments','firePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords']);
                     const fireOnly = new Set(['firePendingReports','fireReports','emsReports','emsPendingReports']);
                     const adminOnly = new Set(['faqIssues','adminLogs','loginSessions','feedbackReports','blockedDevices','loginFailures','adminClocks','academyCodes','systemSettings']);
                     if ((policeOnly.has(collectionName) && !police) || (fireOnly.has(collectionName) && !fire) || (adminOnly.has(collectionName) && !admin)) return {ok:true,docs:[]};
@@ -5324,26 +5363,25 @@ async function republishAnnouncement(id) {
                 showToast('日期格式錯誤，或起始日期晚於結束日期。', 'warning', '查詢條件錯誤');
                 return;
             }
-            const aliases = new Set([selected]);
-            // 同一位隊員可能在舊打卡使用編號、新打卡使用登入帳號。
-            (appData.users || []).forEach(u => {
-                const ids = [u.account,u.staffNumber,u.memberNumber].map(normalize).filter(Boolean);
-                if (ids.some(id => aliases.has(id))) ids.forEach(id => aliases.add(id));
-            });
-            const all = (appData.fireClocks || []);
-            for (let changed = true; changed;) {
-                changed = false;
-                all.forEach(c => {
-                    const ids = [c.account,c.userAccount,c.staffNumber,c.memberNumber,c.number].map(normalize).filter(Boolean);
-                    if (ids.some(id => aliases.has(id))) ids.forEach(id => {
-                        if (!aliases.has(id)) { aliases.add(id); changed = true; }
-                    });
-                });
-            }
-            const events = all.filter(c => {
-                const ids = [c.account,c.userAccount,c.staffNumber,c.memberNumber,c.number].map(normalize).filter(Boolean);
-                return ids.some(id => aliases.has(id)) && getClockTimestamp(c) > 0;
-            }).sort((a,b) => getClockTimestamp(a) - getClockTimestamp(b));
+            // V97：選中帳號不得沿著不同打卡紀錄的共用編號建立傳遞式關聯。
+            // 舊版把 A 的舊編號和 B 的新帳號串起，造成查 A 顯示 B。
+            const selectedMember=(appData.users||[]).find(u=>
+                [u.account,u.staffNumber].map(normalize).includes(selected) &&
+                (Array.isArray(u.units)?u.units:[u.unit]).includes('fire'));
+            const selectedAccount=normalize(selectedMember?.account || selected);
+            const selectedStaff=normalize(selectedMember?.staffNumber ||
+                ((appData.fireClocks||[]).find(c=>normalize(c.account||c.userAccount)===selected)?.staffNumber||''));
+            const all=appData.fireClocks||[];
+            // 若同一編號在別人的已辨識帳號上出現，舊的無帳號紀錄不可自動併入。
+            const ambiguousStaff=selectedStaff && all.some(c=>normalize(c.staffNumber||c.memberNumber||c.number)===selectedStaff &&
+                normalize(c.account||c.userAccount) && normalize(c.account||c.userAccount)!==selectedAccount);
+            const events=all.filter(c=>{
+                const account=normalize(c.account||c.userAccount);
+                if(account)return account===selectedAccount;
+                const staff=normalize(c.staffNumber||c.memberNumber||c.number);
+                return !ambiguousStaff && !!selectedStaff && staff===selectedStaff;
+            }).filter(c=>getClockTimestamp(c)>0)
+              .sort((a,b)=>getClockTimestamp(a)-getClockTimestamp(b));
             let started = null;
             let totalMs = 0;
             let insideCount = 0;
@@ -5599,20 +5637,129 @@ async function republishAnnouncement(id) {
                 showToast('高層審核系統僅限警察高層、高階成員與管理中心使用。', 'warning', '權限不足');
                 sub = 'reports';
             }
-            ['reports', 'review', 'tickets', 'punishments', 'clocks', 'hours', 'citizen', 'vehicles', 'wanted'].forEach(s => {
+            ['reports', 'review', 'punishments', 'clocks', 'hours', 'citizen', 'vehicles', 'wanted'].forEach(s => {
                 const el = document.getElementById(`police-sub-${s}`);
                 if (el) el.classList.add('hidden');
                 const btn = document.getElementById(`btn-police-${s}`);
                 if (btn) btn.className = "police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap";
             });
             // 罰單按鈕維持原有 id，隨分類同步藍色選取狀態。
-            document.getElementById('ntpc-ticket-nav')?.classList.toggle('ntpc-ticket-selected', sub === 'tickets');
+            
             const target = document.getElementById(`police-sub-${sub}`);
             if (target) target.classList.remove('hidden');
             const activeBtn = document.getElementById(`btn-police-${sub}`);
             if (activeBtn) activeBtn.className = "police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white whitespace-nowrap";
             if(sub==='review') renderPoliceReview();
             ntpcMapSwitch(document.getElementById('tab-police')?.classList.contains('hidden')?'none':'police');
+        }
+
+        let ntpcFirePunishments = [];
+        let ntpcFirePunishmentLoaded = false;
+        let ntpcFirePunishSaving = false;
+        let ntpcFirePunishEditId = '';
+        // V101: 避免在下方警用獎懲常數宣告前讀取 REWARD_ITEMS / PUNISHMENT_ITEMS，
+        // 否則會在頁面啟動時拋出 ReferenceError，導致登入按鈕事件無法初始化。
+        const ntpcFireRewards = () => REWARD_ITEMS;
+        const ntpcFirePenalties = () => PUNISHMENT_ITEMS;
+        function ntpcCanPublishFirePunishment(){
+            const role=getEffectiveRole(currentUser);
+            return !!currentUser && (role==='admin'||((role==='high'||role==='senior')&&userHasUnit('fire')));
+        }
+        function ntpcFirePunishmentMemberSelected(){
+            const sel=document.getElementById('fire-punish-member'),opt=sel?.selectedOptions?.[0];
+            if(!opt?.value)return;
+            document.getElementById('fire-punish-name').value=opt.dataset.name||'';
+            document.getElementById('fire-punish-staff').value=opt.dataset.staff||'';
+        }
+        function ntpcFirePunishmentRoster(){
+            const map=new Map(), add=(acc,name,staff)=>{const key=String(acc||staff||'').trim();if(!key)return;if(!map.has(key))map.set(key,{account:String(acc||''),name:String(name||''),staff:String(staff||'')});};
+            (appData.users||[]).filter(u=>{const un=Array.isArray(u.units)?u.units:[u.unit];return un.includes('fire');}).forEach(u=>add(u.account,u.name,u.staffNumber));
+            (appData.fireClocks||[]).forEach(c=>add(c.account||c.userAccount,c.name,c.staffNumber||c.memberNumber||c.number));
+            return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'zh-TW'));
+        }
+        function ntpcFirePunishmentOptions(){
+            const type=document.getElementById('fire-punish-type').value,wrap=document.getElementById('fire-punish-items');
+            const old=new Set([...wrap.querySelectorAll('input:checked')].map(x=>x.value));
+            wrap.replaceChildren();
+            (type==='reward'?ntpcFireRewards():ntpcFirePenalties()).forEach(item=>{
+                const lab=document.createElement('label');lab.className='flex gap-2 items-center rounded-lg border border-slate-800 px-2 py-2 text-xs text-slate-200';
+                const check=document.createElement('input');check.type='checkbox';check.value=item;check.className='accent-amber-500';check.checked=old.has(item);
+                lab.append(check,document.createTextNode(item));wrap.append(lab);
+            });
+        }
+        function ntpcOpenFirePunishment(row=null){
+            if(!ntpcCanPublishFirePunishment()){showToast('僅消防高層、高階成員及管理中心可登記消防獎懲。','warning','權限不足');return;}
+            ntpcFirePunishEditId=row?.docId||'';
+            const form=document.getElementById('fire-punish-form');form.reset();
+            document.getElementById('fire-punish-form-title').textContent=row?'編輯消防獎懲':'發布消防獎懲';
+            const select=document.getElementById('fire-punish-member');select.replaceChildren(new Option('請選擇隊員（也可自行填寫）',''));
+            ntpcFirePunishmentRoster().forEach(u=>{const opt=new Option(`${u.name||u.account}（${u.staff||u.account}）`,u.account||u.staff);opt.dataset.name=u.name;opt.dataset.staff=u.staff;select.add(opt);});
+            const values={'fire-punish-name':row?.memberName||'','fire-punish-staff':row?.memberId||'','fire-punish-type':row?.type||'reward','fire-punish-unit':row?.department||'新北市政府消防局','fire-punish-author':row?.authorName||currentUser?.name||'','fire-punish-position':row?.authorPos||'','fire-punish-reason':row?.reason||''};
+            Object.entries(values).forEach(([k,v])=>{document.getElementById(k).value=v;});
+            ntpcFirePunishmentOptions();
+            const selected=new Set(normalizeSelectedItems(row?.items||[]));
+            document.querySelectorAll('#fire-punish-items input').forEach(el=>el.checked=selected.has(el.value));
+            document.getElementById('modal-fire-punishment').classList.remove('hidden');
+        }
+        async function ntpcLoadFirePunishments(){
+            if(!currentUser||!(getEffectiveRole(currentUser)==='admin'||userHasUnit('fire')))return;
+            const label=document.getElementById('fire-punish-list');label.textContent='正在載入消防獎懲…';
+            try{
+                const snap=await fm.getDocs(fm.collection(db,'firePunishments'));
+                ntpcFirePunishments=snap.docs.map(d=>({docId:d.id,...d.data()}));
+                ntpcFirePunishmentLoaded=true;ntpcRenderFirePunishments();
+            }catch(e){label.textContent='載入失敗：'+e.message;}
+        }
+        function ntpcRenderFirePunishments(){
+            const wrap=document.getElementById('fire-punish-list'),summary=document.getElementById('fire-punish-summary');if(!wrap)return;
+            document.getElementById('fire-punish-create')?.classList.toggle('hidden',!ntpcCanPublishFirePunishment());
+            if(!ntpcFirePunishmentLoaded)return;
+            const keyword=String(document.getElementById('fire-punish-search')?.value||'').trim().toLowerCase();
+            const filtered=ntpcFirePunishments.filter(p=>[p.memberName,p.memberId,p.reason,p.department].some(v=>String(v||'').toLowerCase().includes(keyword))).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+            const total={嘉獎:0,小功:0,大功:0,申誡:0,小過:0,大過:0,停職調查:0};
+            for(const p of filtered)for(const raw of normalizeSelectedItems(p.items||p.item)){
+                const m=raw.match(/^(嘉獎|小功|大功|申誡|小過|大過)x(\d+)$/);if(m)total[m[1]]+=Number(m[2]);else if(raw==='停職調查')total.停職調查++;
+            }
+            summary.replaceChildren();for(const [name,count] of Object.entries(total)){const node=document.createElement('div');node.className='rounded-xl border border-slate-800 bg-slate-900 p-3 text-center';node.textContent=`${name}　${count} 次`;summary.append(node);}
+            wrap.replaceChildren();if(!filtered.length){wrap.textContent='目前沒有符合條件的消防獎懲紀錄。';return;}
+            for(const p of filtered){
+                const card=document.createElement('article');card.className='rounded-xl border border-slate-700 bg-slate-900 p-4 space-y-2';
+                const head=document.createElement('div');head.className='flex flex-wrap justify-between gap-2 font-bold text-slate-100';
+                const title=document.createElement('span');title.textContent=`${p.memberName||'未知隊員'}（${p.memberId||'--'}）｜${p.type==='reward'?'獎勵':'懲處'}`;
+                const time=document.createElement('span');time.className='text-xs text-slate-400';time.textContent=p.time||'';head.append(title,time);
+                const items=document.createElement('div');items.className='text-amber-300 text-sm';items.textContent=normalizeSelectedItems(p.items||p.item).join('、');
+                const reason=document.createElement('p');reason.className='text-sm text-slate-300 whitespace-pre-wrap';reason.textContent=p.reason||'';
+                const foot=document.createElement('p');foot.className='text-xs text-slate-500';foot.textContent=`發布單位：${p.department||'--'}｜長官：${p.authorName||'--'}｜職稱：${p.authorPos||'--'}`;
+                card.append(head,items,reason,foot);
+                if(ntpcCanPublishFirePunishment()){
+                    const actions=document.createElement('div');actions.className='flex gap-2 pt-2';
+                    const edit=document.createElement('button');edit.type='button';edit.className='rounded-lg bg-slate-700 px-3 py-2 text-xs text-white';edit.textContent='修改';edit.addEventListener('click',()=>ntpcOpenFirePunishment(p));
+                    const del=document.createElement('button');del.type='button';del.className='rounded-lg bg-red-900/40 px-3 py-2 text-xs text-rose-300';del.textContent='移除';del.addEventListener('click',async()=>{
+                        if(!ntpcCanPublishFirePunishment())return;
+                        if(!(await showConfirm('確定移除這筆消防獎懲？','刪除消防獎懲','確定刪除')))return;
+                        try{await fm.deleteDoc(fm.doc(db,'firePunishments',p.docId));ntpcFirePunishments=ntpcFirePunishments.filter(x=>x.docId!==p.docId);ntpcRenderFirePunishments();showToast('已移除消防獎懲。','success','已刪除');}catch(e){showToast('移除失敗：'+e.message,'error','錯誤');}
+                    });actions.append(edit,del);card.append(actions);
+                }
+                wrap.append(card);
+            }
+        }
+        async function ntpcSaveFirePunishment(event){
+            event.preventDefault();if(ntpcFirePunishSaving)return;
+            if(!ntpcCanPublishFirePunishment()){showToast('消防獎懲登記權限不足。','error','權限不足');return;}
+            const v=id=>document.getElementById(id).value.trim(),items=[...document.querySelectorAll('#fire-punish-items input:checked')].map(el=>el.value);
+            if(!items.length){showToast('請至少選擇一項獎懲。','warning','資料不完整');return;}
+            ntpcFirePunishSaving=true;document.getElementById('fire-punish-save').disabled=true;
+            const now=Date.now();const memberSel=document.getElementById('fire-punish-member');
+            const payload={memberName:v('fire-punish-name'),memberId:v('fire-punish-staff'),memberAccount:memberSel.value||'',type:v('fire-punish-type'),items,item:items.join('、'),department:v('fire-punish-unit'),authorName:v('fire-punish-author'),authorPos:v('fire-punish-position'),authorAccount:currentUser.account,reason:v('fire-punish-reason'),time:formatDateTime(now)};
+            try{
+                const id=ntpcFirePunishEditId||`FPN-${now}-${Math.random().toString(36).slice(2,7)}`;
+                const doc=fm.doc(db,'firePunishments',id);
+                if(ntpcFirePunishEditId)await fm.updateDoc(doc,{...payload,updatedAt:now,updatedBy:currentUser.account});
+                else await fm.setDoc(doc,{...payload,id,timestamp:now});
+                if(ntpcFirePunishmentLoaded){const existing=ntpcFirePunishments.find(x=>x.docId===id);if(existing)Object.assign(existing,payload);else ntpcFirePunishments.unshift({...payload,docId:id,id,timestamp:now});ntpcRenderFirePunishments();}
+                document.getElementById('modal-fire-punishment').classList.add('hidden');showToast('消防獎懲已成功儲存。','success','成功');
+            }catch(e){showToast('消防獎懲寫入失敗：'+e.message,'error','失敗');}
+            finally{ntpcFirePunishSaving=false;document.getElementById('fire-punish-save').disabled=false;}
         }
 
         function switchFireSubTab(sub) {
@@ -5622,7 +5769,7 @@ async function republishAnnouncement(id) {
                 showToast('高層審核系統僅限消防高層、高階成員與管理中心使用。', 'warning', '權限不足');
                 sub = 'reports';
             }
-            ['reports', 'review', 'ems', 'clocks', 'hours'].forEach(s => {
+            ['reports', 'review', 'ems', 'punishments', 'clocks', 'hours'].forEach(s => {
                 const el = document.getElementById(`fire-sub-${s}`);
                 if (el) el.classList.add('hidden');
                 const btn = document.getElementById(`btn-fire-${s}`);
@@ -6210,11 +6357,6 @@ async function republishAnnouncement(id) {
                     edit.className='ml-2 rounded-xl border border-sky-500/40 bg-sky-950/25 hover:bg-sky-900/35 px-4 py-2 text-sm text-sky-200';
                     edit.textContent='編輯紀錄';edit.addEventListener('click',()=>jxHospitalEditRecord(r));card.appendChild(edit);
                 }
-                if(jxHospitalMayDelete(r)){
-                    const remove=document.createElement('button');remove.type='button';
-                    remove.className='ml-2 rounded-xl border border-rose-500/40 bg-rose-950/20 hover:bg-rose-900/35 px-4 py-2 text-sm text-rose-300';
-                    remove.textContent='刪除紀錄';remove.addEventListener('click',()=>jxHospitalDeleteRecord(r));card.appendChild(remove);
-                }
                 if(type==='admission'){
                     const settled=r.details?.billingStatus==='settled'||!!r.details?.dischargeDate;
                     const label=document.createElement('p');label.className='text-xs '+(settled?'text-emerald-300':'text-amber-300');label.textContent=settled?'住院已出院結算':'住院進行中，尚未列入營收';card.appendChild(label);
@@ -6224,47 +6366,6 @@ async function republishAnnouncement(id) {
                 }
                 host.appendChild(card);
             }
-        }
-        // V97：刪除醫院紀錄連同原 ID 收費台帳一併移除，不留下殘缺的月營收數據。
-        // 已收費／已結算的紀錄僅高層或管理員可刪，未收費紀錄允許填報本人管理。
-        function jxHospitalHasAccounting(record){
-            const d=record?.details||{};
-            return record?.category==='receipt'||d.feeCollected===true||d.billingStatus==='settled'||
-                (Array.isArray(d.billingItems)&&d.billingItems.length>0&&Number(d.total||0)>0)||Number(d.total||0)>0;
-        }
-        function jxHospitalMayDelete(record){
-            if(!record||!canWriteJXReport()||!currentUser)return false;
-            if(canReviewJX())return true;
-            if(jxHospitalHasAccounting(record))return false;
-            return String(record.authorAccount||'').trim().toLowerCase()===String(currentUser.account||'').trim().toLowerCase();
-        }
-        let jxHospitalDeleteBusy=false;
-        async function jxHospitalDeleteRecord(record){
-            if(jxHospitalDeleteBusy||!db||!fm||!jxHospitalMayDelete(record)){
-                showToast('沒有刪除此筆醫院紀錄的權限；已收費或已結算資料需高層處理','warning','權限不足');return;
-            }
-            const id=String(record.id||'');
-            const collectionName=String(record.__collection||JX_HOSPITAL_COLLECTIONS[record.category]||'');
-            if(!id||!Object.values(JX_HOSPITAL_COLLECTIONS).includes(collectionName))return;
-            const hasAccounts=jxHospitalHasAccounting(record);
-            const confirmText='確定要刪除「'+(JX_HOSPITAL_NAMES[record.category]||'醫院')+'」：'+(record.details?.name||'未填姓名')+'（'+id+'）？'
-                +(hasAccounts?'\n\n這張紀錄含計費資料，對應的月營收台帳也會一起移除並影響統計。':'')
-                +'\n\n此操作無法復原，請確認。';
-            if(!(await showConfirm(confirmText,'刪除嘉蕭醫院紀錄','確定永久刪除')))return;
-            jxHospitalDeleteBusy=true;
-            try{
-                const batch=fm.writeBatch(db);
-                batch.delete(fm.doc(db,collectionName,id));
-                // 以相同單據 ID 同步刪除台帳，避免帳面殘留。
-                batch.delete(fm.doc(db,JX_FINANCIAL_COLLECTION,id));
-                await batch.commit();
-                jxHospitalRecordsCache.rows=jxHospitalRecordsCache.rows.filter(x=>!(String(x.id)===id&&String(x.__collection||collectionName)===collectionName));
-                jxHospitalRenderRecords();
-                try{await logAdminAction('刪除嘉蕭醫院紀錄',id,(JX_HOSPITAL_NAMES[record.category]||'醫院')+'｜'+(record.details?.name||'')+(hasAccounts?'｜含計費資料':''));}
-                catch(logError){console.warn('醫院紀錄已刪除，但 LOG 送出失敗',logError);showToast('紀錄已刪除，但操作 LOG 寫入失敗，請通知管理員','warning');return;}
-                showToast('醫院紀錄及相關收費台帳已刪除；月營收請重新查詢','success','刪除完成');
-            }catch(error){console.error('刪除醫院紀錄失敗',error);showToast('刪除失敗：'+(error?.message||error),'error');}
-            finally{jxHospitalDeleteBusy=false;}
         }
         // 只更新已載入的線上掛號時間標籤，不觸發 Firestore 網路查詢。
         setInterval(()=>{
@@ -6337,30 +6438,9 @@ async function republishAnnouncement(id) {
             if(who)who.textContent=(currentUser?.name||currentUser?.account||'--')+'（'+(currentUser?.account||'')+'）';
             const current=document.getElementById('jx-clock-modal-current');if(current)current.textContent=onDuty?'目前已上班':'目前未上班';
             const select=document.getElementById('jx-clock-modal-status');if(select)select.value=onDuty?'下班':'上班';
-            jxClockRetroMode=false;
-            const form=document.getElementById('jx-clock-retro-fields');if(form)form.classList.add('hidden');
-            document.getElementById('jx-clock-modal-title').innerHTML='<i class="fa-solid fa-clock text-teal-400 mr-2"></i>嘉蕭集團上下班打卡';
-            document.getElementById('jx-clock-modal-confirm').textContent='確認打卡';
             jxShowDialog('modal-jx-clock');
         }
-        let jxClockRetroMode=false;
-        function openJiaxiaoRetroClockModal(){
-            if(!canWriteJXReport()){showToast('只有嘉蕭或管理中心授權人員可以補打卡','warning','權限不足');return;}
-            jxClockRetroMode=true;
-            const now=new Date(),pad=n=>String(n).padStart(2,'0');
-            const member=document.getElementById('jx-clock-modal-member');if(member)member.textContent=(currentUser.name||currentUser.account)+'（'+currentUser.account+'）';
-            document.getElementById('jx-clock-modal-current').textContent='補打卡只補登指定時間，不會覆蓋其他原始打卡紀錄。';
-            document.getElementById('jx-clock-modal-title').innerHTML='<i class="fa-solid fa-clock-rotate-left text-sky-400 mr-2"></i>嘉蕭集團補打卡登記';
-            document.getElementById('jx-clock-modal-confirm').textContent='確認補打卡';
-            document.getElementById('jx-clock-retro-fields').classList.remove('hidden');
-            document.getElementById('jx-clock-retro-date').value=[now.getFullYear(),pad(now.getMonth()+1),pad(now.getDate())].join('-');
-            document.getElementById('jx-clock-retro-time').value=pad(now.getHours())+':'+pad(now.getMinutes());
-            document.getElementById('jx-clock-retro-reason').value='';
-            const own=buildLatestDutyMap(appData?.jiaxiaoClocks||[]).get(String(currentUser.account).toLowerCase());
-            document.getElementById('jx-clock-modal-status').value=own?.status==='上班'?'下班':'上班';
-            jxShowDialog('modal-jx-clock');
-        }
-        function closeJiaxiaoClockModal(){jxClockRetroMode=false;jxHideDialog('modal-jx-clock');}
+        function closeJiaxiaoClockModal(){jxHideDialog('modal-jx-clock');}
         let jxClockModalBusy=false;
         async function confirmJiaxiaoClockModal(){
             if(jxClockModalBusy)return;
@@ -6368,47 +6448,8 @@ async function republishAnnouncement(id) {
             if(!['上班','下班'].includes(status))return;
             jxClockModalBusy=true;
             const button=document.getElementById('jx-clock-modal-confirm');if(button)button.disabled=true;
-            try{const saved=jxClockRetroMode?await submitJiaxiaoRetroClock(status):await submitJiaxiaoClock(status);if(saved===true)closeJiaxiaoClockModal();}
+            try{const saved=await submitJiaxiaoClock(status);if(saved===true)closeJiaxiaoClockModal();}
             finally{jxClockModalBusy=false;if(button)button.disabled=false;}
-        }
-        // 嘉蕭補打卡：以帳號等值查詢核對歷史，避免每次補登讀取所有單位打卡。
-        async function submitJiaxiaoRetroClock(status){
-            if(!canWriteJXReport()||!db||!fm){showToast('目前無法補打卡','warning');return false;}
-            const day=String(document.getElementById('jx-clock-retro-date')?.value||'');
-            const hour=String(document.getElementById('jx-clock-retro-time')?.value||'');
-            const reason=String(document.getElementById('jx-clock-retro-reason')?.value||'').trim();
-            const at=new Date(day+'T'+hour).getTime();
-            if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||!/^\d{2}:\d{2}$/.test(hour)||!Number.isFinite(at)){
-                showToast('請正確選擇補打卡日期與時間','warning');return false;
-            }
-            if(at>Date.now()){showToast('補打卡不能填寫未來的時間','warning');return false;}
-            if(!reason){showToast('請填寫補打卡原因','warning');return false;}
-            try{
-                const account=String(currentUser.account||'');
-                const snap=await fm.getDocs(fm.query(fm.collection(db,'jiaxiaoClocks'),fm.where('account','==',account),fm.limit(2000)));
-                if(snap.size>=2000){showToast('歷史打卡已達檢查上限，請由管理員確認後再補登','warning');return false;}
-                const sorted=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>getClockTimestamp(a)-getClockTimestamp(b));
-                if(sorted.some(r=>Math.abs(getClockTimestamp(r)-at)<60000)){
-                    showToast('此分鐘已存在打卡紀錄，請確認日期時間','warning','避免重複');return false;
-                }
-                const older=sorted.filter(r=>getClockTimestamp(r)<at).at(-1);
-                const newer=sorted.find(r=>getClockTimestamp(r)>at);
-                if(older?.status===status||newer?.status===status){
-                    showToast('補登後會出現連續兩筆「'+status+'」，請先核對前後的上下班紀錄','warning','出勤順序異常');return false;
-                }
-                const id='JXCLK-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
-                const data={id,account,name:currentUser.name||account,staffNumber:currentUser.staffNumber||'',
-                    status,timestamp:at,time:formatDateTime(at)+' (補打卡)',isRetro:true,
-                    remark:'補打卡原因：'+reason,retroReason:reason,recordedAt:Date.now(),recordedBy:account};
-                await fm.setDoc(fm.doc(db,'jiaxiaoClocks',id),data);
-                appData.jiaxiaoClocks=appData.jiaxiaoClocks||[];
-                appData.jiaxiaoClocks.push({docId:id,...data});
-                recalculateDutyStatusCache();renderJiaxiaoDuty();
-                if(jxClockHistoryLoaded){renderJiaxiaoClockHistory();renderJiaxiaoClockHours();}
-                try{await logAdminAction('嘉蕭補打卡',id,status+'｜'+formatDateTime(at)+'｜原因：'+reason);}
-                catch(e){console.warn('補打卡成功但 LOG 寫入失敗',e);}
-                showToast('補打卡已完成，請在打卡紀錄確認','success');return true;
-            }catch(e){showToast('嘉蕭補打卡失敗：'+(e?.message||e),'error');return false;}
         }
         // 嘉蕭打卡按需讀取；不增加登入後自動讀取 Firebase 的頻率。
         let jxClockHistoryLoaded=false;
@@ -6443,7 +6484,7 @@ async function republishAnnouncement(id) {
             const rows=[...(appData?.jiaxiaoClocks||[])].sort((a,b)=>getClockTimestamp(b)-getClockTimestamp(a)).filter(r=>!term||jxSearchKey([r.name,r.account,r.staffNumber,r.status,r.time].join(' ')).includes(term)).slice(0,100);
             const duty=jiaxiaoDutyRows(),summary=document.getElementById('jx-clock-duty-summary');
             if(summary)summary.innerHTML=`<strong>目前值班人數：${duty.length} 人</strong><div class="mt-1 text-xs text-slate-300">${duty.length?duty.map(r=>escapeHtml(r.name||r.account||'--')).join('、'):'目前無人值班'}</div>`;
-            el.innerHTML=rows.length?rows.map(r=>`<div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-950 border border-slate-800 p-3"><div class="flex flex-col sm:flex-row sm:items-center gap-2"><span class="text-white font-medium">${escapeHtml(r.name||r.account||'--')}</span><span class="${r.status==='上班'?'text-emerald-400':'text-slate-300'}">${escapeHtml(r.status||'--')}</span><span class="text-xs text-slate-400">${escapeHtml(r.time||formatDateTime(getClockTimestamp(r)))}</span>${r.isRetro?'<span class="text-xs text-sky-300">補打卡</span>':''}${r.retroReason?`<span class="text-xs text-slate-400">原因：${escapeHtml(r.retroReason)}</span>`:''}</div>${canReviewJX()?`<button type="button" class="rounded-lg border border-rose-600/60 bg-rose-950/50 px-3 py-1.5 text-xs text-rose-300" onclick="deleteJiaxiaoClockRecord('${encodeURIComponent(String(r.docId||r.id||''))}')">刪除紀錄</button>`:''}</div>`).join(''):(term?'沒有符合搜尋的打卡紀錄':'沒有打卡紀錄');
+            el.innerHTML=rows.length?rows.map(r=>`<div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-950 border border-slate-800 p-3"><div class="flex flex-col sm:flex-row sm:items-center gap-2"><span class="text-white font-medium">${escapeHtml(r.name||r.account||'--')}</span><span class="${r.status==='上班'?'text-emerald-400':'text-slate-300'}">${escapeHtml(r.status||'--')}</span><span class="text-xs text-slate-400">${escapeHtml(r.time||formatDateTime(getClockTimestamp(r)))}</span></div>${canReviewJX()?`<button type="button" class="rounded-lg border border-rose-600/60 bg-rose-950/50 px-3 py-1.5 text-xs text-rose-300" onclick="deleteJiaxiaoClockRecord('${encodeURIComponent(String(r.docId||r.id||''))}')">刪除紀錄</button>`:''}</div>`).join(''):(term?'沒有符合搜尋的打卡紀錄':'沒有打卡紀錄');
         }
         function jxSearchClocks(){renderJiaxiaoDuty();renderJiaxiaoClockHistory();}
         function renderJiaxiaoClockHours(){
@@ -7580,7 +7621,7 @@ async function republishAnnouncement(id) {
         function lookupTypeLabel(type){ return type==='citizen'?'市民身份':type==='vehicles'?'車輛': '通緝'; }
         // 保險系統：舊版單選 vehicleInsurance 向下相容；新版以 vehicleInsurances 陣列存多種保險。
         // 未設定的舊資料及所有新建車輛，皆視為「未持有保險」，不在背景下載整批資料。
-        const NTPC_VEHICLE_INSURANCE_TYPES = Object.freeze(['汽車保險','摩托保險','大客車保險','公務車保險','車輛強制險']);
+        const NTPC_VEHICLE_INSURANCE_TYPES = Object.freeze(['汽車保險','摩托保險','大客車保險','車輛強制險']);
         function ntpcVehicleInsuranceValues(record){
             const raw=Array.isArray(record?.vehicleInsurances)?record.vehicleInsurances:
                 (Array.isArray(record?.vehicleInsurance)?record.vehicleInsurance:[record?.vehicleInsurance]);
@@ -8057,7 +8098,7 @@ async function republishAnnouncement(id) {
             }).join('');
             return `<div class="mt-4 p-3 rounded-xl bg-red-500/5 border border-red-500/15 text-xs text-red-200"><div class="flex flex-wrap items-center justify-between gap-2 mb-2"><span>相關案件報號：${matched.length} 件</span><span class="text-slate-400">證件末五碼＋RP 姓名一致</span></div>${matched.length?`<div class="space-y-1">${related}</div>`:(citizenCaseLookupState.error?'<div class="text-amber-300">案件資料讀取失敗，無法判定是否有關聯案件。請確認資料庫讀取權限並重新查詢。</div>':(!citizenCaseLookupState.loaded&&!manualReadState.cases.police?'<div class="text-slate-500">案件資料尚未載入，請按「查詢」取得關聯案件。</div>':'<div class="text-slate-500">沒有證件末五碼及 RP 姓名皆一致的案件。</div>'))}</div>`;
         }
-        function renderCitizenCard(r){const suspectCases=getCitizenRelatedCases(r);const linkedVehicles=(appData.vehicleRecords||[]).filter(v=>!v.decommissioned&&getLastFive(v.id5)===getLastFive(r.id5));const wantedRecords=(appData.wantedRecords||[]).filter(w=>isWantedActive(w)&&getLastFive(w.id5)===getLastFive(r.id5));const isWanted=!r.deceased&&wantedRecords.length>0;const cardBg=isWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.deceased?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><h4 class="text-lg font-bold text-white">${escapeHtml(r.name||'--')}</h4>${ntpcInsuranceBadge('citizen',r)}${isWanted?'<span class="px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>通緝狀態</span>':''}${r.deceased?'<span class="px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-skull-crossbones mr-1"></i>死亡證明</span>':''}</div><p class="text-xs text-slate-500 font-mono">證件末五碼：${escapeHtml(r.id5||'--')}</p><p class="text-xs text-slate-500 mt-1">發布帳號：${escapeHtml(r.createdByAccount||'--')}</p></div><span class="text-xs text-slate-400">${escapeHtml(r.gender||'--')}｜${escapeHtml(r.birthday||'--')}</span></div><div class="mt-4 text-sm text-slate-300"><span class="text-slate-500">駕照狀況：</span>${escapeHtml((r.licenses||[]).length?(r.licenses||[]).join('、'):'無')}</div>${linkedVehicles.length?`<div class="mt-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15 text-sm"><span class="text-xs text-cyan-300 block mb-2">名下車輛（依證件末五碼自動比對）</span><div class="space-y-1">${linkedVehicles.map(v=>`<div class="text-slate-300">${escapeHtml(v.model||'未知型號')}｜車牌：<span class="font-mono text-cyan-300">${escapeHtml(v.plate||'--')}</span><span class="ml-2">${ntpcInsuranceBadge('vehicles',v)}</span></div>`).join('')}</div></div>`:''}${r.note?`<div class="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm"><span class="text-xs text-slate-500 block mb-1">備注</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}<div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-blue-600/15 text-blue-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('citizen','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">編輯</button><button type="button" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="deleteLookupRecord('citizen','${escapeHtml(r.docId||r.id)}')">移除</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">新增備註／修改駕照</button>`:''}</div>${citizenCasesHtml(r,suspectCases)}</div>`;}
+        function renderCitizenCard(r){const suspectCases=getCitizenRelatedCases(r);const linkedVehicles=(appData.vehicleRecords||[]).filter(v=>!v.decommissioned&&getLastFive(v.id5)===getLastFive(r.id5));const wantedRecords=(appData.wantedRecords||[]).filter(w=>isWantedActive(w)&&getLastFive(w.id5)===getLastFive(r.id5));const isWanted=!r.deceased&&wantedRecords.length>0;const cardBg=isWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.deceased?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><h4 class="text-lg font-bold text-white">${escapeHtml(r.name||'--')}</h4>${ntpcInsuranceBadge('citizen',r)}${isWanted?'<span class="px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>通緝狀態</span>':''}${r.deceased?'<span class="px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-skull-crossbones mr-1"></i>死亡證明</span>':''}</div><p class="text-xs text-slate-500 font-mono">證件末五碼：${escapeHtml(r.id5||'--')}</p><p class="text-xs text-slate-500 mt-1">發布帳號：${escapeHtml(r.createdByAccount||'--')}</p></div><span class="text-xs text-slate-400">${escapeHtml(r.gender||'--')}｜${escapeHtml(r.birthday||'--')}</span></div><div class="mt-4 text-sm text-slate-300"><span class="text-slate-500">駕照狀況：</span>${escapeHtml((r.licenses||[]).length?(r.licenses||[]).join('、'):'無')}</div>${linkedVehicles.length?`<div class="mt-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15 text-sm"><span class="text-xs text-cyan-300 block mb-2">名下車輛（依證件末五碼自動比對）</span><div class="space-y-1">${linkedVehicles.map(v=>`<div class="text-slate-300">${escapeHtml(v.model||'未知型號')}｜車牌：<span class="font-mono text-cyan-300">${escapeHtml(v.plate||'--')}</span><span class="ml-2">${ntpcInsuranceBadge('vehicles',v)}</span></div>`).join('')}</div></div>`:''}${r.note?`<div class="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm"><span class="text-xs text-slate-500 block mb-1">備注</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}<div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-blue-600/15 text-blue-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('citizen','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">編輯</button><button type="button" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="deleteLookupRecord('citizen','${escapeHtml(r.docId||r.id)}')">移除</button>`:''}${canReviewPoliceReports()?`<button type="button" class="px-3 py-2 bg-rose-700/20 text-rose-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="ntpcOpenVehicleRevocation('${escapeHtml(r.docId||r.id)}')">吊銷管理</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">新增備註／修改駕照</button>`:''}</div>${citizenCasesHtml(r,suspectCases)}</div>`;}
         // 市民搜尋排序：無標籤優先，其次是通緝中的市民，死亡證明永遠置底。
         // 排序只影響畫面，不修改 Firestore 內的原始資料順序。
         function citizenDisplayRank(r){
@@ -8109,7 +8150,7 @@ async function republishAnnouncement(id) {
             }));
             c.innerHTML=rows.length?rows.map(renderCitizenCard).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">查無符合條件的資料。可嘗試「進階包含搜尋」。</div>';
         }
-        function searchVehicleRecords(){if(!lookupAccessible('vehicles'))return;const q=lookupKeyword(document.getElementById('vehicle-search-input')?.value||'');const c=document.getElementById('vehicle-results');if(!c)return;if(!lookupDemandState.vehicles.loaded||lookupDemandState.vehicles.key!==lookupDemandKey('vehicles')){c.innerHTML=lookupDemandPrompt('vehicles');return;}if(!q){c.innerHTML='<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">請輸入關鍵字。</div>';return;}const rows=lookupDemandState.vehicles.rows.filter(r=>lookupTextMatch([r.model,r.owner,r.id5,r.plate,r.color,r.note,r.createdByAccount,r.createdByName],q));c.innerHTML=rows.length?rows.map(r=>{const ownerWanted=(appData.wantedRecords||[]).some(w=>isWantedActive(w)&&getLastFive(w.id5)===getLastFive(r.id5));const cardBg=ownerWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.decommissioned?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex items-start justify-between gap-3"><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm flex-1"><div><span class="text-xs text-slate-500 block">車輛型號</span>${escapeHtml(r.model||'--')}</div><div><span class="text-xs text-slate-500 block">車輛所有人</span>${escapeHtml(r.owner||'--')}</div><div><span class="text-xs text-slate-500 block">證件末五碼</span>${escapeHtml(r.id5||'--')}</div><div><span class="text-xs text-slate-500 block">車牌／車色</span>${escapeHtml(r.plate||'--')} / ${escapeHtml(r.color||'--')}</div><div class="sm:col-span-4"><span class="text-xs text-slate-500 block">保險狀態</span>${ntpcInsuranceBadge('vehicles',r)}</div><div class="sm:col-span-4"><span class="text-xs text-slate-500 block">發布帳號</span>${escapeHtml(r.createdByAccount||'--')}</div>${r.note?`<div class="sm:col-span-4"><span class="text-xs text-slate-500 block">備註</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}</div>${ownerWanted?'<span class="shrink-0 px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>車主通緝中</span>':''}${r.decommissioned?'<span class="shrink-0 px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-ban mr-1"></i>註銷牌照</span>':''}</div><div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-cyan-600/15 text-cyan-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('vehicles','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('vehicles','${escapeHtml(r.docId||r.id)}')">編輯</button><button type="button" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="deleteLookupRecord('vehicles','${escapeHtml(r.docId||r.id)}')">移除</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('vehicles','${escapeHtml(r.docId||r.id)}')">新增備註</button>`:''}</div></div>`}).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">查無資料。</div>';}
+        function searchVehicleRecords(){if(!lookupAccessible('vehicles'))return;const q=lookupKeyword(document.getElementById('vehicle-search-input')?.value||'');const c=document.getElementById('vehicle-results');if(!c)return;if(!lookupDemandState.vehicles.loaded||lookupDemandState.vehicles.key!==lookupDemandKey('vehicles')){c.innerHTML=lookupDemandPrompt('vehicles');return;}if(!q){c.innerHTML='<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">請輸入關鍵字。</div>';return;}const rows=lookupDemandState.vehicles.rows.filter(r=>lookupTextMatch([r.model,r.owner,r.id5,r.plate,r.color,r.note,r.createdByAccount,r.createdByName],q));c.innerHTML=rows.length?rows.map(r=>{const ownerWanted=(appData.wantedRecords||[]).some(w=>isWantedActive(w)&&getLastFive(w.id5)===getLastFive(r.id5));const cardBg=ownerWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.decommissioned?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex items-start justify-between gap-3"><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm flex-1"><div><span class="text-xs text-slate-500 block">車輛型號</span>${escapeHtml(r.model||'--')}</div><div><span class="text-xs text-slate-500 block">車輛所有人</span>${escapeHtml(r.owner||'--')}</div><div><span class="text-xs text-slate-500 block">證件末五碼</span>${escapeHtml(r.id5||'--')}</div><div><span class="text-xs text-slate-500 block">車牌／車色</span>${escapeHtml(r.plate||'--')} / ${escapeHtml(r.color||'--')}</div><div class="sm:col-span-4"><span class="text-xs text-slate-500 block">保險狀態</span>${ntpcInsuranceBadge('vehicles',r)}</div><div class="sm:col-span-4"><span class="text-xs text-slate-500 block">發布帳號</span>${escapeHtml(r.createdByAccount||'--')}</div>${r.note?`<div class="sm:col-span-4"><span class="text-xs text-slate-500 block">備註</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}</div>${ownerWanted?'<span class="shrink-0 px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>車主通緝中</span>':''}${r.decommissioned?'<span class="shrink-0 px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-ban mr-1"></i>註銷牌照</span>':''}${ntpcVehicleRevocationValid(r)?`<span class="shrink-0 rounded-full bg-rose-900 px-3 py-1 text-xs text-rose-200" title="${escapeHtml(String(r.revocationReason||''))}">吊銷至 ${escapeHtml(r.revocationUntil)}｜操作：${escapeHtml(r.revocationChangedByName||r.revocationChangedByAccount||'未知')}</span>`:''}</div><div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-cyan-600/15 text-cyan-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('vehicles','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('vehicles','${escapeHtml(r.docId||r.id)}')">編輯</button><button type="button" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="deleteLookupRecord('vehicles','${escapeHtml(r.docId||r.id)}')">移除</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('vehicles','${escapeHtml(r.docId||r.id)}')">新增備註</button>`:''}</div></div>`}).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">查無資料。</div>';}
         function getWantedDiscordStatusHtml(r){
             const status=String(r.discordDmStatus||'not_requested');
             if(status==='sent') return '<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs"><i class="fa-solid fa-check"></i>已發送</span>';
@@ -8442,6 +8483,18 @@ async function republishAnnouncement(id) {
             if (extraWrap) extraWrap.classList.toggle('hidden', dept !== 'police');
             const violationWrap=document.getElementById('police-violation-fields');
             if(violationWrap) violationWrap.classList.toggle('hidden',dept !== 'police');
+            document.querySelectorAll('#modal-report [data-police-only-section]').forEach(el=>el.classList.toggle('hidden',dept !== 'police'));
+            // Police and fire share the same modal: only police sees suspect/violation chapters.
+            // Also renumber the final common chapter, so fire report shows 01 → 02 rather than 01 → 05.
+            const narrative=document.getElementById('report-narrative-section');
+            if(narrative){
+                const num=narrative.querySelector('.ntpc-section-index');
+                const heading=narrative.querySelector('strong');
+                const sub=narrative.querySelector('small');
+                if(num)num.textContent=dept==='fire'?'02':'05';
+                if(heading)heading.textContent=dept==='fire'?'消防案件經過與附件':'案件經過與附件';
+                if(sub)sub.textContent=dept==='fire'?'FIRE INCIDENT · 出勤經過、處理結果及相關影片':'CASE NARRATIVE · 處理紀錄及相關影片';
+            }
 
             if (dept === 'police') {
                 ['report-suspect-id','report-suspect-name','report-suspect-vehicle'].forEach(id=>{
@@ -8948,180 +9001,6 @@ async function republishAnnouncement(id) {
         }
         function openRejectFirePending(caseId){if(!canReviewFireReports()){showToast('只有消防高層與管理中心可以退件。','warning','權限不足');return;}document.getElementById('review-reject-case-id').value=caseId;document.getElementById('review-reject-dept').value='fire';document.getElementById('review-reject-reason').value='';document.getElementById('modal-review-reject').classList.remove('hidden');}
         
-        // V76 交通罰單獨立模組。實際角色授權必須由 Firestore Security Rules 強制驗證。
-        const NTPC_TICKET_COLLECTION='policeTrafficTickets';
-        let ntpcTicketRows=[];
-        let ntpcTicketEditId=null;
-        const ntpcTicketThreeDays=()=>Date.now()-3*24*60*60*1000;
-        function ntpcTicketReviewer(){ return canReviewPoliceReports(); }
-        function ntpcTicketNoticeId(ticketId,account){
-            return 'traffic-ticket-'+String(ticketId).replace(/[^a-zA-Z0-9_-]/g,'_')+'-'+String(account).toLowerCase().replace(/[^a-z0-9_.-]/g,'_');
-        }
-        // 沿用既有 reportNotifications：每張罰單／每位收件人只更新一筆，避免通知重複累積。
-        async function ntpcTicketNotify(ticket, status, reason=''){
-            const ticketId=String(ticket.docId||ticket.id||'');
-            if(!ticketId||!fm||!db)return;
-            const author=String(ticket.authorAccount||'').trim().toLowerCase();
-            const reviewers=(appData.users||[]).filter(u=>{
-                const r=String(u.role||'').toLowerCase();
-                const roles=[...(Array.isArray(u.permissions)?u.permissions:[]),r].map(x=>String(x).toLowerCase());
-                const units=[...(Array.isArray(u.units)?u.units:[]),u.unit,u.department].map(x=>String(x||'').toLowerCase());
-                return roles.some(x=>['admin','high','senior'].includes(x))&&(r==='admin'||units.some(x=>x==='police'||x.includes('警')));
-            }).map(u=>String(u.account||'').trim().toLowerCase()).filter(Boolean);
-            // 通知填報人，以及目前已載入名冊中的高層；不為此另行下載全部 users。
-            const recipients=[...new Set([author,...reviewers])].filter(Boolean);
-            const title=status==='pending'?'交通罰單待審核':status==='rejected'?'交通罰單已退件':'交通罰單審核完成';
-            const message=status==='pending'?`交通罰單 ${ticket.ticketNo||ticketId} 已送交高層，等待審核。`:status==='rejected'?`交通罰單 ${ticket.ticketNo||ticketId} 已退件。退件原因：${reason||'未填寫'}`:`交通罰單 ${ticket.ticketNo||ticketId} 已核准，等待 Discord 論壇發布。`;
-            await Promise.allSettled(recipients.map(async account=>{
-                const isReviewer=reviewers.includes(account)&&account!==author;
-                // 退件與核准後，撤除高層的待審提醒，不影響填報人的審核結果通知。
-                const ref=fm.doc(db,'reportNotifications',ntpcTicketNoticeId(ticketId,account));
-                if(isReviewer&&status!=='pending'){
-                    await fm.deleteDoc(ref).catch(e=>{if(e?.code!=='not-found')throw e;});return;
-                }
-                const notice=ntpcReviewNotice('police',ticketId,account,status,title,message,Date.now());
-                notice.type='traffic-ticket';notice.ticketNo=ticket.ticketNo||ticketId;
-                await fm.setDoc(ref,notice);
-            })).then(results=>{
-                const failed=results.filter(r=>r.status==='rejected');
-                if(failed.length)console.warn('交通罰單已儲存，但部分通知未送達：',failed[0].reason);
-            });
-        }
-
-        function ntpcTicketOpen(){
-            if(!currentUser || !(userHasUnit('police') || currentUser.role==='admin')){showToast('僅限警務與管理中心成員。','warning');return;}
-            document.getElementById('ntpc-ticket-modal').classList.remove('hidden');
-            const form=document.getElementById('ntpc-ticket-form');
-            if(!document.querySelector('.ntpc-ticket-line'))ntpcTicketAddLine();
-            if(!form.elements.occurred.value){const date=new Date();form.elements.occurred.value=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);} if(!form.elements.issuedDate.value){const date=new Date();form.elements.issuedDate.value=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,10);} if(!form.elements.issuingUnit.value) form.elements.issuingUnit.value=String(currentUser?.unit||currentUser?.department||'交通分隊');if(!form.elements.officerName.value)form.elements.officerName.value=String(currentUser?.name||'');
-        }
-        function ntpcTicketClose(){ document.getElementById('ntpc-ticket-modal').classList.add('hidden');ntpcTicketEditId=null; }
-        function ntpcTicketCreate(){ntpcTicketEditId=null;const f=document.getElementById('ntpc-ticket-form');f.reset();document.getElementById('ntpc-ticket-items').replaceChildren();ntpcTicketAddLine();ntpcTicketTotal();document.getElementById('ntpc-ticket-submit').textContent='送交警務高層審核';ntpcTicketOpen();}
-        function ntpcTicketAddLine(){
-            const row=document.createElement('div');row.className='ntpc-ticket-line grid grid-cols-[1fr_130px_auto] gap-2';
-            row.innerHTML='<input aria-label="違規條例" placeholder="違規條例名稱" maxlength="100" required class="min-w-0 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"><input aria-label="罰鍰" type="number" min="1" max="99999999" step="1" placeholder="金額" required class="min-w-0 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"><button type="button" class="rounded-lg bg-red-900/40 px-3" aria-label="移除條例">✕</button>';
-            row.querySelector('button').addEventListener('click',()=>{row.remove();ntpcTicketTotal()});
-            row.querySelector('input[type=number]').addEventListener('input',ntpcTicketTotal);
-            document.getElementById('ntpc-ticket-items').appendChild(row);
-        }
-        function ntpcTicketLines(){return [...document.querySelectorAll('.ntpc-ticket-line')].map(r=>({name:r.querySelector('input:not([type=number])').value.trim(),amount:Number(r.querySelector('input[type=number]').value)}));}
-        function ntpcTicketTotal(){document.getElementById('ntpc-ticket-total').textContent=ntpcTicketLines().reduce((a,b)=>a+(Number.isFinite(b.amount)?b.amount:0),0).toLocaleString('en-US');}
-        async function ntpcTicketSubmit(event){
-            event.preventDefault();if(!currentUser || !(userHasUnit('police')||currentUser.role==='admin') || !fm||!db)return;
-            const f=event.target,lines=ntpcTicketLines();
-            if(!lines.length || lines.some(x=>!x.name||!Number.isSafeInteger(x.amount)||x.amount<1||x.amount>99999999)){showToast('請完整填寫每筆違規條例及有效金額。','warning');return;}
-            const total=lines.reduce((a,b)=>a+b.amount,0);if(!Number.isSafeInteger(total)||total>999999999){showToast('罰鍰總額超出限制。','warning');return;}
-            const discordId=String(f.elements.discordId.value||'').trim().replace(/^<@!?(\d+)>$/,'$1');
-            if(!/^\d{17,21}$/.test(discordId)){showToast('受罰人 Discord 請輸入使用者 ID（17～21 位），不要輸入暱稱。','warning');return;}
-            const issuedDate=f.elements.issuedDate.value;
-            if(!/^\d{4}-\d{2}-\d{2}$/.test(issuedDate)){showToast('請填寫有效的開立日期。','warning');return;}
-            const btn=document.getElementById('ntpc-ticket-submit');btn.disabled=true;
-            try{
-                const ref=ntpcTicketEditId?fm.doc(db,NTPC_TICKET_COLLECTION,ntpcTicketEditId):fm.doc(fm.collection(db,NTPC_TICKET_COLLECTION));
-                const ts=Date.now(),data={id:ref.id,ticketNo:'NTPC-T-'+new Date(ts).toISOString().slice(0,10).replace(/-/g,'')+'-'+ref.id.slice(0,6).toUpperCase(),person:f.elements.person.value.trim(),discordId,issuedDate,issuingUnit:f.elements.issuingUnit.value.trim(),officerName:f.elements.officerName.value.trim(),officerTitle:f.elements.officerTitle.value.trim(),badgeNumber:f.elements.badgeNumber.value.trim(),supervisor:f.elements.supervisor.value.trim(),identity:f.elements.identity.value.trim(),plate:f.elements.plate.value.trim(),occurred:f.elements.occurred.value,location:f.elements.location.value.trim(),description:f.elements.description.value.trim(),evidence:f.elements.evidence.value.trim(),items:lines,total,authorAccount:String(currentUser.account||''),authorName:String(currentUser.name||''),createdAt:ts,updatedAt:ts,reviewStatus:'pending',paymentStatus:'unpaid',publishStatus:'none'};
-                if(ntpcTicketEditId){
-                    const original=ntpcTicketRows.find(x=>x.docId===ntpcTicketEditId);
-                    if(!original||!ntpcTicketCanEdit(original))throw Error('此罰單已發布或不具編輯權限');
-                    await fm.runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error('找不到罰單');const previous=snap.data();if(!['pending','rejected'].includes(previous.reviewStatus)||!['none','failed'].includes(previous.publishStatus||'none'))throw Error('審核或發布狀態已變更，請重新整理');tx.update(ref,{...data,id:previous.id||ref.id,ticketNo:previous.ticketNo||data.ticketNo,createdAt:previous.createdAt||ts,authorAccount:previous.authorAccount,authorName:previous.authorName,reviewStatus:'pending',publishStatus:'none',reviewNote:'',reviewedBy:'',reviewedAt:null,editBy:currentUser.account,editAt:ts});});
-                }else{await fm.setDoc(ref,data);}
-                ntpcTicketEditId=null;f.reset();document.getElementById('ntpc-ticket-items').innerHTML='';ntpcTicketAddLine();ntpcTicketTotal();document.getElementById('ntpc-ticket-submit').textContent='送交警務高層審核';showToast('交通罰單已送交高層審核。','success');ntpcTicketClose();await ntpcTicketNotify({docId:ref.id,...data},'pending');await ntpcTicketLoad();
-            }catch(e){showToast('送審失敗：'+e.message,'error');}finally{btn.disabled=false;}
-        }
-        function ntpcTicketEscape(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-        function ntpcTicketStatusLabel(status,kind){
-            const s=String(status||'').toLowerCase();
-            if(kind==='review')return ({pending:'待審核',approved:'已核准',rejected:'已退件'})[s]||'狀態未知';
-            return ({none:'尚未發布',pending:'等待發文',publishing:'發文中',published:'已發布',failed:'發文失敗'})[s]||'尚未發布';
-        }
-        function ntpcTicketCanEdit(t){
-            if(!t||!currentUser)return false;
-            const own=String(t.authorAccount||'').toLowerCase()===String(currentUser.account||'').toLowerCase();
-            return (own||ntpcTicketReviewer()) && ['pending','rejected'].includes(t.reviewStatus) && ['none','failed'].includes(t.publishStatus||'none');
-        }
-        function ntpcTicketEdit(id){
-            const t=ntpcTicketRows.find(x=>x.docId===id);
-            if(!ntpcTicketCanEdit(t)){showToast('僅可修改本人或高層可管理的未發布、待審／退件罰單。','warning');return;}
-            ntpcTicketEditId=id;
-            const f=document.getElementById('ntpc-ticket-form');f.reset();
-            for(const name of ['person','discordId','identity','plate','occurred','location','description','issuingUnit','officerName','officerTitle','badgeNumber','issuedDate','supervisor','evidence']){
-                if(f.elements[name])f.elements[name].value=String(t[name]||'');
-            }
-            document.getElementById('ntpc-ticket-items').replaceChildren();
-            for(const entry of t.items||[]){ntpcTicketAddLine();const row=document.querySelector('#ntpc-ticket-items .ntpc-ticket-line:last-child');row.querySelector('input:not([type=number])').value=entry.name||'';row.querySelector('input[type=number]').value=entry.amount||'';}
-            if(!(t.items||[]).length)ntpcTicketAddLine();
-            ntpcTicketTotal();document.getElementById('ntpc-ticket-submit').textContent='儲存修改並重新送審';
-            ntpcTicketOpen();
-        }
-        function ntpcTicketRender(){
-            const mineHost=document.getElementById('ntpc-ticket-list');
-            const reviewHost=document.getElementById('ntpc-ticket-review-list');
-            const historyHost=document.getElementById('ntpc-ticket-history-list');
-            const ownAccount=String(currentUser?.account||'').trim().toLowerCase();
-            const mine=ntpcTicketRows.filter(t=>String(t.authorAccount||'').trim().toLowerCase()===ownAccount);
-            const canReview=ntpcTicketReviewer();
-            const pending=canReview?ntpcTicketRows.filter(t=>t.reviewStatus==='pending'):[];
-            const draw=(host,rows,showActions)=>{
-                if(!host)return;
-                host.replaceChildren();
-                if(!rows.length){host.textContent=showActions?'目前沒有待審核交通罰單。':'目前沒有自己的交通罰單紀錄。';return;}
-                for(const t of rows){
-                    const card=document.createElement('article');card.className='rounded-xl bg-slate-950/70 border border-slate-700 p-4 space-y-2';
-                    const items=(t.items||[]).map(i=>`${ntpcTicketEscape(i.name)}：NT$${Number(i.amount||0).toLocaleString('en-US')}`).join('<br>');
-                    const reviewText=ntpcTicketStatusLabel(t.reviewStatus,'review');
-                    const publishText=ntpcTicketStatusLabel(t.publishStatus,'publish');
-                    const color=t.reviewStatus==='pending'?'text-amber-300':t.reviewStatus==='approved'?'text-emerald-300':'text-rose-300';
-                    card.innerHTML=`<div class="flex justify-between items-center flex-wrap gap-2"><strong class="text-cyan-200">${ntpcTicketEscape(t.ticketNo||t.docId)}</strong><div class="flex flex-wrap gap-2"><span class="rounded-full border border-slate-600 bg-slate-800/70 px-2.5 py-1 text-xs font-semibold ${color}">${reviewText}</span><span class="rounded-full border border-slate-600 bg-slate-800/70 px-2.5 py-1 text-xs text-slate-300">${publishText}</span></div></div><div>${ntpcTicketEscape(t.person)}｜${ntpcTicketEscape(t.location)}</div><div class="text-xs text-slate-300">${items}</div><strong>總罰鍰 NT$${Number(t.total||0).toLocaleString('en-US')}</strong><div class="text-xs text-slate-500">開立：${ntpcTicketEscape(t.authorName)} · ${ntpcTicketEscape(t.occurred)}</div>${t.reviewStatus==='rejected'?`<div class="rounded-lg border border-rose-500/30 bg-rose-950/20 p-2 text-rose-200 text-sm">退件原因：${ntpcTicketEscape(t.reviewNote||'未填寫')}</div>`:''}`;
-                    if(t.discordThreadId){const a=document.createElement('a');a.href=`https://discord.com/channels/${encodeURIComponent(t.discordGuildId||'')}/${encodeURIComponent(t.discordThreadId)}`;a.target='_blank';a.rel='noopener noreferrer';a.className='text-sm text-cyan-300 underline block';a.textContent='查看 Discord 論壇貼文';card.appendChild(a);}
-                    if(showActions&&canReview&&t.reviewStatus==='pending'){
-                        const box=document.createElement('div');box.className='flex flex-wrap gap-2';
-                        for(const [label,action,cls] of [['核准並排程發文','approved','bg-emerald-700'],['退件','rejected','bg-amber-700']]){const btn=document.createElement('button');btn.type='button';btn.className=`rounded-lg px-3 py-2 text-xs ${cls}`;btn.textContent=label;btn.onclick=()=>ntpcTicketReview(t.docId,action);box.appendChild(btn);}card.appendChild(box);
-                    }
-                    host.appendChild(card);
-                }
-            };
-            draw(mineHost,mine,false);
-            if(historyHost){
-                const needle=(document.getElementById('ntpc-ticket-search')?.value||'').trim().toLowerCase();
-                const recent=ntpcTicketRows.filter(t=>Number(t.createdAt||0)>=ntpcTicketThreeDays() && (canReview||String(t.authorAccount||'').trim().toLowerCase()===ownAccount))
-                    .filter(t=>!needle||[t.ticketNo,t.person,t.plate,t.officerName,t.identity,t.authorName].some(v=>String(v||'').toLowerCase().includes(needle)));
-                document.getElementById('ntpc-ticket-history-count').textContent=`近三日符合條件 ${recent.length} 張罰單`;
-                draw(historyHost,recent,false);
-                for(let i=0;i<recent.length;i++){
-                    const t=recent[i],card=historyHost.children[i];
-                    if(!card || !ntpcTicketCanEdit(t))continue;
-                    const b=document.createElement('button');b.type='button';b.className='mt-2 rounded-lg bg-blue-700 hover:bg-blue-600 px-4 py-2 text-white text-xs font-semibold';b.textContent='編輯罰單';b.onclick=()=>ntpcTicketEdit(t.docId);card.appendChild(b);
-                }
-            }
-            if(canReview)draw(reviewHost,pending,true);
-            else if(reviewHost)reviewHost.textContent='僅警務高層可查閱及審核罰單。';
-        }
-        async function ntpcTicketLoad(){
-            const mineHost=document.getElementById('ntpc-ticket-list'),reviewHost=document.getElementById('ntpc-ticket-review-list');
-            if(!currentUser||!fm||!db)return;
-            if(mineHost)mineHost.textContent='載入中…';
-            if(reviewHost&&ntpcTicketReviewer())reviewHost.textContent='載入中…';
-            try{
-                const q=ntpcTicketReviewer()?fm.query(fm.collection(db,NTPC_TICKET_COLLECTION),fm.where('createdAt','>=',ntpcTicketThreeDays()),fm.limit(150)):fm.query(fm.collection(db,NTPC_TICKET_COLLECTION),fm.where('authorAccount','==',currentUser.account),fm.limit(150));
-                const snapshot=await fm.getDocs(q);
-                ntpcTicketRows=snapshot.docs.map(d=>({docId:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-                ntpcTicketRender();
-            }catch(e){
-                if(mineHost)mineHost.textContent='載入失敗：'+e.message;
-                if(reviewHost&&ntpcTicketReviewer())reviewHost.textContent='載入失敗：'+e.message;
-            }
-        }
-        async function ntpcTicketReview(id,decision){
-            if(!ntpcTicketReviewer()||!fm||!db)return;
-            const t=ntpcTicketRows.find(x=>x.docId===id);if(!t||t.reviewStatus!=='pending')return;
-            if(!(await showConfirm(decision==='approved'?'核准後會由 Bot 自動建立 Discord 論壇貼文，確定嗎？':'確定退回此交通罰單？','確認審核','確定')))return;
-            const note=decision==='rejected'?prompt('請填寫退件原因：'):'';if(decision==='rejected'&&(!note||!note.trim()))return;
-            try{
-                // Transaction prevents duplicate approval by two reviewers. Rules should restrict this transition server-side.
-                const ref=fm.doc(db,NTPC_TICKET_COLLECTION,id);
-                await fm.runTransaction(db,async tr=>{const snap=await tr.get(ref);if(!snap.exists()||snap.data().reviewStatus!=='pending')throw Error('此罰單已經審核或不存在');tr.update(ref,{reviewStatus:decision,reviewedBy:String(currentUser.account),reviewedAt:Date.now(),reviewNote:note||'',updatedAt:Date.now(),publishStatus:decision==='approved'?'pending':'none'});});
-                await ntpcTicketNotify(t,decision,note||'');showToast(decision==='approved'?'已核准，等待 Bot 建立論壇貼文。':'罰單已退件，並已通知填報人。','success');await ntpcTicketLoad();
-            }catch(e){showToast('審核失敗：'+e.message,'error');}
-        }
         function canReviewPoliceReports(){ const role=getEffectiveRole(currentUser); return !!currentUser && (role==='admin' || ((role==='high' || role==='senior') && userHasUnit('police'))); }
         function canEditReviewStatus(dept){
             if(!currentUser)return false;
@@ -11075,7 +10954,7 @@ async function republishAnnouncement(id) {
                     ...(isOpen?{activitySessionId:`site-${now}-${Math.random().toString(36).slice(2,9)}`}:{ }),
                     updatedAt:now,updatedBy:currentUser.account},{merge:true});
                 await renderERLCConfigStatus();
-                showToast(isOpen?'網站已開服，Bot 將開始統計各單位活躍度。':'網站已關服，Bot 將停止記錄並結算各單位前五名。','success','伺服器狀況已更新');
+                showToast(isOpen?'網站 Worker 監控狀態已設為開服；Bot 活躍統計仍依 ER:LC 實際人數自動處理。':'網站 Worker 監控狀態已設為關服；Bot 活躍統計仍依 ER:LC 實際人數自動處理。','success','伺服器狀況已更新');
             }catch(e){showToast('伺服器狀況更新失敗：'+e.message,'error','操作失敗');}
         }
         async function saveERLCConfig(){
@@ -11405,7 +11284,7 @@ async function republishAnnouncement(id) {
             }catch(e){showToast('解封失敗：'+e.message,'error','操作失敗');}
         }
 
-        async function submitFeedback(){if(!currentUser){showToast('請先登入後再回報。','warning','需要登入');return;}const subject=document.getElementById('feedback-subject').value.trim(),details=document.getElementById('feedback-details').value.trim();if(!subject||!details){showToast('請填寫主旨與詳細資訊。','error','資料不完整');return;}const now=Date.now(),id=`FB-${now}-${Math.random().toString(36).slice(2,7)}`,obj={id,subject,details,account:currentUser.account,name:currentUser.name,staffNumber:currentUser.staffNumber||'',time:formatDateTime(now),timestamp:now,status:'未處理'};try{await fm.setDoc(fm.doc(db,'feedbackReports',id),obj);appData.feedbackReports.unshift({docId:id,...obj});closeModal('modal-feedback');showToast('回報已送至管理中心。','success','回報成功');renderAdminFeedback();}catch(e){showToast('回報送出失敗：'+e.message,'error','操作失敗');}}
+        async function submitFeedback(){if(!currentUser){showToast('請先登入後再回報。','warning','需要登入');return;}const subject=document.getElementById('feedback-subject').value.trim(),details=document.getElementById('feedback-details').value.trim();if(!subject||!details){showToast('請填寫主旨與詳細資訊。','error','資料不完整');return;}const now=Date.now(),id=`FB-${now}-${Math.random().toString(36).slice(2,7)}`,obj={id,subject,details,account:currentUser.account,name:currentUser.name,staffNumber:currentUser.staffNumber||'',time:formatDateTime(now),timestamp:now,status:'未處理'};try{await fm.setDoc(fm.doc(db,'feedbackReports',id),obj);try{await ntpcFeedbackNotifyManagement(obj);}catch(err){console.warn('回報已儲存但通知失敗',err);}appData.feedbackReports.unshift({docId:id,...obj});closeModal('modal-feedback');showToast('回報已送至管理中心。','success','回報成功');renderAdminFeedback();}catch(e){showToast('回報送出失敗：'+e.message,'error','操作失敗');}}
         function openFeedbackModal(){if(!currentUser){showToast('請先登入後再回報。','warning','需要登入');return;}document.getElementById('feedback-account-preview').textContent=`${currentUser.name} (${currentUser.account})`;document.getElementById('modal-feedback').classList.remove('hidden');}
         function renderAdminFeedback(){const c=document.getElementById('admin-feedback-list');if(!c)return;const rows=(appData.feedbackReports||[]).sort((a,b)=>b.timestamp-a.timestamp);c.innerHTML=rows.length?rows.map(r=>{const id=String(r.docId||r.id||'').replace(/'/g,"\'");const subject=escapeHtml(r.subject||'無主旨'),name=escapeHtml(r.name||'--'),account=escapeHtml(r.account||'--'),staff=r.staffNumber?`／${escapeHtml(r.staffNumber)}`:'',details=escapeHtml(r.details||''),note=escapeHtml(r.adminNote||''),status=escapeHtml(r.status||'未處理'),time=escapeHtml(formatDateTime(r.timestamp,r.time));const noteValue=String(r.adminNote||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2"><div><h4 class="font-bold text-white">${subject}</h4><div class="text-xs text-cyan-400 font-mono mt-1">${name} (${account})${staff}</div></div><span class="text-xs text-slate-500">${time}</span></div><div class="bg-slate-950 rounded-xl p-4 text-sm text-slate-300 whitespace-pre-wrap break-words">${details}</div><div class="grid grid-cols-1 md:grid-cols-[160px_1fr_auto] gap-2"><select id="fb-status-${escapeHtml(id)}" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"><option ${status==='未處理'?'selected':''}>未處理</option><option ${status==='處理中'?'selected':''}>處理中</option><option ${status==='已處理'?'selected':''}>已處理</option></select><input id="fb-note-${escapeHtml(id)}" value="${noteValue}" placeholder="管理員備注..." class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"><div class="flex gap-2"><button type="button" onclick="saveFeedbackAdmin('${id}')" class="px-3 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-xs">儲存備注</button><button type="button" onclick="deleteFeedback('${id}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-xl text-xs">刪除訊息</button></div></div>${note?`<div class="text-xs text-amber-300 bg-amber-500/5 border border-amber-500/10 rounded-xl p-3">管理員備注：${note}</div>`:''}</div>`}).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">目前沒有回報內容。</div>';}
         async function saveFeedbackAdmin(id){if(!currentUser||currentUser.role!=='admin')return;const r=appData.feedbackReports.find(x=>String(x.docId||x.id)===String(id));if(!r)return;const status=document.getElementById(`fb-status-${id}`)?.value||'未處理',adminNote=document.getElementById(`fb-note-${id}`)?.value.trim()||'';try{await fm.updateDoc(fm.doc(db,'feedbackReports',r.docId||r.id),{status,adminNote,adminNoteBy:currentUser.account,adminNoteAt:Date.now()});r.status=status;r.adminNote=adminNote;r.adminNoteBy=currentUser.account;r.adminNoteAt=Date.now();await logAdminAction('備注／更新意見回報',r.docId||r.id);renderAdminFeedback();showToast('回報備注已儲存。','success','儲存成功');}catch(e){showToast('儲存失敗：'+e.message,'error','操作失敗');}}
@@ -11466,6 +11345,7 @@ async function republishAnnouncement(id) {
             const units=Array.from(document.querySelectorAll('input[name="new-user-units"]:checked')).map(x=>x.value);
             const policeDivision=document.getElementById('new-user-police-division').value, fireDivision=document.getElementById('new-user-fire-division').value;
             if (!account || !name || !pass || !units.length || !permissions.length) { showToast('請完整填寫帳號、名稱、密碼並至少勾選一個單位。','error','資料不完整'); return; }
+            if (units.length>2) { showToast('每個帳號最多只能勾選兩個單位。','warning','資料不符合'); return; }
             if (isSuperAdminAccount(account)) { showToast('Dsuensx 為系統最高權限保護帳號。','warning','操作受限'); return; }
             if (!validateUnitSelections(units,policeDivision,fireDivision)) return;
             if (appData.users.some(u=>String(u.account).toLowerCase()===account.toLowerCase())) { showToast('此帳號／編號已存在。','warning','帳號重複'); return; }
@@ -11509,9 +11389,10 @@ async function republishAnnouncement(id) {
             const pass=document.getElementById('edit-user-password-input').value.trim(); const staffNumber=document.getElementById('edit-user-staff-number-input')?.value.trim()||''; const robloxId=String(document.getElementById('edit-user-roblox-id-input')?.value||'').trim();
             let units=Array.from(document.querySelectorAll('input[name="edit-user-units"]:checked')).map(x=>x.value);
             const policeDivision=document.getElementById('edit-user-police-division').value || '新莊分局', fireDivision=document.getElementById('edit-user-fire-division').value;
-            if (superTarget) { account='Dsuensx'; role='admin'; permissions=['admin']; units=[...new Set(['admin','police',...units])]; }
+            if (superTarget) { account='Dsuensx'; role='admin'; permissions=['admin']; units=['admin','police']; }
             if (appData.users.find(x=>x.account===origAccount)?.role==='admin' || role==='admin') account=origAccount;
             if (!account || !name || !units.length || !permissions.length) { showToast('請完整填寫帳號、名稱並至少勾選一個單位。','error','資料不完整'); return; }
+            if (units.length>2 && !superTarget) { showToast('每個帳號最多只能勾選兩個單位。','warning','資料不符合'); return; }
             if (!validateUnitSelections(units,policeDivision,fireDivision)) return;
             const u=appData.users.find(x=>x.account===origAccount); if(!u) return;
             if (robloxId && appData.users.some(x=>x.account!==origAccount && String(x.robloxId||'').trim()===robloxId)) { showToast('此 ROBLOX ID 已綁定其他帳號。','warning','ROBLOX ID 重複'); return; }
@@ -13540,15 +13421,6 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             <div class="p-5 sm:p-6 space-y-4">
                 <div class="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-1"><div class="text-xs text-slate-400">打卡成員</div><div id="jx-clock-modal-member" class="text-white font-semibold">--</div><div id="jx-clock-modal-current" class="text-sm text-teal-300">正在確認打卡狀態</div></div>
                 <label class="block"><span class="block text-xs font-semibold text-slate-300 mb-2">打卡狀態</span><select id="jx-clock-modal-status" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white"><option value="上班">上班</option><option value="下班">下班</option></select></label>
-                <div id="jx-clock-retro-fields" class="hidden space-y-3 rounded-xl border border-sky-500/30 bg-sky-950/15 p-4">
-                    <p class="text-sm font-semibold text-sky-200">補登先前實際出勤時間</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <label class="block text-xs text-slate-300">補打卡日期 <input id="jx-clock-retro-date" type="date" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white"></label>
-                        <label class="block text-xs text-slate-300">補打卡時間 <input id="jx-clock-retro-time" type="time" step="60" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white"></label>
-                    </div>
-                    <label class="block text-xs text-slate-300">補打卡原因（必填） <textarea id="jx-clock-retro-reason" maxlength="300" rows="2" placeholder="例如：執勤結束後忘記打卡" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white resize-y"></textarea></label>
-                    <p class="text-xs text-sky-200/80">只能補登自己的出勤；不能補登未來時間或重複的時間／狀態。系統保留實際補登時間及操作人。</p>
-                </div>
                 <p class="text-xs text-slate-400">打卡成功後將寫入嘉蕭專屬紀錄；消防無人在班時，倒地通知以嘉蕭目前值班狀態判定。</p>
                 <div class="flex justify-end gap-2"><button type="button" onclick="closeJiaxiaoClockModal()" class="rounded-xl bg-slate-700 hover:bg-slate-600 text-white px-5 py-3">取消</button><button type="button" id="jx-clock-modal-confirm" onclick="confirmJiaxiaoClockModal()" class="rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-semibold px-5 py-3">確認打卡</button></div>
             </div>
@@ -13657,36 +13529,6 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
 </script>
 
 
-<!-- 交通罰單獨立視窗；僅按需查詢，沒有持續 Firestore 監聽 -->
-<div id="ntpc-ticket-modal" class="hidden fixed inset-0 z-[180] bg-slate-950/90 p-3 sm:p-6 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="ntpc-ticket-title">
-  <div class="mx-auto max-w-5xl bg-slate-900 border border-cyan-500/25 rounded-2xl shadow-2xl p-5 sm:p-8 space-y-6">
-    <div class="flex items-start justify-between gap-3"><div><h2 id="ntpc-ticket-title" class="text-xl font-bold text-white"><i class="fa-solid fa-file-invoice-dollar text-cyan-400 mr-2"></i>警務交通罰單系統</h2><p class="text-xs text-slate-400 mt-1">填寫送審 → 通知高層待審 → 核准／退件（須填原因）→ 核准後 Bot 發布 Discord 論壇貼文。</p></div><button type="button" onclick="ntpcTicketClose()" class="rounded-lg bg-slate-800 px-3 py-2" aria-label="關閉">✕</button></div>
-    <form id="ntpc-ticket-form" onsubmit="ntpcTicketSubmit(event)" class="space-y-4">
-      <div class="grid sm:grid-cols-2 gap-4">
-        <label class="text-sm text-slate-300">違規人 RP 名稱 *<input name="person" required maxlength="60" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
-        <label class="text-sm text-slate-300">受罰人 Discord 使用者 ID *<input name="discordId" required inputmode="numeric" pattern="[0-9]{17,21}" maxlength="21" placeholder="可在 Discord 開發者模式複製使用者 ID" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
-        <label class="text-sm text-slate-300">身分證末五碼（貼文標題） *<input name="identity" required maxlength="5" minlength="5" pattern="[0-9]{5}" inputmode="numeric" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
-        <label class="text-sm text-slate-300">車牌號碼（選填）<input name="plate" maxlength="30" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
-        <label class="text-sm text-slate-300">違規時間 *<input name="occurred" type="datetime-local" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
-        <label class="text-sm text-slate-300 sm:col-span-2">違規地點 *<input name="location" required maxlength="150" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
-      </div>
-      <div class="rounded-xl border border-slate-700 p-4 space-y-2"><div class="flex items-center justify-between"><label class="font-semibold text-cyan-200">違規條例及罰款 *</label><button type="button" onclick="ntpcTicketAddLine()" class="rounded-lg bg-cyan-800 px-3 py-2 text-sm">＋ 新增條例</button></div><div id="ntpc-ticket-items" class="space-y-2"></div><div class="text-right font-bold">總罰鍰：NT$ <span id="ntpc-ticket-total">0</span></div></div>
-      <label class="block text-sm text-slate-300">違規描述 *<textarea name="description" required maxlength="1600" rows="3" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"></textarea></label>
-      <div class="rounded-xl border border-cyan-500/25 p-4 space-y-3"><h3 class="text-cyan-200 font-semibold">舉發單位與開單警員</h3><div class="grid sm:grid-cols-2 gap-4">
-        <label class="text-sm text-slate-300">舉發單位 *<input name="issuingUnit" required maxlength="80" placeholder="交通分隊" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
-        <label class="text-sm text-slate-300">警員姓名 *<input name="officerName" required maxlength="80" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
-        <label class="text-sm text-slate-300">職稱 *<input name="officerTitle" required maxlength="80" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
-        <label class="text-sm text-slate-300">臂章號碼 *<input name="badgeNumber" required maxlength="40" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
-        <label class="text-sm text-slate-300">開立日期 *<input name="issuedDate" type="date" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
-        <label class="text-sm text-slate-300">單位主管 *<input name="supervisor" required maxlength="80" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
-      </div></div>
-      <label class="block text-sm text-slate-300">證據連結（選填）<input name="evidence" type="url" maxlength="500" placeholder="https://" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" /></label>
-      <div class="flex justify-end"><button type="submit" id="ntpc-ticket-submit" class="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 font-semibold">送交警務高層審核</button></div>
-    </form>
-    <div class="border-t border-slate-700 pt-5 space-y-3"><div class="flex items-center justify-between gap-3"><h3 class="font-semibold text-white">我的交通罰單紀錄</h3><button type="button" onclick="ntpcTicketLoad()" class="rounded-lg bg-slate-800 px-3 py-2 text-sm">載入／重新整理</button></div><p class="text-xs text-slate-500">按鈕才讀取紀錄；罰單核准與退件請至「警務 → 高層審核系統」操作。</p><div id="ntpc-ticket-list" class="space-y-3 text-slate-400 text-sm">尚未載入。</div></div>
-  </div>
-</div>
-
     <!-- V96：嘉蕭審核退件採警務同款自製對話框，不使用瀏覽器 prompt。 -->
     <div id="modal-jx-reject" class="fixed inset-0 z-[120] bg-slate-950/85 backdrop-blur-sm hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="jx-reject-title">
       <div class="w-full max-w-lg bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl space-y-5">
@@ -13697,5 +13539,119 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
         <div class="grid grid-cols-2 gap-3"><button id="jx-reject-cancel" type="button" class="rounded-xl bg-slate-700 hover:bg-slate-600 p-3 text-white">取消</button><button id="jx-reject-confirm" type="button" class="rounded-xl bg-rose-700 hover:bg-rose-600 p-3 text-white font-bold">確認退件</button></div>
       </div>
     </div>
+\n<script>
+/* V97: 日期時間快捷鍵；保留原本日期選擇器及手動編輯，不自動變更值 */
+(() => {
+  function attachNow(root) {
+    root.querySelectorAll('input[type="datetime-local"],input[type="time"],#ems-dispatch-time,#ems-arrival-time,#ems-leave-time,#ems-hospital-time,#ems-leave-hospital-time,#ems-return-time').forEach(input=>{
+      if(input.dataset.ntpcNowAttached==='1')return;
+      // Only fire/EMS/Jiaxiao duty report forms, never login, staff edit or history filters.
+      const form=input.closest('#modal-report,#modal-ems-report,#modal-jx-report,#modal-jiaxiao-ems,#modal-jiaxiao-report') || (input.id.startsWith('ems-') ? input.closest('[id]') : null);
+      if(!form)return;
+      input.dataset.ntpcNowAttached='1';
+      const button=document.createElement('button');button.type='button';button.className='ntpc-now-btn';button.textContent='現在';button.title='帶入目前時間（仍可修改）';
+      button.addEventListener('click',()=>{
+        const d=new Date(),two=n=>String(n).padStart(2,'0');
+        const value=(input.type==='time'||input.id.startsWith('ems-'))?`${two(d.getHours())}:${two(d.getMinutes())}`:`${d.getFullYear()}-${two(d.getMonth()+1)}-${two(d.getDate())}T${two(d.getHours())}:${two(d.getMinutes())}`;
+        input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));
+      });input.insertAdjacentElement('afterend',button);
+    });
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
+    attachNow(document);
+    const observer=new MutationObserver(changes=>{
+      if(!changes.some(c=>[...c.addedNodes].some(n=>n.nodeType===1)))return;
+      for(const c of changes)for(const n of c.addedNodes)if(n.nodeType===1)attachNow(n.matches?.('input')?n.parentElement:n);
+    });observer.observe(document.body,{childList:true,subtree:true});
+  });
+})();
+</script>
+
+<div id="ntpc-vehicle-revocation-modal" class="fixed inset-0 z-[170] hidden items-center justify-center bg-slate-950/85 p-4" role="dialog" aria-modal="true" aria-label="車輛吊銷登記">
+  <form id="ntpc-vehicle-revocation-form" class="w-full max-w-lg rounded-2xl bg-slate-900 border border-slate-700 p-6 space-y-4 shadow-2xl" onsubmit="ntpcSubmitVehicleRevocation(event)">
+    <h3 class="text-lg font-bold text-rose-300">車輛吊銷／撤銷吊銷</h3>
+    <p id="ntpc-vehicle-revocation-plate" class="text-slate-400 text-sm"></p>
+    <input id="ntpc-vehicle-revocation-doc" type="hidden">
+    <label class="block text-sm text-slate-300">吊銷到期日（含當日）<input id="ntpc-vehicle-revocation-until" type="date" required class="mt-1 w-full p-3 rounded-xl bg-slate-950 border border-slate-700 text-white"></label>
+    <label class="block text-sm text-slate-300">吊銷原因（必填）<textarea id="ntpc-vehicle-revocation-reason" required minlength="3" maxlength="600" rows="3" class="mt-1 w-full p-3 rounded-xl bg-slate-950 border border-slate-700 text-white"></textarea></label>
+    <p class="text-xs text-amber-300">將寫入吊銷原因、期限與實際操作人。取消吊銷請使用下方「解除吊銷」。</p>
+    <div class="flex flex-wrap justify-end gap-2"><button type="button" onclick="ntpcCloseVehicleRevocation()" class="px-4 py-2 rounded-xl bg-slate-800">取消</button><button type="button" onclick="ntpcRemoveVehicleRevocation()" class="px-4 py-2 rounded-xl bg-slate-700 text-rose-300">解除吊銷</button><button type="submit" class="px-4 py-2 rounded-xl bg-rose-700 text-white">儲存吊銷</button></div>
+  </form>
+</div>
+
+
+<script>
+// V98: vehicle revocation and per-user awards summary, uses the existing Firestore instance.
+function ntpcVehicleRevocationValid(row) {
+  const date=String(row?.revocationUntil||'');
+  if(!date || !row?.revocationReason)return false;
+  // In YYYY-MM-DD form; date includes its final day in Taipei.
+  const taipei=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  return date>=taipei;
+}
+function ntpcOpenVehicleRevocation(id) {
+  if(!canReviewPoliceReports()){showToast('僅警務高層與管理中心可設定吊銷。','warning');return;}
+  const row=(appData.vehicleRecords||[]).find(x=>String(x.docId||x.id)===String(id));
+  if(!row){showToast('查無指定車輛，請重新查詢。','warning');return;}
+  document.getElementById('ntpc-vehicle-revocation-doc').value=String(row.docId||row.id);
+  document.getElementById('ntpc-vehicle-revocation-plate').textContent='車牌：'+String(row.plate||'--');
+  document.getElementById('ntpc-vehicle-revocation-until').value=row.revocationUntil||'';
+  document.getElementById('ntpc-vehicle-revocation-reason').value=row.revocationReason||'';
+  const modal=document.getElementById('ntpc-vehicle-revocation-modal');modal.classList.remove('hidden');modal.classList.add('flex');
+}
+function ntpcCloseVehicleRevocation(){const modal=document.getElementById('ntpc-vehicle-revocation-modal');modal.classList.add('hidden');modal.classList.remove('flex');}
+let ntpcVehicleRevocationBusy=false;
+async function ntpcWriteVehicleRevocation(patch) {
+  if(ntpcVehicleRevocationBusy)return;
+  if(!canReviewPoliceReports()||!currentUser)return showToast('權限不足','error');
+  const id=document.getElementById('ntpc-vehicle-revocation-doc').value;
+  const row=(appData.vehicleRecords||[]).find(x=>String(x.docId||x.id)===id);
+  if(!row)return showToast('車輛不存在','error');
+  ntpcVehicleRevocationBusy=true;
+  try {
+    const now=Date.now();const change={...patch,revocationChangedAt:now,revocationChangedByAccount:String(currentUser.account||''),revocationChangedByName:String(currentUser.name||'')};
+    await fm.updateDoc(fm.doc(db,'vehicleRecords',id),change);
+    Object.assign(row,change);
+    ntpcCloseVehicleRevocation();searchVehicleRecords();
+    showToast('車輛吊銷狀態已更新，已標註操作人。','success');
+  }catch(error){showToast('吊銷更新失敗：'+error.message,'error');}
+  finally{ntpcVehicleRevocationBusy=false;}
+}
+function ntpcSubmitVehicleRevocation(event){event.preventDefault();const until=document.getElementById('ntpc-vehicle-revocation-until').value,reason=document.getElementById('ntpc-vehicle-revocation-reason').value.trim();if(!until||reason.length<3)return showToast('請填寫到期日與至少3字的原因。','warning');ntpcWriteVehicleRevocation({revocationUntil:until,revocationReason:reason});}
+function ntpcRemoveVehicleRevocation(){if(!confirm('確定解除此車輛的吊銷狀態？將保留最後操作人與時間。'))return;ntpcWriteVehicleRevocation({revocationUntil:'',revocationReason:''});}
+async function ntpcProfileLoadAwards(){
+  const host=document.getElementById('ntpc-profile-awards-result');if(!host||!currentUser)return;
+  host.textContent='正在查詢本人獎懲…';const acc=String(currentUser.account||'').toLowerCase(),staff=String(currentUser.staffNumber||'').toLowerCase();
+  try {
+    // No broad automatic fetch at login; explicit click only. Firestore rules still control access.
+    const sources=[['警務','policePunishments'],['消防','firePunishments']];const sections=[];
+    for(const [department,collection] of sources){
+      let rows=[];
+      try{const cache=department==='警務'?appData.policePunishments:appData.firePunishments;if(Array.isArray(cache)&&cache.length)rows=cache;
+      else {const q=fm.query(fm.collection(db,collection),fm.where('memberAccount','==',currentUser.account),fm.limit(100));const docs=await fm.getDocs(q);rows=docs.docs.map(d=>d.data());}}
+      catch(e){sections.push(department+'：無法載入（'+e.message+'）');continue;}
+      const mine=rows.filter(p=>String(p.memberAccount||'').toLowerCase()===acc || (!p.memberAccount&&staff&&String(p.memberId||'').toLowerCase()===staff));
+      const tally={};for(const p of mine){const arr=Array.isArray(p.items)?p.items:typeof p.item==='string'?p.item.split(/[、,，]/):[];for(const item of arr){const text=String(item).trim().replace(/^警告(?=x[1-5]$)/,'申誡');if(!text)continue;const m=text.match(/^(.*?)(?:x(\d+))?$/);const label=m?.[1]||text;const count=Number(m?.[2]||1);tally[label]=(tally[label]||0)+count;}}
+      sections.push(department+'（'+mine.length+' 筆）：'+(Object.keys(tally).length?Object.entries(tally).map(([k,v])=>k+' × '+v).join('、'):'無獎懲紀錄'));
+    }
+    host.replaceChildren(...sections.map(item=>{const p=document.createElement('p');p.className='py-1';p.textContent=item;return p;}));
+  }catch(error){host.textContent='查詢失敗：'+error.message;}
+}
+</script>
+
+<script>
+// V98: notify known authorized management accounts on a user-submitted issue.
+async function ntpcFeedbackNotifyManagement(report) {
+  const recipients=(appData.users||[]).filter(u=>canAccessManagementCenter(u)).map(u=>String(u.account||'').trim()).filter(Boolean);
+  if(!recipients.length)return; // Backend needed to guarantee offline recipients with no roster loaded.
+  const batch=fm.writeBatch(db);const now=Date.now();let count=0;
+  for(const acc of [...new Set(recipients)]) {
+    const ref=fm.doc(db,'reportNotifications','FB-'+String(report.id).replace(/[^a-zA-Z0-9_-]/g,'_')+'-'+acc.toLowerCase().replace(/[^a-z0-9_-]/g,'_'));
+    batch.set(ref,{caseId:report.id,recipientAccount:acc,recipientAccountNormalized:acc.toLowerCase(),type:'feedback',status:'pending',title:'有新的意見／異常回報',message:String(report.subject||'未命名')+'｜'+String(report.name||report.account||''),timestamp:now,read:false});
+    if(++count>=100)break;
+  }
+  if(count)await batch.commit();
+}
+</script>
 </body>
 </html>
