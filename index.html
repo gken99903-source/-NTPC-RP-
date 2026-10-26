@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; media-src 'self' https://raw.githubusercontent.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://placehold.co; connect-src 'self' https://*.workers.dev https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; upgrade-insecure-requests">
-    <!-- NTPC-RP Discord webhook fix + management LOG: 2026-10-06-v4 -->
-    <!-- Security audit: 2026-10-07. Front-end hardening only; Firestore Rules/Firebase Auth/Discord secrets still require backend configuration. -->
-    <!-- Account safety fix: never auto-reset DSUENSX or auto-seed demo users when users collection is empty. -->
     <title>新北市 RP 3.0 公職服務系統 V2.0｜ER:LC 智慧派遣</title>
     <!-- 網站圖標與連結分享資訊 -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
@@ -288,54 +285,53 @@ __                                                                              
           document.getElementById('ntpc-bot-message-channel').value=String(channel);
           document.getElementById('ntpc-bot-message-content').value=String(content||'');
         }
-        // V60 穩定性：後台 API 限時、辨識非 JSON / Access 登入頁，不自動重送任何寫入操作。
+        // 後台 API 設置逾時及錯誤保護；寫入操作不自動重送。
+        // 管理員直接使用網站登入時建立的後端工作階段；不在瀏覽器保存 Bot API 密鑰。
         let ntpcBotConsoleActionBusy=false;
         let ntpcBotConsoleRefreshBusy=false;
         let ntpcBotConsoleReady=false;
         let ntpcBotConsoleUpdatedAt=0;
-        // V66: administrator key is held only in memory (never HTML, sessionStorage or localStorage).
-        let ntpcBotAdminIdentity='';
-        let ntpcBotAdminKey='';
-        function ntpcBotAdminLogin(){
-          const account=String(currentUser?.account||'').trim().toLowerCase();
-          if(!currentUser||!canAccessManagementCenter()||!account){
-            showToast('請先使用具有管理中心權限的網站帳號登入','warning');return false;
-          }
-          if(!/^[\p{L}\p{N}_.-]{1,80}$/u.test(account)){
-            showToast('此網站帳號包含不支援的字元，請聯絡管理員','warning');return false;
-          }
-          if(ntpcBotAdminIdentity===account && ntpcBotAdminKey)return true;
-          ntpcBotAdminLogout();
-          const key=prompt('Bot 控制台｜目前網站帳號：'+account+'\n請輸入此帳號的 64 字元專用管理密鑰');
-          if(key===null)return false;
-          const cleanKey=key.trim().toLowerCase();
-          if(!/^[a-f0-9]{64}$/.test(cleanKey)){
-            showToast('管理密鑰格式不正確（需要 64 字元）','warning');return false;
-          }
-          ntpcBotAdminIdentity=account;ntpcBotAdminKey=cleanKey;return true;
+        async function ntpcBotConsoleSessionStart(account,password){
+          if(location.protocol==='file:'||!account||!password)return;
+          // 此請求只在網站帳號與密碼通過原有登入驗證後呼叫。
+          if(!currentUser||String(currentUser.account||'').toLowerCase()!==String(account).toLowerCase())return;
+          try{
+            const response=await fetch('/api/bot-console/session',{
+              method:'POST',credentials:'same-origin',cache:'no-store',
+              headers:{'content-type':'application/json'},
+              body:JSON.stringify({account,password})
+            });
+            if(!response.ok)console.warn('Bot 後台自動登入尚未完成：請檢查 Pages Functions 工作階段中介層與管理員憑證設定（HTTP '+response.status+'）。');
+          }catch(error){console.warn('Bot 後台自動登入無法連線：',error);}
         }
-        function ntpcBotAdminLogout(){ntpcBotAdminIdentity='';ntpcBotAdminKey='';ntpcBotConsoleReady=false;}
+        function ntpcBotAdminLogout(){
+          ntpcBotConsoleReady=false;
+          if(location.protocol!=='file:'){
+            try{void fetch('/api/bot-console/session',{method:'DELETE',credentials:'same-origin',cache:'no-store'}).catch(()=>{});}catch(_){}
+          }
+        }
         async function ntpcBotConsoleRequest(url,options={},timeoutMs=15000){
-          if(!ntpcBotAdminLogin())throw new Error('未輸入 Bot 管理員密鑰，已取消操作');
+          if(!currentUser||!canAccessManagementCenter())throw new Error('請先登入具有管理中心權限的網站帳號');
           const controller=new AbortController();
           const timer=setTimeout(()=>controller.abort(),timeoutMs);
           try{
-            const headers=new Headers(options.headers||{});
-            headers.set('Authorization','Bearer '+ntpcBotAdminIdentity+':'+ntpcBotAdminKey);
-            const response=await fetch(url,{...options,headers,signal:controller.signal,cache:'no-store'});
-            if(response.status===401){ntpcBotAdminLogout();throw new Error('Bot 管理員驗證失敗，請確認網站帳號、密鑰或 Cloudflare Secret；下次可重新輸入');}
+            const response=await fetch(url,{...options,credentials:'same-origin',signal:controller.signal,cache:'no-store'});
+            if(response.status===401)throw new Error('Bot 後台工作階段尚未建立或已過期。請確認 Pages Functions 已部署工作階段驗證，再重新登入網站。');
+            if(response.status===403)throw new Error('這個網站帳號沒有 Bot 後台權限，或管理員工作階段不符。');
             const raw=await response.text();let data;
             try{data=JSON.parse(raw);}catch(_){
-              if(response.status===401||response.status===403)throw new Error('Bot 管理員密鑰驗證未通過（HTTP '+response.status+'）');
-              if(/^\s*<!doctype html|^\s*<html/i.test(raw))throw new Error(response.status===200?'Bot API 路由回傳了網站 HTML（HTTP 200），不是 JSON。請確認 Cloudflare Pages 已部署 functions/api/bot-console/state.js，且 API 路徑沒有被 SPA 回退規則覆蓋':'Bot API 回傳 HTML，可能是 Pages Functions 路由錯誤（HTTP '+response.status+'）');
+              if(/^\s*<!doctype html|^\s*<html/i.test(raw))throw new Error(response.status===200?'Bot API 路由回傳網站 HTML，不是 JSON；請部署 Pages Functions，並檢查 _routes.json 設定。':'Bot API 回傳 HTML（HTTP '+response.status+'），請檢查 Pages Functions 路由。');
               throw new Error('後端回應格式異常（HTTP '+response.status+'）');
             }
             if(!response.ok||!data?.ok)throw new Error(String(data?.error||'HTTP '+response.status));
+            // 阻止瀏覽器保留的舊管理員 Cookie 被錯誤顯示為目前登入者。
+            if(data.operator&&String(data.operator).toLowerCase()!==String(currentUser.account||'').toLowerCase())
+              throw new Error('Bot 管理員工作階段與目前網站帳號不一致，請登出並重新登入。');
             return data;
           }catch(error){
             if(error?.name==='AbortError')throw new Error(options.method==='POST'
               ?'送出逾時；操作可能已由 Bot 接收，請先查操作紀錄，勿立刻重送。'
-              :'同步逾時，請檢查網路、管理密鑰和 Pages Functions。');
+              :'同步逾時，請檢查網路及 Pages Functions。');
             if(error instanceof TypeError)throw new Error('網路連線失敗；請使用正式 HTTPS 網址並確認後端已部署。');
             throw error;
           }finally{clearTimeout(timer);}
@@ -348,7 +344,7 @@ __                                                                              
           const status=document.getElementById('ntpc-bot-status');if(!status)return;
           ntpcBotConsoleRefreshBusy=true;ntpcBotConsoleReady=false;
           status.textContent='正在讀取 Cloudflare Bot 後端…';
-           if(location.protocol==='file:'){status.textContent='此頁是本機 HTML，無法同步 Bot。請從 https://ntpc-rp.pages.dev/ 開啟正式網站，並部署 Pages Functions、D1、管理密鑰和 Bot。';ntpcBotConsoleRefreshBusy=false;return;}
+           if(location.protocol==='file:'){status.textContent='此頁是本機 HTML，無法同步 Bot。請從 https://ntpc-rp.pages.dev/ 開啟正式網站，並部署 Pages Functions、D1 和 Bot。';ntpcBotConsoleRefreshBusy=false;return;}
           try{
             const data=await ntpcBotConsoleRequest('/api/bot-console/state',{credentials:'same-origin'},15000);
             const s=data.snapshot||{};ntpcBotConsoleState=s;
@@ -376,7 +372,7 @@ __                                                                              
             }
             if(!(s.messages||[]).length)historyEl.textContent='尚無本版本記錄的可編輯訊息';
             document.getElementById('ntpc-bot-action-jobs').innerHTML=(data.jobs||[]).length?(data.jobs||[]).map(j=>`<div class="border-b border-slate-800 py-1">${new Date(j.created_at*1000).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'})}｜${escapeHtml(j.action)}｜${escapeHtml(j.status)}｜${escapeHtml(j.result||'')}<span class="text-slate-500"> · ${escapeHtml(j.operator)}</span></div>`).join(''):'尚無操作';
-          }catch(e){ntpcBotConsoleReady=false;status.textContent='無法同步：'+e.message+'。請檢查 Pages Functions、D1、Bot 管理密鑰與 Bot。';}
+          }catch(e){ntpcBotConsoleReady=false;status.textContent='無法同步：'+e.message+'。請檢查 Pages Functions、D1 與 Bot。';}
           finally{ntpcBotConsoleRefreshBusy=false;}
         }
         async function ntpcBotConsoleSubmit(action){
@@ -1294,7 +1290,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                         <p class="text-slate-400 text-sm mt-2 leading-relaxed">近期更新整合消防獎懲、嘉蕭醫院、車輛管理與保險業務；Bot 活躍統計改為依 ER:LC 人數自動開始及結算。</p>
                     </div>
                     <p id="home-latest-update-summary" class="text-xs text-slate-500 mt-2">ER:LC 智慧派遣與 5 秒位置查看｜提供即時單位位置與網站人工指派；不發送遊戲私訊。</p>
-                    <button type="button" data-tab="update-log" class="tab-shortcut-btn shrink-0 px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-200 text-sm font-semibold transition">查看本次更新內容</button>
+                    <button type="button" data-tab="update-log" class="tab-shortcut-btn shrink-0 px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-200 text-sm font-semibold transition">查看完整更新紀錄</button>
                 </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1713,7 +1709,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                             </div>
                             <div>
                                 <h2 class="text-2xl font-bold text-white">系統更新紀錄</h2>
-                                <p class="text-sm text-slate-500 mt-1">只顯示目前最新版本的更新重點；舊版歷史紀錄不在此清單逐版重複顯示。</p>
+                                <p class="text-sm text-slate-500 mt-1">新北市 RP 3.0 公職服務系統各版本功能變更與重要修正，包含歷史更新紀錄。</p>
                             </div>
                         </div>
                     </div>
@@ -1728,7 +1724,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                                 <h3 class="text-lg font-bold text-white">V2.0</h3>
                                 <p class="text-xs text-emerald-300 mt-1">近期功能整合與穩定性修正</p>
                             </div>
-                            <span class="text-xs font-semibold text-emerald-300">目前版本</span>
+                            <span id="ntpc-bundled-update-badge" class="text-xs font-semibold text-emerald-300">目前版本</span>
                         </div>
                                                 <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
                             <li>消防加入獨立獎懲管理與累計查詢，和警察獎懲分開保存；警察懲處名稱統一為「申誡」。修正消防獎懲初始化順序，避免影響登入。</li>
@@ -1743,7 +1739,36 @@ input, textarea, select, button { accent-color:#38bdf8; }
                             <li>改善介面互動、搜尋、各部門報告處理與後台同步穩定性；保留原有資料與權限分級。</li>
                         </ul>
                     </article>
-                    <div id="ntpc-legacy-updates" class="hidden" aria-hidden="true">
+                    <div id="ntpc-legacy-updates" class="space-y-4">
+                    <article class="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                            <div>
+                                <h3 class="text-lg font-bold text-white">V2.0｜原始發布紀錄</h3>
+                                <p class="text-xs text-emerald-300 mt-1">ER:LC 智慧派遣、警消／全員地圖與每 5 秒位置更新</p>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-500">歷史發布內容</span>
+                        </div>
+                        <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
+                            <li>管理中心新增 ER:LC 智慧派遣面板，可查看線上警消隊伍、郵遞區號、座標及待命狀態。</li>
+                            <li>警務中心、消防中心新增各自專屬的座標圖；管理中心新增全員座標圖及隊伍篩選，市民標示 Roblox ID，警消人員優先標示網站綁定的個人編號。</li>
+                            <li>管理員開啟派遣分頁並連線 Worker 後，前景每 5 秒讀取共用快取的最新位置，避免各瀏覽器直接頻繁查詢 ER:LC 或 Firestore。</li>
+                            <li>接收緊急報案後，管理中心可參考單位位置選擇線上警消、進行人工指派與結案。</li>
+                            <li>僅允許管理中心於網站手動指派與結案；系統不執行自動派遣，也不向遊戲發送私人訊息。</li>
+                            <li>警務及消防報告持續支援案件送審、高層審核、退件、紀錄查閱及依權限管理案件；正式紀錄改以按鈕觸發讀取，降低不必要的 Firestore 讀取。</li>
+                            <li>嘉蕭集團新增獨立勤務中心、上下班打卡、EMS 救護與生命禮儀報告，以及各自的送審及歷史紀錄；管理中心成員可填寫嘉蕭報告。</li>
+                            <li>嘉蕭 EMS 與消防救護表單調整類別、受傷部位標記、EMT 人數與服務費用欄位，移除不再使用的轉送項目；改善報告明細中文名稱顯示。</li>
+                            <li>嘉蕭 EMS、生命禮儀報告增加繳費狀態顯示，未繳費案件標示紅色提醒；生命禮儀明細精簡，移除多餘的明細編號。</li>
+                            <li>嘉蕭報告支援管理權限下的刪除及審核狀態調整；嘉蕭打卡提供值班人數、紀錄管理及刪除功能。</li>
+                            <li>管理中心整合 Bot 控制台，透過 Pages Functions 與 D1 連線；管理員以網站帳號搭配獨立管理密鑰驗證，不在 HTML 保存 Discord Token。</li>
+                            <li>專生考核系統維持警消考核代碼生成與管理，並新增 30 分鐘到期後的清單移除與具權限時的 Firestore 過期紀錄清理。</li>
+                            <li>市民資料採查詢時才讀取，整合保險狀態顯示及管理紀錄；警消、個人資料、管理中心延續既有權限分級與手動載入機制。</li>
+                            <li>視覺介面統一深色科技風格，改善警務報告章節、表單欄位、卡片、按鈕、審核區、日期時間開啟圖示及手機版排版。</li>
+                            <li>本次介面再加入回頂端捷徑、字數提醒、必填錯誤定位與鍵盤操作輔助；上述介面優化不額外增加 Firestore 背景讀取。</li>
+                            <li>承襲 V1.9.4 EMS 五區塊、受傷部位標記、七大處置分類、預設醫院以及既有警務／消防／管理中心功能。</li>
+                            <li>派遣查詢與發送需另外部署並設定具權限保護的 Cloudflare Worker；僅更新 HTML 不會直接啟用 API 派遣。</li>
+                        </ul>
+                    </article>
+                    <div id="dynamic-archived-update-log" class="space-y-4"></div>
                     <article class="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                             <div>
@@ -1883,11 +1908,11 @@ input, textarea, select, button { accent-color:#38bdf8; }
                             <li>持續整合公告、案件、通知、管理中心與雲端資料同步功能。</li>
                         </ul>
                     </article>
-                    </div><!-- historical records intentionally hidden from latest-only changelog -->
+                    </div><!-- Historic website release notes remain visible. -->
                 </div>
 
                 <div class="mt-6 pt-5 border-t border-slate-800 text-xs text-slate-500">
-                    此頁僅列最新更新重點。既有功能及資料庫紀錄仍予保留。
+                    更新紀錄為網站各版本變更摘要；所有已發布的歷史版本紀錄持續保留。
                 </div>
             </div>
         </section>
@@ -2651,7 +2676,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                 <div id="admin-sub-bot-console" class="hidden space-y-5">
                     <section class="rounded-2xl bg-slate-900 border border-indigo-500/25 p-5 sm:p-6 space-y-4">
                         <div class="flex flex-wrap items-center justify-between gap-3"><div><h3 class="text-xl font-bold text-white"><i class="fa-brands fa-discord text-indigo-400 mr-2"></i>新北市 RP｜Bot 控制台</h3><p class="text-xs text-slate-400 mt-1">所有動作交由貓居 Bot 執行，設定直接寫回舊有資料庫；不在網頁存放任何 Discord Token。</p></div><button type="button" onclick="ntpcBotConsoleRefresh()" class="bg-indigo-600 hover:bg-indigo-500 rounded-lg px-4 py-2 text-sm text-white">同步最新設定</button></div>
-                        <p id="ntpc-bot-status" class="text-sm text-amber-300">尚未取得 Bot 狀態。第一次使用需設定 Cloudflare Access、D1 綁定與貓居 Bot 密鑰。</p>
+                        <p id="ntpc-bot-status" class="text-sm text-amber-300">尚未取得 Bot 狀態。請先完成 Pages Functions 工作階段授權、D1 綁定與 Bot 同步。</p>
                         <p id="ntpc-bot-auth" class="text-xs text-slate-500"></p>
                     </section>
                     <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
@@ -4611,12 +4636,23 @@ function compareSiteVersion(a, b){
             renderDynamicUpdateLog();
         }
         function renderDynamicUpdateLog(){
-            const host=document.getElementById('dynamic-update-log'); if(!host)return;
-            const rows=sortSiteVersions((appData.siteVersions||[]).filter(v=>v&&v.active!==false&&compareSiteVersion(v.version,NTPC_BUNDLED_SITE_VERSION.version)>0));
-            const current=rows.slice(0,1);
-            const bundled=document.getElementById('ntpc-update-summary-latest');
-            if(bundled)bundled.classList.toggle('hidden',current.length>0);
-            host.innerHTML=current.length?current.map((v,i)=>{const details=Array.isArray(v.details)?v.details:(String(v.details||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean));return `<article class="rounded-2xl border ${i===0?'border-emerald-500/30 bg-emerald-500/5':i===1?'border-red-500/25 bg-red-500/5':'border-slate-800 bg-slate-950/60'} p-5"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3"><div><h3 class="text-lg font-bold text-white">${escapeHtml(v.version||'--')}</h3><p class="text-xs ${i===0?'text-emerald-300':i===1?'text-red-300':'text-slate-500'} mt-1">${escapeHtml(v.title||'版本更新')}</p></div><span class="text-xs font-semibold ${i===0?'text-emerald-300':i===1?'text-red-300':'text-slate-500'}">${i===0?'目前版本':i===1?'前一版本':formatDateTime(v.publishedAt||v.createdAt)}</span></div><p class="text-sm text-slate-300 mb-3">${escapeHtml(v.summary||'')}</p>${details.length?`<ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">${details.map(d=>`<li>${escapeHtml(d)}</li>`).join('')}</ul>`:''}</article>`;}).join('') : '';
+            const host=document.getElementById('dynamic-update-log');
+            if(!host)return;
+            const rows=sortSiteVersions((appData.siteVersions||[]).filter(v=>v&&v.active!==false));
+            const newer=rows.filter(v=>compareSiteVersion(v.version,NTPC_BUNDLED_SITE_VERSION.version)>0);
+            const archived=rows.filter(v=>compareSiteVersion(v.version,NTPC_BUNDLED_SITE_VERSION.version)<=0);
+            // Dynamic cloud releases are rendered in full, never truncated to only the newest entry.
+            const renderCards=(entries,isNewer)=>entries.map((v,i)=>{
+                const details=Array.isArray(v.details)?v.details:(String(v.details||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean));
+                const current=isNewer&&i===0;
+                const caption=current?'目前版本':(v.publishedAt||v.createdAt?formatDateTime(v.publishedAt||v.createdAt):'歷史版本');
+                return `<article class="rounded-2xl border ${current?'border-emerald-500/30 bg-emerald-500/5':'border-slate-800 bg-slate-950/60'} p-5"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3"><div><h3 class="text-lg font-bold text-white">${escapeHtml(v.version||'--')}</h3><p class="text-xs ${current?'text-emerald-300':'text-slate-400'} mt-1">${escapeHtml(v.title||'版本更新')}</p></div><span class="text-xs font-semibold ${current?'text-emerald-300':'text-slate-500'}">${escapeHtml(caption)}</span></div><p class="text-sm text-slate-300 mb-3">${escapeHtml(v.summary||'')}</p>${details.length?`<ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">${details.map(d=>`<li>${escapeHtml(d)}</li>`).join('')}</ul>`:''}</article>`;
+            }).join('');
+            host.innerHTML=renderCards(newer,true);
+            const archivedHost=document.getElementById('dynamic-archived-update-log');
+            if(archivedHost)archivedHost.innerHTML=renderCards(archived,false);
+            const badge=document.getElementById('ntpc-bundled-update-badge');
+            if(badge)badge.textContent=newer.length?'內建版本紀錄':'目前版本';
         }
         function resetSiteVersionForm(){
             ['site-version-edit-id','site-version-number','site-version-title','site-version-summary','site-version-details'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
@@ -7444,7 +7480,7 @@ async function republishAnnouncement(id) {
 
         const SECURITY_ACTION_COOLDOWN=new Map();
         function securityActionAllowed(key,cooldownMs=700){const now=Date.now(),last=SECURITY_ACTION_COOLDOWN.get(key)||0;if(now-last<cooldownMs)return false;SECURITY_ACTION_COOLDOWN.set(key,now);return true;}
-        async function handleLogin(){if(!securityActionAllowed('login',900))return;await cloudDataReadyPromise;const device=getDeviceInfo();const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}try{const fingerprint=getDeviceFingerprint(device),deviceKey=getDeviceKey(device);const [blockedByFingerprint,blockedByKey]=await Promise.all([fm.getDoc(fm.doc(db,'blockedDevices',fingerprint)),fm.getDocs(fm.query(fm.collection(db,'blockedDevices'),fm.where('deviceKey','==',deviceKey)))]);const matches=[];if(blockedByFingerprint.exists())matches.push({docId:blockedByFingerprint.id,...blockedByFingerprint.data()});blockedByKey.docs.forEach(d=>{if(!matches.some(x=>String(x.docId)===String(d.id)))matches.push({docId:d.id,...d.data()});});appData.blockedDevices=matches;/* 登入失敗紀錄只在失敗時依裝置 ID 單筆讀取，不下載整個集合。 */}catch(e){console.warn('登入安全資料讀取失敗：',e);}if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}let found=null;try{const userSnap=await fm.getDoc(fm.doc(db,'users',acc));if(userSnap.exists()){const data=userSnap.data();found={docId:userSnap.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}if(!found&&isSuperAdminAccount(acc)){const all=await fm.getDocs(fm.collection(db,'users'));const d=all.docs.find(x=>isSuperAdminAccount(x.id)||isSuperAdminAccount(x.data().account));if(d){const data=d.data();found={docId:d.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}}}catch(e){showToast('帳號驗證失敗，請稍後重試：'+e.message,'error','登入失敗');return;}if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));if(!(await requireSiteAgreement(found)))return;currentUser=found;appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);resetManualReadFlags();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();if(isAcademyInstructor(currentUser)&&getEffectiveRole(currentUser)!=='admin')switchTab('academy');else switchTab('home');}
+        async function handleLogin(){if(!securityActionAllowed('login',900))return;await cloudDataReadyPromise;const device=getDeviceInfo();const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}try{const fingerprint=getDeviceFingerprint(device),deviceKey=getDeviceKey(device);const [blockedByFingerprint,blockedByKey]=await Promise.all([fm.getDoc(fm.doc(db,'blockedDevices',fingerprint)),fm.getDocs(fm.query(fm.collection(db,'blockedDevices'),fm.where('deviceKey','==',deviceKey)))]);const matches=[];if(blockedByFingerprint.exists())matches.push({docId:blockedByFingerprint.id,...blockedByFingerprint.data()});blockedByKey.docs.forEach(d=>{if(!matches.some(x=>String(x.docId)===String(d.id)))matches.push({docId:d.id,...d.data()});});appData.blockedDevices=matches;/* 登入失敗紀錄只在失敗時依裝置 ID 單筆讀取，不下載整個集合。 */}catch(e){console.warn('登入安全資料讀取失敗：',e);}if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}let found=null;try{const userSnap=await fm.getDoc(fm.doc(db,'users',acc));if(userSnap.exists()){const data=userSnap.data();found={docId:userSnap.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}if(!found&&isSuperAdminAccount(acc)){const all=await fm.getDocs(fm.collection(db,'users'));const d=all.docs.find(x=>isSuperAdminAccount(x.id)||isSuperAdminAccount(x.data().account));if(d){const data=d.data();found={docId:d.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}}}catch(e){showToast('帳號驗證失敗，請稍後重試：'+e.message,'error','登入失敗');return;}if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));if(!(await requireSiteAgreement(found)))return;currentUser=found;appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];void ntpcBotConsoleSessionStart(currentUser.account,pass);await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);resetManualReadFlags();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();if(isAcademyInstructor(currentUser)&&getEffectiveRole(currentUser)!=='admin')switchTab('academy');else switchTab('home');}
         async function logout(){ntpcBotAdminLogout();ntpcMapDisconnectAll();ntpcDispatchStop(true);resetManualReadFlags();stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','jiaxiaoClocks','jiaxiaoMedicalReports','jiaxiaoMedicalPendingReports','jiaxiaoFuneralReports','jiaxiaoFuneralPendingReports','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
