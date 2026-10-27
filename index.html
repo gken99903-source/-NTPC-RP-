@@ -285,54 +285,195 @@ __                                                                              
           document.getElementById('ntpc-bot-message-channel').value=String(channel);
           document.getElementById('ntpc-bot-message-content').value=String(content||'');
         }
-        // 後台 API 設置逾時及錯誤保護；寫入操作不自動重送。
-        // 管理員直接使用網站登入時建立的後端工作階段；不在瀏覽器保存 Bot API 密鑰。
+        // 網站專用票務：與 Discord /setup 完全隔離，所有變更經網站原有 Bot 操作佇列執行。
+        let siteTicketDraftId='';
+        const siteTicketEl=(id)=>document.getElementById(id);
+        const siteTicketText=(id)=>String(siteTicketEl(id)?.value||'').trim();
+        function siteTicketTab(which){
+          siteTicketEl('site-ticket-topic-view')?.classList.toggle('!hidden',which!=='topic');
+          siteTicketEl('site-ticket-panel-view')?.classList.toggle('!hidden',which!=='panel');
+          siteTicketEl('site-ticket-tab-topic')?.classList.toggle('bg-cyan-800',which==='topic');
+          siteTicketEl('site-ticket-tab-panel')?.classList.toggle('bg-cyan-800',which==='panel');
+          siteTicketEl('site-ticket-tab-topic')?.classList.toggle('bg-slate-800',which!=='topic');
+          siteTicketEl('site-ticket-tab-panel')?.classList.toggle('bg-slate-800',which!=='panel');
+          if(which==='panel')siteTicketPreview();
+        }
+        function siteTicketQuestion(label='',required=true,paragraph=false){
+          const row=document.createElement('div');row.className='border border-slate-700 rounded-xl p-3 space-y-2';
+          const input=document.createElement('input');input.type='text';input.maxLength=45;input.value=label;input.placeholder='例如：申請哪個部門？';input.className='site-ticket-question-label w-full rounded-lg bg-slate-950 border border-slate-700 p-2 text-white';
+          const line=document.createElement('div');line.className='flex flex-wrap items-center gap-3 text-xs text-slate-400';
+          const req=document.createElement('label');req.className='flex items-center gap-1';
+          const reqCheck=document.createElement('input');reqCheck.type='checkbox';reqCheck.className='site-ticket-question-required';reqCheck.checked=required;req.append(reqCheck,document.createTextNode('必填'));
+          const long=document.createElement('label');long.className='flex items-center gap-1';
+          const longCheck=document.createElement('input');longCheck.type='checkbox';longCheck.className='site-ticket-question-long';longCheck.checked=paragraph;long.append(longCheck,document.createTextNode('多行回答'));
+          const remove=document.createElement('button');remove.type='button';remove.textContent='刪除這題';remove.className='text-rose-400';remove.onclick=()=>row.remove();
+          line.append(req,long,remove);row.append(input,line);return row;
+        }
+        function siteTicketAddQuestion(label='',required=true,paragraph=false){
+          const host=siteTicketEl('site-ticket-questions');if(!host)return;
+          if(host.children.length>=4)return showToast('每個主題最多 4 題','warning');
+          host.append(siteTicketQuestion(label,required,paragraph));
+        }
+        function siteTicketNewTopic(){
+          siteTicketDraftId='';siteTicketEl('site-ticket-topics-list').value='';
+          for(const id of ['site-ticket-topic-name','site-ticket-topic-intro','site-ticket-topic-roles','site-ticket-topic-category'])siteTicketEl(id).value='';
+          siteTicketEl('site-ticket-topic-enabled').checked=true;
+          siteTicketEl('site-ticket-questions').replaceChildren(); // 新主題預設不問問題，主題管理員可自由新增。
+        }
+        function siteTicketLoadTopic(){
+          const id=siteTicketText('site-ticket-topics-list'),topic=(ntpcBotConsoleState?.site_ticket_topics||[]).find(x=>x.id===id);
+          if(!topic){siteTicketNewTopic();return;}
+          siteTicketDraftId=topic.id;
+          siteTicketEl('site-ticket-topic-name').value=topic.name;
+          siteTicketEl('site-ticket-topic-intro').value=topic.intro;
+          siteTicketEl('site-ticket-topic-roles').value=(topic.role_ids||[]).join(',');
+          siteTicketEl('site-ticket-topic-category').value=topic.category_id||'';
+          siteTicketEl('site-ticket-topic-enabled').checked=!!topic.enabled;
+          siteTicketEl('site-ticket-questions').replaceChildren();
+          for(const q of topic.questions||[])siteTicketAddQuestion(q.label,q.required,q.paragraph);
+        }
+        function siteTicketRender(){
+          const topics=ntpcBotConsoleState?.site_ticket_topics||[],panels=ntpcBotConsoleState?.site_ticket_panels||[];
+          const ts=siteTicketEl('site-ticket-topics-list'),pv=ts?.value||'';
+          if(ts){ts.replaceChildren(new Option('＋ 新增主題',''));for(const x of topics)ts.add(new Option((x.enabled?'':'[停用] ')+x.name,x.id));ts.value=topics.some(x=>x.id===pv)?pv:'';}
+          const ps=siteTicketEl('site-ticket-panels-list'),old=ps?.value||'';
+          if(ps){ps.replaceChildren(new Option('＋ 建立新面板',''));for(const x of panels)ps.add(new Option(x.title+'｜'+x.channel_id,x.channel_id));ps.value=panels.some(x=>x.channel_id===old)?old:'';}
+          const checked=new Set([...document.querySelectorAll('#site-ticket-panel-topics input:checked')].map(el=>el.value));
+          const host=siteTicketEl('site-ticket-panel-topics');if(!host)return;host.replaceChildren();
+          for(const x of topics.filter(x=>x.enabled)){
+            const line=document.createElement('label');line.className='flex items-center gap-2 cursor-pointer';
+            const box=document.createElement('input');box.type='checkbox';box.value=x.id;box.checked=checked.has(x.id);box.className='site-ticket-panel-topic-checkbox';box.addEventListener('change',siteTicketPreview);
+            const text=document.createElement('span');text.textContent=x.name;
+            line.append(box,text);host.append(line);
+          }
+          if(!topics.length)host.textContent='尚未建立主題，請先到「建立主題」儲存並等待 Bot 同步。';
+          siteTicketPreview();
+        }
+        function siteTicketLoadPanel(){
+          const cid=siteTicketText('site-ticket-panels-list'),p=(ntpcBotConsoleState?.site_ticket_panels||[]).find(x=>x.channel_id===cid);
+          for(const [id,key,fallback] of [['site-ticket-panel-channel','channel_id',''],['site-ticket-panel-title','title',''],['site-ticket-panel-desc','description',''],['site-ticket-panel-placeholder','placeholder','選擇要申辦的主題']])siteTicketEl(id).value=p?.[key]||fallback;
+          const chosen=new Set(p?.topic_ids||[]);
+          for(const ch of document.querySelectorAll('.site-ticket-panel-topic-checkbox'))ch.checked=chosen.has(ch.value);
+          siteTicketPreview();
+        }
+        function siteTicketPreview(){
+          const title=siteTicketText('site-ticket-panel-title')||'新北 RP｜部門申請中心',desc=siteTicketText('site-ticket-panel-desc')||'選擇要辦理的業務',placeholder=siteTicketText('site-ticket-panel-placeholder')||'選擇要申辦的主題';
+          if(siteTicketEl('site-ticket-preview-title'))siteTicketEl('site-ticket-preview-title').textContent=title;
+          if(siteTicketEl('site-ticket-preview-desc'))siteTicketEl('site-ticket-preview-desc').textContent=desc;
+          if(siteTicketEl('site-ticket-preview-dropdown'))siteTicketEl('site-ticket-preview-dropdown').textContent=placeholder+' ﹀';
+        }
+        async function siteTicketQueue(action,payload){
+          if(!currentUser||!canUseManagementDispatch(currentUser))return;
+          if(!ntpcBotConsoleReady||Date.now()/1000-ntpcBotConsoleUpdatedAt>=600)return showToast('Bot 尚未同步，請先按「同步最新設定」','warning');
+          if(ntpcBotConsoleActionBusy)return;
+          if(!confirm((action==='site_subject_upsert'?'儲存票務主題':'在指定頻道發布／更新面板')+'？執行後會有管理紀錄。'))return;
+          ntpcBotConsoleActionBusy=true;
+          try{
+            const result=await ntpcBotConsoleRequest('/api/bot-console/action',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({action,payload})},20000);
+            siteTicketEl('site-ticket-action-status').textContent='操作已排入佇列：'+result.id+'。請確認操作紀錄顯示「完成」後再同步。';
+            showToast('已排入 Bot 佇列，待執行後生效','success');await ntpcBotConsoleRefresh();
+          }catch(e){showToast(String(e.message||e),'error','票務設定未送出');}finally{ntpcBotConsoleActionBusy=false;}
+        }
+        function siteTicketSubmitTopic(){
+          const name=siteTicketText('site-ticket-topic-name'),intro=siteTicketText('site-ticket-topic-intro');
+          const role_ids=siteTicketText('site-ticket-topic-roles').split(/[\s,，]+/).filter(Boolean);
+          const category_id=siteTicketText('site-ticket-topic-category');
+          const questions=[...document.querySelectorAll('#site-ticket-questions>div')].map(row=>({label:row.querySelector('.site-ticket-question-label').value.trim(),required:row.querySelector('.site-ticket-question-required').checked,paragraph:row.querySelector('.site-ticket-question-long').checked}));
+          if(!name||name.length>70||!intro||intro.length>950)return showToast('請填寫主題名稱與說明','warning');
+          if(!role_ids.length||role_ids.length>5||role_ids.some(x=>!ntpcBotConsoleSnowflake(x)))return showToast('客服角色須填入 1～5 個有效 Discord 身分組 ID','warning');
+          if(category_id&&!ntpcBotConsoleSnowflake(category_id))return showToast('票務分類 ID 格式錯誤','warning');
+          if(questions.length>4||questions.some(q=>!q.label||q.label.length>45))return showToast('事前問題可不填，最多 4 題，每題最多 45 字','warning');
+          const id=siteTicketDraftId||('site_'+crypto.randomUUID().replaceAll('-','').slice(0,24));
+          siteTicketDraftId=id;
+          siteTicketQueue('site_subject_upsert',{id,name,intro,role_ids,category_id,questions,enabled:siteTicketEl('site-ticket-topic-enabled').checked});
+        }
+        function siteTicketPublishPanel(){
+          const channel_id=siteTicketText('site-ticket-panel-channel'),title=siteTicketText('site-ticket-panel-title'),description=siteTicketText('site-ticket-panel-desc'),placeholder=siteTicketText('site-ticket-panel-placeholder');
+          const topic_ids=[...document.querySelectorAll('.site-ticket-panel-topic-checkbox:checked')].map(el=>el.value);
+          if(!ntpcBotConsoleSnowflake(channel_id)||!title||!description||!placeholder||topic_ids.length<1||topic_ids.length>20)return showToast('請確認目標頻道 ID、面板內容及 1～20 個主題','warning');
+          siteTicketQueue('site_panel_publish',{channel_id,title,description,placeholder,topic_ids});
+        }
+        document.addEventListener('DOMContentLoaded',()=>{if(siteTicketEl('site-ticket-questions')&&!siteTicketEl('site-ticket-questions').children.length)siteTicketNewTopic();},{once:true});
+
+        // Bot 管理工作階段：Dsuensx 使用網站已驗證密碼建立後端短效工作階段；其他帳號仍需獨立管理密鑰。
         let ntpcBotConsoleActionBusy=false;
         let ntpcBotConsoleRefreshBusy=false;
         let ntpcBotConsoleReady=false;
         let ntpcBotConsoleUpdatedAt=0;
+        let ntpcBotManualKey='';
+        let ntpcBotManualAccount='';
+        function ntpcBotNeedsManualKey(){
+          return String(currentUser?.account||'').trim().toLowerCase()!=='dsuensx';
+        }
         async function ntpcBotConsoleSessionStart(account,password){
-          if(location.protocol==='file:'||!account||!password)return;
-          // 此請求只在網站帳號與密碼通過原有登入驗證後呼叫。
-          if(!currentUser||String(currentUser.account||'').toLowerCase()!==String(account).toLowerCase())return;
+          if(location.protocol==='file:'||!account||!password||String(account).trim().toLowerCase()!=='dsuensx')return;
+          // 不信任瀏覽器自稱的身分，Pages Function 須獨立驗證密碼後才發簽章 Cookie。
+          if(!currentUser||String(currentUser.account||'').trim().toLowerCase()!=='dsuensx')return;
           try{
             const response=await fetch('/api/bot-console/session',{
               method:'POST',credentials:'same-origin',cache:'no-store',
               headers:{'content-type':'application/json'},
-              body:JSON.stringify({account,password})
+              body:JSON.stringify({account:'dsuensx',password})
             });
-            if(!response.ok)console.warn('Bot 後台自動登入尚未完成：請檢查 Pages Functions 工作階段中介層與管理員憑證設定（HTTP '+response.status+'）。');
+            if(!response.ok)console.warn('Dsuensx 的 Bot 後台自動登入失敗：請檢查 Cloudflare Pages Functions 與驗證環境設定（HTTP '+response.status+'）。');
           }catch(error){console.warn('Bot 後台自動登入無法連線：',error);}
         }
+        function ntpcBotAdminLogin(){
+          if(!currentUser||!canAccessManagementCenter()){
+            showToast('請先使用具有管理中心權限的網站帳號登入','warning');return false;
+          }
+          const account=String(currentUser.account||'').trim().toLowerCase();
+          if(!/^[\p{L}\p{N}_.-]{1,80}$/u.test(account)){
+            showToast('網站帳號包含不支援的字元','warning');return false;
+          }
+          if(account==='dsuensx')return true; // 僅免人工輸入金鑰；後端仍須驗證登入工作階段。
+          if(ntpcBotManualAccount===account&&/^[a-f0-9]{64}$/.test(ntpcBotManualKey))return true;
+          ntpcBotManualKey='';ntpcBotManualAccount='';
+          const value=prompt('Bot 控制台｜目前網站帳號：'+account+'\n請輸入此帳號的 64 字元專用管理密鑰');
+          if(value===null)return false;
+          const key=value.trim().toLowerCase();
+          if(!/^[a-f0-9]{64}$/.test(key)){
+            showToast('管理密鑰格式錯誤，應為 64 字元','warning');return false;
+          }
+          ntpcBotManualKey=key;ntpcBotManualAccount=account;return true;
+        }
         function ntpcBotAdminLogout(){
-          ntpcBotConsoleReady=false;
+          ntpcBotManualKey='';ntpcBotManualAccount='';ntpcBotConsoleReady=false;
           if(location.protocol!=='file:'){
             try{void fetch('/api/bot-console/session',{method:'DELETE',credentials:'same-origin',cache:'no-store'}).catch(()=>{});}catch(_){}
           }
         }
         async function ntpcBotConsoleRequest(url,options={},timeoutMs=15000){
           if(!currentUser||!canAccessManagementCenter())throw new Error('請先登入具有管理中心權限的網站帳號');
+          if(!ntpcBotAdminLogin())throw new Error('已取消 Bot 管理員金鑰輸入');
           const controller=new AbortController();
           const timer=setTimeout(()=>controller.abort(),timeoutMs);
           try{
-            const response=await fetch(url,{...options,credentials:'same-origin',signal:controller.signal,cache:'no-store'});
-            if(response.status===401)throw new Error('Bot 後台工作階段尚未建立或已過期。請確認 Pages Functions 已部署工作階段驗證，再重新登入網站。');
-            if(response.status===403)throw new Error('這個網站帳號沒有 Bot 後台權限，或管理員工作階段不符。');
+            const headers=new Headers(options.headers||{});
+            if(ntpcBotNeedsManualKey())headers.set('Authorization','Bearer '+ntpcBotManualAccount+':'+ntpcBotManualKey);
+            const response=await fetch(url,{...options,headers,credentials:'same-origin',signal:controller.signal,cache:'no-store'});
+            if(response.status===401){
+              if(ntpcBotNeedsManualKey()){
+                ntpcBotManualKey='';ntpcBotManualAccount='';
+                throw new Error('Bot 管理密鑰驗證失敗或已停用，請重新輸入正確金鑰。');
+              }
+              throw new Error('Dsuensx 的 Bot 後台登入工作階段未建立或已過期。請確認 Pages Functions 已設定驗證資訊，然後重新登入網站。');
+            }
+            if(response.status===403)throw new Error('Bot 管理操作遭拒，請檢查帳號身分與後端權限。');
             const raw=await response.text();let data;
             try{data=JSON.parse(raw);}catch(_){
-              if(/^\s*<!doctype html|^\s*<html/i.test(raw))throw new Error(response.status===200?'Bot API 路由回傳網站 HTML，不是 JSON；請部署 Pages Functions，並檢查 _routes.json 設定。':'Bot API 回傳 HTML（HTTP '+response.status+'），請檢查 Pages Functions 路由。');
+              if(/^\s*<!doctype html|^\s*<html/i.test(raw))throw new Error('Bot API 回傳 HTML 而不是 JSON，請部署對應的 Cloudflare Pages Functions。');
               throw new Error('後端回應格式異常（HTTP '+response.status+'）');
             }
             if(!response.ok||!data?.ok)throw new Error(String(data?.error||'HTTP '+response.status));
-            // 阻止瀏覽器保留的舊管理員 Cookie 被錯誤顯示為目前登入者。
             if(data.operator&&String(data.operator).toLowerCase()!==String(currentUser.account||'').toLowerCase())
-              throw new Error('Bot 管理員工作階段與目前網站帳號不一致，請登出並重新登入。');
+              throw new Error('Bot 管理員工作階段與目前網站帳號不一致，請登出重新登入。');
             return data;
           }catch(error){
             if(error?.name==='AbortError')throw new Error(options.method==='POST'
-              ?'送出逾時；操作可能已由 Bot 接收，請先查操作紀錄，勿立刻重送。'
-              :'同步逾時，請檢查網路及 Pages Functions。');
-            if(error instanceof TypeError)throw new Error('網路連線失敗；請使用正式 HTTPS 網址並確認後端已部署。');
+              ?'操作逾時；可能已受理，請先查操作紀錄再重試。'
+              :'同步逾時，請檢查網路與 Pages Functions。');
+            if(error instanceof TypeError)throw new Error('網路連線失敗，請確認網站 HTTPS 與 Cloudflare Functions 設定。');
             throw error;
           }finally{clearTimeout(timer);}
         }
@@ -359,7 +500,7 @@ __                                                                              
             else if(s.panels?.length)select.value=s.panels[0].channel_id;
             ntpcBotConsolePanelSelect();
 
-             ntpcBotConsoleRenderPanels();
+             ntpcBotConsoleRenderPanels();siteTicketRender();
              ntpcBotConsoleRenderMoney();ntpcBotConsoleRenderOtherPanels();
             const historyEl=document.getElementById('ntpc-bot-recent-messages');
             historyEl.replaceChildren();
@@ -2678,6 +2819,47 @@ input, textarea, select, button { accent-color:#38bdf8; }
                         <div class="flex flex-wrap items-center justify-between gap-3"><div><h3 class="text-xl font-bold text-white"><i class="fa-brands fa-discord text-indigo-400 mr-2"></i>新北市 RP｜Bot 控制台</h3><p class="text-xs text-slate-400 mt-1">所有動作交由貓居 Bot 執行，設定直接寫回舊有資料庫；不在網頁存放任何 Discord Token。</p></div><button type="button" onclick="ntpcBotConsoleRefresh()" class="bg-indigo-600 hover:bg-indigo-500 rounded-lg px-4 py-2 text-sm text-white">同步最新設定</button></div>
                         <p id="ntpc-bot-status" class="text-sm text-amber-300">尚未取得 Bot 狀態。請先完成 Pages Functions 工作階段授權、D1 綁定與 Bot 同步。</p>
                         <p id="ntpc-bot-auth" class="text-xs text-slate-500"></p>
+                    </section>
+                    <!-- 網站專用票務管理：主題與面板分開設定；不改動 Discord /setup。 -->
+                    <section id="ntpc-site-ticket-section" class="rounded-2xl bg-slate-900 border border-cyan-500/30 p-5 sm:p-6 space-y-4">
+                      <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div><h4 class="font-bold text-lg text-cyan-300"><i class="fa-solid fa-layer-group mr-2"></i>網站專用｜自訂票務</h4><p class="text-xs text-slate-400 mt-1">僅限本網站管理中心設定，只會發送到新北 RP。先建立主題，再建立面板。原本 /setup 完全獨立。</p></div>
+                        <div class="flex gap-2"><button type="button" id="site-ticket-tab-topic" onclick="siteTicketTab('topic')" class="bg-cyan-800 text-white rounded-lg px-4 py-2 text-sm">① 建立主題</button><button type="button" id="site-ticket-tab-panel" onclick="siteTicketTab('panel')" class="bg-slate-800 rounded-lg px-4 py-2 text-sm">② 建立面板</button></div>
+                      </div>
+                      <div id="site-ticket-topic-view" class="grid md:grid-cols-2 gap-5">
+                        <div class="space-y-3">
+                          <label class="block text-sm text-slate-300">已建立主題（點選載入編輯）</label>
+                          <select id="site-ticket-topics-list" onchange="siteTicketLoadTopic()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white"><option value="">新增主題</option></select>
+                          <button type="button" onclick="siteTicketNewTopic()" class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-lg text-xs">＋ 清空並建立新主題</button>
+                          <label class="block text-xs text-slate-400">主題名稱</label><input id="site-ticket-topic-name" maxlength="70" placeholder="例如：申請普通警察" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white">
+                          <label class="block text-xs text-slate-400">開單後發送的說明</label><textarea id="site-ticket-topic-intro" maxlength="950" rows="4" placeholder="請詳述申請條件、注意事項、客服回覆流程" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white"></textarea>
+                          <label class="block text-xs text-slate-400">負責客服身分組 ID（1～5 個，以逗號分隔）</label><input id="site-ticket-topic-roles" placeholder="1434852818799562793" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white">
+                          <label class="block text-xs text-slate-400">建立私人客服單的 Discord 分類 ID（選填）</label><input id="site-ticket-topic-category" placeholder="不填則使用伺服器第一個類別" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white">
+                          <label class="flex items-center gap-2 text-sm text-slate-300"><input id="site-ticket-topic-enabled" type="checkbox" checked>啟用主題（取消可暫停接受申請，不刪歷史）</label>
+                          <button type="button" onclick="siteTicketSubmitTopic()" class="w-full bg-cyan-700 hover:bg-cyan-600 px-4 py-2.5 rounded-lg font-semibold">儲存此主題</button>
+                        </div>
+                        <div class="space-y-3"><h5 class="font-semibold text-slate-200">開單前提問（選用） <span class="text-xs text-slate-400 font-normal">0～4 題；不新增問題就直接開單，有問題才顯示 Discord 表單</span></h5>
+                          <div id="site-ticket-questions" class="space-y-2"></div>
+                          <button type="button" onclick="siteTicketAddQuestion()" class="border border-cyan-700 rounded-lg px-4 py-2 text-cyan-200 hover:bg-cyan-900/30 text-sm">＋ 增加一題</button>
+                          <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs text-slate-400 space-y-2"><p class="text-cyan-300 font-semibold">填報人的實際體驗</p><p>沒有設定問題：點公開面板 → 選擇申請主題 → 直接建立私人票務頻道並通知客服。</p><p>有設定問題：選擇主題 → Discord 表單填寫問題 → 建立私人票務頻道。</p><p>同人同主題已有未關閉的票務時，改提示前往既有頻道；不同主題可以分別建立。</p><p>事前問答只留在私人票務頻道中，不會加進後台總覽或公開面板。</p></div>
+                        </div>
+                      </div>
+                      <div id="site-ticket-panel-view" class="!hidden grid md:grid-cols-2 gap-5">
+                        <div class="space-y-3">
+                          <label class="block text-xs text-slate-300">曾發布的網站專用面板（點選載入）</label><select id="site-ticket-panels-list" onchange="siteTicketLoadPanel()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white"><option value="">建立新面板</option></select>
+                          <label class="block text-xs text-slate-400">Discord 發送頻道 ID</label><input id="site-ticket-panel-channel" placeholder="填入想要發布面板的頻道數字 ID" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-mono">
+                          <label class="block text-xs text-slate-400">面板標題</label><input id="site-ticket-panel-title" maxlength="100" placeholder="新北 RP｜部門申請中心" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" oninput="siteTicketPreview()">
+                          <label class="block text-xs text-slate-400">面板說明（給申請人看的介紹）</label><textarea id="site-ticket-panel-desc" rows="3" maxlength="1500" placeholder="選擇想申請的部門；部分主題可能需要先回答問題" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" oninput="siteTicketPreview()"></textarea>
+                          <label class="block text-xs text-slate-400">主題選單提示文字</label><input id="site-ticket-panel-placeholder" maxlength="100" value="選擇要申辦的主題" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" oninput="siteTicketPreview()">
+                          <button type="button" onclick="siteTicketPublishPanel()" class="w-full rounded-lg px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">發送／更新指定頻道面板</button>
+                          <p class="text-xs text-amber-300">若該頻道已有網站專用面板，Bot 會修改原訊息，不重複發送；不會覆蓋 /setup 的面板。</p>
+                        </div>
+                        <div class="space-y-3"><label class="block text-sm font-semibold text-slate-200">面板提供的主題（最多 20 種）</label><div id="site-ticket-panel-topics" class="rounded-xl border border-slate-700 bg-slate-950 p-3 space-y-2 max-h-72 overflow-y-auto text-sm">先儲存主題，再同步 Bot 資料。</div>
+                          <label class="block text-xs text-slate-400">公開面板預覽</label><div class="rounded-xl bg-slate-950 border border-indigo-500/40 p-4 space-y-2"><div id="site-ticket-preview-title" class="font-semibold text-white">新北 RP｜部門申請中心</div><div id="site-ticket-preview-desc" class="text-sm text-slate-300 whitespace-pre-wrap">選擇要辦理的業務</div><div id="site-ticket-preview-dropdown" class="bg-slate-800 rounded-lg p-3 text-sm text-slate-300">選擇要申辦的主題 ﹀</div></div>
+                          <p class="text-xs text-slate-500">網站預覽僅顯示外觀；Discord 端使用原生下拉選單，只有主題設定問題時才會開啟表單。</p>
+                        </div>
+                      </div>
+                      <p id="site-ticket-action-status" class="text-xs text-slate-400">修改先送至 Cloudflare 操作佇列，需 Bot 執行完成才生效；完成後按「同步最新設定」確認。</p>
                     </section>
                     <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
                       <section class="rounded-2xl bg-slate-900 border border-slate-800 p-5 space-y-3">
