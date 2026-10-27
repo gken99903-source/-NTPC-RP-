@@ -395,30 +395,77 @@ __                                                                              
         }
         document.addEventListener('DOMContentLoaded',()=>{if(siteTicketEl('site-ticket-questions')&&!siteTicketEl('site-ticket-questions').children.length)siteTicketNewTopic();},{once:true});
 
-        // Bot 管理工作階段：Dsuensx 使用網站已驗證密碼建立後端短效工作階段；其他帳號仍需獨立管理密鑰。
+        // Bot 管理控制台：網站帳號 + 獨立 64 位十六進位管理密鑰，僅儲存於本次網頁記憶體。
         let ntpcBotConsoleActionBusy=false;
         let ntpcBotConsoleRefreshBusy=false;
         let ntpcBotConsoleReady=false;
         let ntpcBotConsoleUpdatedAt=0;
         let ntpcBotManualKey='';
         let ntpcBotManualAccount='';
-        function ntpcBotNeedsManualKey(){
-          return String(currentUser?.account||'').trim().toLowerCase()!=='dsuensx';
+        let ntpcBotKeyDialogResolve=null;
+        let ntpcBotKeyDialogPromise=null;
+        function ntpcBotKeyDialogClose(value=null){
+          const root=document.getElementById('ntpc-bot-key-overlay');
+          if(root){
+            const input=root.querySelector('#ntpc-bot-key-value');
+            if(input)input.value='';
+            root.remove();
+          }
+          const resolve=ntpcBotKeyDialogResolve;
+          ntpcBotKeyDialogResolve=null;
+          if(resolve)resolve(value);
         }
-        async function ntpcBotConsoleSessionStart(account,password){
-          if(location.protocol==='file:'||!account||!password||String(account).trim().toLowerCase()!=='dsuensx')return;
-          // 不信任瀏覽器自稱的身分，Pages Function 須獨立驗證密碼後才發簽章 Cookie。
-          if(!currentUser||String(currentUser.account||'').trim().toLowerCase()!=='dsuensx')return;
-          try{
-            const response=await fetch('/api/bot-console/session',{
-              method:'POST',credentials:'same-origin',cache:'no-store',
-              headers:{'content-type':'application/json'},
-              body:JSON.stringify({account:'dsuensx',password})
-            });
-            if(!response.ok)console.warn('Dsuensx 的 Bot 後台自動登入失敗：請檢查 Cloudflare Pages Functions 與驗證環境設定（HTTP '+response.status+'）。');
-          }catch(error){console.warn('Bot 後台自動登入無法連線：',error);}
+        function ntpcBotKeyDialog(account){
+          if(ntpcBotKeyDialogPromise)return ntpcBotKeyDialogPromise;
+          const overlay=document.createElement('div');
+          overlay.id='ntpc-bot-key-overlay';
+          overlay.setAttribute('role','presentation');
+          overlay.style.cssText='position:fixed;inset:0;z-index:2147483000;background:rgba(2,6,23,.82);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(5px)';
+          overlay.innerHTML=`<section role="dialog" aria-modal="true" aria-labelledby="ntpc-bot-key-title" class="w-full max-w-md rounded-2xl border border-indigo-500/40 bg-slate-900 p-6 text-slate-100 shadow-2xl">
+            <header class="flex items-start justify-between gap-4 mb-5"><div><h2 id="ntpc-bot-key-title" class="text-xl font-bold text-white"><i class="fa-solid fa-shield-halved text-indigo-400 mr-2"></i>Bot 控制台驗證</h2><p class="text-sm text-slate-400 mt-1">請輸入此帳號的 64 字元專用管理密鑰</p></div><button type="button" id="ntpc-bot-key-x" class="text-slate-400 hover:text-white p-1" aria-label="關閉視窗"><i class="fa-solid fa-xmark"></i></button></header>
+            <form id="ntpc-bot-key-form" autocomplete="off"><p class="mb-3 text-sm text-slate-300">目前網站帳號：<strong id="ntpc-bot-key-account" class="text-indigo-300"></strong></p>
+            <label for="ntpc-bot-key-value" class="block text-sm mb-2 text-slate-300">管理密鑰</label>
+            <div class="relative"><input id="ntpc-bot-key-value" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="64" placeholder="輸入 64 位十六進位密鑰" class="w-full rounded-xl bg-slate-950 border border-slate-700 focus:border-indigo-400 focus:outline-none px-4 py-3 pr-12 text-white font-mono text-sm" required><button id="ntpc-bot-key-visibility" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-2 text-slate-400 hover:text-white" aria-label="顯示或隱藏密鑰"><i class="fa-solid fa-eye"></i></button></div>
+            <p id="ntpc-bot-key-error" class="min-h-6 mt-2 text-xs text-rose-300" aria-live="polite"></p>
+            <p class="text-xs text-slate-500 mb-5">僅暫存在此分頁記憶體，重新整理或登出會清除；不會存入瀏覽器儲存空間。</p>
+            <div class="flex gap-3 justify-end"><button type="button" id="ntpc-bot-key-cancel" class="rounded-xl bg-slate-700 hover:bg-slate-600 px-5 py-2.5">取消</button><button type="submit" class="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 font-semibold">確認驗證</button></div></form></section>`;
+          document.body.appendChild(overlay);
+          const dialog=overlay.querySelector('[role="dialog"]');
+          const field=overlay.querySelector('#ntpc-bot-key-value');
+          const err=overlay.querySelector('#ntpc-bot-key-error');
+          overlay.querySelector('#ntpc-bot-key-account').textContent=account;
+          const close=()=>ntpcBotKeyDialogClose(null);
+          overlay.querySelector('#ntpc-bot-key-cancel').addEventListener('click',close);
+          overlay.querySelector('#ntpc-bot-key-x').addEventListener('click',close);
+          overlay.addEventListener('click',ev=>{if(ev.target===overlay)close();});
+          overlay.addEventListener('keydown',ev=>{
+            if(ev.key==='Escape'){ev.preventDefault();close();}
+            if(ev.key==='Tab'){
+              const items=[...dialog.querySelectorAll('button,input')].filter(x=>!x.disabled);
+              const first=items[0],last=items[items.length-1];
+              if(ev.shiftKey&&document.activeElement===first){ev.preventDefault();last.focus();}
+              else if(!ev.shiftKey&&document.activeElement===last){ev.preventDefault();first.focus();}
+            }
+          });
+          overlay.querySelector('#ntpc-bot-key-visibility').addEventListener('click',()=>{
+            field.type=field.type==='password'?'text':'password';
+            field.focus();
+          });
+          overlay.querySelector('#ntpc-bot-key-form').addEventListener('submit',ev=>{
+            ev.preventDefault();
+            const key=field.value.trim().toLowerCase();
+            if(!/^[a-f0-9]{64}$/.test(key)){
+              err.textContent='管理密鑰必須是 64 位十六進位字元（0–9、a–f）。';
+              field.focus();return;
+            }
+            ntpcBotKeyDialogClose(key);
+          });
+          const pending=new Promise(resolve=>{ntpcBotKeyDialogResolve=resolve;});
+          ntpcBotKeyDialogPromise=pending.finally(()=>{ntpcBotKeyDialogPromise=null;});
+          field.focus();
+          return ntpcBotKeyDialogPromise;
         }
-        function ntpcBotAdminLogin(){
+        async function ntpcBotAdminLogin(){
           if(!currentUser||!canAccessManagementCenter()){
             showToast('請先使用具有管理中心權限的網站帳號登入','warning');return false;
           }
@@ -426,38 +473,30 @@ __                                                                              
           if(!/^[\p{L}\p{N}_.-]{1,80}$/u.test(account)){
             showToast('網站帳號包含不支援的字元','warning');return false;
           }
-          if(account==='dsuensx')return true; // 僅免人工輸入金鑰；後端仍須驗證登入工作階段。
           if(ntpcBotManualAccount===account&&/^[a-f0-9]{64}$/.test(ntpcBotManualKey))return true;
           ntpcBotManualKey='';ntpcBotManualAccount='';
-          const value=prompt('Bot 控制台｜目前網站帳號：'+account+'\n請輸入此帳號的 64 字元專用管理密鑰');
-          if(value===null)return false;
-          const key=value.trim().toLowerCase();
-          if(!/^[a-f0-9]{64}$/.test(key)){
-            showToast('管理密鑰格式錯誤，應為 64 字元','warning');return false;
-          }
-          ntpcBotManualKey=key;ntpcBotManualAccount=account;return true;
+          const key=await ntpcBotKeyDialog(account);
+          if(!key)return false;
+          if(!currentUser||String(currentUser.account||'').trim().toLowerCase()!==account)return false;
+          ntpcBotManualKey=key;ntpcBotManualAccount=account;
+          return true;
         }
         function ntpcBotAdminLogout(){
           ntpcBotManualKey='';ntpcBotManualAccount='';ntpcBotConsoleReady=false;
-          if(location.protocol!=='file:'){
-            try{void fetch('/api/bot-console/session',{method:'DELETE',credentials:'same-origin',cache:'no-store'}).catch(()=>{});}catch(_){}
-          }
+          ntpcBotKeyDialogClose(null);
         }
         async function ntpcBotConsoleRequest(url,options={},timeoutMs=15000){
           if(!currentUser||!canAccessManagementCenter())throw new Error('請先登入具有管理中心權限的網站帳號');
-          if(!ntpcBotAdminLogin())throw new Error('已取消 Bot 管理員金鑰輸入');
+          if(!(await ntpcBotAdminLogin()))throw new Error('已取消 Bot 管理員密鑰輸入');
           const controller=new AbortController();
           const timer=setTimeout(()=>controller.abort(),timeoutMs);
           try{
             const headers=new Headers(options.headers||{});
-            if(ntpcBotNeedsManualKey())headers.set('Authorization','Bearer '+ntpcBotManualAccount+':'+ntpcBotManualKey);
+            headers.set('Authorization','Bearer '+ntpcBotManualAccount+':'+ntpcBotManualKey);
             const response=await fetch(url,{...options,headers,credentials:'same-origin',signal:controller.signal,cache:'no-store'});
             if(response.status===401){
-              if(ntpcBotNeedsManualKey()){
-                ntpcBotManualKey='';ntpcBotManualAccount='';
-                throw new Error('Bot 管理密鑰驗證失敗或已停用，請重新輸入正確金鑰。');
-              }
-              throw new Error('Dsuensx 的 Bot 後台登入工作階段未建立或已過期。請確認 Pages Functions 已設定驗證資訊，然後重新登入網站。');
+              ntpcBotManualKey='';ntpcBotManualAccount='';ntpcBotConsoleReady=false;
+              throw new Error('Bot 管理密鑰驗證失敗；請確認 BOT_ADMIN_KEYS 已設定此帳號的管理密鑰雜湊，然後重新輸入。');
             }
             if(response.status===403)throw new Error('Bot 管理操作遭拒，請檢查帳號身分與後端權限。');
             const raw=await response.text();let data;
@@ -467,7 +506,7 @@ __                                                                              
             }
             if(!response.ok||!data?.ok)throw new Error(String(data?.error||'HTTP '+response.status));
             if(data.operator&&String(data.operator).toLowerCase()!==String(currentUser.account||'').toLowerCase())
-              throw new Error('Bot 管理員工作階段與目前網站帳號不一致，請登出重新登入。');
+              throw new Error('Bot 管理員身分與目前網站帳號不一致，請登出重新登入。');
             return data;
           }catch(error){
             if(error?.name==='AbortError')throw new Error(options.method==='POST'
@@ -7662,7 +7701,7 @@ async function republishAnnouncement(id) {
 
         const SECURITY_ACTION_COOLDOWN=new Map();
         function securityActionAllowed(key,cooldownMs=700){const now=Date.now(),last=SECURITY_ACTION_COOLDOWN.get(key)||0;if(now-last<cooldownMs)return false;SECURITY_ACTION_COOLDOWN.set(key,now);return true;}
-        async function handleLogin(){if(!securityActionAllowed('login',900))return;await cloudDataReadyPromise;const device=getDeviceInfo();const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}try{const fingerprint=getDeviceFingerprint(device),deviceKey=getDeviceKey(device);const [blockedByFingerprint,blockedByKey]=await Promise.all([fm.getDoc(fm.doc(db,'blockedDevices',fingerprint)),fm.getDocs(fm.query(fm.collection(db,'blockedDevices'),fm.where('deviceKey','==',deviceKey)))]);const matches=[];if(blockedByFingerprint.exists())matches.push({docId:blockedByFingerprint.id,...blockedByFingerprint.data()});blockedByKey.docs.forEach(d=>{if(!matches.some(x=>String(x.docId)===String(d.id)))matches.push({docId:d.id,...d.data()});});appData.blockedDevices=matches;/* 登入失敗紀錄只在失敗時依裝置 ID 單筆讀取，不下載整個集合。 */}catch(e){console.warn('登入安全資料讀取失敗：',e);}if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}let found=null;try{const userSnap=await fm.getDoc(fm.doc(db,'users',acc));if(userSnap.exists()){const data=userSnap.data();found={docId:userSnap.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}if(!found&&isSuperAdminAccount(acc)){const all=await fm.getDocs(fm.collection(db,'users'));const d=all.docs.find(x=>isSuperAdminAccount(x.id)||isSuperAdminAccount(x.data().account));if(d){const data=d.data();found={docId:d.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}}}catch(e){showToast('帳號驗證失敗，請稍後重試：'+e.message,'error','登入失敗');return;}if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));if(!(await requireSiteAgreement(found)))return;currentUser=found;appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];void ntpcBotConsoleSessionStart(currentUser.account,pass);await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);resetManualReadFlags();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();if(isAcademyInstructor(currentUser)&&getEffectiveRole(currentUser)!=='admin')switchTab('academy');else switchTab('home');}
+        async function handleLogin(){if(!securityActionAllowed('login',900))return;await cloudDataReadyPromise;const device=getDeviceInfo();const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}try{const fingerprint=getDeviceFingerprint(device),deviceKey=getDeviceKey(device);const [blockedByFingerprint,blockedByKey]=await Promise.all([fm.getDoc(fm.doc(db,'blockedDevices',fingerprint)),fm.getDocs(fm.query(fm.collection(db,'blockedDevices'),fm.where('deviceKey','==',deviceKey)))]);const matches=[];if(blockedByFingerprint.exists())matches.push({docId:blockedByFingerprint.id,...blockedByFingerprint.data()});blockedByKey.docs.forEach(d=>{if(!matches.some(x=>String(x.docId)===String(d.id)))matches.push({docId:d.id,...d.data()});});appData.blockedDevices=matches;/* 登入失敗紀錄只在失敗時依裝置 ID 單筆讀取，不下載整個集合。 */}catch(e){console.warn('登入安全資料讀取失敗：',e);}if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}let found=null;try{const userSnap=await fm.getDoc(fm.doc(db,'users',acc));if(userSnap.exists()){const data=userSnap.data();found={docId:userSnap.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}if(!found&&isSuperAdminAccount(acc)){const all=await fm.getDocs(fm.collection(db,'users'));const d=all.docs.find(x=>isSuperAdminAccount(x.id)||isSuperAdminAccount(x.data().account));if(d){const data=d.data();found={docId:d.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}}}catch(e){showToast('帳號驗證失敗，請稍後重試：'+e.message,'error','登入失敗');return;}if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));if(!(await requireSiteAgreement(found)))return;currentUser=found;appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);resetManualReadFlags();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();if(isAcademyInstructor(currentUser)&&getEffectiveRole(currentUser)!=='admin')switchTab('academy');else switchTab('home');}
         async function logout(){ntpcBotAdminLogout();ntpcMapDisconnectAll();ntpcDispatchStop(true);resetManualReadFlags();stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','jiaxiaoClocks','jiaxiaoMedicalReports','jiaxiaoMedicalPendingReports','jiaxiaoFuneralReports','jiaxiaoFuneralPendingReports','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
