@@ -7,7 +7,6 @@ const bad = (message,status=400)=>json({ok:false,error:message},status);
 // Each administrator has an independent 256-bit random key. Store only SHA-256 key hashes
 // in the Pages secret BOT_ADMIN_KEYS, as a JSON object {"website_account":"hex hash"}.
 // Existing website sessionStorage is NOT a trusted authorization credential.
-const BOT_COOKIE='ntpc_bot_admin_v107';
 const textEncoder=new TextEncoder();
 const toHex=bytes=>Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('');
 const fromHex=value=>Uint8Array.from(value.match(/.{2}/g)||[],x=>parseInt(x,16));
@@ -21,43 +20,6 @@ function originAllowed(req){
   const site=req.headers.get('sec-fetch-site');
   return !site||site==='same-origin'||site==='none';
 }
-function getCookie(req,name){
-  const cookies=(req.headers.get('cookie')||'').split(';');
-  for(const c of cookies){let t=c.trim();if(t.startsWith(name+'='))return t.slice(name.length+1);}
-  return '';
-}
-async function signingKey(env){
-  const secret=String(env.BOT_CONSOLE_SESSION_SECRET||'');
-  if(secret.length<32)throw new Error('尚未設定至少 32 字元的 BOT_CONSOLE_SESSION_SECRET');
-  return crypto.subtle.importKey('raw',textEncoder.encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign','verify']);
-}
-async function signCookie(payload,env){
-  const value=toHex(textEncoder.encode(JSON.stringify(payload)));
-  const mac=toHex(new Uint8Array(await crypto.subtle.sign('HMAC',await signingKey(env),textEncoder.encode(value))));
-  return value+'.'+mac;
-}
-async function sessionAccount(req,env){
-  const token=getCookie(req,BOT_COOKIE);
-  if(token.length<140||token.length>1200)return null;
-  const pair=token.split('.');if(pair.length!==2||!/^[a-f0-9]+$/.test(pair[0])||!/^[a-f0-9]{64}$/.test(pair[1])||pair[0].length%2)return null;
-  const good=await crypto.subtle.verify('HMAC',await signingKey(env),fromHex(pair[1]),textEncoder.encode(pair[0]));
-  if(!good)return null;
-  let payload;try{payload=JSON.parse(new TextDecoder().decode(fromHex(pair[0])));}catch{return null;}
-  const now=Math.floor(Date.now()/1000);
-  if(payload.v!==1||payload.account!=='dsuensx'||!Number.isInteger(payload.iat)||!Number.isInteger(payload.exp)||payload.iat>now+60||payload.exp<=now||payload.exp>payload.iat+7200)return null;
-  return payload.account;
-}
-async function verifyDsuensxPassword(password,env){
-  // Format: 32-byte random salt (hex):iterations:PBKDF2-SHA256 32-byte digest (hex).
-  const parts=String(env.BOT_DSUENSX_PASSWORD_PBKDF2||'').split(':');
-  if(parts.length!==3||!/^[a-f0-9]{64}$/i.test(parts[0])||!/^[0-9]{6,8}$/.test(parts[1])||!/^[a-f0-9]{64}$/i.test(parts[2]))
-    throw new Error('尚未設定有效 BOT_DSUENSX_PASSWORD_PBKDF2');
-  const iters=Number(parts[1]);if(iters<200000||iters>1000000)throw new Error('PBKDF2 次數必須介於 200000～1000000');
-  if(typeof password!=='string'||password.length<1||password.length>256)return false;
-  const key=await crypto.subtle.importKey('raw',textEncoder.encode(password),'PBKDF2',false,['deriveBits']);
-  const computed=new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',salt:fromHex(parts[0]),iterations:iters,hash:'SHA-256'},key,256));
-  return equalBytes(computed,fromHex(parts[2]));
-}
 async function legacyAdmin(req,env){
   const raw=String(env.BOT_ADMIN_KEYS||'');
   if(!raw)return null;
@@ -67,36 +29,15 @@ async function legacyAdmin(req,env){
   if(!header.startsWith('Bearer '))return null;
   const value=header.slice(7);const cut=value.indexOf(':');if(cut<1)return null;
   const account=value.slice(0,cut).trim().toLowerCase();const token=value.slice(cut+1);
-  // Dsuensx 不能用前端 Bearer 金鑰冒認，必須出示伺服器核發的簽章工作階段。
-  if(account==='dsuensx'||account.length<1||account.length>80||!/^[\p{L}\p{N}_.-]+$/u.test(account)||!/^[a-f0-9]{64}$/.test(token))return null;
+  if(account.length<1||account.length>80||!/^[\p{L}\p{N}_.-]+$/u.test(account)||!/^[a-f0-9]{64}$/.test(token))return null;
   const expected=String(Object.entries(keys).find(([k])=>k.toLowerCase()===account)?.[1]||'').toLowerCase();
   if(!/^[a-f0-9]{64}$/.test(expected))return null;
   const actual=toHex(new Uint8Array(await crypto.subtle.digest('SHA-256',textEncoder.encode(token))));
   return equalBytes(fromHex(actual),fromHex(expected))?account:null;
 }
 async function admin(req,env){
-  // If a caller explicitly supplies a key, validate only that account. Do not let a
-  // stale Dsuensx browser Cookie override a different administrator's Bearer key.
-  if(req.headers.get('authorization'))return legacyAdmin(req,env);
-  const cookieAccount=await sessionAccount(req,env);
-  if(cookieAccount)return cookieAccount;
-  return null;
-}
-function cookieHeader(token,maxAge){return BOT_COOKIE+'='+token+'; Path=/api/bot-console; Max-Age='+maxAge+'; HttpOnly; Secure; SameSite=Strict';}
-async function sessionEndpoint(req,env){
-  if(!originAllowed(req))return bad('跨來源請求遭拒',403);
-  if(req.method==='DELETE')return new Response(JSON.stringify({ok:true}),{headers:{'content-type':'application/json','cache-control':'no-store','set-cookie':cookieHeader('',0)}});
-  if(req.method!=='POST')return bad('不支援的方法',405);
-  const contentLength=Number(req.headers.get('content-length')||0);if(contentLength>2000)return bad('登入資料超過限制',413);
-  if(!(req.headers.get('content-type')||'').toLowerCase().includes('application/json'))return bad('請提供 JSON',415);
-  let data;try{data=await req.json();}catch{return bad('無效 JSON');}
-  if(String(data?.account||'').trim().toLowerCase()!=='dsuensx')return bad('這個登入方式只提供指定帳號使用',403);
-  let verified=false;
-  try{verified=await verifyDsuensxPassword(data?.password,env);}catch(e){return bad('Dsuensx 自動驗證設定錯誤：'+e.message,503);}
-  if(!verified)return bad('帳號密碼驗證失敗',401);
-  const now=Math.floor(Date.now()/1000);
-  let token;try{token=await signCookie({v:1,account:'dsuensx',iat:now,exp:now+7200},env);}catch(e){return bad('工作階段設定錯誤：'+e.message,503);}
-  return new Response(JSON.stringify({ok:true,operator:'dsuensx'}),{headers:{'content-type':'application/json','cache-control':'no-store','set-cookie':cookieHeader(token,7200)}});
+  // Every manager, including Dsuensx, must present the independent 64-hex API key.
+  return legacyAdmin(req,env);
 }
 function snowflake(s){return /^\d{17,20}$/.test(String(s||''));}
 function valid(action,p){
@@ -136,7 +77,7 @@ function valid(action,p){
 }
 export async function onRequest({request,env}){
   const path=new URL(request.url).pathname.split('/').slice(-1)[0];
-  if(path==='session')return sessionEndpoint(request,env);
+  if(path==='session')return bad('已取消工作階段登入，請使用獨立管理密鑰',404);
   if(!env.BOT_PANEL_DB)return bad('尚未綁定 BOT_PANEL_DB 資料庫',503);
   let account;try{account=await admin(request,env);}catch(e){return bad('管理驗證設定錯誤：'+e.message,503);}
   if(!account)return bad('網站帳號或專用密鑰驗證失敗',401);
