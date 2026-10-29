@@ -485,9 +485,14 @@ __                                                                              
           ntpcBotManualKey='';ntpcBotManualAccount='';ntpcBotConsoleReady=false;
           ntpcBotKeyDialogClose(null);
         }
+        // 管理員可隨時使用自己的密鑰重新驗證；不會更動網站帳號或管理中心角色。
+        function ntpcBotAdminReverify(){
+          ntpcBotManualKey='';ntpcBotManualAccount='';ntpcBotConsoleReady=false;
+          return ntpcBotConsoleRefresh(true);
+        }
         async function ntpcBotConsoleRequest(url,options={},timeoutMs=15000){
           if(!currentUser||!canAccessManagementCenter())throw new Error('請先登入具有管理中心權限的網站帳號');
-          if(!(await ntpcBotAdminLogin()))throw new Error('已取消 Bot 管理員密鑰輸入');
+          if(!(await ntpcBotAdminLogin()))throw Object.assign(new Error('尚未輸入 Bot 管理密鑰，請按「輸入密鑰並同步」繼續。'),{code:'BOT_KEY_NOT_ENTERED'});
           const controller=new AbortController();
           const timer=setTimeout(()=>controller.abort(),timeoutMs);
           try{
@@ -518,10 +523,17 @@ __                                                                              
         }
         function ntpcBotConsoleInvalid(message){showToast(message,'warning','設定檢查');return false;}
         function ntpcBotConsoleSnowflake(value){return /^\d{15,22}$/.test(String(value||''));}
-        async function ntpcBotConsoleRefresh(){
+        async function ntpcBotConsoleRefresh(promptForKey=true){
           if(!currentUser||!canUseManagementDispatch(currentUser))return;
           if(ntpcBotConsoleRefreshBusy)return;
           const status=document.getElementById('ntpc-bot-status');if(!status)return;
+          const account=String(currentUser.account||'').trim().toLowerCase();
+          const hasKey=ntpcBotManualAccount===account&&/^[a-f0-9]{64}$/.test(ntpcBotManualKey);
+          if(!promptForKey&&!hasKey){
+            ntpcBotConsoleReady=false;
+            status.textContent='尚未驗證 Bot 管理密鑰。網站管理中心權限沒有被取消；請按「輸入密鑰並同步」以目前帳號驗證。';
+            return;
+          }
           ntpcBotConsoleRefreshBusy=true;ntpcBotConsoleReady=false;
           status.textContent='正在讀取 Cloudflare Bot 後端…';
            if(location.protocol==='file:'){status.textContent='此頁是本機 HTML，無法同步 Bot。請從 https://ntpc-rp.pages.dev/ 開啟正式網站，並部署 Pages Functions、D1 和 Bot。';ntpcBotConsoleRefreshBusy=false;return;}
@@ -552,7 +564,12 @@ __                                                                              
             }
             if(!(s.messages||[]).length)historyEl.textContent='尚無本版本記錄的可編輯訊息';
             document.getElementById('ntpc-bot-action-jobs').innerHTML=(data.jobs||[]).length?(data.jobs||[]).map(j=>`<div class="border-b border-slate-800 py-1">${new Date(j.created_at*1000).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'})}｜${escapeHtml(j.action)}｜${escapeHtml(j.status)}｜${escapeHtml(j.result||'')}<span class="text-slate-500"> · ${escapeHtml(j.operator)}</span></div>`).join(''):'尚無操作';
-          }catch(e){ntpcBotConsoleReady=false;status.textContent='無法同步：'+e.message+'。請檢查 Pages Functions、D1 與 Bot。';}
+          }catch(e){
+            ntpcBotConsoleReady=false;
+            status.textContent=e?.code==='BOT_KEY_NOT_ENTERED'
+              ?'尚未輸入 Bot 管理密鑰。請按「輸入密鑰並同步」重新開啟驗證視窗。'
+              :'無法同步：'+e.message+'。如為密鑰驗證失敗，請確認 Cloudflare 的 BOT_ADMIN_KEYS 包含目前管理員帳號；若為後端錯誤，再檢查 Pages Functions、D1 與 Bot。';
+          }
           finally{ntpcBotConsoleRefreshBusy=false;}
         }
         async function ntpcBotConsoleSubmit(action){
@@ -2855,7 +2872,7 @@ input, textarea, select, button { accent-color:#38bdf8; }
                 <!-- V55 新北 RP Bot 控制台：資料源為託管 Bot；管理操作需經 Cloudflare Access + D1 後端授權。 -->
                 <div id="admin-sub-bot-console" class="hidden space-y-5">
                     <section class="rounded-2xl bg-slate-900 border border-indigo-500/25 p-5 sm:p-6 space-y-4">
-                        <div class="flex flex-wrap items-center justify-between gap-3"><div><h3 class="text-xl font-bold text-white"><i class="fa-brands fa-discord text-indigo-400 mr-2"></i>新北市 RP｜Bot 控制台</h3><p class="text-xs text-slate-400 mt-1">所有動作交由貓居 Bot 執行，設定直接寫回舊有資料庫；不在網頁存放任何 Discord Token。</p></div><button type="button" onclick="ntpcBotConsoleRefresh()" class="bg-indigo-600 hover:bg-indigo-500 rounded-lg px-4 py-2 text-sm text-white">同步最新設定</button></div>
+                        <div class="flex flex-wrap items-center justify-between gap-3"><div><h3 class="text-xl font-bold text-white"><i class="fa-brands fa-discord text-indigo-400 mr-2"></i>新北市 RP｜Bot 控制台</h3><p class="text-xs text-slate-400 mt-1">所有動作交由貓居 Bot 執行，設定直接寫回舊有資料庫；不在網頁存放任何 Discord Token。</p></div><div class="flex flex-wrap items-center gap-2"><button type="button" onclick="ntpcBotConsoleRefresh(true)" class="bg-indigo-600 hover:bg-indigo-500 rounded-lg px-4 py-2 text-sm text-white">輸入密鑰並同步</button><button type="button" onclick="ntpcBotAdminReverify()" class="bg-slate-700 hover:bg-slate-600 rounded-lg px-4 py-2 text-sm text-white">更換密鑰</button></div></div>
                         <p id="ntpc-bot-status" class="text-sm text-amber-300">尚未取得 Bot 狀態。請先完成 Pages Functions 工作階段授權、D1 綁定與 Bot 同步。</p>
                         <p id="ntpc-bot-auth" class="text-xs text-slate-500"></p>
                     </section>
@@ -6788,7 +6805,7 @@ async function republishAnnouncement(id) {
             document.getElementById(`admin-sub-${sub}`)?.classList.remove('hidden');
             document.getElementById(`btn-admin-${sub}`)?.classList.add('bg-purple-600','text-white');
             if(sub==='dispatch')ntpcDispatchShow();
-            if(sub==='bot-console')ntpcBotConsoleRefresh();
+            if(sub==='bot-console')ntpcBotConsoleRefresh(false);
             if(sub==='online' && getEffectiveRole(currentUser)==='admin' && document.visibilityState==='visible') refreshAdminOnlineUsers();
             if(sub==='devices' && getEffectiveRole(currentUser)==='admin') renderAdminDevices();
             if(sub==='feedback' && getEffectiveRole(currentUser)==='admin') renderAdminFeedback();
