@@ -2076,11 +2076,16 @@ body.ntpc-premium-ui #ntpc-map-admin-toolbar button { min-height:38px; border:1p
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                             <div>
                                 <h3 class="text-lg font-bold text-white">V2.0</h3>
-                                <p class="text-xs text-emerald-300 mt-1">近期功能整合與穩定性修正</p>
+                                <p class="text-xs text-emerald-300 mt-1">警務報告新增類別、交通事件現場圖及系統穩定性修正</p>
                             </div>
                             <span id="ntpc-bundled-update-badge" class="text-xs font-semibold text-emerald-300">目前版本</span>
                         </div>
                                                 <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
+                            <li>警務報告新增獨立文件分類：案件報告、筆錄登記、交通事件處理表及刑事鑑定紀錄表；選定後進入專屬模板，可按「返回類別」重新選擇。</li>
+                            <li>筆錄登記可區分被害人、證人與嫌疑人詢問，提供逐題問答、登記帳號與視情況使用的權利補充提示；保留既有送審、退件和檢視流程。</li>
+                            <li>交通事件處理表支援當事人、車牌及初步分析；新建時預設 2 位當事人、至少 1 位、最多 6 位，必要時可新增，第一位當事人不可刪除。</li>
+                            <li>交通事件表先選道路類型才顯示現場圖，可選十字路口等道路模板、拖曳與旋轉車輛、標註碰撞點、停止位置、煞車痕及散落物，並記錄車輛受損點、天氣、路況與最多 3 個附件連結；放大檢視保留現場圖。</li>
+                            <li>刑事鑑定紀錄表新增現場勘察、指紋與 DNA 採樣、證物清單及附件；警專考核警務文件沿用正式表單內容，但僅暫存在瀏覽器，不寫入正式案件庫。</li>
                             <li>正式案件與報告新增審核人、審核結果及時間標示；管理中心及 Discord LOG 同步記錄審核人與案件編號。</li>
                             <li>消防加入獨立獎懲管理與累計查詢，和警察獎懲分開保存；警察懲處名稱統一為「申誡」。修正消防獎懲初始化順序，避免影響登入。</li>
                             <li>車輛查詢新增吊銷至指定日期、原因及操作者紀錄；個人中心提供所屬部門獎懲累計。</li>
@@ -3854,7 +3859,7 @@ body.ntpc-premium-ui #ntpc-map-admin-toolbar button { min-height:38px; border:1p
           </div>
         </section>
         <section class="ntpc-interview-group"><div class="ntpc-interview-section"><span>02</span>當事人與初步分析</div>
-          <p class="text-sm text-slate-400 mb-4">依附圖分別列出每位當事人的車種、車牌、駕駛／人員 RP 姓名及初步分析。當事人 1 為必填且不可刪除，最多可建立 6 位當事人。</p>
+          <p class="text-sm text-slate-400 mb-4">依附圖分別列出每位當事人的車種、車牌、駕駛／人員 RP 姓名及初步分析。新建時預設 2 位當事人；當事人 1 不可刪除，其餘可依需要新增或移除，最多 6 位。</p>
           <div id="pt-parties" class="space-y-4"></div>
           <button id="pt-add-party" type="button" class="mt-4 w-full rounded-xl border border-dashed border-amber-500/45 bg-amber-500/10 p-3 text-sm font-semibold text-amber-200 hover:bg-amber-500/20"><i class="fa-solid fa-plus mr-2"></i>新增當事人</button>
         </section>
@@ -5118,8 +5123,8 @@ function compareSiteVersion(a, b){
         }
         // 本 HTML 固定內建 V2.0。雲端舊版發布紀錄不可覆蓋較新的已部署版本。
         const NTPC_BUNDLED_SITE_VERSION={
-            version:'V2.0',title:'嘉蕭醫院、消防獎懲與系統穩定性整合',
-            summary:'近期修正消防獎懲登入初始化、消防時數人員判斷，加入車輛吊銷與個人獎懲，整合嘉蕭醫院計費、保險及票務操作；Bot 依 ER:LC 線上人數自動開始及結算活躍統計。'
+            version:'V2.0',title:'警務文件分類、交通事故現場圖與系統功能整合',
+            summary:'警務新增案件、筆錄、交通事件及刑事鑑定文件；交通現場圖先選道路類型才顯示，當事人預設 2 位，可新增至 6 位。延續嘉蕭醫院、消防獎懲及 Bot 系統優化。'
         };
         function getCurrentSiteVersion(){
             const rows=sortSiteVersions((appData.siteVersions||[]).filter(v=>v&&v.active!==false));
@@ -9146,7 +9151,7 @@ async function republishAnnouncement(id) {
             NTPC_TRAFFIC_FIELDS.forEach(key=>{if(['unit','date','time','officer','issuedDate'].includes(key))return;const el=document.getElementById('pt-'+key);if(el)el.value=String(rec[key]||'');});
             const host=document.getElementById('pt-parties');host.replaceChildren();
             if(Array.isArray(rec.parties)&&rec.parties.length)rec.parties.slice(0,6).forEach(ntpcAddTrafficParty);
-            else for(let i=0;i<3;i++)ntpcAddTrafficParty();
+            else for(let i=0;i<2;i++)ntpcAddTrafficParty();
             document.getElementById('modal-police-document-choice')?.classList.add('hidden');
             const modal=document.getElementById('modal-police-traffic');modal.classList.remove('hidden');
             document.getElementById('ntpc-traffic-title').textContent=existing?'編輯交通事件處理表':'交通事件處理表';
@@ -15151,7 +15156,7 @@ async function ntpcFeedbackNotifyManagement(report) {
     NTPC_TRAFFIC_FIELDS_EXT.forEach(key=>{ if(['unit','date','time','officer','issuedDate'].includes(key)) return; const el=document.getElementById('pt-'+key); if(el) el.value=String(rec[key]||'');}); document.getElementById('pt-issuingUnit').value=String(rec.issuingUnit||ntpcV119IssuerUnit());
     safeUrlList(rec.attachments||rec.videoLinks||[]).forEach((v,i)=>{ const el=document.getElementById(`pt-link-${i+1}`); if(el) el.value=v; });
     const host=document.getElementById('pt-parties'); host.replaceChildren();
-    if(Array.isArray(rec.parties)&&rec.parties.length) rec.parties.slice(0,6).forEach(window.ntpcAddTrafficParty); else for(let i=0;i<3;i++) window.ntpcAddTrafficParty();
+    if(Array.isArray(rec.parties)&&rec.parties.length) rec.parties.slice(0,6).forEach(window.ntpcAddTrafficParty); else for(let i=0;i<2;i++) window.ntpcAddTrafficParty();
     document.getElementById('pt-scene-map-data').value=JSON.stringify(Array.isArray(rec.sceneMapData)?rec.sceneMapData:[]);
     refreshScenePartyOptions(); renderSceneBoard();
     document.getElementById('modal-police-document-choice')?.classList.add('hidden');
