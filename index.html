@@ -2074,6 +2074,11 @@ body.ntpc-v127-layout>header #user-badge-name{font-size:13px}
 .ntpc-v128-feature:nth-child(3)>i{color:#20e1b5;background:rgba(15,186,148,.13)}
 .ntpc-v128-feature:nth-child(4)>i{color:#c594ff;background:rgba(145,76,247,.13)}
 .ntpc-v128-feature .fa-chevron-right{color:#9bbbe8;margin-left:auto;font-size:10px}
+/* V134：未登入／無權限的首頁入口標示鎖定；點擊僅顯示登入或權限提示。 */
+.ntpc-v128-feature.is-locked{opacity:.68;border-color:rgba(96,116,152,.32);cursor:pointer}
+.ntpc-v128-feature.is-locked:hover{transform:none;background:rgba(12,28,54,.9);border-color:rgba(96,116,152,.5)}
+.ntpc-v128-feature .fa-lock{color:#92a3ba!important;margin-left:auto;font-size:12px;width:auto;height:auto;flex:0 0 auto;background:none!important}
+
 .ntpc-v128-all-features{border:1px solid rgba(53,110,193,.25);background:rgba(7,22,46,.44);border-radius:16px;padding:14px 15px}
 .ntpc-v128-all-features>summary{cursor:pointer;color:#adc9f1;font-size:12px;font-weight:700;list-style:none;display:flex;gap:10px;align-items:center}
 .ntpc-v128-all-features>summary::-webkit-details-marker{display:none}
@@ -6846,12 +6851,32 @@ async function republishAnnouncement(id) {
             closeMobileMoreMenu();
         }
 
+        // V134：所有私人系統共用同一個入口檢查，不能只靠首頁按鈕隱藏。
+        // 注意：此處是介面層防護；雲端資料的真正安全性仍須由 Firebase Security Rules／後端驗證負責。
+        function ntpcHasDepartmentAccess(unit) {
+            if (!currentUser) return false;
+            if (currentUser.role === 'admin') return true;
+            const units = Array.isArray(currentUser.units) ? currentUser.units :
+                (currentUser.units ? [currentUser.units] : (currentUser.unit ? [currentUser.unit] : []));
+            return units.includes(unit);
+        }
+
         function switchTab(tabId) {
             hideSubmitSuccessAnimation();
-            if (tabId === 'dashboard' && !currentUser) {
-                showToast('勤務中心需要先登入系統。', 'warning', '需要登入');
+            const privateTabs = ['dashboard', 'police', 'fire', 'notifications', 'profile', 'jiaxiao', 'admin'];
+            if (!currentUser && privateTabs.includes(tabId)) {
+                showToast('請先登入新北市 RP 系統，才能進入此功能。', 'warning', '需要登入');
                 tabId = 'home';
-                setTimeout(() => document.getElementById('login-modal')?.classList.remove('hidden'), 80);
+                // 舊程式誤寫 login-modal；實際登入視窗 ID 是 modal-login。
+                setTimeout(() => document.getElementById('modal-login')?.classList.remove('hidden'), 80);
+            }
+            if (tabId === 'police' && !ntpcHasDepartmentAccess('police')) {
+                showToast('目前帳號沒有警務系統權限。', 'warning', '權限不足');
+                tabId = 'home';
+            }
+            if (tabId === 'fire' && !ntpcHasDepartmentAccess('fire')) {
+                showToast('目前帳號沒有消防系統權限。', 'warning', '權限不足');
+                tabId = 'home';
             }
             if (tabId === 'jiaxiao' && !canAccessJiaxiao()) {showToast('目前帳號沒有嘉蕭集團權限。','warning','權限不足');tabId='home';}
             if (tabId === 'admin' && !canAccessManagementCenter()) {
@@ -8783,6 +8808,7 @@ async function republishAnnouncement(id) {
         }
 
         function updateAccessLocks() {
+            if (typeof window.ntpcV128RefreshFeatureLocks === 'function') window.ntpcV128RefreshFeatureLocks();
             const policeLock = document.getElementById('police-lock-overlay');
             const policeContent = document.getElementById('police-content-container');
             const fireLock = document.getElementById('fire-lock-overlay');
@@ -16546,6 +16572,27 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 'use strict';
 function get(id){return document.getElementById(id)}
 function make(tag,attrs={},html=''){const e=document.createElement(tag);Object.entries(attrs).forEach(([k,v])=>{if(k==='class')e.className=v;else e.setAttribute(k,v)});e.innerHTML=html;return e}
+function featureAllowed(choice){
+  if(!currentUser)return false;
+  if(choice==='police'||choice==='wanted')return typeof ntpcHasDepartmentAccess==='function' && ntpcHasDepartmentAccess('police');
+  if(choice==='fire')return typeof ntpcHasDepartmentAccess==='function' && ntpcHasDepartmentAccess('fire');
+  if(choice==='bot-console')return typeof canAccessManagementCenter==='function' && canAccessManagementCenter();
+  return false;
+}
+function refreshFeatureLocks(){
+  document.querySelectorAll('#ntpc-v128-features [data-v128-feature]').forEach(button=>{
+    const allowed=featureAllowed(button.dataset.v128Feature);
+    const hint=button.querySelector('small');
+    if(hint && !button.dataset.originalDescription)button.dataset.originalDescription=hint.textContent;
+    if(hint)hint.textContent=allowed ? button.dataset.originalDescription : (!currentUser?'請先登入才能使用':'目前帳號沒有此功能權限');
+    button.classList.toggle('is-locked',!allowed);
+    button.setAttribute('aria-disabled',String(!allowed));
+    button.setAttribute('title',allowed?'進入功能':(!currentUser?'請先登入':'權限不足'));
+    const arrow=button.lastElementChild;
+    if(arrow && arrow.tagName==='I')arrow.className=allowed?'fa-solid fa-chevron-right':'fa-solid fa-lock';
+  });
+}
+window.ntpcV128RefreshFeatureLocks=refreshFeatureLocks;
 function openTab(tab){
   // Go through the existing navigation implementation. All original permission checks stay in place.
   const existing=get('nav-'+tab)||get('mobile-nav-'+tab)||document.querySelector('.mobile-nav-btn[data-tab="'+tab+'"]');
@@ -16648,9 +16695,18 @@ function init(){
 
   const features=make('section',{id:'ntpc-v128-features',class:'ntpc-v128-features'},`<div class="ntpc-v128-features-head"><div><i class="fa-solid fa-star text-amber-400 mr-2"></i>新北市 RP 3.0 系統特色</div><span class="text-[10px] text-cyan-300">NEW TAIPEI RP 3.0</span></div><div class="ntpc-v128-features-grid"><button type="button" class="ntpc-v128-feature" data-v128-feature="police"><i class="fa-solid fa-shield-halved"></i><span><strong>警務案件系統</strong><small>案件審核・警察勤務・交通事件</small></span><i class="fa-solid fa-chevron-right"></i></button><button type="button" class="ntpc-v128-feature" data-v128-feature="fire"><i class="fa-solid fa-fire-extinguisher"></i><span><strong>消防勤務系統</strong><small>消防報告・勤務與救護紀錄</small></span><i class="fa-solid fa-chevron-right"></i></button><button type="button" class="ntpc-v128-feature" data-v128-feature="wanted"><i class="fa-solid fa-car"></i><span><strong>交通與通緝查詢</strong><small>案件與車籍查詢等授權功能</small></span><i class="fa-solid fa-chevron-right"></i></button><button type="button" class="ntpc-v128-feature" data-v128-feature="bot-console"><i class="fa-solid fa-robot"></i><span><strong>勤務中心與 Bot 整合</strong><small>依帳號權限查看相關功能</small></span><i class="fa-solid fa-chevron-right"></i></button></div>`);
   bottom.append(features);
+  refreshFeatureLocks();
   features.addEventListener('click',ev=>{
     const button=ev.target.closest('[data-v128-feature]');if(!button)return;
     const choice=button.dataset.v128Feature;
+    // 未登入直接開啟真正的登入視窗，未經授權者不能導向原始頁面或子分頁。
+    if(!featureAllowed(choice)){
+      if(!currentUser){
+        if(typeof showToast==='function')showToast('請先登入新北市 RP 系統。','warning','需要登入');
+        get('modal-login')?.classList.remove('hidden');
+      }else if(typeof showToast==='function')showToast('目前帳號沒有此功能的使用權限。','warning','權限不足');
+      return;
+    }
     if(choice==='wanted'){if(typeof switchTab==='function')switchTab('police');else openTab('police');try{if(typeof switchPoliceSubTab==='function'&&!get('tab-police').classList.contains('hidden'))switchPoliceSubTab('wanted')}catch(e){console.warn(e)} }
     else if(choice==='bot-console'){
       if(typeof canAccessManagementCenter==='function' && canAccessManagementCenter()){
