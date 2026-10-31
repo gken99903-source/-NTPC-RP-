@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- V143 本次更新：專生14項（前13項各6分、學科22分）加總100分；80分畢業；專用碼綁學員即時報告；臨時碼不寫入報告資料庫；報告24小時有效。 -->
+<!-- V144 本次更新：第14項「學科」不設訓練成績，僅保留初試與複試；前13課訓練不變，滿分100分與80分畢業門檻不變。 -->
 <!-- V140 本次最新修正：畢業證書民國年月依台灣核發月份自動產生；核發前由教官填寫技術教官姓名、A/B/C 評等及證書編號，提示目前已核發最大編號；Firestore 交易避免重複核發，保留單一 HTML 與其他原有功能。 -->
 <html lang="zh-TW" class="dark">
 <head>
@@ -3337,7 +3337,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                             <div class="flex flex-wrap gap-2"><button onclick="ntpcGenerateStudentCode('dedicated')" class="bg-indigo-700 rounded-lg px-4 py-2" type="button">為此專生建立／更新專用代碼（30 天）</button><button onclick="ntpcGenerateStudentCode('temporary')" class="bg-slate-700 rounded-lg px-4 py-2" type="button">產生臨時考核代碼（30 分鐘）</button></div>
                             <p id="ntpc-academy-new-code" class="text-sm font-mono text-cyan-200 break-all">專用代碼只綁定此專生，重新產生會撤銷這位專生的舊專用代碼；臨時代碼不回傳報告。</p>
                         </div>
-                        <p class="text-xs text-amber-200">計分規則：第 1～13 項各 6 分，第 14 項「學科」22 分，總計 100 分；每科複試成績若有填則取代初試，訓練不列入總分。加總達 80 分可畢業。</p><div class="overflow-x-auto"><table class="w-full min-w-[550px]"><thead><tr class="border-b border-slate-700 text-left"><th class="p-2">考核項目</th><th class="p-2">訓練</th><th class="p-2">初試</th><th class="p-2">複試（選填）</th></tr></thead><tbody id="ntpc-academy-score-rows"></tbody></table></div>
+                        <p class="text-xs text-amber-200">計分規則：第 1～13 項各 6 分，第 14 項「學科」22 分，總計 100 分；每科複試成績若有填則取代初試，前 13 課訓練不列入總分；第 14 課「學科」沒有訓練，僅填初試／複試。加總達 80 分可畢業。</p><div class="overflow-x-auto"><table class="w-full min-w-[550px]"><thead><tr class="border-b border-slate-700 text-left"><th class="p-2">考核項目</th><th class="p-2">訓練</th><th class="p-2">初試</th><th class="p-2">複試（選填）</th></tr></thead><tbody id="ntpc-academy-score-rows"></tbody></table></div>
                         <p id="ntpc-academy-score-total" class="text-lg font-bold text-amber-300">尚未載入成績</p>
                         <div class="flex flex-wrap gap-2"><button onclick="ntpcSaveScores()" type="button" class="bg-indigo-600 rounded-lg px-4 py-2.5">儲存成績</button><button onclick="ntpcGraduateStudent()" type="button" class="bg-emerald-700 rounded-lg px-4 py-2.5">滿 80 分核發畢業證書</button><button onclick="ntpcDownloadAcademyPDF('score')" type="button" class="bg-slate-700 rounded-lg px-4 py-2.5">下載 PDF 成績單</button><button onclick="ntpcDownloadAcademyPDF('certificate')" type="button" class="bg-amber-700 rounded-lg px-4 py-2.5">下載 PDF 畢業證書</button></div>
                         <p id="ntpc-academy-certificate-number" class="text-xs text-slate-400"></p>
@@ -15132,7 +15132,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
 
         // V140 | 畢業證書教官簽署／評等／手動編號：直接使用原有 Firestore SDK。
         // 原管理中心不再授予警專教官權限，舊代碼驗證流程保留。
-        // V143：前 13 項各 6 分、學科 22 分，總分 100 分；訓練不計分，複試有填則替代初試。
+        // V144：前 13 項各 6 分且可填訓練，學科 22 分且無訓練欄位；總分 100 分，複試有填則取代初試。
         const NTPC_ACADEMY_SUBJECTS = ['實際交通攔查','實際車輛追緝','逮捕＋宣讀＋搜身','審訊＋筆錄','移送嫌犯','打靶','攻堅','情境模擬','事故處理','水下抓人','船隻追緝','案件登記（線上系統）','模擬開罰','學科'];
         const NTPC_ACADEMY_SUBJECT_MAX = (index)=>index===13?22:6;
         const NTPC_ACADEMY_TOTAL_MAX=13*6+22;
@@ -15143,7 +15143,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             NTPC_ACADEMY_SUBJECTS.forEach((name,i)=>{
                 const r=rows[i]||{},max=NTPC_ACADEMY_SUBJECT_MAX(i);
                 // 訓練與未啟用的初試／複試不列入計算，但輸入值仍不可超過該科滿分。
-                for(const field of ['training','initial_exam','retest']){
+                for(const field of (i===13?['initial_exam','retest']:['training','initial_exam','retest'])){
                     const v=r[field];if(v===null||v===undefined||v==='')continue;
                     if(!Number.isFinite(Number(v))||Number(v)<0||Number(v)>max)errors.push(`${i+1}. ${name}的${{training:'訓練',initial_exam:'初試',retest:'複試'}[field]}需介於 0～${max} 分`);
                 }
@@ -15315,7 +15315,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 if(await ntpcAcadOne('academyCertificates',id))ntpcAcadErr('已畢業，成績已鎖定');
                 if(!Array.isArray(fields.scores)||fields.scores.length!==NTPC_ACADEMY_SUBJECTS.length)ntpcAcadErr('請填寫全部 '+NTPC_ACADEMY_SUBJECTS.length+' 項成績欄位');
                 const normalize=(v,i)=>{if(v===''||v===undefined||v===null)return null;const n=Number(v),max=NTPC_ACADEMY_SUBJECT_MAX(i);if(!Number.isFinite(n)||n<0||n>max)ntpcAcadErr(`第 ${i+1} 項分數必須介於 0～${max}`);return n;};
-                const scores=fields.scores.map((r,i)=>({subject_no:i+1,training:normalize(r.training,i),initial_exam:normalize(r.initial_exam,i),retest:normalize(r.retest,i)}));
+                const scores=fields.scores.map((r,i)=>({subject_no:i+1,training:i===13?null:normalize(r.training,i),initial_exam:normalize(r.initial_exam,i),retest:normalize(r.retest,i)}));
                 await fm.setDoc(ntpcAcadDoc('academyScores',id),{studentId:id,scores,updatedAt:new Date()});return {ok:true};
               }
               case 'certificate-status':{
@@ -15500,6 +15500,10 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                     const title=document.createElement('td');title.className='p-2 text-sm';title.textContent=`${i+1}. ${name}（滿分 ${NTPC_ACADEMY_SUBJECT_MAX(i)}）`;row.append(title);
                     for(const [key,label] of [['training','訓練'],['initial_exam','初試'],['retest','複試']]){
                         const cell=document.createElement('td');cell.className='p-1';
+                        if(i===13&&key==='training'){
+                            const none=document.createElement('span');none.className='block text-center text-xs text-slate-500';none.textContent='— 不適用';
+                            cell.append(none);row.append(cell);continue;
+                        }
                         const input=document.createElement('input');input.type='number';input.min='0';input.max=String(NTPC_ACADEMY_SUBJECT_MAX(i));input.step='0.01';
                         input.placeholder=`${label} 0～${NTPC_ACADEMY_SUBJECT_MAX(i)}`;input.dataset.scoreKey=key;input.dataset.scoreNo=String(i+1);
                         input.value=s[key]??'';input.className='w-full min-w-[66px] bg-slate-950 border border-slate-700 rounded-md px-2 py-2 text-sm';
@@ -15517,14 +15521,14 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
         function ntpcReadScores(){
             return NTPC_ACADEMY_SUBJECTS.map((_,i)=>{
                 const get=k=>document.querySelector(`[data-score-no="${i+1}"][data-score-key="${k}"]`)?.value??'';
-                return {subject_no:i+1,training:get('training'),initial_exam:get('initial_exam'),retest:get('retest')};
+                return {subject_no:i+1,training:i===13?null:get('training'),initial_exam:get('initial_exam'),retest:get('retest')};
             });
         }
         function ntpcEffectiveScores(rows){return rows.map(r=>r.retest!==''&&r.retest!==null&&r.retest!==undefined?Number(r.retest):r.initial_exam!==''&&r.initial_exam!==null&&r.initial_exam!==undefined?Number(r.initial_exam):null);}
         function ntpcCalculateAcademicGrade(){
             const result=ntpcAcadScoreSummary(ntpcReadScores());
             const status=document.getElementById('ntpc-academy-score-total');
-            if(status)status.textContent=result.errors.length?`輸入錯誤：${result.errors[0]}`:result.total===null?`已填 ${result.completed}/14 項｜前 13 課各 6 分，學科 22 分，須填齊才能畢業（訓練不列入）`:`總成績 ${result.total.toFixed(2)}/${NTPC_ACADEMY_TOTAL_MAX} 分｜${result.total>=80?'達畢業門檻':'未達畢業門檻'}（複試優先）`;
+            if(status)status.textContent=result.errors.length?`輸入錯誤：${result.errors[0]}`:result.total===null?`已填 ${result.completed}/14 項｜前 13 課各 6 分、學科 22 分（學科無訓練），須填齊才能畢業`:`總成績 ${result.total.toFixed(2)}/${NTPC_ACADEMY_TOTAL_MAX} 分｜${result.total>=80?'達畢業門檻':'未達畢業門檻'}（複試優先）`;
             return result.total;
         }
         async function ntpcSaveScores(){
@@ -15805,7 +15809,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                     const y=533+i*70,r=scores.get(i+1)||{};
                     ctx.fillStyle=i%2?'#e9eef5':'#f6f8fb';ctx.fillRect(75,y-47,1050,65);
                     ctx.fillStyle='#152438';ctx.font='28px "Noto Sans TC",sans-serif';ctx.fillText(`${i+1}. ${subject} (${NTPC_ACADEMY_SUBJECT_MAX(i)})`,95,y);
-                    ctx.fillText(r.training??'—',682,y);ctx.fillText(r.initial_exam??'—',810,y);ctx.fillText(r.retest??'—',958,y);
+                    ctx.fillText(i===13?'不適用':(r.training??'—'),i===13?661:682,y);ctx.fillText(r.initial_exam??'—',810,y);ctx.fillText(r.retest??'—',958,y);
                 });
                 const summary=ntpcAcadScoreSummary(NTPC_ACADEMY_SUBJECTS.map((_,i)=>scores.get(i+1)||{}));const total=summary.total;
                 ctx.fillStyle='#0c2340';ctx.font='bold 41px "Noto Sans TC",sans-serif';ctx.fillText(`總成績：${total===null?'尚未完成':total.toFixed(2)+'/100 分'}`,92,1535);
