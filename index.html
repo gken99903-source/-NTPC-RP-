@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- 本次最新修正摘要：交通事故現場圖依台灣左駕、靠右行駛，校正雙向道路、路口、彎道及圓環的車流箭頭；不改動其他功能。 -->
 <html lang="zh-TW" class="dark">
 <head>
     <meta charset="UTF-8">
@@ -2130,6 +2131,55 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
 }
 @media (prefers-reduced-motion:reduce){.ntpc-v131-update-more>summary::after{transition:none}}
 </style>
+
+<style id="ntpc-v132-hero-aspect-ratio-fix">
+/* V132: The uploaded promotional banner includes its own headline and art.
+   Keep the ENTIRE artwork visible as the window/side panel changes width. */
+#tab-home .ntpc-v127-home-hero {
+  width: 100% !important;
+  aspect-ratio: 1648 / 928;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  align-self: start !important;
+  overflow: hidden !important;
+  isolation: isolate;
+  background: #020b1b !important;
+}
+#tab-home .ntpc-v127-home-hero > div:first-child {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+#tab-home .ntpc-v127-home-hero > div:first-child > img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  object-position: 50% 50% !important;
+  filter: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+#tab-home .ntpc-v127-home-hero > div:nth-child(2) {
+  position: relative;
+  box-sizing: border-box !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  padding: 12px 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-end !important;
+}
+#tab-home .ntpc-v127-home-hero #home-site-version-badge { max-width: 100%; }
+@media(max-width: 680px){
+  #tab-home .ntpc-v127-home-hero > div:nth-child(2){ padding: 7px 8px !important; }
+  #tab-home .ntpc-v127-home-hero #home-site-version-badge{font-size:9px!important;padding:4px 7px!important;}
+}
+</style>
 </head>
 <body class="ntpc-premium-ui bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
     <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
@@ -3237,7 +3287,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <button id="academy-police-report-btn" class="hidden bg-blue-600 hover:bg-blue-500 text-white rounded-2xl p-6 text-left shadow-lg shadow-blue-600/20 transition">
-                        <i class="fa-solid fa-file-pen text-2xl"></i><div class="mt-3 font-bold">警務文件考核</div><div class="text-xs text-blue-100/80 mt-1">與正式警務相同表單：案件報告、筆錄登記、交通事件處理表；僅存於本機快取</div>
+                        <i class="fa-solid fa-file-pen text-2xl"></i><div class="mt-3 font-bold">警務文件考核</div><div class="text-xs text-blue-100/80 mt-1">與正式警務共用四種文件：案件、筆錄、交通事件與刑事鑑定；僅存本機快取</div>
                     </button>
                     <button id="academy-wanted-report-btn" type="button" class="hidden bg-rose-700 hover:bg-rose-600 text-white rounded-2xl p-6 text-left shadow-lg shadow-rose-950/20 transition">
                         <i class="fa-solid fa-user-secret text-2xl"></i><div class="mt-3 font-bold">模擬通緝發布</div><div class="text-xs text-rose-100/80 mt-1">模擬填寫、檢視，不會真的發布或發送 Discord</div>
@@ -3249,7 +3299,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                         <i class="fa-solid fa-truck-medical text-2xl"></i><div class="mt-3 font-bold">模擬 EMS 案件登記</div><div class="text-xs text-rose-100/80 mt-1">沿用現有 EMS 救護出勤模板</div>
                     </button>
                 </div>
-                <div id="academy-cache-list" class="space-y-4"></div>
+                <p class="rounded-xl border border-amber-400/20 bg-amber-500/5 px-4 py-3 text-xs text-amber-100">考核模式會使用正式警務四類文件的完整欄位與預覽；案件只保留在目前瀏覽器工作階段，重新開啟瀏覽器或清除網站資料後可能消失，不會送往正式案件審核或 Discord。</p><div id="academy-cache-list" class="space-y-4"></div>
             </div>
         </section>
 
@@ -15506,7 +15556,7 @@ async function ntpcFeedbackNotifyManagement(report) {
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label class="ntpc-interview-label">天氣</label><select id="pt-weather" class="ntpc-interview-control"><option value="">請選擇</option><option>晴天</option><option>陰天</option><option>雨天</option><option>霧天</option><option>夜間／照明不足</option></select></div>
             <div><label class="ntpc-interview-label">路況</label><select id="pt-roadCondition" class="ntpc-interview-control"><option value="">請選擇</option><option>乾燥</option><option>濕滑</option><option>積水</option><option>施工中</option><option>視線受阻</option><option>壅塞</option></select></div>
-            <div><label class="ntpc-interview-label">道路型態（先選這個再點圖）</label><select id="pt-laneType" class="ntpc-interview-control"><option value="" selected disabled>請先選擇道路／地形類型</option><option value="crossroad">十字路口（號誌路口）</option><option value="t-intersection">T 字路口</option><option value="straight">直線道路（雙向多車道）</option><option value="two-way">雙向道路（一般雙線）</option><option value="single">單行道</option><option value="alley">巷口／小型道路</option><option value="interchange">交流道／匝道</option><option value="roundabout">圓環</option><option value="parking-roadside">路邊停車格</option><option value="parking-lot">停車場車道</option></select></div>
+            <div><label class="ntpc-interview-label">道路型態（先選這個再點圖）</label><select id="pt-laneType" class="ntpc-interview-control"><option value="" selected disabled>請先選擇道路／地形類型</option><option value="crossroad">十字路口（號誌路口）</option><option value="t-intersection">T 字路口</option><option value="straight">直線道路（雙向多車道）</option><option value="two-way">雙向道路（一般雙線）</option><option value="single">單行道</option><option value="alley">巷口／小型道路</option><option value="interchange">交流道／匝道</option><option value="roundabout">圓環</option><option value="curve-left">彎道（向左）</option><option value="curve-right">彎道（向右）</option><option value="parking-roadside">路邊停車格</option><option value="parking-lot">停車場車道</option></select></div>
             <div><label class="ntpc-interview-label">煞車痕／撞擊補充</label><input id="pt-sceneNote" maxlength="300" class="ntpc-interview-control" placeholder="例如：A 車留下長煞車痕，撞擊點靠近外側車道"></div>
             <div class="sm:col-span-2"><label class="ntpc-interview-label">路況與勘察備註</label><textarea id="pt-brakeMarks" rows="2" maxlength="1600" class="ntpc-interview-control" placeholder="紀錄煞車痕長度、散落物、視線死角、號誌、道路照明等。"></textarea></div>
           </div>
@@ -15523,7 +15573,7 @@ async function ntpcFeedbackNotifyManagement(report) {
             </div>
             <div class="rounded-2xl border border-amber-500/15 bg-slate-950/70 p-4 space-y-3">
               <h5 class="font-bold text-amber-200">圖例說明</h5>
-              <div class="space-y-2 text-xs text-slate-300"><div><b class="text-amber-300">A／B／C…</b> 代表各位當事人。</div><div><b class="text-sky-300">車形圖示</b> 可拖曳與旋轉，表示出發／停止位置。</div><div><b class="text-rose-300">紅色撞擊點</b> 表示碰撞發生處。</div><div><b class="text-amber-300">煞車痕、散落物</b> 可個別標記。</div><div>每位當事人的相同標記可重新點選來更新位置。再次點擊已選取標記可刪除，亦可使用「上一步」復原。</div><div class="pt-2 border-t border-slate-700/70">圖面是 RP 事故示意，非真實測繪比例。</div></div>
+              <div class="space-y-2 text-xs text-slate-300"><div><b class="text-amber-300">A／B／C…</b> 代表各位當事人。</div><div><b class="text-sky-300">車形圖示</b> 可拖曳與旋轉，表示出發／停止位置。</div><div><b class="text-emerald-300">台灣行駛方向</b>：左駕、靠右行駛。道路箭頭表示一般車流方向，事故車輛仍可依實際情況自由擺放、旋轉。</div><div><b class="text-rose-300">紅色撞擊點</b> 表示碰撞發生處。</div><div><b class="text-amber-300">煞車痕、散落物</b> 可個別標記。</div><div>每位當事人的相同標記可重新點選來更新位置。再次點擊已選取標記可刪除，亦可使用「上一步」復原。</div><div class="pt-2 border-t border-slate-700/70">圖面是 RP 事故示意，非真實測繪比例。</div></div>
             </div>
           </div>
         </section>`);
@@ -15562,7 +15612,7 @@ async function ntpcFeedbackNotifyManagement(report) {
     renderSceneBoard();
   }
   // V121: All road layouts are self-contained SVG; no Firestore reads or external images.
-  const NTPC_V121_ROAD_NAMES={crossroad:'十字路口','t-intersection':'T 字路口',straight:'直線道路', 'two-way':'雙向道路',single:'單行道',alley:'巷口',interchange:'交流道／匝道',roundabout:'圓環','parking-roadside':'路邊停車格','parking-lot':'停車場'};
+  const NTPC_V121_ROAD_NAMES={crossroad:'十字路口','t-intersection':'T 字路口',straight:'直線道路', 'two-way':'雙向道路',single:'單行道',alley:'巷口',interchange:'交流道／匝道',roundabout:'圓環','curve-left':'向左彎道','curve-right':'向右彎道','parking-roadside':'路邊停車格','parking-lot':'停車場'};
   function ntpcV121RoadSVG(type){
     if(!NTPC_V121_ROAD_NAMES[type])return '';
     const R=(x,y,w,h,fill,extra='')=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" ${extra}/>`;
@@ -15570,6 +15620,7 @@ async function ntpcFeedbackNotifyManagement(report) {
     const P=(d,color='#e9eef2',width=4,dash='')=>`<path d="${d}" fill="none" stroke="${color}" stroke-width="${width}" stroke-linejoin="round" stroke-linecap="round" ${dash?`stroke-dasharray="${dash}"`:''}/>`;
     const road='#303b47',edge='#a9b6c2',paint='#e1e8ee',yellow='#f5c74e';
     const grass=R(0,0,1000,560,'#203b36');
+    // 台灣採左駕、靠右通行：面向行車方向時，對向車道須位於駕駛者左側。
     const asph=(x,y,w,h)=>R(x,y,w,h,road);
     const edgeH=(y,x1=0,x2=1000)=>L(x1,y,x2,y,edge,4);
     const edgeV=(x,y1=0,y2=560)=>L(x,y1,x,y2,edge,4);
@@ -15590,16 +15641,16 @@ async function ntpcFeedbackNotifyManagement(report) {
         +doubleV(500)+doubleH(280)+dashV(405,0,105)+dashV(595,455,560)+dashH(210,0,260)+dashH(350,740,1000)
         +crossH(350,110)+crossH(350,408)+crossV(272,184)+crossV(688,184)
         +stopH(315,685,105)+stopH(315,685,455)+L(255,145,255,416,paint,4)+L(745,145,745,416,paint,4)
-        +arrow(405,72,0)+arrow(595,492,180)+arrow(140,212,90)+arrow(860,350,-90);
+        +arrow(405,72,180)+arrow(595,492,0)+arrow(140,212,-90)+arrow(860,350,90);
     }else if(type==='t-intersection'){
       shapes=asph(0,230,1000,208)+asph(384,0,232,330)+edgeH(230,0,384)+edgeH(230,616,1000)+edgeH(438)
         +edgeV(384,0,230)+edgeV(616,0,230)+doubleH(335)+doubleV(500)+crossH(417,190)+crossV(342,290)+crossV(616,290)
-        +stopH(384,616,186)+arrow(500,95,180)+arrow(130,285,90)+arrow(860,390,-90);
+        +stopH(384,616,186)+arrow(443,95,180)+arrow(557,95,0)+arrow(130,285,-90)+arrow(860,390,90);
     }else if(type==='straight'||type==='two-way'){
       const y=type==='straight'?130:180,h=type==='straight'?300:200;
       shapes=asph(0,y,1000,h)+edgeH(y)+edgeH(y+h)+doubleH(y+h/2)
         +(type==='straight'?dashH(y+75)+dashH(y+225):'')
-        +arrow(250,y+75,90)+arrow(750,y+h-75,-90)
+        +arrow(250,y+75,-90)+arrow(750,y+h-75,90)
         +R(0,y-15,1000,10,'#788b7f')+R(0,y+h+5,1000,10,'#788b7f');
     }else if(type==='single'){
       shapes=asph(0,147,1000,266)+edgeH(147)+edgeH(413)+dashH(280)
@@ -15608,7 +15659,7 @@ async function ntpcFeedbackNotifyManagement(report) {
     }else if(type==='alley'){
       shapes=asph(0,182,1000,196)+asph(460,0,210,290)+edgeH(182,0,460)+edgeH(182,670,1000)+edgeH(378)
         +edgeV(460,0,182)+edgeV(670,0,182)+dashH(280)+crossH(495,144)+stopH(460,670,136)
-        +arrow(565,66,180)+arrow(170,250,90);
+        +arrow(510,66,180)+arrow(620,66,0)+arrow(170,250,-90)+arrow(850,330,90);
     }else if(type==='interchange'){
       shapes=`<path d="M -20 195 L 1020 195 L 1020 375 L -20 375 Z" fill="${road}"/>`
         +P('M 0 208 H 1000',edge,5)+P('M 0 362 H 1000',edge,5)+dashH(285)
@@ -15617,32 +15668,48 @@ async function ntpcFeedbackNotifyManagement(report) {
         +P('M 520 370 Q 610 435 720 575',edge,4)
         +P('M 510 182 Q 560 138 640 45',paint,3,'18 20')
         +P('M 575 400 Q 650 463 695 553',paint,3,'18 20')
-        +arrow(160,250,90)+arrow(860,334,-90);
+        +arrow(160,250,-90)+arrow(860,334,90);
     }else if(type==='roundabout'){
       shapes=asph(0,215,1000,170)+asph(408,0,184,560)
         +`<circle cx="500" cy="300" r="212" fill="${road}" stroke="${edge}" stroke-width="4"/>`
         +`<circle cx="500" cy="300" r="112" fill="#315649" stroke="${yellow}" stroke-width="7"/>`
         +`<circle cx="500" cy="300" r="154" fill="none" stroke="${paint}" stroke-width="3" stroke-dasharray="20 22"/>`
         +crossH(430,66)+crossH(430,478)+crossV(236,247)+crossV(720,247)
-        +arrow(490,70,180)+arrow(120,289,90)+arrow(880,295,-90);
+        +arrow(455,70,180)+arrow(545,70,0)
+        +arrow(120,250,-90)+arrow(120,350,90)+arrow(880,250,-90)+arrow(880,350,90)
+        // 台灣靠右行駛：圓環車流為逆時針方向。
+        +arrow(500,145,-90)+arrow(654,300,0)+arrow(500,455,90)+arrow(346,300,180);
+    }else if(type==='curve-left'||type==='curve-right'){
+      // 俯視彎道路面：灰色路緣、柏油路面、黃色中央分向線與白色車道虛線。
+      // 兩條曲線獨立繪製，不使用圖片資源，正式與考核的預覽使用同一套 SVG。
+      const left=type==='curve-left';
+      const center=left?'M 602 605 C 602 435 605 282 467 254 C 323 224 212 248 -40 248':
+                         'M 398 605 C 398 435 395 282 533 254 C 677 224 788 248 1040 248';
+      const c=(stroke,width,dash='')=>`<path d="${center}" fill="none" stroke="${stroke}" stroke-width="${width}" stroke-linejoin="round" stroke-linecap="round" ${dash?`stroke-dasharray="${dash}"`:''}/>`;
+      shapes=c(edge,292)+c('#303b47',280)+c('#647481',258)+c('#303b47',249)
+        +c(yellow,5,'22 16')
+        +`<path d="${center}" fill="none" stroke="#faf7ed" stroke-width="2" stroke-dasharray="3 29" opacity=".45"/>`
+        +arrow(left?545:345,445,180)+arrow(left?657:455,445,0)
+        +arrow(left?296:704,190,-90)+arrow(left?296:704,305,90)
+        +`<text x="${left?55:800}" y="75" fill="#e6e8d6" font-size="24" font-family="system-ui,sans-serif" font-weight="700">${left?'左':'右'}轉彎道</text>`;
     }else if(type==='parking-roadside'){
       shapes=asph(0,184,1000,276)+edgeH(184)+edgeH(460)+doubleH(344)
         +R(0,95,1000,78,'#a9b3bc')+parkSlots(40,90,10,93)
-        +arrow(260,260,90)+arrow(790,416,-90);
+        +arrow(260,260,-90)+arrow(790,416,90);
     }else if(type==='parking-lot'){
       shapes=asph(0,145,1000,270)+R(0,0,1000,145,'#b9c3c5')+R(0,415,1000,145,'#b9c3c5')
         +parkSlots(30,35,11,89)+parkSlots(30,443,11,89)
-        +dashH(280)+arrow(220,225,90)+arrow(830,330,-90);
+        +dashH(280)+arrow(220,225,-90)+arrow(830,330,90);
     }
     const label=NTPC_V121_ROAD_NAMES[type];
-    return `<svg class="ntpc-v121-road-svg" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet" aria-label="${esc(label)}事故道路模擬圖" role="img" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="ntpc-v121-surface" patternUnits="userSpaceOnUse" width="48" height="48"><path d="M 5 12 L 9 8 M 24 38 L 32 42" stroke="#ffffff" stroke-width="1" opacity=".06"/></pattern><filter id="ntpc-v121-ground-shadow"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-opacity=".13"/></filter></defs>${grass}${shapes}<rect width="1000" height="560" fill="url(#ntpc-v121-surface)" pointer-events="none"/><g pointer-events="none"><rect x="12" y="12" rx="10" width="${Math.min(480,label.length*28+125)}" height="39" fill="#071427" fill-opacity=".86" stroke="#aab7c5" stroke-opacity=".2"/><text x="28" y="38" fill="#f1f5f9" font-family="system-ui,sans-serif" font-size="22" font-weight="700">${esc(label)} · 俯視示意</text><rect x="12" y="520" rx="8" width="316" height="28" fill="#071427" fill-opacity=".88"/><text x="24" y="540" fill="#dce6eb" font-size="15" font-family="system-ui,sans-serif">RP 模擬圖 · 非比例尺 · 以現場為準</text></g></svg>`;
+    return `<svg class="ntpc-v121-road-svg" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet" aria-label="${esc(label)}事故道路模擬圖" role="img" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="ntpc-v121-surface" patternUnits="userSpaceOnUse" width="48" height="48"><path d="M 5 12 L 9 8 M 24 38 L 32 42" stroke="#ffffff" stroke-width="1" opacity=".06"/></pattern><filter id="ntpc-v121-ground-shadow"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-opacity=".13"/></filter></defs>${grass}${shapes}<rect width="1000" height="560" fill="url(#ntpc-v121-surface)" pointer-events="none"/><g pointer-events="none"><rect x="12" y="12" rx="10" width="${Math.min(480,label.length*28+125)}" height="39" fill="#071427" fill-opacity=".86" stroke="#aab7c5" stroke-opacity=".2"/><text x="28" y="38" fill="#f1f5f9" font-family="system-ui,sans-serif" font-size="22" font-weight="700">${esc(label)} · 俯視示意</text><rect x="12" y="520" rx="8" width="316" height="28" fill="#071427" fill-opacity=".88"/><text x="24" y="540" fill="#dce6eb" font-size="15" font-family="system-ui,sans-serif">RP 模擬圖 · 非比例尺 · 以現場為準</text><rect x="777" y="520" rx="8" width="210" height="28" fill="#071427" fill-opacity=".88"/><text x="788" y="540" fill="#dce6eb" font-size="15" font-family="system-ui,sans-serif">台灣 · 左駕靠右行駛</text></g></svg>`;
   }
   function ntpcV121MarkerHtml(item,selected=false){
     const party=/^[A-F]$/.test(String(item.party||''))?item.party:'A';
     const mode=['start','impact','stop','skid','debris'].includes(item.mode)?item.mode:'start';
     const angle=Number.isFinite(Number(item.angle))?Math.max(-360,Math.min(360,Number(item.angle))):0;
     const label=mode==='start'?'出發':mode==='stop'?'停止':mode==='impact'?'撞擊':mode==='skid'?'煞車':'散落';
-    const car=`<svg viewBox="0 0 66 90" aria-hidden="true"><rect x="9" y="6" width="48" height="78" rx="12" fill="${party==='A'?'#54b8ef':party==='B'?'#e9b855':party==='C'?'#e578a5':'#89c99e'}" stroke="#edf5ff" stroke-width="3"/><rect x="14" y="21" width="38" height="25" rx="7" fill="#1b3343"/><rect x="14" y="50" width="38" height="20" rx="4" fill="#1b3343"/><rect x="5" y="19" width="8" height="17" rx="3" fill="#050b13"/><rect x="53" y="19" width="8" height="17" rx="3" fill="#050b13"/><rect x="5" y="57" width="8" height="17" rx="3" fill="#050b13"/><rect x="53" y="57" width="8" height="17" rx="3" fill="#050b13"/><path d="M 25 4 L 33 -5 L 41 4" stroke="#f6e7a8" stroke-width="4" fill="none"/></svg>`;
+    const car=`<svg viewBox="0 0 66 90" aria-hidden="true"><rect x="9" y="6" width="48" height="78" rx="12" fill="${party==='A'?'#54b8ef':party==='B'?'#e9b855':party==='C'?'#e578a5':'#89c99e'}" stroke="#edf5ff" stroke-width="3"/><rect x="14" y="21" width="38" height="25" rx="7" fill="#1b3343"/><circle cx="23" cy="33" r="5.5" fill="#f7d8a1" stroke="#a86c35" stroke-width="1.5"/><rect x="14" y="50" width="38" height="20" rx="4" fill="#1b3343"/><rect x="5" y="19" width="8" height="17" rx="3" fill="#050b13"/><rect x="53" y="19" width="8" height="17" rx="3" fill="#050b13"/><rect x="5" y="57" width="8" height="17" rx="3" fill="#050b13"/><rect x="53" y="57" width="8" height="17" rx="3" fill="#050b13"/><path d="M 25 4 L 33 -5 L 41 4" stroke="#f6e7a8" stroke-width="4" fill="none"/></svg>`;
     const badge=mode==='impact'?'✴':mode==='skid'?'〰':mode==='debris'?'◆':'';
     return `<div class="ntpc-v121-marker ntpc-v121-${mode}${selected?' is-selected':''}" data-party="${party}" data-mode="${mode}" style="left:${item.x}%;top:${item.y}%;" aria-label="${party} 車 ${label}" title="${party} ${label}${mode==='start'||mode==='stop'?'（拖曳調整位置；使用旋轉按鈕調整角度）':''}">${mode==='start'||mode==='stop'?`<div class="ntpc-v121-car" style="transform:rotate(${angle}deg)">${car}</div>`:`<div class="ntpc-v121-symbol">${badge}</div>`}<span class="ntpc-v121-marker-label">${party} · ${label}</span></div>`;
   }
@@ -15867,17 +15934,17 @@ async function ntpcFeedbackNotifyManagement(report) {
     return rec;
   };
   window.ntpcTrafficSummary = function(rec){
-    return `【交通事件處理表｜RP 模擬】\n事故時間：${rec.date} ${rec.time}\n事故地點：${rec.location}\n道路型態：${rec.laneType||'未填'}｜天氣：${rec.weather||'未填'}｜路況：${rec.roadCondition||'未填'}\n當事人：${(rec.parties||[]).map((p,i)=>`${i+1}.${p.driver}（${p.vehicleType}，${p.plate||'無車牌'}）`).join('、')}\n初步分析：${(rec.parties||[]).map((p,i)=>`當事人${i+1} ${p.analysis}`).join('；')}\n承辦員警：${rec.officer}`;
+    return `【交通事件處理表｜RP 模擬】\n事故時間：${rec.date} ${rec.time}\n事故地點：${rec.location}\n道路型態：${NTPC_V121_ROAD_NAMES[rec.laneType]||rec.laneType||'未填'}｜天氣：${rec.weather||'未填'}｜路況：${rec.roadCondition||'未填'}\n當事人：${(rec.parties||[]).map((p,i)=>`${i+1}.${p.driver}（${p.vehicleType}，${p.plate||'無車牌'}）`).join('、')}\n初步分析：${(rec.parties||[]).map((p,i)=>`當事人${i+1} ${p.analysis}`).join('；')}\n承辦員警：${rec.officer}`;
   };
 
   window.openPoliceDocumentChooser = function(){
     if(!academyPoliceMode() && !currentUser){ showToast('請先登入系統。','warning'); return; }
     if(!currentPoliceDocAccess()){ showToast('只有警務人員可建立警務文件。','warning'); return; }
-    if(currentUser && typeof isSuspendedUser==='function' && isSuspendedUser(currentUser.account)){ showToast('停職調查期間無法建立警務文件。','warning'); return; }
+    if(!academyPoliceMode() && currentUser && typeof isSuspendedUser==='function' && isSuspendedUser(currentUser.account)){ showToast('停職調查期間無法建立警務文件。','warning'); return; }
     const chooser=document.getElementById('modal-police-document-choice'); if(!chooser) return;
     const tip=chooser.querySelector('p.text-sm');
-    if(tip) tip.textContent = academyPoliceMode() ? '目前為警專考核模式，可建立案件報告、筆錄登記與交通事件處理表。進入後可按「返回類別」重新選擇。' : '請先選擇文件類別，進入後可按「返回類別」重新選擇。';
-    const forensic=document.getElementById('choose-police-forensic'); if(forensic) forensic.classList.toggle('hidden', academyPoliceMode());
+    if(tip) tip.textContent = academyPoliceMode() ? '警專考核與正式警務共用四種表單（案件／筆錄／交通／刑事鑑定）；資料僅儲存於本次瀏覽器快取。' : '請先選擇文件類別，進入後可按「返回類別」重新選擇。';
+    const forensic=document.getElementById('choose-police-forensic'); if(forensic) forensic.classList.remove('hidden');
     chooser.classList.remove('hidden');
   };
 
@@ -15967,7 +16034,7 @@ async function ntpcFeedbackNotifyManagement(report) {
   function damageLabel(zone){ return ({'front-left':'左前','front':'前方','front-right':'右前','left':'左側','top':'上方','right':'右側','rear-left':'左後','rear':'後方','rear-right':'右後'})[zone] || zone; }
   window.ntpcTrafficDetailHtml = function(r){
     const x=r.trafficRecord||{}, e=v=>esc(String(v??'--'));
-    const fields=[['承辦單位',x.unit],['事故日期與時間',`${x.date||'--'} ${x.time||'--'}`],['事故地點',x.location],['郵遞區號',x.postalCode],['承辦員警',x.officer],['核發日期',x.issuedDate],['核發單位',x.issuingUnit],['登記帳號',r.registeredByAccount||r.createdByAccount||'--'],['天氣',x.weather],['路況',x.roadCondition],['道路型態',x.laneType]];
+    const fields=[['承辦單位',x.unit],['事故日期與時間',`${x.date||'--'} ${x.time||'--'}`],['事故地點',x.location],['郵遞區號',x.postalCode],['承辦員警',x.officer],['核發日期',x.issuedDate],['核發單位',x.issuingUnit],['登記帳號',r.registeredByAccount||r.createdByAccount||'--'],['天氣',x.weather],['路況',x.roadCondition],['道路型態',NTPC_V121_ROAD_NAMES[x.laneType]||x.laneType]];
     const parties=(Array.isArray(x.parties)?x.parties:[]).map((p,i)=>`<section class="ntpc-interview-qa space-y-3"><h5 class="font-bold text-amber-200">當事人 ${i+1}</h5><dl class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><dt>車輛種類／類別</dt><dd>${e(p.vehicleType||'--')}</dd></div><div><dt>車牌</dt><dd>${e(p.plate||'無')}</dd></div><div class="sm:col-span-2"><dt>駕駛／當事人</dt><dd>${e(p.driver||'--')}</dd></div><div class="sm:col-span-2"><dt>受損點</dt><dd>${e((p.damageZones||[]).map(damageLabel).join('、')||'未標記')}</dd></div></dl><div class="border-t border-amber-500/15 pt-3"><div class="text-xs text-amber-300 mb-1">初步分析可能肇事原因／違規事實</div><p class="text-sm whitespace-pre-wrap text-slate-100">${e(p.analysis||'尚待調查')}</p></div></section>`).join('');
     const markers=Array.isArray(x.sceneMapData)?x.sceneMapData:[];
     const sceneHtml=ntpcV121ScenePreviewHtml(x);
@@ -16100,32 +16167,49 @@ async function ntpcFeedbackNotifyManagement(report) {
   }
   function forensicSummary(rec){ return `【刑事鑑定紀錄表｜RP 模擬】\n案名：${rec.subject}\n勘察時間：${rec.date} ${rec.time}\n地點：${rec.location}\n證物數量：${rec.evidence.length} 項\n勘察人員：${rec.officer}`; }
   window.openPoliceForensicForm = function(existing=null){
-    if(!currentUser || (!userHasUnit('police') && getEffectiveRole(currentUser)!=='admin')){ showToast('沒有警務文件建立權限。','warning'); return; }
-    if(existing){
+    const academyMode=academyPoliceMode();
+    if(!academyMode && (!currentUser || (!userHasUnit('police') && getEffectiveRole(currentUser)!=='admin'))){ showToast('沒有警務文件建立權限。','warning'); return; }
+    if(existing && !academyMode){
       const owner=String(existing.registeredByAccount||existing.createdByAccount||'').toLowerCase(), me=String(currentUser.account||'').toLowerCase(); const pending=String(existing.reviewStatus||'')!=='approved';
       if(pending&&(existing.reviewStatus==='pending'||owner!==me)){ showToast('此文件正在審核或不是你的退件，無法修改。','warning'); return; }
       if(!pending&&!canModifyReport(existing,'police')){ showToast('沒有編輯這份刑事鑑定紀錄表的權限。','warning'); return; }
       ntpcForensicEditing={pending,original:existing};
     } else {
-      if(isSuspendedUser(currentUser.account)){ showToast('停職調查期間無法建立警務文件。','warning'); return; }
+      if(!academyMode && currentUser && isSuspendedUser(currentUser.account)){ showToast('停職調查期間無法建立警務文件。','warning'); return; }
       ntpcForensicEditing=null;
     }
     const rec=existing?.forensicRecord||{}; const now=(typeof ntpcInterviewTimeLocal==='function'?ntpcInterviewTimeLocal(Date.now()):new Date().toISOString().slice(0,16));
     ['unit','date','time','location','subject','scene-summary','process','fingerprint','dna','note'].forEach(key=>{ const id='pf-'+key; const el=document.getElementById(id); if(el) el.value='';});
     [1,2,3].forEach(n=>{ const el=document.getElementById(`pf-link-${n}`); if(el) el.value=''; });
     document.getElementById('pf-unit').value=rec.unit||'新北市 RP｜警察局刑事鑑識紀錄'; ntpcV119SetAccount('pf-register-account',existing);
-    document.getElementById('pf-date').value=rec.date||now.slice(0,10); document.getElementById('pf-time').value=rec.time||now.slice(11,16); document.getElementById('pf-location').value=rec.location||''; document.getElementById('pf-subject').value=rec.subject||''; document.getElementById('pf-officer').value=rec.officer||(currentUser.name||currentUser.account); document.getElementById('pf-scene-summary').value=rec.sceneSummary||''; document.getElementById('pf-process').value=rec.process||''; document.getElementById('pf-fingerprint').value=rec.fingerprint||''; document.getElementById('pf-dna').value=rec.dna||''; document.getElementById('pf-note').value=rec.note||'';
+    document.getElementById('pf-date').value=rec.date||now.slice(0,10); document.getElementById('pf-time').value=rec.time||now.slice(11,16); document.getElementById('pf-location').value=rec.location||''; document.getElementById('pf-subject').value=rec.subject||''; document.getElementById('pf-officer').value=rec.officer||(academyMode?'專生考生':(currentUser.name||currentUser.account)); document.getElementById('pf-scene-summary').value=rec.sceneSummary||''; document.getElementById('pf-process').value=rec.process||''; document.getElementById('pf-fingerprint').value=rec.fingerprint||''; document.getElementById('pf-dna').value=rec.dna||''; document.getElementById('pf-note').value=rec.note||'';
     safeUrlList(rec.attachments||rec.videoLinks||[]).forEach((v,i)=>{ const el=document.getElementById(`pf-link-${i+1}`); if(el) el.value=v; });
     const list=document.getElementById('pf-evidence-list'); list.replaceChildren();
     if(Array.isArray(rec.evidence)&&rec.evidence.length) rec.evidence.forEach(addForensicEvidenceRow); else addForensicEvidenceRow();
-    document.getElementById('modal-police-document-choice')?.classList.add('hidden'); const modal=document.getElementById('modal-police-forensic'); modal.classList.remove('hidden'); const btn=document.getElementById('pf-submit'); const badge=document.getElementById('pf-case-id'); if(existing){ badge.value=existing.caseId||''; btn.disabled=false; btn.textContent=existing.reviewStatus==='rejected'?'儲存並重新送審':'儲存刑事鑑定修改'; return; }
+    document.getElementById('modal-police-document-choice')?.classList.add('hidden'); const modal=document.getElementById('modal-police-forensic'); modal.classList.remove('hidden'); const btn=document.getElementById('pf-submit'); const badge=document.getElementById('pf-case-id'); if(existing && !academyMode){ badge.value=existing.caseId||''; btn.disabled=false; btn.textContent=existing.reviewStatus==='rejected'?'儲存並重新送審':'儲存刑事鑑定修改'; return; }
+    if(academyMode){ badge.value=generateAcademyCaseId('police'); btn.disabled=false; btn.textContent='提交刑事鑑定紀錄表（僅存考核快取）'; return; }
     const epoch=++ntpcReportReservationEpoch; ntpcActiveReportReservation=null; badge.value='正在查詢預計編號…'; btn.disabled=true; btn.textContent='正在查詢預計編號…'; ntpcPreviewNextCaseNumber('police').then(num=>{ if(epoch!==ntpcReportReservationEpoch||modal.classList.contains('hidden')) return; ntpcActiveReportReservation={department:'police',caseId:num,epoch}; badge.value=num+'（預計，送出時確認）'; btn.disabled=false; btn.textContent='送出刑事鑑定紀錄表並提交高層審核'; }).catch(err=>{ if(epoch!==ntpcReportReservationEpoch||modal.classList.contains('hidden')) return; badge.value='無法取得編號'; btn.disabled=true; showToast('文件編號預覽失敗：'+err.message,'error'); });
   };
   async function submitPoliceForensic(){
     if(window.__ntpcForensicSubmitting) return; const btn=document.getElementById('pf-submit'); window.__ntpcForensicSubmitting=true; if(btn) btn.disabled=true;
     try{
-      if(!currentUser || (!userHasUnit('police') && getEffectiveRole(currentUser)!=='admin') || isSuspendedUser(currentUser.account)) throw new Error('沒有警務文件填寫權限。');
+      const academyMode=academyPoliceMode();
+      if(!academyMode && (!currentUser || (!userHasUnit('police') && getEffectiveRole(currentUser)!=='admin') || isSuspendedUser(currentUser.account))) throw new Error('沒有警務文件填寫權限。');
       const rec=forensicPayload(), now=Date.now(), editing=ntpcForensicEditing; const title=`刑事鑑定紀錄表｜${rec.subject}｜${rec.date}`.slice(0,150), content=forensicSummary(rec);
+      // 考核文件先走本機快取分支；不取得正式編號、不呼叫 Firestore／審核通知／Webhook。
+      if(academyMode){
+        const caseId=String(document.getElementById('pf-case-id')?.value||'').trim()||generateAcademyCaseId('police');
+        academyExamCache.policeReports=academyExamCache.policeReports||[];
+        academyExamCache.policeReports.unshift({caseId,reportType:'policeForensicRecord',forensicRecord:rec,
+          authorId:'警專專生',authorName:'專生考生',createdByAccount:`ACADEMY:${academyExamSession.code}`,
+          createdByName:'警專專生',registeredByAccount:`ACADEMY:${academyExamSession.code}`,
+          registeredByName:'警專專生',registeredAt:now,title,content,
+          videoLinks:rec.attachments||[],videoLink:(rec.attachments||[])[0]||'',
+          time:formatDateTime(now),timestamp:now,remark:'專生考核案件',remarks:[]});
+        saveAcademyCache();closeModal('modal-police-forensic');renderAcademyCache();
+        showSubmitSuccessAnimation('考核刑事鑑定紀錄表送出成功',`${caseId} 僅保留於本次瀏覽器快取。`);
+        return;
+      }
       if(editing){
         const old=editing.original, col=editing.pending?'policePendingReports':'policeReports'; const docId=await resolveReportDocId(col,old,old.caseId); if(!docId) throw new Error('找不到這份刑事鑑定紀錄表的原始文件。');
         const update={reportType:'policeForensicRecord',forensicRecord:rec,title,content,postalCode:'',suspectName:'',suspectVehicle:'',videoLinks:rec.attachments||[],videoLink:(rec.attachments||[])[0]||'',lastEditedByAccount:currentUser.account,lastEditedByName:currentUser.name||currentUser.account,lastEditedAt:now,updatedAt:now}; if(editing.pending) Object.assign(update,{reviewStatus:'pending',rejectionReason:'',reviewedBy:'',reviewedByName:'',reviewedAt:0,submittedAt:now}); await fm.updateDoc(fm.doc(db,col,docId),update); Object.assign(old,update); closeModal('modal-police-forensic'); editing.pending?renderPoliceReview():renderPoliceReports(); renderMyProfile(); showSubmitSuccessAnimation('刑事鑑定紀錄表已儲存',editing.pending?'退件文件已重新送審。':'修改已儲存。'); return;
