@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- V145 本次更新：畢業證書 PDF 移除評等文字；修正 Discord Bot 14 科總分 100 分制驗證，維持 A/B/C 論壇標籤及教官成績資料。 -->
 <!-- V144 本次更新：第14項「學科」不設訓練成績，僅保留初試與複試；前13課訓練不變，滿分100分與80分畢業門檻不變。 -->
 <!-- V140 本次最新修正：畢業證書民國年月依台灣核發月份自動產生；核發前由教官填寫技術教官姓名、A/B/C 評等及證書編號，提示目前已核發最大編號；Firestore 交易避免重複核發，保留單一 HTML 與其他原有功能。 -->
 <html lang="zh-TW" class="dark">
@@ -15789,9 +15790,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 ctx.drawImage(img,1270,695,510,90,1270,790,510,115);
                 ctx.font='bold 49px "Noto Serif TC", "PMingLiU", serif';ctx.textAlign='center';ctx.fillStyle='#080808';
                 ntpcAcademyDrawFit(ctx,student.instructor_name||'（未登錄）',1500,855,510,49);
-                // 正式畢業評等：A 優秀／B 還不錯但要注意／C 多多包涵，勉強畢業。
-                const gradeNote={A:'A｜優秀',B:'B｜還不錯但要注意',C:'C｜多多包涵，勉強畢業'}[student.certificate_grade]||'';
-                if(gradeNote){ctx.font='bold 34px "Noto Sans TC",sans-serif';ctx.fillStyle='#222';ctx.fillText('畢業評等：'+gradeNote,1160,723);}
+                // V145：畢業證書不印 A/B/C 等級；評等仍保存在 Firestore，供教官查詢、成績紀錄與 Discord 論壇標籤使用。
                 ctx.font='39px "Noto Serif TC",serif';ctx.fillStyle='#111';ctx.textAlign='center';ctx.fillText(ntpcAcademyTaiwanDate(),1540,1193);
             }else{
                 canvas.width=1200;canvas.height=1700;
