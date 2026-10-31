@@ -1,13 +1,11 @@
 <!DOCTYPE html>
-<!-- V145 本次更新：畢業證書 PDF 移除評等文字；修正 Discord Bot 14 科總分 100 分制驗證，維持 A/B/C 論壇標籤及教官成績資料。 -->
-<!-- V144 本次更新：第14項「學科」不設訓練成績，僅保留初試與複試；前13課訓練不變，滿分100分與80分畢業門檻不變。 -->
-<!-- V140 本次最新修正：畢業證書民國年月依台灣核發月份自動產生；核發前由教官填寫技術教官姓名、A/B/C 評等及證書編號，提示目前已核發最大編號；Firestore 交易避免重複核發，保留單一 HTML 與其他原有功能。 -->
+<!-- V147 本次更新：修正常見問題的警察教學影片嵌入 Error 153，使用標準 YouTube 內嵌播放器、明確來源資訊與本機檔案提示；保留其餘功能。 -->
 <html lang="zh-TW" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; media-src 'self' https://raw.githubusercontent.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://placehold.co; connect-src 'self' https://*.workers.dev https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; upgrade-insecure-requests">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; media-src 'self' https://raw.githubusercontent.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://placehold.co; connect-src 'self' https://*.workers.dev https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com https://www.youtube-nocookie.com https://www.youtube.com; upgrade-insecure-requests">
     <title>新北市 RP 3.0 公職服務系統 V2.0｜ER:LC 智慧派遣</title>
     <!-- 網站圖標與連結分享資訊 -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
@@ -3135,6 +3133,47 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 </div>
 
                 <div id="faq-category-police" class="faq-category-content hidden space-y-3">
+                    <!-- V146：直接在常見問題的警方系統分類播放官方提供之教學影片，不跳轉 YouTube。 -->
+                    <section class="rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-950/50 to-slate-950 p-4 sm:p-6" aria-labelledby="faq-police-video-title">
+                        <div class="flex items-start gap-3 mb-4">
+                            <div class="shrink-0 w-10 h-10 rounded-xl bg-blue-500/15 text-blue-300 flex items-center justify-center"><i class="fa-solid fa-circle-play text-xl" aria-hidden="true"></i></div>
+                            <div>
+                                <h3 id="faq-police-video-title" class="text-base sm:text-lg font-bold text-white">警察系統操作教學影片</h3>
+                                <p class="text-xs sm:text-sm text-slate-400 mt-1">直接點擊下方播放鍵，即可在新北市 RP 網站內觀看，無須前往 YouTube。</p>
+                            </div>
+                        </div>
+                        <div class="relative w-full overflow-hidden rounded-xl border border-slate-700 bg-black shadow-xl" style="aspect-ratio:16/9;">
+                            <iframe
+                                id="ntpc-faq-police-video"
+                                class="absolute inset-0 w-full h-full"
+                                title="新北市 RP 警察系統操作教學影片"
+                                loading="lazy"
+                                referrerpolicy="origin"
+                                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowfullscreen>
+                            </iframe>
+                            <p id="ntpc-faq-police-video-local-tip" class="hidden absolute inset-0 flex items-center justify-center px-6 text-center text-sm leading-7 text-slate-200 bg-slate-950">本機直接開啟的 HTML 無法提供 YouTube 要求的網站來源資訊。請從正式的 Cloudflare Pages 網址開啟網站後播放教學影片。</p>
+                        </div>
+                        <script>
+                        // YouTube Error 153：嵌入播放器須提供可識別的 HTTP Referer／Origin。
+                        // iframe 的 referrerpolicy=origin 僅傳網站來源，不洩露頁面路徑或查詢參數。
+                        (() => {
+                          const player = document.getElementById('ntpc-faq-police-video');
+                          const localTip = document.getElementById('ntpc-faq-police-video-local-tip');
+                          if (!player) return;
+                          if (location.protocol !== 'https:' && location.protocol !== 'http:') {
+                            player.classList.add('hidden');
+                            localTip?.classList.remove('hidden');
+                            return;
+                          }
+                          const url = new URL('https://www.youtube.com/embed/IcZjR2OHqqk');
+                          url.searchParams.set('rel', '0');
+                          url.searchParams.set('playsinline', '1');
+                          url.searchParams.set('origin', location.origin);
+                          player.src = url.toString();
+                        })();
+                        </script>
+                    </section>
                     <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4" open>
                         <summary class="cursor-pointer text-sm font-semibold text-white">警務系統要怎麼進入？</summary>
                         <p class="text-sm text-slate-400 leading-7 mt-3">警務系統屬於勤務功能，必須先登入具有警察身分的帳號。登入後即可依權限使用打卡、補打卡、案件報告、案件審核與其他警務功能。</p>
