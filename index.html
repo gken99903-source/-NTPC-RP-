@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- V135 本次修改：嘉蕭醫院紀錄中心新增權限控管的刪除紀錄功能；批次同步移除對應營收台帳，保留其他功能與歷史版本。 -->
 <!-- 本次最新修正摘要：交通事故現場圖依台灣左駕、靠右行駛，校正雙向道路、路口、彎道及圓環的車流箭頭；不改動其他功能。 -->
 <html lang="zh-TW" class="dark">
 <head>
@@ -7689,6 +7690,10 @@ async function republishAnnouncement(id) {
                     const edit=document.createElement('button');edit.type='button';
                     edit.className='ml-2 rounded-xl border border-sky-500/40 bg-sky-950/25 hover:bg-sky-900/35 px-4 py-2 text-sm text-sky-200';
                     edit.textContent='編輯紀錄';edit.addEventListener('click',()=>jxHospitalEditRecord(r));card.appendChild(edit);
+                    const remove=document.createElement('button');remove.type='button';
+                    remove.className='ml-2 rounded-xl border border-rose-500/50 bg-rose-950/30 hover:bg-rose-900/45 px-4 py-2 text-sm text-rose-200 disabled:opacity-50';
+                    remove.textContent='刪除紀錄';remove.title='永久刪除原始紀錄與對應營收台帳';
+                    remove.addEventListener('click',()=>jxHospitalDeleteRecord(r));card.appendChild(remove);
                 }
                 if(type==='admission'){
                     const settled=r.details?.billingStatus==='settled'||!!r.details?.dischargeDate;
@@ -7699,6 +7704,62 @@ async function republishAnnouncement(id) {
                 }
                 host.appendChild(card);
             }
+        }
+        // V135：嘉蕭醫院紀錄刪除。僅原填報人／嘉蕭審核權限可操作；
+        // 原始紀錄與對應月營收台帳採同一批次刪除，避免營收統計殘留。
+        const jxHospitalDeletingIds=new Set();
+        async function jxHospitalDeleteRecord(record){
+            if(!currentUser||!canAccessJiaxiao()||!canWriteJXReport()||!fm||!db){
+                showToast('尚未登入或沒有嘉蕭醫院紀錄刪除權限。','warning','權限不足');return;
+            }
+            const account=String(currentUser.account||'').trim().toLowerCase();
+            const owner=String(record?.authorAccount||'').trim().toLowerCase()===account;
+            if(!canReviewJX()&&!owner){
+                showToast('只有原填報人或嘉蕭高層可以刪除這筆醫院紀錄。','warning','權限不足');return;
+            }
+            const id=String(record?.id||'').trim();
+            const sourceCollection=String(record?.__collection||'');
+            // 來源只能是醫院紀錄頁實際載入的固定集合，不採信任意前端傳入的集合名稱。
+            if(!id||!Object.values(JX_HOSPITAL_COLLECTIONS).includes(sourceCollection)
+                ||!jxHospitalRecordsCache.loaded
+                ||!jxHospitalRecordsCache.rows.some(row=>String(row.id)===id&&row.__collection===sourceCollection)){
+                showToast('找不到目前載入的原始紀錄，請重新點擊分類載入。','warning','紀錄已失效');return;
+            }
+            const key=sourceCollection+'/'+id;
+            if(jxHospitalDeletingIds.has(key))return;
+            jxHospitalDeletingIds.add(key);
+            try{
+                const type=sourceCollection===JX_HOSPITAL_COLLECTIONS.online?'online':record.category;
+                const label=JX_HOSPITAL_NAMES[type]||'醫院紀錄';
+                const name=String(record.details?.name||'未填姓名').slice(0,80);
+                const agreed=await showConfirm(
+                    `確定永久刪除此筆${label}嗎？\n\n患者：${name}\n紀錄編號：${id}\n\n刪除後無法恢復；如果這筆紀錄已計入營收，其相應收費台帳也會一併移除，月營收統計將於重新查詢後更新。`,
+                    '刪除嘉蕭醫院紀錄','確定永久刪除'
+                );
+                if(!agreed)return;
+                // 確認期間可能已登出或切換帳號，送出前必須重新檢查權限。
+                if(!currentUser||!canAccessJiaxiao()||!canWriteJXReport()
+                    ||String(currentUser.account||'').trim().toLowerCase()!==account
+                    ||(!canReviewJX()&&!owner)){
+                    showToast('登入或權限已變更，取消本次刪除。','warning','權限變更');return;
+                }
+                const batch=fm.writeBatch(db);
+                batch.delete(fm.doc(db,sourceCollection,id));
+                batch.delete(fm.doc(db,JX_FINANCIAL_COLLECTION,id));
+                await batch.commit();
+                // 只更新目前已載入的清單，不再執行整份集合的讀取。
+                if(jxHospitalRecordsCache.loaded){
+                    jxHospitalRecordsCache.rows=jxHospitalRecordsCache.rows.filter(row=>!(String(row.id)===id&&row.__collection===sourceCollection));
+                    jxHospitalRenderRecords();
+                }
+                showToast('醫院紀錄及其對應營收台帳已從 Firestore 刪除。','success','刪除成功');
+                try{
+                    await logAdminAction('刪除嘉蕭醫院紀錄',id,`類別：${label}；來源集合：${sourceCollection}；操作帳號：${account}`);
+                }catch(logError){console.warn('醫院刪除已完成，但管理稽核 LOG 送出失敗：',logError);}
+            }catch(error){
+                console.error('嘉蕭醫院刪除失敗',error);
+                showToast('刪除失敗：'+String(error?.message||error)+'。請確認 Firestore 紀錄及營收台帳的刪除權限。','error','刪除失敗');
+            }finally{jxHospitalDeletingIds.delete(key);}
         }
         // 只更新已載入的線上掛號時間標籤，不觸發 Firestore 網路查詢。
         setInterval(()=>{
