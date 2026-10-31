@@ -1454,6 +1454,682 @@ body.ntpc-premium-ui #ntpc-map-admin-toolbar button { min-height:38px; border:1p
 .ntpc-v121-static-map{pointer-events:none!important;cursor:default!important}
 @media(max-width:620px){#pt-scene-board.ntpc-map-board,.ntpc-v121-static-map.ntpc-map-board{min-height:200px}.ntpc-v121-marker-label{font-size:8px;padding:2px 3px}.ntpc-v121-symbol{min-width:20px;height:20px;font-size:17px}}
 </style>
+
+<!-- V123：手機版警務分類列、行動按鍵與文件選擇視窗專項修復；不修改資料庫與功能狀態 -->
+<style id="ntpc-v123-mobile-layout">
+/* Keep each horizontal tab at its intrinsic width. V116's generic flex children min-width:0
+   squeezed no-wrap labels into overlapping text on narrow viewports. */
+#ntpc-police-subnav {
+  display:flex; flex-wrap:nowrap !important; align-items:stretch; gap:8px;
+  overflow-x:auto !important; overflow-y:hidden; min-width:0; max-width:100%;
+  -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain;
+  scroll-padding-inline:8px; scrollbar-width:thin; scrollbar-color:#405a7b transparent;
+}
+#ntpc-police-subnav > .police-sub-btn {
+  display:inline-flex !important; flex:0 0 auto !important;
+  width:max-content !important; min-width:max-content !important;
+  max-width:none; white-space:nowrap !important;
+  align-items:center; justify-content:center; gap:4px;
+  min-height:46px; padding:10px 16px; font-size:13px; line-height:1.25;
+  margin-left:0 !important;
+  box-sizing:border-box; scroll-snap-align:start;
+}
+#ntpc-police-subnav > .police-sub-btn.hidden {display:none !important;}
+#ntpc-police-subnav > .police-sub-btn .fa-solid {flex:0 0 auto;}
+@media(max-width:767px) {
+  #tab-police, #police-content-container {min-width:0;max-width:100%;}
+  #tab-police #police-content-container > .flex:first-child {padding:18px 16px;gap:16px;}
+  #tab-police .mobile-action-group {
+    width:100% !important; display:grid !important;
+    grid-template-columns:minmax(0,1fr) !important;
+    gap:10px !important; justify-items:stretch !important; align-items:stretch !important;
+    margin:0 !important;
+  }
+  #tab-police .mobile-action-group > button {
+    box-sizing:border-box; display:flex !important; flex:none !important;
+    width:100% !important; min-width:0 !important;
+    min-height:54px !important; height:auto; margin:0 !important;
+    padding:12px 14px !important; border-radius:13px !important;
+    justify-content:center; align-items:center; gap:10px !important;
+    font-size:15px; line-height:1.4; white-space:normal; text-align:center;
+  }
+  #tab-police .mobile-action-group > button > i {flex:0 0 20px; margin:0 !important; text-align:center;}
+  #tab-police .mobile-action-group > button > span {margin:0 !important;min-width:0;}
+  #ntpc-police-subnav-hint {display:block !important; margin:0 2px 8px; line-height:1.5;}
+  #ntpc-police-subnav {margin:0; gap:8px; padding:0 0 11px; touch-action:pan-x pan-y;}
+  #ntpc-police-subnav > .police-sub-btn {min-height:46px;padding:12px 14px;font-size:13px;}
+
+  /* iOS Safari: the chooser was taller than the screen but had no scroll container. */
+  #modal-police-document-choice:not(.hidden) {
+    align-items:flex-start !important; justify-content:center;
+    padding:8px !important; overflow:hidden !important;
+    overscroll-behavior:contain;
+  }
+  #modal-police-document-choice > .ntpc-doc-hub {
+    display:flex; flex-direction:column;
+    width:100%; min-width:0; min-height:0;
+    max-height:calc(100vh - 16px);
+    max-height:calc(100dvh - 16px);
+    overflow-x:hidden !important; overflow-y:auto !important;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain; touch-action:pan-y;
+    padding:16px !important;
+    padding-bottom:max(24px,env(safe-area-inset-bottom)) !important;
+    margin:0 auto;
+    border-radius:18px;
+  }
+  #modal-police-document-choice > .ntpc-doc-hub > div:first-child {
+    position:sticky; top:-16px; z-index:3; flex:none;
+    padding:8px 0 12px;
+    background:linear-gradient(90deg,#11223e,#101b31);
+    border-bottom:1px solid rgba(100,164,216,.18);
+    align-items:flex-start;
+  }
+  #modal-police-document-choice > .ntpc-doc-hub > div:first-child > div {min-width:0;}
+  #modal-police-document-choice > .ntpc-doc-hub > div:first-child h3 {font-size:19px;line-height:1.35;}
+  #modal-police-document-choice > .ntpc-doc-hub > div:first-child p {font-size:12px;line-height:1.55;}
+  #modal-police-document-choice > .ntpc-doc-hub > .grid {
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) !important;
+    gap:10px !important;
+    flex:none; min-width:0;
+  }
+  #modal-police-document-choice .ntpc-doc-choice {
+    box-sizing:border-box; display:flex !important; flex-direction:column;
+    width:100%; min-width:0; min-height:152px !important;
+    height:auto; margin:0 !important; padding:16px !important;
+    align-items:flex-start; justify-content:flex-start;
+    gap:8px !important;
+    touch-action:manipulation;
+  }
+  #modal-police-document-choice .ntpc-doc-choice > * {margin-top:0 !important;}
+  #modal-police-document-choice .ntpc-doc-choice > i {font-size:24px;line-height:1.25;}
+  #modal-police-document-choice .ntpc-doc-choice h4 {font-size:18px;line-height:1.3;}
+  #modal-police-document-choice .ntpc-doc-choice p {font-size:12px;line-height:1.5;}
+  #modal-police-document-choice .ntpc-doc-choice > div:last-child {margin-top:auto !important;font-size:12px;}
+
+  /* The other police document dialogs also need independently scrollable sheets. */
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic):not(.hidden) {
+    align-items:flex-start !important; padding:8px !important;
+    overflow:hidden !important;
+  }
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) > .ntpc-interview-frame {
+    box-sizing:border-box; min-width:0; min-height:0;
+    max-height:calc(100dvh - 16px) !important;
+    overflow-y:auto !important; overflow-x:hidden !important;
+    -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+    touch-action:pan-y; padding:14px !important;
+    padding-bottom:max(28px,env(safe-area-inset-bottom)) !important;
+  }
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) .ntpc-interview-group {
+    min-width:0;overflow-wrap:anywhere;
+  }
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) :is(input,textarea,select) {max-width:100%;font-size:16px;}
+}
+@media(min-width:390px) and (max-width:767px) {
+  /* Larger phones can show two matching cards per row; small phones keep one. */
+  #modal-police-document-choice > .ntpc-doc-hub > .grid {
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+  #modal-police-document-choice .ntpc-doc-choice {min-height:202px !important;}
+}
+@media(min-width:768px) {
+  #ntpc-police-subnav > .police-sub-btn {min-height:42px;}
+  #modal-police-document-choice > .ntpc-doc-hub {max-height:calc(100dvh - 40px);overflow-y:auto;overscroll-behavior:contain;}
+}
+</style>
+
+<!-- V124：僅修復警務新文件的行動版捲動、視窗層級、日期時間輸入框溢出，不變更任何 Firebase 或業務流程 -->
+<style id="ntpc-v124-police-mobile-fixes">
+/* The site navigation has z-index 120; new police modals formerly had z-index 50. */
+#modal-police-document-choice,
+#modal-police-interview,
+#modal-police-traffic,
+#modal-police-forensic,
+#modal-report { z-index: 155 !important; }
+
+/* Native iOS inputs can have an intrinsic minimum width wider than a narrow grid cell. */
+:is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) :is(.grid,.flex,section,article,label,div) { min-inline-size: 0; }
+:is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-interview-control {
+  box-sizing:border-box;
+  inline-size:100%; max-inline-size:100%; min-inline-size:0 !important;
+}
+:is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) :is(input[type="date"],input[type="time"],input[type="datetime-local"]) {
+  box-sizing:border-box !important;
+  display:block;
+  inline-size:100% !important;
+  max-inline-size:100% !important;
+  min-inline-size:0 !important;
+  -webkit-min-logical-width:0;
+  font-size:16px !important;
+  text-align:left;
+}
+:is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) :is(input[type="date"],input[type="time"],input[type="datetime-local"])::-webkit-date-and-time-value {
+  text-align:left;
+  min-height:1.2em;
+}
+:is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) :is(input[type="date"],input[type="time"],input[type="datetime-local"])::-webkit-calendar-picker-indicator { opacity:1; }
+:is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) :is(#pi-end,#pt-time) {
+  flex:1 1 0% !important;
+  width:0 !important;
+  min-width:0 !important;
+}
+:is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) :is(#pi-end-now,#pt-now) {
+  min-width:52px;
+  min-height:44px;
+  flex:0 0 auto;
+}
+
+/* Split title from scrollable form body: no more hint text under or above sticky headers. */
+:is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) > .ntpc-interview-frame.ntpc-v124-modal-frame {
+  display:flex !important;
+  flex-direction:column !important;
+  overflow:hidden !important;
+  overflow-y:hidden !important;
+  overflow-x:hidden !important;
+  padding:0 !important;
+  min-width:0 !important;
+  max-height:min(96dvh,1000px) !important;
+  height:min(96dvh,1000px) !important;
+  box-sizing:border-box;
+}
+:is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-head {
+  position:relative !important;
+  inset:auto !important;
+  top:auto !important;
+  left:auto !important;
+  margin:0 !important;
+  z-index:2;
+  flex:0 0 auto;
+  padding:16px 20px !important;
+  border-bottom:1px solid rgba(110,172,236,.25);
+  background:#102039 !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+  box-sizing:border-box;
+}
+:is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-body {
+  display:block;
+  flex:1 1 0%;
+  margin-top:0 !important;
+  margin-bottom:0 !important;
+  min-height:0 !important;
+  min-width:0 !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  padding:20px !important;
+  padding-bottom:max(32px,env(safe-area-inset-bottom)) !important;
+  scroll-padding-block:16px 68px;
+  scroll-behavior:auto;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+}
+:is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-body > * + * {
+  margin-top:18px;
+}
+:is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-body .ntpc-interview-group {
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+}
+
+@media(max-width:767px) {
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic):not(.hidden) {
+    display:flex !important;
+    align-items:stretch !important;
+    justify-content:center !important;
+    padding:0 !important;
+    overflow:hidden !important;
+    height:100dvh;
+    max-height:100dvh;
+    background:rgba(2,7,23,.90);
+  }
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) > .ntpc-interview-frame.ntpc-v124-modal-frame {
+    width:100% !important;
+    max-width:100% !important;
+    height:100dvh !important;
+    max-height:100dvh !important;
+    min-height:0 !important;
+    margin:0 !important;
+    border-radius:0 !important;
+    border-left:none;
+    border-right:none;
+  }
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-head {
+    padding:12px 14px !important;
+    gap:8px !important;
+    flex-wrap:wrap;
+  }
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-head > div:first-child {
+    min-width:0 !important;
+    flex:1 1 160px;
+  }
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-head > div:first-child > div:first-child {
+    font-size:10px !important;
+    letter-spacing:.07em !important;
+    line-height:1.5;
+  }
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-head h3 {
+    font-size:17px !important;
+    line-height:1.35 !important;
+    overflow-wrap:anywhere;
+  }
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-head > div:last-child {
+    flex:0 0 auto;
+    margin-left:auto;
+    min-width:0;
+    gap:6px !important;
+  }
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-head button {
+    flex:0 0 auto;
+    min-height:42px;
+    padding:8px 10px !important;
+    font-size:12px !important;
+    white-space:nowrap;
+  }
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-body {
+    padding:14px !important;
+    padding-bottom:max(46px,env(safe-area-inset-bottom)) !important;
+  }
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-body .ntpc-interview-group {
+    padding:13px !important;
+  }
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-body .grid {
+    min-width:0 !important;
+    max-width:100%;
+  }
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-body .grid > * {
+    min-width:0 !important;
+    max-width:100%;
+  }
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-body .ntpc-interview-control {
+    padding:11px 12px !important;
+    min-height:46px;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+  }
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-body .ntpc-interview-section {
+    align-items:center;
+    gap:10px;
+    font-size:15px;
+    line-height:1.45;
+  }
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-body .ntpc-interview-section span {
+    flex:0 0 30px;
+  }
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-body > button[id$="-submit"] {
+    min-height:54px;
+    padding:14px !important;
+    white-space:normal;
+    line-height:1.5;
+  }
+  #modal-police-document-choice:not(.hidden) { z-index:155 !important; }
+  #modal-police-document-choice > .ntpc-doc-hub { scrollbar-gutter:auto; }
+  #modal-report:not(.hidden) { z-index:155 !important; }
+  #modal-report :is(input[type="date"],input[type="datetime-local"],input[type="time"]) { min-width:0 !important; max-width:100%; }
+}
+@media (prefers-reduced-motion:reduce) {
+  :is(#modal-police-interview,#modal-police-traffic,#modal-police-forensic) .ntpc-v124-form-body {scroll-behavior:auto !important;}
+}
+</style>
+
+
+<!-- V125：Android／iOS／iPadOS／Android 平板跨裝置版面補強；僅樣式與視窗尺寸，既有資料與功能不更動 -->
+<style id="ntpc-v125-universal-police">
+:root{--ntpc-v125-vvh:100dvh;--ntpc-v125-vvtop:0px}
+:is(#modal-police-document-choice,#modal-police-traffic,#modal-police-interview,#modal-police-forensic,#modal-report){
+  box-sizing:border-box;z-index:155!important;
+}
+/* Allow each scroll view to shrink when the Android/iOS virtual keyboard opens. */
+:is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic):not(.hidden),
+#modal-police-document-choice:not(.hidden){
+  top:var(--ntpc-v125-vvtop,0px)!important;
+  bottom:auto!important;
+  block-size:var(--ntpc-v125-vvh,100dvh)!important;
+  max-block-size:var(--ntpc-v125-vvh,100dvh)!important;
+  overflow:hidden!important;
+  overscroll-behavior:contain;
+}
+:is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) > .ntpc-interview-frame.ntpc-v124-modal-frame{
+  display:flex!important;flex-direction:column!important;min-block-size:0!important;
+  overflow:hidden!important;box-sizing:border-box;
+}
+:is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) .ntpc-v124-form-head{
+  position:relative!important;top:auto!important;flex:0 0 auto!important;
+  min-block-size:0;box-sizing:border-box;overflow:hidden;
+}
+:is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) .ntpc-v124-form-body{
+  flex:1 1 0!important;min-block-size:0!important;max-block-size:100%;
+  overflow-x:hidden!important;overflow-y:auto!important;
+  touch-action:pan-y;overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-gutter:stable;
+  padding-bottom:max(38px,calc(env(safe-area-inset-bottom,0px) + 24px))!important;
+}
+:is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) .ntpc-v124-form-body :is(.grid,.flex,label,section,article){min-width:0;max-width:100%;}
+:is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) :is(input,select,textarea){min-inline-size:0!important;max-inline-size:100%!important;box-sizing:border-box;}
+/* Avoid the zero-width time field and WebKit's oversized native date/time controls. */
+:is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) :is(#pi-end,#pt-time){
+  flex:1 1 120px!important;width:100%!important;min-width:0!important;
+}
+:is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) :is(input[type="date"],input[type="time"],input[type="datetime-local"]){
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  font-size:16px!important;text-align:left;
+}
+:is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) :is(#pi-end-now,#pt-now){
+  flex:0 0 auto!important;min-height:44px;min-width:56px;
+}
+/* The picker must scroll in its own region, not rely on the page behind the dialog. */
+#modal-police-document-choice:not(.hidden){align-items:center!important;justify-content:center!important;}
+#modal-police-document-choice > .ntpc-doc-hub{
+  box-sizing:border-box;display:flex!important;flex-direction:column!important;
+  width:min(96vw,1050px)!important;max-width:1050px!important;min-width:0!important;
+  max-height:calc(var(--ntpc-v125-vvh,100dvh) - 24px)!important;
+  overflow-x:hidden!important;overflow-y:auto!important;
+  overscroll-behavior:contain;touch-action:pan-y;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-gutter:stable;
+  margin:auto!important;
+}
+#modal-police-document-choice .ntpc-doc-hub > div:first-child{
+  position:sticky;top:0!important;z-index:2;
+  padding-top:8px;padding-bottom:12px;
+  background:linear-gradient(135deg,#12253e,#0f1a30);
+}
+#modal-police-document-choice .ntpc-doc-hub > .grid{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  width:100%;min-width:0;gap:14px!important;flex:0 0 auto;
+}
+#modal-police-document-choice .ntpc-doc-choice{
+  width:100%;min-width:0;max-width:100%;min-height:168px!important;
+  height:auto;box-sizing:border-box;touch-action:manipulation;
+}
+/* Controls in the police landing page keep identical hit targets on tablets. */
+#tab-police .mobile-action-group{min-width:0;max-width:100%;}
+#tab-police .mobile-action-group > button{
+  min-width:0!important;box-sizing:border-box;min-height:54px!important;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  white-space:normal;text-align:center;
+}
+#ntpc-police-subnav{min-width:0;max-width:100%;overflow-x:auto!important;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;}
+#ntpc-police-subnav > .police-sub-btn{flex:0 0 auto!important;min-width:max-content!important;white-space:nowrap!important;}
+/* Traffic scene remains draggable, but surrounding form can scroll naturally. */
+#pt-scene-tools{min-width:0;max-width:100%;}
+#pt-scene-tools .flex{min-width:0;flex-wrap:wrap;}
+#pt-scene-tools :is(.ntpc-map-board,.ntpc-v121-static-map){max-width:100%;}
+#pt-parties .ntpc-traffic-party{min-width:0;max-width:100%;}
+#pt-parties .ntpc-damage-grid{max-width:100%;}
+/* Original shared report dialog also needs bounded scrolling on touch devices. */
+#modal-report .mobile-modal-scroll{
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  max-height:calc(var(--ntpc-v125-vvh,100dvh) - 32px)!important;
+  overflow-y:auto!important;overflow-x:hidden!important;
+  scrollbar-gutter:stable;
+}
+/* Phones: one readable document choice per row and full-viewport document editors. */
+@media(max-width:599px){
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic):not(.hidden){
+    display:flex!important;align-items:stretch!important;justify-content:stretch!important;
+    padding:0!important;
+  }
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) > .ntpc-interview-frame.ntpc-v124-modal-frame{
+    width:100%!important;max-width:100%!important;
+    height:100%!important;max-height:100%!important;
+    border-radius:0!important;margin:0!important;
+  }
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) .ntpc-v124-form-head{
+    padding:max(12px,env(safe-area-inset-top,0px)) 12px 10px!important;
+    gap:8px!important;
+  }
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) .ntpc-v124-form-head > div:first-child{min-width:0;flex:1 1 130px;}
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) .ntpc-v124-form-head h3{font-size:clamp(15px,4.3vw,19px)!important;}
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) .ntpc-v124-form-head button{min-height:44px;}
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) .ntpc-v124-form-body{padding:12px!important;padding-bottom:max(44px,calc(env(safe-area-inset-bottom,0px) + 24px))!important;}
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) .ntpc-v124-form-body .ntpc-interview-group{padding:12px!important;}
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) .ntpc-v124-form-body :is(.sm\:grid-cols-2,.lg\:grid-cols-\[1fr_320px\]){grid-template-columns:minmax(0,1fr)!important;}
+  #modal-police-document-choice:not(.hidden){padding:6px!important;align-items:stretch!important;}
+  #modal-police-document-choice > .ntpc-doc-hub{
+    width:100%!important;max-height:calc(var(--ntpc-v125-vvh,100dvh) - 12px)!important;
+    border-radius:16px;padding:12px!important;
+  }
+  #modal-police-document-choice .ntpc-doc-hub > .grid{
+    grid-template-columns:minmax(0,1fr)!important;gap:10px!important;
+  }
+  #modal-police-document-choice .ntpc-doc-choice{min-height:134px!important;padding:14px!important;}
+  #tab-police .mobile-action-group{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:10px!important;}
+  #tab-police .mobile-action-group > button{width:100%!important;min-height:54px!important;margin:0!important;}
+  #modal-report:not(.hidden){padding:0!important;align-items:stretch!important;}
+  #modal-report .mobile-modal-scroll{max-height:var(--ntpc-v125-vvh,100dvh)!important;border-radius:0!important;margin:0!important;padding-bottom:max(36px,env(safe-area-inset-bottom,0px))!important;}
+}
+/* Small tablets and big phones: two-column document chooser and consistent controls. */
+@media(min-width:600px) and (max-width:899px){
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic):not(.hidden){padding:12px!important;align-items:center!important;}
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) > .ntpc-interview-frame.ntpc-v124-modal-frame{
+    width:100%!important;max-width:100%!important;
+    height:calc(var(--ntpc-v125-vvh,100dvh) - 24px)!important;
+    max-height:calc(var(--ntpc-v125-vvh,100dvh) - 24px)!important;
+  }
+  #modal-police-document-choice .ntpc-doc-hub > .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  #tab-police .mobile-action-group{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;}
+  #tab-police .mobile-action-group > button{width:100%!important;margin:0!important;}
+}
+/* iPad and Android tablets: fitted, centered dialogs, 2 or 4 cards based on available width. */
+@media(min-width:900px) and (max-width:1199px){
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic):not(.hidden){padding:18px!important;align-items:center!important;}
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) > .ntpc-interview-frame.ntpc-v124-modal-frame{
+    width:min(100%,1024px)!important;
+    height:calc(var(--ntpc-v125-vvh,100dvh) - 36px)!important;
+    max-height:calc(var(--ntpc-v125-vvh,100dvh) - 36px)!important;
+  }
+  #modal-police-document-choice .ntpc-doc-hub > .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  #tab-police .mobile-action-group{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important;}
+  #tab-police .mobile-action-group > button{width:100%!important;margin:0!important;}
+}
+@media(min-width:1200px){
+  #modal-police-document-choice .ntpc-doc-hub > .grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;}
+}
+/* Short landscape screens must keep a scrollable body even with the keyboard visible. */
+@media(max-height:530px) and (orientation:landscape){
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) .ntpc-v124-form-head{
+    padding:7px 12px!important;
+  }
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) .ntpc-v124-form-head h3{font-size:16px!important;}
+  #modal-police-document-choice .ntpc-doc-hub > div:first-child{padding:6px 0!important;}
+}
+@media(prefers-reduced-motion:reduce){
+  :is(#modal-police-traffic,#modal-police-interview,#modal-police-forensic) *{scroll-behavior:auto!important;}
+}
+</style>
+
+
+<style id="ntpc-v127-home-style">
+ :root{--ntpc-v127-primary:#1261e6;--ntpc-v127-edge:rgba(75,149,249,.28)}
+ body.ntpc-v127-layout{background:radial-gradient(ellipse at 75% 0%,#0c2140 0%,transparent 36%),#020b1f}
+ .ntpc-v127-aside{display:none;position:fixed;left:0;top:0;bottom:0;width:244px;background:linear-gradient(180deg,#091d38,#05152c 44%,#041329);border-right:1px solid rgba(99,158,248,.15);box-shadow:8px 0 40px rgba(0,0,0,.15);z-index:55;flex-direction:column;padding:14px 14px 22px;overflow-y:auto;overscroll-behavior:contain}
+ .ntpc-v127-nav-item{width:100%;border-radius:12px;min-height:46px;padding:10px 14px;display:flex;gap:14px;align-items:center;text-align:left;color:#cbd8ef;font-size:14px;font-weight:600;transition:background .18s,transform .18s,color .18s}
+ .ntpc-v127-nav-item i{font-size:16px;width:23px;text-align:center;color:#95b6f4}
+ .ntpc-v127-nav-item:hover{background:rgba(76,122,223,.18);transform:translateX(2px)}
+ .ntpc-v127-nav-item.is-active{background:linear-gradient(110deg,#2670f0,#1150b9);color:#fff;box-shadow:0 4px 20px rgba(29,99,225,.28)}
+ .ntpc-v127-nav-item.is-active i{color:#fff}
+ .ntpc-v127-aside-footer{margin-top:auto;border:1px solid rgba(87,129,192,.24);background:rgba(8,19,43,.65);border-radius:14px;padding:14px;font-size:12px;color:#a4b8d4}
+ .ntpc-v127-home-top{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:stretch}
+ .ntpc-v127-home-top>*{min-width:0}
+ .ntpc-v127-home-hero{min-height:360px;position:relative;overflow:hidden;border-radius:20px!important;border:1px solid rgba(46,137,252,.55)!important;box-shadow:0 16px 55px rgba(0,16,47,.55)}
+ .ntpc-v127-home-hero>div:first-child img{opacity:1!important;object-position:center center;filter:saturate(1.06) contrast(1.045)}
+ .ntpc-v127-home-hero>div:first-child .bg-gradient-to-t{background:linear-gradient(0deg,rgba(3,9,29,.60),transparent 37%)!important}
+ .ntpc-v127-home-hero>div:nth-child(2){padding:14px 20px!important;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;min-height:360px;max-width:none!important}
+ .ntpc-v127-home-hero>div:nth-child(2)>h1,.ntpc-v127-home-hero>div:nth-child(2)>span:first-child,.ntpc-v127-home-hero #home-version-intro,.ntpc-v127-home-hero .text-sky-200\/90{display:none!important}
+ .ntpc-v127-home-hero #home-site-version-badge{background:rgba(2,12,35,.75);backdrop-filter:blur(12px);border:1px solid rgba(100,181,255,.38);font-size:11px}
+ .ntpc-v127-work{border:1px solid rgba(66,134,224,.4);background:linear-gradient(145deg,#112542,#08182e);box-shadow:0 8px 40px rgba(0,0,0,.24);border-radius:20px;padding:20px;min-width:0}
+ .ntpc-v127-work-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;border:1px solid rgba(73,102,158,.24);border-radius:12px;background:rgba(1,12,35,.74);font-size:13px;color:#d5e0f3;min-height:50px}
+ .ntpc-v127-work-row strong{font-size:16px;color:#24d9a4;font-variant-numeric:tabular-nums}
+ .ntpc-v127-work-row strong.warn{color:#ffc640}
+ .ntpc-v127-work-row strong.dim{font-size:13px;color:#90a5c2}
+ .ntpc-v127-work-label{display:flex;align-items:center;gap:9px;min-width:0}
+ .ntpc-v127-work-label i{width:18px;text-align:center;color:#79b0ff}
+ .ntpc-v127-quick-entry{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:12px}
+ .ntpc-v127-quick-entry>button{display:flex!important;align-items:center;justify-content:center!important;min-width:0;min-height:72px;border-radius:16px;padding:14px!important;gap:10px;box-shadow:0 12px 35px rgba(0,0,0,.15)}
+ .ntpc-v127-quick-entry>button span{white-space:normal;text-align:left}
+ .ntpc-v127-home-update{border-color:rgba(55,155,244,.35)!important;background:linear-gradient(125deg,rgba(12,35,69,.92),rgba(5,23,43,.90))!important}
+ #site-announcement-bar.ntpc-v127-announcement{margin:0 0 14px!important;border-radius:13px;background:linear-gradient(90deg,rgba(12,38,77,.93),rgba(9,28,55,.94));border:1px solid rgba(45,126,252,.32);box-shadow:0 5px 18px rgba(0,0,0,.15)}
+ #site-announcement-bar.ntpc-v127-announcement>div:first-child{color:#99b9e9;padding-top:9px!important}
+ .ntpc-v127-extra-note{color:#9eb5d2;font-size:12px;line-height:1.7;letter-spacing:.01em}
+ @media(min-width:680px){.ntpc-v127-quick-entry{grid-template-columns:repeat(3,minmax(0,1fr))}}
+ @media(min-width:1000px){.ntpc-v127-home-top{grid-template-columns:minmax(0,1.65fr) minmax(310px,.96fr)}.ntpc-v127-home-hero{min-height:410px}.ntpc-v127-home-hero>div:nth-child(2){min-height:410px}}
+ @media(min-width:1100px){.ntpc-v127-aside{display:flex}body.ntpc-v127-layout>header{padding-left:244px!important}body.ntpc-v127-layout>header>div:first-child{max-width:none!important;padding-inline:28px!important;justify-content:space-between}body.ntpc-v127-layout>header nav{display:none!important}body.ntpc-v127-layout>header #logo-home-btn{display:none!important}body.ntpc-v127-layout>main{margin-left:244px!important;width:calc(100% - 244px)!important;max-width:none!important;padding:20px clamp(16px,2vw,36px)!important}body.ntpc-v127-layout>header .ntpc-v127-header-greeting{display:block!important}body.ntpc-v127-layout footer{margin-left:244px}}
+ @media(max-width:679px){.ntpc-v127-home-hero{min-height:240px}.ntpc-v127-home-hero>div:nth-child(2){min-height:240px}.ntpc-v127-work{padding:14px}.ntpc-v127-home-hero #home-site-version-badge{font-size:10px}}
+ @media(prefers-reduced-motion:reduce){.ntpc-v127-nav-item{transition:none}}
+</style>
+
+<style id="ntpc-v128-dashboard-skin">
+/* V128: Visual changes only. All existing panel IDs, auth, Firebase listeners and routes remain untouched. */
+:root{--v128-fg:#edf5ff;--v128-panel:rgba(4,19,45,.96);--v128-blue:#2585fc;--v128-line:rgba(67,143,241,.34)}
+body.ntpc-v127-layout{background:radial-gradient(ellipse at 45% -12%,rgba(30,75,171,.32),transparent 42%),radial-gradient(ellipse at 100% 75%,rgba(23,55,105,.16),transparent 55%),#020b1c}
+.ntpc-v127-aside{background:linear-gradient(175deg,#081b36 0%,#06162e 42%,#04132a 100%)!important;border-right:1px solid rgba(48,137,255,.27)!important;box-shadow:8px 0 38px rgba(0,4,21,.30)!important}
+.ntpc-v127-aside >div:first-child{margin:0 -2px 0;padding:3px 0 20px;border-bottom:1px solid rgba(96,147,228,.18)}
+.ntpc-v127-aside >div:first-child img{box-shadow:0 0 0 2px rgba(65,178,255,.32),0 0 19px rgba(26,126,255,.32)}
+.ntpc-v127-aside >div:first-child .font-black{font-weight:900!important;font-size:18px!important;white-space:nowrap;background-image:linear-gradient(100deg,#fff 0%,#9bdfff 28%,#3796ff 56%,#a172ff 79%,#fc9bd6 100%)!important;filter:drop-shadow(0 0 8px rgba(88,131,255,.25))}
+.ntpc-v127-nav-item{position:relative;font-size:14px!important;min-height:48px!important;padding:12px 15px!important;border:1px solid transparent}
+.ntpc-v127-nav-item.is-active{background:linear-gradient(100deg,#227aff,#0755c8)!important;border-color:rgba(126,201,255,.46);box-shadow:0 6px 22px rgba(14,86,211,.25)!important}
+.ntpc-v127-nav-item:hover{border-color:rgba(100,168,255,.24)}
+.ntpc-v128-more{border-top:1px solid rgba(112,167,241,.12);margin-top:8px;padding-top:10px}
+.ntpc-v128-more summary{list-style:none;cursor:pointer;user-select:none}
+.ntpc-v128-more summary::-webkit-details-marker{display:none}
+.ntpc-v128-more summary .fa-chevron-down{margin-left:auto;width:14px;transition:transform .2s}
+.ntpc-v128-more[open] summary .fa-chevron-down{transform:rotate(180deg)}
+.ntpc-v128-more-inner{padding:5px 0 3px 12px;border-left:1px solid rgba(79,129,212,.22);margin-left:22px;display:grid;gap:3px}
+.ntpc-v128-more-inner .ntpc-v127-nav-item{min-height:43px!important;font-size:12px!important;padding:10px 11px!important}
+.ntpc-v127-aside-footer{border-color:rgba(67,137,241,.25);background:rgba(5,20,48,.76)}
+body.ntpc-v127-layout>header{background:linear-gradient(105deg,rgba(5,22,46,.97),rgba(5,22,49,.97) 43%,rgba(8,38,93,.90))!important;box-shadow:0 5px 24px rgba(2,10,29,.28)}
+.ntpc-v127-header-greeting{margin-right:auto;min-width:0}
+.ntpc-v127-header-greeting>div:first-child{font-size:17px;letter-spacing:.015em;color:#f6faff;font-weight:800}
+.ntpc-v127-header-greeting>div:last-child{color:#9dbce9;font-weight:400}
+.ntpc-v128-header-controls{display:flex;align-items:center;gap:12px;margin-left:auto;padding-right:12px}
+.ntpc-v128-header-icon{position:relative;color:#cbdcff;border:1px solid rgba(99,152,239,.24);background:rgba(4,16,43,.68);border-radius:13px;width:42px;height:42px;display:flex;justify-content:center;align-items:center;transition:.18s}
+.ntpc-v128-header-icon:hover{color:white;background:rgba(28,89,182,.45);border-color:rgba(88,161,255,.65)}
+.ntpc-v128-header-icon .ntpc-v128-alert{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;padding:0 3px;background:#f04457;color:white;font-size:10px;border-radius:50%;display:none;align-items:center;justify-content:center}
+.ntpc-v128-header-avatar{width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid rgba(92,175,255,.40)}
+body.ntpc-v127-layout>header #user-badge{background:transparent!important;border-color:transparent!important;padding:7px 4px!important}
+body.ntpc-v127-layout>header #user-badge-name{font-size:13px}
+/* Announcement directly beneath the top bar, not hidden by the hero. */
+#site-announcement-bar.ntpc-v127-announcement{display:block;overflow:hidden;background:linear-gradient(90deg,rgba(8,34,77,.94),rgba(11,35,71,.88))!important;border:1px solid rgba(40,122,255,.78)!important;border-radius:12px!important;box-shadow:inset 0 1px rgba(142,204,255,.12),0 8px 26px rgba(5,18,56,.20)!important}
+#site-announcement-bar.ntpc-v127-announcement>div:first-child{color:#e2ecff;padding:10px 17px 0!important;font-size:12px!important;letter-spacing:.12em!important}
+#site-announcement-bar.ntpc-v127-announcement .announcement-track{min-width:0}
+#ntpc-v127-home-top{gap:13px!important}
+.ntpc-v127-home-hero{min-height:365px!important;border:1px solid rgba(42,137,255,.68)!important;border-radius:18px!important;box-shadow:0 10px 35px rgba(6,31,88,.38),inset 0 0 0 1px rgba(84,151,238,.10)!important;background:#020b1b}
+.ntpc-v127-home-hero>div:first-child img{object-position:50% 55%!important;opacity:1!important;filter:saturate(1.08) contrast(1.075)}
+.ntpc-v127-home-hero>div:first-child .bg-gradient-to-t{background:linear-gradient(0deg,rgba(2,13,34,.29),transparent 25%)!important}
+.ntpc-v127-home-hero>div:nth-child(2){min-height:365px!important;padding:10px 14px!important}
+.ntpc-v127-home-hero #home-site-version-badge{font-size:10px;background:rgba(5,22,57,.71);padding:5px 10px!important}
+.ntpc-v127-work{background:linear-gradient(150deg,rgba(13,36,71,.98),rgba(6,21,47,.96))!important;border-color:rgba(40,122,255,.56)!important;border-radius:18px!important;box-shadow:0 9px 28px rgba(2,10,34,.24)!important;padding:19px!important}
+.ntpc-v127-work h3{letter-spacing:.01em}
+.ntpc-v127-work-row{background:rgba(0,11,34,.75)!important;border-color:rgba(36,103,198,.43)!important;min-height:53px!important;border-radius:11px!important;padding:12px 15px!important}
+.ntpc-v127-work-row:hover{background:rgba(11,36,76,.88)!important;border-color:rgba(69,136,238,.64)!important}
+.ntpc-v127-work-row strong{color:#0ce0a9!important}
+.ntpc-v127-work-row strong.warn{color:#ffc13c!important}
+.ntpc-v127-work-row strong.dim{color:#89a4c4!important}
+.ntpc-v128-quick-wrap{margin-top:3px}
+.ntpc-v128-quick-wrap h3{font-size:15px}
+.ntpc-v128-quick-wrap h3 .fa-bolt{color:#2aa8ff!important}
+.ntpc-v127-quick-entry{gap:12px!important}
+.ntpc-v127-quick-entry>button{position:relative;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:13px!important;width:100%!important;min-height:85px!important;border-radius:13px!important;padding:13px 12px 13px 14px!important;border:1px solid rgba(117,174,255,.37)!important;text-align:left!important;overflow:hidden;transition:transform .2s,filter .2s,box-shadow .2s!important;white-space:normal}
+.ntpc-v127-quick-entry>button:hover{transform:translateY(-2px);filter:brightness(1.12);box-shadow:0 11px 27px rgba(14,70,159,.25)!important}
+.ntpc-v127-quick-entry>button>i:first-child{width:49px;min-width:49px;height:49px;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:20px!important;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.13);margin-right:0!important}
+.ntpc-v127-quick-entry .ntpc-v128-shortcut-copy{display:flex;flex-direction:column;min-width:0;flex:1;gap:3px}
+.ntpc-v127-quick-entry .ntpc-v128-shortcut-copy span{font-size:14px;font-weight:800;color:#fff;line-height:1.35}
+.ntpc-v127-quick-entry .ntpc-v128-shortcut-copy small{font-size:10px;font-weight:400;color:rgba(221,235,255,.75);line-height:1.4}
+.ntpc-v128-shortcut-arrow{margin:0!important;width:27px;height:27px;border-radius:999px;display:grid;place-items:center;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.08);font-size:11px;flex-shrink:0}
+.ntpc-v127-quick-entry>button:nth-child(1){background:linear-gradient(115deg,rgba(29,106,246,.98),rgba(3,45,123,.98))!important;border-color:rgba(38,121,255,.95)!important}
+.ntpc-v127-quick-entry>button:nth-child(2){background:linear-gradient(115deg,rgba(239,35,64,.94),rgba(93,12,38,.96))!important;border-color:rgba(236,62,81,.78)!important}
+.ntpc-v127-quick-entry>button:nth-child(3){background:linear-gradient(115deg,rgba(35,59,95,.97),rgba(9,26,54,.96))!important}
+.ntpc-v127-quick-entry>button:nth-child(4){background:linear-gradient(115deg,rgba(90,34,184,.95),rgba(38,17,99,.96))!important;border-color:rgba(121,55,247,.58)!important}
+.ntpc-v128-bottom{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.ntpc-v128-bottom>*{min-width:0}
+.ntpc-v127-home-update{border:1px solid rgba(49,136,255,.45)!important;background:linear-gradient(135deg,rgba(7,31,65,.96),rgba(3,21,47,.97))!important;border-radius:15px!important;padding:17px 18px!important}
+.ntpc-v127-home-update>div{display:flex;flex-direction:column;align-items:stretch;gap:9px}
+.ntpc-v127-home-update>div>div{max-width:100%}
+.ntpc-v127-home-update #home-latest-update-label{font-size:14px}
+.ntpc-v127-home-update button{align-self:flex-end;margin:0}
+.ntpc-v128-timeline{border-top:1px solid rgba(67,127,215,.22);margin-top:8px;padding-top:10px;display:grid;gap:10px}
+.ntpc-v128-timeline-row{display:grid;grid-template-columns:10px minmax(0,1fr);gap:12px;align-items:start;color:#c5d7f1;font-size:12px;line-height:1.5}
+.ntpc-v128-timeline-dot{width:10px;height:10px;margin-top:3px;border-radius:50%;background:#1cd4b1;box-shadow:0 0 10px rgba(28,212,177,.38)}
+.ntpc-v128-timeline-row:nth-child(2) .ntpc-v128-timeline-dot{background:#348ffe;box-shadow:0 0 10px rgba(52,143,254,.34)}
+.ntpc-v128-timeline-row:nth-child(3) .ntpc-v128-timeline-dot{background:#a9a3ff;box-shadow:0 0 10px rgba(169,163,255,.34)}
+.ntpc-v128-timeline-row strong{color:#eff6ff;display:block;font-size:12px}
+.ntpc-v128-features{background:linear-gradient(125deg,rgba(7,29,59,.97),rgba(4,21,46,.97));border:1px solid rgba(44,127,246,.47);border-radius:15px;padding:16px;min-width:0}
+.ntpc-v128-features-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}
+.ntpc-v128-features-head>div{font-size:14px;font-weight:800;color:#edf6ff}
+.ntpc-v128-features-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.ntpc-v128-feature{background:rgba(6,23,53,.82);color:#dbe9ff;border:1px solid rgba(53,114,202,.29);border-radius:11px;min-height:90px;display:flex;gap:10px;align-items:center;text-align:left;padding:11px 10px;transition:background .17s,transform .17s,border-color .17s;width:100%}
+.ntpc-v128-feature:hover{background:rgba(16,47,92,.95);border-color:rgba(82,157,253,.64);transform:translateY(-1px)}
+.ntpc-v128-feature>i{width:37px;height:37px;border-radius:12px;flex:0 0 37px;display:grid;place-items:center;font-size:16px;background:rgba(36,120,245,.13);color:#54a9ff}
+.ntpc-v128-feature span{display:grid;gap:5px;min-width:0}
+.ntpc-v128-feature strong{font-size:12px;color:white;line-height:1.35}
+.ntpc-v128-feature small{font-size:10px;color:#93abc9;line-height:1.45}
+.ntpc-v128-feature:nth-child(2)>i{color:#ff728c;background:rgba(245,61,79,.13)}
+.ntpc-v128-feature:nth-child(3)>i{color:#20e1b5;background:rgba(15,186,148,.13)}
+.ntpc-v128-feature:nth-child(4)>i{color:#c594ff;background:rgba(145,76,247,.13)}
+.ntpc-v128-feature .fa-chevron-right{color:#9bbbe8;margin-left:auto;font-size:10px}
+.ntpc-v128-all-features{border:1px solid rgba(53,110,193,.25);background:rgba(7,22,46,.44);border-radius:16px;padding:14px 15px}
+.ntpc-v128-all-features>summary{cursor:pointer;color:#adc9f1;font-size:12px;font-weight:700;list-style:none;display:flex;gap:10px;align-items:center}
+.ntpc-v128-all-features>summary::-webkit-details-marker{display:none}
+.ntpc-v128-all-features>summary:after{content:'⌄';margin-left:auto}
+.ntpc-v128-all-features[open]>summary{margin-bottom:13px}
+body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
+@media (min-width:1100px){
+ body.ntpc-v127-layout.ntpc-v128-sidebar-collapsed>header,body.ntpc-v127-layout.ntpc-v128-sidebar-collapsed>main,body.ntpc-v127-layout.ntpc-v128-sidebar-collapsed footer{padding-left:0!important;margin-left:0!important;width:100%!important}
+ body.ntpc-v127-layout.ntpc-v128-sidebar-collapsed>main{padding-inline:clamp(24px,4vw,80px)!important}
+ .ntpc-v128-bottom{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+ .ntpc-v127-home-top{grid-template-columns:minmax(0,1.65fr) minmax(320px,.94fr)!important}
+}
+@media (min-width:680px){.ntpc-v127-quick-entry{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media (min-width:1270px){.ntpc-v127-quick-entry{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
+@media (max-width:1099px){.ntpc-v128-header-controls{display:none!important}.ntpc-v128-bottom{grid-template-columns:minmax(0,1fr)!important}}
+@media (max-width:679px){.ntpc-v127-quick-entry{grid-template-columns:1fr!important}.ntpc-v128-features-grid{grid-template-columns:1fr 1fr}.ntpc-v128-feature{flex-wrap:wrap;min-height:80px}.ntpc-v128-feature>i{width:33px;height:33px;flex-basis:33px}.ntpc-v128-feature .fa-chevron-right{display:none}.ntpc-v127-home-hero{min-height:245px!important}.ntpc-v127-home-hero>div:nth-child(2){min-height:245px!important}.ntpc-v127-work{padding:14px!important}.ntpc-v127-work-row{min-height:51px!important}}
+@media (prefers-reduced-motion:reduce){.ntpc-v128-feature,.ntpc-v127-quick-entry>button{transition:none!important}}
+</style>
+
+
+<style id="ntpc-v131-update-layout">
+/* Correct the old lg:col-span-3 banner inside the new two-column dashboard. */
+#ntpc-v128-bottom{display:grid;grid-template-columns:minmax(0,1fr);align-items:stretch;gap:14px}
+#ntpc-v128-bottom > .ntpc-v127-home-update,
+#ntpc-v128-bottom > .ntpc-v128-features{grid-column:auto!important;grid-row:auto!important;min-width:0;min-height:0;margin:0!important;width:100%;align-self:stretch}
+@media (min-width:1100px){
+ #ntpc-v128-bottom{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+#ntpc-v128-bottom .ntpc-v127-home-update{display:flex;flex-direction:column;justify-content:stretch;gap:0;overflow:hidden}
+#ntpc-v128-bottom .ntpc-v127-home-update > div{height:100%;gap:12px}
+.ntpc-v131-update-header{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between!important;gap:12px;min-width:0;padding-bottom:10px;border-bottom:1px solid rgba(65,135,213,.24)}
+.ntpc-v131-update-header>div{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
+.ntpc-v131-update-header>div #home-latest-update-label{color:#f0f7ff;font-size:14px;font-weight:800}
+.ntpc-v131-update-header>div i{color:#34baff!important}
+#ntpc-v128-bottom .ntpc-v127-home-update .ntpc-v131-update-header>button{align-self:center;margin:0!important;flex-shrink:0;padding:7px 11px!important;background:rgba(4,38,86,.55)!important;color:#70c4ff!important;border:1px solid rgba(58,136,250,.43)!important;border-radius:999px!important;font-size:11px!important;white-space:nowrap;min-height:36px}
+#ntpc-v128-bottom .ntpc-v127-home-update .ntpc-v131-update-header>button:hover{background:rgba(25,88,168,.58)!important;color:white!important}
+#ntpc-v128-bottom .ntpc-v127-home-update .ntpc-v128-timeline{margin-top:10px;gap:10px}
+#ntpc-v128-bottom .ntpc-v127-home-update .ntpc-v128-timeline-row{grid-template-columns:12px minmax(0,1fr);font-size:12px;line-height:1.5}
+#ntpc-v128-bottom .ntpc-v127-home-update .ntpc-v128-timeline-row strong{font-size:12px}
+#ntpc-v128-bottom .ntpc-v127-home-update .ntpc-v131-update-more{margin-top:auto;border-top:1px solid rgba(58,121,201,.22);padding-top:8px;color:#93b0d0}
+.ntpc-v131-update-more>summary{list-style:none;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:space-between;gap:8px;color:#96bde8}
+.ntpc-v131-update-more>summary::-webkit-details-marker{display:none}
+.ntpc-v131-update-more>summary::after{content:'⌄';font-size:16px}
+.ntpc-v131-update-more[open]>summary::after{transform:rotate(180deg)}
+#ntpc-v128-bottom .ntpc-v131-update-more>p{margin-top:8px;line-height:1.65;font-size:11px}
+#ntpc-v128-bottom .ntpc-v128-features{display:flex;flex-direction:column}
+#ntpc-v128-bottom .ntpc-v128-features-head{padding-bottom:10px;border-bottom:1px solid rgba(65,135,213,.22);margin-bottom:12px}
+#ntpc-v128-bottom .ntpc-v128-features-grid{flex:1;grid-auto-rows:minmax(84px,1fr);align-content:stretch}
+@media (max-width:479px){
+ #ntpc-v128-bottom .ntpc-v127-home-update{padding:14px!important}
+ .ntpc-v131-update-header{align-items:flex-start!important}
+ .ntpc-v131-update-header>div{flex-wrap:wrap}
+ .ntpc-v131-update-header>div #home-latest-update-label{font-size:13px}
+ #ntpc-v128-bottom .ntpc-v128-features-grid{grid-template-columns:1fr!important}
+}
+@media (prefers-reduced-motion:reduce){.ntpc-v131-update-more>summary::after{transition:none}}
+</style>
 </head>
 <body class="ntpc-premium-ui bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
     <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
@@ -1572,6 +2248,28 @@ body.ntpc-premium-ui #ntpc-map-admin-toolbar button { min-height:38px; border:1p
             </div>
         </div>
     </header>
+<aside id="ntpc-v127-sidebar" class="ntpc-v127-aside" aria-label="主選單">
+  <div class="flex items-center gap-3 px-2 pb-6 border-b border-slate-700/40">
+    <img src="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/A3258911-D5A9-4109-9055-AA54BD1933E5.png" class="w-11 h-11 rounded-full border border-blue-400/35 object-cover" alt="新北市 RP 圖標"/>
+    <div><div class="font-black tracking-wide text-base bg-gradient-to-r from-sky-200 via-blue-400 to-rose-400 bg-clip-text text-transparent">新北市 RP 3.0</div><div class="text-xs text-slate-400">公職服務整合系統</div></div>
+  </div>
+  <nav class="flex flex-col gap-1 mt-5" aria-label="主功能導覽">
+    <button class="ntpc-v127-nav-item is-active" type="button" data-v127-tab="home"><i class="fa-solid fa-house"></i>首頁</button>
+    <button class="ntpc-v127-nav-item" type="button" data-v127-tab="police"><i class="fa-solid fa-shield-halved"></i>警務案件</button>
+    <button class="ntpc-v127-nav-item" type="button" data-v127-tab="fire"><i class="fa-solid fa-fire-extinguisher"></i>消防案件</button>
+    <button class="ntpc-v127-nav-item" type="button" data-v127-tab="notifications"><i class="fa-solid fa-bell"></i>個人通知</button>
+    <button class="ntpc-v127-nav-item" type="button" data-v127-tab="profile"><i class="fa-solid fa-id-card"></i>我的資料</button>
+    <div class="my-3 border-t border-slate-700/30"></div>
+    <button class="ntpc-v127-nav-item" type="button" data-v127-tab="dashboard"><i class="fa-solid fa-gauge-high"></i>勤務中心</button>
+    <button class="ntpc-v127-nav-item" type="button" data-v127-tab="jiaxiao" data-v127-role="jiaxiao"><i class="fa-solid fa-hospital"></i>嘉蕭／民間</button>
+    <button class="ntpc-v127-nav-item" type="button" data-v127-tab="academy"><i class="fa-solid fa-graduation-cap"></i>專生考核</button>
+    <button class="ntpc-v127-nav-item" type="button" data-v127-tab="faq"><i class="fa-solid fa-circle-question"></i>常見問題</button>
+    <button class="ntpc-v127-nav-item" type="button" data-v127-tab="admin" data-v127-role="admin"><i class="fa-solid fa-user-gear"></i>管理員中心</button>
+    <button class="ntpc-v127-nav-item" type="button" data-v127-tab="update-log"><i class="fa-solid fa-clock-rotate-left"></i>更新紀錄</button>
+  </nav>
+  <div class="ntpc-v127-aside-footer"><div class="text-slate-400 mb-2">系統狀態</div><div class="text-emerald-300 font-semibold"><i class="fa-solid fa-circle text-[8px] mr-2"></i>前端系統已載入</div><div class="mt-2 text-[10px] text-slate-500">僅供 ER:LC 遊戲角色扮演使用</div></div>
+</aside>
+
 
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Home Tab -->
@@ -1612,7 +2310,7 @@ body.ntpc-premium-ui #ntpc-map-admin-toolbar button { min-height:38px; border:1p
 <section id="tab-home" class="space-y-8">
             <div class="relative rounded-3xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-900">
                 <div class="absolute inset-0 z-0">
-                    <img src="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/IMG_2981.png" alt="Cover" class="w-full h-full object-cover opacity-40 transition-all duration-700" onerror="this.src='https://placehold.co/1600x900/0f172a/38bdf8?text=New+Taipei+RP+3.0'">
+                    <img src="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/ab93b503-7aa6-49d7-b0e5-359e05fcfb4b.png" alt="Cover" class="w-full h-full object-cover opacity-40 transition-all duration-700" onerror="this.src='https://placehold.co/1600x900/0f172a/38bdf8?text=New+Taipei+RP+3.0'">
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"></div>
                 </div>
                 <div class="relative z-10 px-8 py-20 sm:py-28 max-w-3xl space-y-6">
@@ -1649,7 +2347,7 @@ body.ntpc-premium-ui #ntpc-map-admin-toolbar button { min-height:38px; border:1p
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
                     <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-xl font-bold"><i class="fa-solid fa-shield-halved"></i></div>
                     <h3 class="text-lg font-bold text-white">警務勤務系統</h3>
-                    <p class="text-slate-400 text-sm">員警打卡、補打卡、執勤時數、治安案件報告、警用獎懲與 ER:LC 執勤狀態判斷。</p>
+                    <p class="text-slate-400 text-sm">員警打卡、補卡、值勤統計及獎懲；警務文件支援案件報告、詢問筆錄、交通事件處理表與刑事鑑定紀錄表，並保留審核、退件及歷史查詢。</p>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
                     <div class="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 text-xl font-bold"><i class="fa-solid fa-truck-medical"></i></div>
@@ -1659,17 +2357,17 @@ body.ntpc-premium-ui #ntpc-map-admin-toolbar button { min-height:38px; border:1p
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
                     <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-xl font-bold"><i class="fa-solid fa-stamp"></i></div>
                     <h3 class="text-lg font-bold text-white">案件審核與通知</h3>
-                    <p class="text-slate-400 text-sm">案件送審、通過、退件、重新送件與個人通知，掌握最新審核狀況。</p>
+                    <p class="text-slate-400 text-sm">案件送審與退件未補分區、核准二次確認、審核者與時間標註、管理員 LOG 以及個人通知，方便追查處理進度。</p>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
-                    <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 text-xl font-bold"><i class="fa-solid fa-bullhorn"></i></div>
-                    <h3 class="text-lg font-bold text-white">網站公告與資訊</h3>
-                    <p class="text-slate-400 text-sm">首頁公告輪播、系統資訊、版本更新紀錄與異常／意見回報，方便掌握系統最新變更。</p>
+                    <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 text-xl font-bold"><i class="fa-solid fa-building-user"></i></div>
+                    <h3 class="text-lg font-bold text-white">民間職業系統</h3>
+                    <p class="text-slate-400 text-sm">民間職業及嘉蕭集團服務：醫療掛號、住院與救護報告、生命禮儀、費用計算及紀錄查詢。依登入身分提供授權功能。</p>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
                     <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-xl font-bold"><i class="fa-solid fa-graduation-cap"></i></div>
                     <h3 class="text-lg font-bold text-white">專生考核系統</h3>
-                    <p class="text-slate-400 text-sm">提供專生考核相關功能與考核代碼管理，支援管理層進行維護。</p>
+                    <p class="text-slate-400 text-sm">專生考核沿用正式警務三類表單及消防／EMS 操作，考核資料只暫存在本次瀏覽器工作階段，不送入正式案件資料庫。</p>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
                     <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-xl font-bold"><i class="fa-solid fa-user-gear"></i></div>
@@ -1677,6 +2375,16 @@ body.ntpc-premium-ui #ntpc-map-admin-toolbar button { min-height:38px; border:1p
                     <p class="text-slate-400 text-sm">帳號、公告、回報、值勤、案件、ER:LC 設定與裝置安全等管理功能，依權限提供操作。</p>
                 </div>
             </div>
+            <section class="rounded-2xl border border-sky-500/20 bg-slate-900/60 p-5 sm:p-6 space-y-3" aria-labelledby="home-police-updates-title">
+                <div class="flex items-center gap-2 text-sky-200"><i class="fa-solid fa-layer-group"></i><h3 id="home-police-updates-title" class="font-bold">近期警務文件與跨裝置優化</h3></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-300 leading-7">
+                    <p>交通事件處理表：預設兩位當事人、可加至六位；可選道路類型、拖曳與旋轉車輛、點選受損位置、記錄撞擊點、煞車痕及散落物，並提供單筆刪除和上一步復原。</p>
+                    <p>刑事鑑定紀錄表：現場勘察、指紋與 DNA、逐項證物資料及 Discord 證物室連結；筆錄支援不同詢問人身分及逐題問答。</p>
+                    <p>報告審核：顯示審核人及時間，退件未補獨立查詢；警務案件與警專表單保持對應模板，警專資料不寫入正式案件庫。</p>
+                    <p>跨裝置體驗：優化 Android、iPhone、iPad、Android 平板的視窗、捲動、日期時間欄位及警務功能列排版。</p>
+                </div>
+                <p class="text-xs text-slate-500">以上僅為新北市 RP 遊戲模擬系統，實際使用依帳號權限及部署版本為準。</p>
+            </section>
         </section>
 
         <!-- Police Tab -->
@@ -1720,7 +2428,8 @@ body.ntpc-premium-ui #ntpc-map-admin-toolbar button { min-height:38px; border:1p
 
 
 
-                <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
+                <p id="ntpc-police-subnav-hint" class="hidden text-xs text-slate-400" aria-hidden="true">左右滑動下方分類列，可查看更多警務功能 <i class="fa-solid fa-arrows-left-right ml-1"></i></p>
+                <div id="ntpc-police-subnav" class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto" role="group" aria-label="警務各功能分類（可左右滑動）">
                     <button id="btn-police-reports" data-sub="reports" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史案件報告庫</button>
                     <button id="btn-police-review" data-sub="review" class="police-sub-btn hidden px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-stamp mr-2"></i>高層審核系統 <span id="police-review-tab-badge" class="ml-1 inline-flex min-w-[20px] h-5 px-1.5 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">0</span></button>
                     <button id="btn-police-punishments" data-sub="punishments" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-gavel mr-2"></i>警用獎懲專區</button>
@@ -12177,7 +12886,7 @@ async function republishAnnouncement(id) {
         async function submitFeedback(){if(!currentUser){showToast('請先登入後再回報。','warning','需要登入');return;}const subject=document.getElementById('feedback-subject').value.trim(),details=document.getElementById('feedback-details').value.trim();if(!subject||!details){showToast('請填寫主旨與詳細資訊。','error','資料不完整');return;}const now=Date.now(),id=`FB-${now}-${Math.random().toString(36).slice(2,7)}`,obj={id,subject,details,account:currentUser.account,name:currentUser.name,staffNumber:currentUser.staffNumber||'',time:formatDateTime(now),timestamp:now,status:'未處理'};try{await fm.setDoc(fm.doc(db,'feedbackReports',id),obj);try{await ntpcFeedbackNotifyManagement(obj);}catch(err){console.warn('回報已儲存但通知失敗',err);}appData.feedbackReports.unshift({docId:id,...obj});closeModal('modal-feedback');showToast('回報已送至管理中心。','success','回報成功');renderAdminFeedback();}catch(e){showToast('回報送出失敗：'+e.message,'error','操作失敗');}}
         function openFeedbackModal(){if(!currentUser){showToast('請先登入後再回報。','warning','需要登入');return;}document.getElementById('feedback-account-preview').textContent=`${currentUser.name} (${currentUser.account})`;document.getElementById('modal-feedback').classList.remove('hidden');}
         function renderAdminFeedback(){const c=document.getElementById('admin-feedback-list');if(!c)return;const rows=(appData.feedbackReports||[]).sort((a,b)=>b.timestamp-a.timestamp);c.innerHTML=rows.length?rows.map(r=>{const id=String(r.docId||r.id||'').replace(/'/g,"\'");const subject=escapeHtml(r.subject||'無主旨'),name=escapeHtml(r.name||'--'),account=escapeHtml(r.account||'--'),staff=r.staffNumber?`／${escapeHtml(r.staffNumber)}`:'',details=escapeHtml(r.details||''),note=escapeHtml(r.adminNote||''),status=escapeHtml(r.status||'未處理'),time=escapeHtml(formatDateTime(r.timestamp,r.time));const noteValue=String(r.adminNote||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2"><div><h4 class="font-bold text-white">${subject}</h4><div class="text-xs text-cyan-400 font-mono mt-1">${name} (${account})${staff}</div></div><span class="text-xs text-slate-500">${time}</span></div><div class="bg-slate-950 rounded-xl p-4 text-sm text-slate-300 whitespace-pre-wrap break-words">${details}</div><div class="grid grid-cols-1 md:grid-cols-[160px_1fr_auto] gap-2"><select id="fb-status-${escapeHtml(id)}" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"><option ${status==='未處理'?'selected':''}>未處理</option><option ${status==='處理中'?'selected':''}>處理中</option><option ${status==='已處理'?'selected':''}>已處理</option></select><input id="fb-note-${escapeHtml(id)}" value="${noteValue}" placeholder="管理員備注..." class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"><div class="flex gap-2"><button type="button" onclick="saveFeedbackAdmin('${id}')" class="px-3 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-xs">儲存備注</button><button type="button" onclick="deleteFeedback('${id}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-xl text-xs">刪除訊息</button></div></div>${note?`<div class="text-xs text-amber-300 bg-amber-500/5 border border-amber-500/10 rounded-xl p-3">管理員備注：${note}</div>`:''}</div>`}).join(''):'<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">目前沒有回報內容。</div>';}
-        async function saveFeedbackAdmin(id){if(!currentUser||currentUser.role!=='admin')return;const r=appData.feedbackReports.find(x=>String(x.docId||x.id)===String(id));if(!r)return;const status=document.getElementById(`fb-status-${id}`)?.value||'未處理',adminNote=document.getElementById(`fb-note-${id}`)?.value.trim()||'';try{await fm.updateDoc(fm.doc(db,'feedbackReports',r.docId||r.id),{status,adminNote,adminNoteBy:currentUser.account,adminNoteAt:Date.now()});r.status=status;r.adminNote=adminNote;r.adminNoteBy=currentUser.account;r.adminNoteAt=Date.now();await logAdminAction('備注／更新意見回報',r.docId||r.id);renderAdminFeedback();showToast('回報備注已儲存。','success','儲存成功');}catch(e){showToast('儲存失敗：'+e.message,'error','操作失敗');}}
+        async function saveFeedbackAdmin(id){if(!currentUser||currentUser.role!=='admin')return;const r=appData.feedbackReports.find(x=>String(x.docId||x.id)===String(id));if(!r)return;const status=document.getElementById(`fb-status-${id}`)?.value||'未處理',adminNote=document.getElementById(`fb-note-${id}`)?.value.trim()||'';try{await fm.updateDoc(fm.doc(db,'feedbackReports',r.docId||r.id),{status,adminNote,adminNoteBy:currentUser.account,adminNoteAt:Date.now()});r.status=status;r.adminNote=adminNote;r.adminNoteBy=currentUser.account;r.adminNoteAt=Date.now();await logAdminAction('備注／更新意見回報',r.docId||r.id);renderAdminFeedback();renderDashManagementWork();if(typeof ntpcV127RefreshHome==='function')ntpcV127RefreshHome();showToast('回報備注已儲存。','success','儲存成功');}catch(e){showToast('儲存失敗：'+e.message,'error','操作失敗');}}
         async function deleteFeedback(id){if(!currentUser||currentUser.role!=='admin')return;const r=appData.feedbackReports.find(x=>String(x.docId||x.id)===String(id));if(!r)return;if(!(await showConfirm('確定刪除此回報訊息嗎？刪除動作會留下稽核紀錄。','刪除回報訊息','確定刪除')))return;try{await fm.deleteDoc(fm.doc(db,'feedbackReports',r.docId||r.id));appData.feedbackReports=appData.feedbackReports.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除意見／異常回報',id);renderAdminFeedback();showToast('回報訊息已刪除。','success','刪除成功');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
 
         function renderAdminUsers() {
@@ -12732,7 +13441,7 @@ async function deleteHandoverNote(id){if(!currentUser||!db||!fm)return;const not
 /* FAQ 找不到答案：建立問題單，不直接暴露管理資料。 */
 async function renderFAQIssues(){const h=document.getElementById('admin-faq-issues-list');if(!h)return;const rows=(appData.faqIssues||[]).slice().sort((a,b)=>Number(b.timestamp||0)-Number(a.timestamp||0));h.innerHTML=rows.length?rows.map(x=>`<div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800"><div class="flex flex-wrap justify-between gap-2"><div class="text-sm text-white">${ntpcEsc(x.name||x.account||'未知使用者')} <span class="text-xs text-slate-500">(${ntpcEsc(x.account||'--')})</span></div><span class="text-xs ${x.status==='closed'?'text-emerald-400':'text-amber-400'}">${x.status==='closed'?'已處理':'待處理'}</span></div><div class="text-sm text-slate-300 mt-2 whitespace-pre-wrap">${ntpcEsc(x.text)}</div><div class="text-[11px] text-slate-500 mt-2">${ntpcEsc(x.time||formatDateTime(x.timestamp))}</div><div class="mt-3 flex gap-2">${x.status!=='closed'?`<button onclick="closeFAQIssue('${ntpcEsc(x.docId||x.id)}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs">標記已處理</button>`:''}</div></div>`).join(''):'<div class="text-center py-8 text-slate-500">目前沒有問題回報。</div>';}
 async function closeFAQIssue(id){if(!currentUser||getEffectiveRole(currentUser)!=='admin'||!db||!fm)return;try{await fm.updateDoc(fm.doc(db,'faqIssues',id),{status:'closed',closedAt:Date.now(),closedBy:currentUser.account});const x=(appData.faqIssues||[]).find(a=>(a.docId||a.id)===id);if(x)Object.assign(x,{status:'closed',closedAt:Date.now(),closedBy:currentUser.account});renderFAQIssues();showToast('問題單已標記處理。','success','操作完成');}catch(e){showToast('更新問題單失敗：'+e.message,'error','操作失敗');}}
-function renderDashManagementWork(){const card=document.getElementById('dash-management-work-card'),h=document.getElementById('dash-management-work');if(!card||!h)return;const can=!!currentUser&&canAccessManagementCenter();card.classList.toggle('hidden',!can);if(!can)return;const items=[['警察案件待審',manualReadState.cases['police-review']?ntpcCountPendingReports(appData.policePendingReports):'尚未查詢','police'],['消防／EMS待審',manualReadState.cases['fire-review']?ntpcCountPendingReports(appData.firePendingReports)+ntpcCountPendingReports(appData.emsPendingReports):'尚未查詢','fire'],['通緝待審',ntpcCountPendingReports(appData.wantedPendingRecords),'police'],['帳號協助單',appData.faqIssues?.filter(x=>x.status!=='closed').length||0,'admin'],['異常回報',appData.feedbackReports?.length||0,'admin']];h.innerHTML=items.map(x=>`<div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800"><span class="text-sm text-slate-200">${x[0]}</span><span class="font-bold ${x[1]==='尚未查詢'?'text-slate-500':x[1]?'text-amber-400':'text-emerald-400'}">${x[1]}</span></div>`).join('');}
+function renderDashManagementWork(){const card=document.getElementById('dash-management-work-card'),h=document.getElementById('dash-management-work');if(!card||!h)return;const can=!!currentUser&&canAccessManagementCenter();card.classList.toggle('hidden',!can);if(!can)return;const items=[['警察案件待審',manualReadState.cases['police-review']?ntpcCountPendingReports(appData.policePendingReports):'尚未查詢','police'],['消防／EMS待審',manualReadState.cases['fire-review']?ntpcCountPendingReports(appData.firePendingReports)+ntpcCountPendingReports(appData.emsPendingReports):'尚未查詢','fire'],['通緝待審',ntpcCountPendingReports(appData.wantedPendingRecords),'police'],['帳號協助單',appData.faqIssues?.filter(x=>x.status!=='closed').length||0,'admin'],['異常回報',getEffectiveRole(currentUser)==='admin' ? (appData.feedbackReports||[]).filter(x=>!['已處理','resolved','closed','done','completed'].includes(String(x.status||'未處理').trim().toLowerCase())).length : '尚未載入','admin']];h.innerHTML=items.map(x=>`<div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800"><span class="text-sm text-slate-200">${x[0]}</span><span class="font-bold ${x[1]==='尚未查詢'?'text-slate-500':x[1]?'text-amber-400':'text-emerald-400'}">${x[1]}</span></div>`).join('');}
 function openFAQIssueModal(){if(!currentUser){showToast('請先登入後再提交問題。','warning','需要登入');return;}const nameEl=document.getElementById('faq-issue-account-preview');if(nameEl)nameEl.textContent=`${currentUser.name||'使用者'} (${currentUser.account})`;const input=document.getElementById('faq-issue-text');if(input)input.value='';document.getElementById('modal-faq-issue')?.classList.remove('hidden');setTimeout(()=>document.getElementById('faq-issue-text')?.focus(),80);}
 async function submitFAQIssue(){if(!currentUser||!db||!fm){showToast('請先登入後再提交問題。','warning','需要登入');return;}const input=document.getElementById('faq-issue-text'),text=String(input?.value||'').trim();if(!text){showToast('請先描述你遇到的問題。','error','內容未填寫');input?.focus();return;}if(text.length>1000){showToast('問題內容最多 1000 字。','warning','內容過長');return;}const btn=document.getElementById('submit-faq-issue-btn');if(btn?.classList.contains('is-busy-action'))return;btn?.classList.add('is-busy-action');try{const now=Date.now(),id='FAQ-'+now+'-'+Math.random().toString(36).slice(2,7),obj={id,account:currentUser.account,name:currentUser.name||'',text:text.slice(0,1000),timestamp:now,time:formatDateTime(now),status:'open'};await fm.setDoc(fm.doc(db,'faqIssues',id),obj);appData.faqIssues.unshift({docId:id,...obj});closeModal('modal-faq-issue');await logAdminAction('提交常見問題協助單',id,text,{discord:false});renderFAQIssues();renderDashManagementWork();showSubmitSuccessAnimation('問題提交成功','問題已送至管理中心，管理人員可以查看。');}catch(e){showToast('提交失敗：'+e.message,'error','操作失敗');}finally{btn?.classList.remove('is-busy-action');}}
         // ------------------------------------------------------------
@@ -14806,15 +15515,15 @@ async function ntpcFeedbackNotifyManagement(report) {
               <div id="pt-scene-prompt" class="ntpc-scene-empty" role="status"><i class="fa-solid fa-map-location-dot text-2xl text-amber-300"></i><div><strong class="block text-slate-100">請先選擇道路類型</strong><span class="text-xs text-slate-400">選好十字路口、直線道等類型後，才會顯示可以放置車輛的現場圖。</span></div></div>
               <div id="pt-scene-controls" class="hidden space-y-3">
                 <div class="flex flex-wrap items-center gap-2"><span class="text-xs text-slate-300">工具：</span><button type="button" class="ntpc-chip-btn active" data-scene-mode="start">🚘 出發車輛</button><button type="button" class="ntpc-chip-btn" data-scene-mode="impact">✴ 撞擊點</button><button type="button" class="ntpc-chip-btn" data-scene-mode="stop">🏁 停車位置</button><button type="button" class="ntpc-chip-btn" data-scene-mode="skid">〰 煞車痕</button><button type="button" class="ntpc-chip-btn" data-scene-mode="debris">◆ 散落物</button></div>
-                <div class="flex flex-wrap items-center gap-2"><label for="pt-scene-party" class="text-xs text-slate-300">當事人</label><select id="pt-scene-party" class="ntpc-interview-control max-w-[175px]"></select><button type="button" id="pt-scene-rotate-left" class="ntpc-chip-btn" title="車輛逆時針旋轉 15 度">↶ 左轉 15°</button><button type="button" id="pt-scene-rotate-right" class="ntpc-chip-btn" title="車輛順時針旋轉 15 度">↷ 右轉 15°</button><button type="button" id="pt-scene-clear" class="ntpc-chip-btn text-rose-200" title="清除目前道路圖的所有標記">清除標記</button></div>
+                <div class="flex flex-wrap items-center gap-2"><label for="pt-scene-party" class="text-xs text-slate-300">當事人</label><select id="pt-scene-party" class="ntpc-interview-control max-w-[175px]"></select><button type="button" id="pt-scene-rotate-left" class="ntpc-chip-btn" title="車輛逆時針旋轉 15 度">↶ 左轉 15°</button><button type="button" id="pt-scene-rotate-right" class="ntpc-chip-btn" title="車輛順時針旋轉 15 度">↷ 右轉 15°</button><button type="button" id="pt-scene-undo" class="ntpc-chip-btn" disabled aria-label="復原上一步的道路標記操作" title="復原上一步標記、移動或旋轉">↶ 上一步</button><button type="button" id="pt-scene-delete" class="ntpc-chip-btn text-rose-200" title="僅刪除目前選取的標記">刪除選取</button><button type="button" id="pt-scene-clear" class="ntpc-chip-btn text-rose-200" title="清除目前道路圖的所有標記（可復原）">清空整張圖</button></div>
                 <div id="pt-scene-board" class="ntpc-map-board" aria-label="事故道路俯視圖，可點擊或拖曳車輛標記"></div>
-                <p class="text-xs text-slate-400">先選當事人和標記工具，點擊地圖放置；可在手機或電腦拖曳標記，再用左右旋轉調整車頭方向。</p>
+                <p class="text-xs text-slate-400">先選當事人與標記工具，點擊地圖放置；再次點擊<strong>已選取</strong>標記可單獨刪除，拖曳可移動。「上一步」可復原新增、刪除、旋轉或移動，不會清除其他標記。</p>
               </div>
               <input id="pt-scene-map-data" type="hidden" value="[]">
             </div>
             <div class="rounded-2xl border border-amber-500/15 bg-slate-950/70 p-4 space-y-3">
               <h5 class="font-bold text-amber-200">圖例說明</h5>
-              <div class="space-y-2 text-xs text-slate-300"><div><b class="text-amber-300">A／B／C…</b> 代表各位當事人。</div><div><b class="text-sky-300">車形圖示</b> 可拖曳與旋轉，表示出發／停止位置。</div><div><b class="text-rose-300">紅色撞擊點</b> 表示碰撞發生處。</div><div><b class="text-amber-300">煞車痕、散落物</b> 可個別標記。</div><div>每位當事人的相同標記可重新點選來更新位置。</div><div class="pt-2 border-t border-slate-700/70">圖面是 RP 事故示意，非真實測繪比例。</div></div>
+              <div class="space-y-2 text-xs text-slate-300"><div><b class="text-amber-300">A／B／C…</b> 代表各位當事人。</div><div><b class="text-sky-300">車形圖示</b> 可拖曳與旋轉，表示出發／停止位置。</div><div><b class="text-rose-300">紅色撞擊點</b> 表示碰撞發生處。</div><div><b class="text-amber-300">煞車痕、散落物</b> 可個別標記。</div><div>每位當事人的相同標記可重新點選來更新位置。再次點擊已選取標記可刪除，亦可使用「上一步」復原。</div><div class="pt-2 border-t border-slate-700/70">圖面是 RP 事故示意，非真實測繪比例。</div></div>
             </div>
           </div>
         </section>`);
@@ -14939,6 +15648,34 @@ async function ntpcFeedbackNotifyManagement(report) {
   }
   let ntpcV121SceneMode='start';
   let ntpcV121Selected=null;
+  let ntpcV126UndoHistory=[];
+  let ntpcV126IgnoreClickUntil=0;
+  function ntpcV126UpdateUndo(){
+    const btn=document.getElementById('pt-scene-undo');
+    if(btn){btn.disabled=ntpcV126UndoHistory.length===0;btn.classList.toggle('opacity-40',btn.disabled);btn.setAttribute('aria-label',btn.disabled?'目前沒有可復原的操作':`復原上一步（可復原 ${ntpcV126UndoHistory.length} 次）`);}
+  }
+  function ntpcV126Remember(snapshot=getSceneData()){
+    // Stored snapshots are immutable strings so later drag/rotation cannot mutate undo entries.
+    ntpcV126UndoHistory.push(JSON.stringify(snapshot));
+    if(ntpcV126UndoHistory.length>35)ntpcV126UndoHistory.shift();
+    ntpcV126UpdateUndo();
+  }
+  function ntpcV126Undo(){
+    if(!ntpcV126UndoHistory.length){showToast('目前沒有可復原的標記操作。','info');return;}
+    const snapshot=ntpcV126UndoHistory.pop();
+    ntpcV121Selected=null;
+    try{setSceneData(JSON.parse(snapshot));}catch(e){console.warn('道路圖復原失敗',e);}
+    ntpcV126UpdateUndo();
+  }
+  function ntpcV126DeleteSelected(){
+    if(!ntpcV121Selected){showToast('請先點選地圖中的一個標記。','warning');return;}
+    const list=getSceneData();const at=list.findIndex(x=>x.party+'|'+x.mode===ntpcV121Selected);
+    if(at<0){ntpcV121Selected=null;showToast('找不到選取的標記。','warning');return;}
+    ntpcV126Remember(list);
+    list.splice(at,1);
+    ntpcV121Selected=null;
+    setSceneData(list);
+  }
   function ntpcV121ShowControls(){
     const lane=document.getElementById('pt-laneType')?.value||'';
     const valid=!!NTPC_V121_ROAD_NAMES[lane];
@@ -14984,6 +15721,7 @@ async function ntpcFeedbackNotifyManagement(report) {
     const party=document.getElementById('pt-scene-party')?.value||'A';
     const match=data.find(item=>item.party===party && (item.mode==='start'||item.mode==='stop') && (!ntpcV121Selected || item.party+'|'+item.mode===ntpcV121Selected)) || data.find(item=>item.party===party&&item.mode==='start');
     if(!match){showToast('請先在地圖放置車輛，才能旋轉方向。','warning');return;}
+    ntpcV126Remember(data);
     match.angle=(((Number(match.angle)||0)+delta)%360+360)%360;
     ntpcV121ChooseMarker(match);
     setSceneData(data);
@@ -15001,7 +15739,9 @@ async function ntpcFeedbackNotifyManagement(report) {
       if(!marker||!board.contains(marker))return;
       const idx=Number(marker.dataset.index);const list=getSceneData();
       if(!Number.isInteger(idx)||!list[idx])return;
-      dragging={idx,startX:ev.clientX,startY:ev.clientY,list,moved:false};
+      dragging={idx,startX:ev.clientX,startY:ev.clientY,list,moved:false,
+        wasSelected:ntpcV121Selected===list[idx].party+'|'+list[idx].mode,
+        previous:getSceneData()};
       ntpcV121ChooseMarker(list[idx]);
       marker.setPointerCapture(ev.pointerId);
       ev.stopPropagation();ev.preventDefault();
@@ -15010,24 +15750,40 @@ async function ntpcFeedbackNotifyManagement(report) {
       if(!dragging)return;
       const marker=board.querySelector(`.ntpc-v121-marker[data-index="${dragging.idx}"]`);
       if(!marker)return;
-      if(Math.abs(ev.clientX-dragging.startX)>2||Math.abs(ev.clientY-dragging.startY)>2)dragging.moved=true;
+      if(Math.hypot(ev.clientX-dragging.startX,ev.clientY-dragging.startY)>7)dragging.moved=true;
+      if(!dragging.moved)return;
       ntpcV121SetMarkerCoords(dragging.list[dragging.idx],ev,board);
       marker.style.left=dragging.list[dragging.idx].x+'%';marker.style.top=dragging.list[dragging.idx].y+'%';
     });
-    const endDrag=()=>{
+    const endDrag=ev=>{
       if(!dragging)return;
-      const list=dragging.list;dragging=null;
-      setSceneData(list);
+      const action=dragging;dragging=null;
+      ntpcV126IgnoreClickUntil=Date.now()+140;
+      if(ev.type==='pointercancel'){setSceneData(action.previous);return;}
+      if(action.moved){
+        if(JSON.stringify(action.previous)!==JSON.stringify(action.list)){
+          ntpcV126Remember(action.previous);
+          setSceneData(action.list);
+        }else renderSceneBoard();
+      }else if(action.wasSelected){
+        // A second tap on the already selected marker removes only that marker.
+        ntpcV126Remember(action.previous);
+        action.list.splice(action.idx,1);
+        ntpcV121Selected=null;
+        setSceneData(action.list);
+      }else renderSceneBoard();
     };
     board.addEventListener('pointerup',endDrag);
     board.addEventListener('pointercancel',endDrag);
     board.addEventListener('click',ev=>{
+      if(Date.now()<ntpcV126IgnoreClickUntil)return;
       if(ev.target.closest('.ntpc-v121-marker'))return;
       if(!NTPC_V121_ROAD_NAMES[document.getElementById('pt-laneType')?.value])return;
       const party=document.getElementById('pt-scene-party')?.value||'A';
       const list=getSceneData();
       const mode=ntpcV121SceneMode;
       const existing=list.find(x=>x.party===party&&x.mode===mode);
+      ntpcV126Remember(list);
       const item=existing||{party,mode,angle:0};
       ntpcV121SetMarkerCoords(item,ev,board);
       if(!existing)list.push(item);
@@ -15039,12 +15795,14 @@ async function ntpcFeedbackNotifyManagement(report) {
       renderSceneBoard();
     });
     document.getElementById('pt-scene-party')?.addEventListener('change',()=>{ntpcV121Selected=null;renderSceneBoard();});
+    document.getElementById('pt-scene-undo')?.addEventListener('click',ntpcV126Undo);
+    document.getElementById('pt-scene-delete')?.addEventListener('click',ntpcV126DeleteSelected);
     document.getElementById('pt-scene-rotate-left')?.addEventListener('click',()=>ntpcV121Rotate(-15));
     document.getElementById('pt-scene-rotate-right')?.addEventListener('click',()=>ntpcV121Rotate(15));
     document.getElementById('pt-scene-clear')?.addEventListener('click',async()=>{
       const data=getSceneData();if(!data.length)return;
       const ok=typeof showConfirm==='function' ? await showConfirm('確定清除這張現場圖的所有車輛與標記嗎？','清除現場圖標記','確認清除') : false;
-      if(ok){ntpcV121Selected=null;setSceneData([]);}
+      if(ok){ntpcV126Remember(data);ntpcV121Selected=null;setSceneData([]);}
     });
     renderSceneBoard();
   }
@@ -15158,6 +15916,7 @@ async function ntpcFeedbackNotifyManagement(report) {
     const host=document.getElementById('pt-parties'); host.replaceChildren();
     if(Array.isArray(rec.parties)&&rec.parties.length) rec.parties.slice(0,6).forEach(window.ntpcAddTrafficParty); else for(let i=0;i<2;i++) window.ntpcAddTrafficParty();
     document.getElementById('pt-scene-map-data').value=JSON.stringify(Array.isArray(rec.sceneMapData)?rec.sceneMapData:[]);
+    ntpcV126UndoHistory=[];ntpcV121Selected=null;ntpcV126UpdateUndo();
     refreshScenePartyOptions(); renderSceneBoard();
     document.getElementById('modal-police-document-choice')?.classList.add('hidden');
     const modal=document.getElementById('modal-police-traffic'); modal.classList.remove('hidden');
@@ -15308,8 +16067,8 @@ async function ntpcFeedbackNotifyManagement(report) {
     const host=document.getElementById('pf-evidence-list'); if(!host) return;
     if(host.children.length>=10){ showToast('每份鑑定紀錄表最多 10 項證物。','warning'); return; }
     const item=document.createElement('div'); item.className='ntpc-interview-qa space-y-3';
-    item.innerHTML=`<div class="flex items-center justify-between gap-2"><b class="text-sm text-fuchsia-200">證物項目</b><button type="button" class="pf-remove-evidence text-xs text-rose-300 border border-rose-500/25 rounded-lg px-3 py-1.5"><i class="fa-solid fa-xmark mr-1"></i>移除</button></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><input class="pf-ev-name ntpc-interview-control" placeholder="證物名稱／編號"><input class="pf-ev-type ntpc-interview-control" placeholder="跡證類型（例如 指紋、DNA、物證）"><input class="pf-ev-location ntpc-interview-control" placeholder="採集位置"><input class="pf-ev-by ntpc-interview-control" placeholder="採集人員"><textarea class="pf-ev-desc ntpc-interview-control sm:col-span-2" rows="2" placeholder="採集方式、保存狀態或補充說明"></textarea></div>`;
-    item.querySelector('.pf-ev-name').value=initial.name||''; item.querySelector('.pf-ev-type').value=initial.type||''; item.querySelector('.pf-ev-location').value=initial.location||''; item.querySelector('.pf-ev-by').value=initial.collectedBy||''; item.querySelector('.pf-ev-desc').value=initial.description||'';
+    item.innerHTML=`<div class="flex items-center justify-between gap-2"><b class="text-sm text-fuchsia-200">證物項目</b><button type="button" class="pf-remove-evidence text-xs text-rose-300 border border-rose-500/25 rounded-lg px-3 py-1.5"><i class="fa-solid fa-xmark mr-1"></i>移除</button></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><input class="pf-ev-name ntpc-interview-control" placeholder="證物名稱／編號"><input class="pf-ev-type ntpc-interview-control" placeholder="跡證類型（例如 指紋、DNA、物證）"><input class="pf-ev-location ntpc-interview-control" placeholder="採集位置"><input class="pf-ev-by ntpc-interview-control" placeholder="採集人員"><textarea class="pf-ev-desc ntpc-interview-control sm:col-span-2" rows="2" placeholder="採集方式、保存狀態或補充說明"></textarea><label class="block sm:col-span-2"><span class="ntpc-interview-label">Discord 證物室連結（選填）</span><input type="url" class="pf-ev-discord ntpc-interview-control" placeholder="https://discord.com/channels/伺服器ID/頻道ID/訊息ID" maxlength="512" autocomplete="off"></label></div>`;
+    item.querySelector('.pf-ev-name').value=initial.name||''; item.querySelector('.pf-ev-type').value=initial.type||''; item.querySelector('.pf-ev-location').value=initial.location||''; item.querySelector('.pf-ev-by').value=initial.collectedBy||''; item.querySelector('.pf-ev-desc').value=initial.description||''; item.querySelector('.pf-ev-discord').value=initial.discordEvidenceUrl||'';
     item.querySelector('.pf-remove-evidence').addEventListener('click',()=>item.remove());
     host.appendChild(item);
   }
@@ -15327,9 +16086,16 @@ async function ntpcFeedbackNotifyManagement(report) {
       dna:String(document.getElementById('pf-dna')?.value||'').trim(),
       note:String(document.getElementById('pf-note')?.value||'').trim(),
       attachments:safeUrlList([1,2,3].map(n=>document.getElementById(`pf-link-${n}`)?.value)),
-      evidence:Array.from(document.querySelectorAll('#pf-evidence-list .ntpc-interview-qa')).map(el=>({name:el.querySelector('.pf-ev-name')?.value.trim()||'',type:el.querySelector('.pf-ev-type')?.value.trim()||'',location:el.querySelector('.pf-ev-location')?.value.trim()||'',collectedBy:el.querySelector('.pf-ev-by')?.value.trim()||'',description:el.querySelector('.pf-ev-desc')?.value.trim()||''})).filter(x=>x.name||x.type||x.location||x.collectedBy||x.description)
+      evidence:Array.from(document.querySelectorAll('#pf-evidence-list .ntpc-interview-qa')).map(el=>({name:el.querySelector('.pf-ev-name')?.value.trim()||'',type:el.querySelector('.pf-ev-type')?.value.trim()||'',location:el.querySelector('.pf-ev-location')?.value.trim()||'',collectedBy:el.querySelector('.pf-ev-by')?.value.trim()||'',description:el.querySelector('.pf-ev-desc')?.value.trim()||'',discordEvidenceUrl:el.querySelector('.pf-ev-discord')?.value.trim()||''})).filter(x=>x.name||x.type||x.location||x.collectedBy||x.description||x.discordEvidenceUrl)
     };
     if(!rec.unit||!rec.date||!rec.time||!rec.location||!rec.subject||!rec.sceneSummary||!rec.process) throw new Error('請完整填寫基本資料、現場概況與採證過程。');
+    for(const [i,item] of rec.evidence.entries()){
+      if(!item.discordEvidenceUrl)continue;
+      try{
+        const u=new URL(item.discordEvidenceUrl);
+        if(u.protocol!=='https:'||!['discord.com','discordapp.com','canary.discord.com','ptb.discord.com'].includes(u.hostname)||!u.pathname.startsWith('/channels/'))throw new Error('無效');
+      }catch(e){throw new Error(`證物 ${i+1} 的連結不是有效的 Discord 證物室頻道或訊息網址。`);}
+    }
     return rec;
   }
   function forensicSummary(rec){ return `【刑事鑑定紀錄表｜RP 模擬】\n案名：${rec.subject}\n勘察時間：${rec.date} ${rec.time}\n地點：${rec.location}\n證物數量：${rec.evidence.length} 項\n勘察人員：${rec.officer}`; }
@@ -15371,7 +16137,7 @@ async function ntpcFeedbackNotifyManagement(report) {
   }
   function forensicDetailHtml(r){
     const x=r.forensicRecord||{}; const e=v=>esc(String(v??'--')); const attachments=safeUrlList(x.attachments||r.videoLinks||[]);
-    return `<div class="ntpc-interview-group"><div class="ntpc-interview-section"><span>01</span>基本資料</div><dl class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><dt>勘察單位</dt><dd>${e(x.unit)}</dd></div><div><dt>勘察時間</dt><dd>${e((x.date||'--')+' '+(x.time||'--'))}</dd></div><div class="sm:col-span-2"><dt>勘察地點</dt><dd>${e(x.location)}</dd></div><div><dt>案名／主題</dt><dd>${e(x.subject)}</dd></div><div><dt>勘察人員</dt><dd>${e(x.officer)}</dd></div><div><dt>登記帳號</dt><dd>${e(r.registeredByAccount||r.createdByAccount||'--')}</dd></div></dl></div><div class="ntpc-interview-group"><div class="ntpc-interview-section"><span>02</span>現場勘察與採證</div><div class="space-y-3"><div><dt>現場概況</dt><dd class="whitespace-pre-wrap">${e(x.sceneSummary||'未填')}</dd></div><div><dt>採證與勘察過程</dt><dd class="whitespace-pre-wrap">${e(x.process||'未填')}</dd></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><dt>指紋採證紀錄</dt><dd class="whitespace-pre-wrap">${e(x.fingerprint||'未填')}</dd></div><div><dt>DNA 採樣紀錄</dt><dd class="whitespace-pre-wrap">${e(x.dna||'未填')}</dd></div></div></div></div><div class="ntpc-interview-group"><div class="ntpc-interview-section"><span>03</span>證物清單</div><div class="space-y-3">${(x.evidence||[]).map((item,i)=>`<div class="ntpc-interview-qa"><div class="font-bold text-fuchsia-200 mb-2">證物 ${i+1}</div><dl class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><dt>名稱／編號</dt><dd>${e(item.name)}</dd></div><div><dt>跡證類型</dt><dd>${e(item.type)}</dd></div><div><dt>採集位置</dt><dd>${e(item.location)}</dd></div><div><dt>採集人員</dt><dd>${e(item.collectedBy)}</dd></div><div class="sm:col-span-2"><dt>說明</dt><dd class="whitespace-pre-wrap">${e(item.description||'未填')}</dd></div></dl></div>`).join('')||'<div class="text-xs text-slate-500">未填寫證物清單。</div>'}</div></div><div class="ntpc-interview-group"><div class="ntpc-interview-section"><span>04</span>附件與備註</div><div class="space-y-3">${attachments.length?attachments.map((url,i)=>{ const safe=(typeof safeHttpUrl==='function'?safeHttpUrl(url):url); const isImg=/\.(png|jpe?g|webp|gif|bmp|svg)(\?|#|$)/i.test(String(safe||'')); return `<div class="space-y-2"><a href="${e(safe)}" target="_blank" rel="noopener noreferrer" class="ntpc-link-tile text-xs text-fuchsia-200"><span><i class="fa-solid fa-link mr-1"></i>附件 ${i+1}</span><span>開啟</span></a>${isImg?`<img src="${e(safe)}" alt="附件 ${i+1}" class="ntpc-preview-thumb">`:''}</div>`;}).join(''):'<div class="text-xs text-slate-500">未提供附件連結。</div>'}<div><dt>備註</dt><dd class="whitespace-pre-wrap">${e(x.note||'無')}</dd></div></div></div>`;
+    return `<div class="ntpc-interview-group"><div class="ntpc-interview-section"><span>01</span>基本資料</div><dl class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><dt>勘察單位</dt><dd>${e(x.unit)}</dd></div><div><dt>勘察時間</dt><dd>${e((x.date||'--')+' '+(x.time||'--'))}</dd></div><div class="sm:col-span-2"><dt>勘察地點</dt><dd>${e(x.location)}</dd></div><div><dt>案名／主題</dt><dd>${e(x.subject)}</dd></div><div><dt>勘察人員</dt><dd>${e(x.officer)}</dd></div><div><dt>登記帳號</dt><dd>${e(r.registeredByAccount||r.createdByAccount||'--')}</dd></div></dl></div><div class="ntpc-interview-group"><div class="ntpc-interview-section"><span>02</span>現場勘察與採證</div><div class="space-y-3"><div><dt>現場概況</dt><dd class="whitespace-pre-wrap">${e(x.sceneSummary||'未填')}</dd></div><div><dt>採證與勘察過程</dt><dd class="whitespace-pre-wrap">${e(x.process||'未填')}</dd></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><dt>指紋採證紀錄</dt><dd class="whitespace-pre-wrap">${e(x.fingerprint||'未填')}</dd></div><div><dt>DNA 採樣紀錄</dt><dd class="whitespace-pre-wrap">${e(x.dna||'未填')}</dd></div></div></div></div><div class="ntpc-interview-group"><div class="ntpc-interview-section"><span>03</span>證物清單</div><div class="space-y-3">${(x.evidence||[]).map((item,i)=>`<div class="ntpc-interview-qa"><div class="font-bold text-fuchsia-200 mb-2">證物 ${i+1}</div><dl class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><dt>名稱／編號</dt><dd>${e(item.name)}</dd></div><div><dt>跡證類型</dt><dd>${e(item.type)}</dd></div><div><dt>採集位置</dt><dd>${e(item.location)}</dd></div><div><dt>採集人員</dt><dd>${e(item.collectedBy)}</dd></div><div class="sm:col-span-2"><dt>說明</dt><dd class="whitespace-pre-wrap">${e(item.description||'未填')}</dd></div><div class="sm:col-span-2"><dt>Discord 證物室連結</dt><dd>${item.discordEvidenceUrl&&safeHttpUrl(item.discordEvidenceUrl)?`<a class="text-sky-300 hover:underline break-all" href="${e(safeHttpUrl(item.discordEvidenceUrl))}" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-discord mr-1"></i>開啟證物室紀錄</a>`:'未提供'}</dd></div></dl></div>`).join('')||'<div class="text-xs text-slate-500">未填寫證物清單。</div>'}</div></div><div class="ntpc-interview-group"><div class="ntpc-interview-section"><span>04</span>附件與備註</div><div class="space-y-3">${attachments.length?attachments.map((url,i)=>{ const safe=(typeof safeHttpUrl==='function'?safeHttpUrl(url):url); const isImg=/\.(png|jpe?g|webp|gif|bmp|svg)(\?|#|$)/i.test(String(safe||'')); return `<div class="space-y-2"><a href="${e(safe)}" target="_blank" rel="noopener noreferrer" class="ntpc-link-tile text-xs text-fuchsia-200"><span><i class="fa-solid fa-link mr-1"></i>附件 ${i+1}</span><span>開啟</span></a>${isImg?`<img src="${e(safe)}" alt="附件 ${i+1}" class="ntpc-preview-thumb">`:''}</div>`;}).join(''):'<div class="text-xs text-slate-500">未提供附件連結。</div>'}<div><dt>備註</dt><dd class="whitespace-pre-wrap">${e(x.note||'無')}</dd></div></div></div>`;
   }
   window.viewPoliceForensicDetail = function(r,isPending=false){
     document.getElementById('detail-case-badge').textContent=r.caseId||'--'; document.getElementById('detail-title').textContent=r.title||'刑事鑑定紀錄表'; document.getElementById('detail-meta-grid')?.classList.add('hidden'); document.getElementById('detail-content')?.parentElement?.classList.add('hidden'); const display=document.getElementById('detail-interview-display'); if(display){ display.innerHTML=forensicDetailHtml(r); display.classList.remove('hidden'); } document.getElementById('detail-video-wrapper')?.classList.add('hidden'); const remark=document.getElementById('detail-remark'); if(remark) remark.textContent=getLatestRemarkText(r); ntpcShowReviewMetaInReportDetail(r); const actions=[]; const id=esc(String(r.caseId||'')); if(isPending&&r.reviewStatus==='pending'&&canReviewPoliceReports()) actions.push(`<button type="button" onclick="approvePolicePendingReport('${id}')" class="px-3 py-2 rounded-lg bg-emerald-600/25 text-emerald-300">審核通過</button><button type="button" onclick="openRejectPolicePending('${id}');closeModal('modal-report-detail')" class="px-3 py-2 rounded-lg bg-rose-600/25 text-rose-300">退件</button>`); const owner=String(r.registeredByAccount||r.createdByAccount||'').toLowerCase()===String(currentUser?.account||'').toLowerCase(); if((isPending&&r.reviewStatus==='rejected'&&owner)||(!isPending&&canModifyReport(r,'police'))) actions.push('<button type="button" id="pf-detail-edit" class="px-3 py-2 rounded-lg bg-sky-600/20 text-sky-200">編輯鑑定紀錄</button>'); if(!isPending&&canRemarkReport('police')) actions.push('<button type="button" id="pf-detail-remark" class="px-3 py-2 rounded-lg bg-amber-600/20 text-amber-300">長官批示</button>'); const bar=document.getElementById('detail-action-bar'); if(bar){ bar.innerHTML=actions.join(''); bar.querySelector('#pf-detail-edit')?.addEventListener('click',()=>{ closeModal('modal-report-detail'); openPoliceForensicForm(r); }); bar.querySelector('#pf-detail-remark')?.addEventListener('click',()=>{ closeModal('modal-report-detail'); openRemarkModal('policeReports',r.caseId); }); } document.getElementById('detail-edit-history').innerHTML=(Array.isArray(r.editHistory)?r.editHistory:[]).map(z=>`<div class="text-xs text-slate-400">${esc(z.editorName||'--')}｜${esc(z.time||'')}</div>`).join('')||'<span class="text-xs text-slate-500">尚無修改歷程。</span>'; document.getElementById('modal-report-detail').classList.remove('hidden');
@@ -15426,6 +16192,398 @@ async function ntpcFeedbackNotifyManagement(report) {
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init, {once:true});
   else init();
+})();
+</script>
+
+
+<script id="ntpc-v124-police-modal-layout">
+// V124: presentation-only wrappers; no changes to persistence, review, or credentials.
+(function(){
+  const ids=['modal-police-interview','modal-police-traffic','modal-police-forensic'];
+  function install(){
+    ids.forEach(id=>{
+      const overlay=document.getElementById(id);
+      const frame=overlay?.querySelector(':scope > .ntpc-interview-frame');
+      if(!frame || frame.classList.contains('ntpc-v124-modal-frame'))return;
+      const header=frame.firstElementChild;
+      if(!header)return;
+      const body=document.createElement('div');
+      body.className='ntpc-v124-form-body';
+      // Keep the original content and all original IDs/events intact.
+      while(header.nextSibling){body.appendChild(header.nextSibling);}
+      frame.appendChild(body);
+      header.classList.add('ntpc-v124-form-head');
+      frame.classList.add('ntpc-v124-modal-frame');
+      let wasHidden=overlay.classList.contains('hidden');
+      const observer=new MutationObserver(()=>{
+        const hidden=overlay.classList.contains('hidden');
+        if(wasHidden && !hidden){ body.scrollTop=0; }
+        wasHidden=hidden;
+      });
+      observer.observe(overlay,{attributes:true,attributeFilter:['class']});
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});
+  else install();
+})();
+</script>
+
+
+<script id="ntpc-v125-visual-viewport">
+/* Use the visible viewport for mobile keyboards and rotation, without changing form state. */
+(function(){
+  if(window.__ntpcV125ViewportBound)return;
+  window.__ntpcV125ViewportBound=true;
+  const root=document.documentElement;
+  let raf=0;
+  function syncViewport(){
+    raf=0;
+    const vv=window.visualViewport;
+    const height=Number(vv?.height)||window.innerHeight;
+    const top=Number(vv?.offsetTop)||0;
+    if(Number.isFinite(height)&&height>150)root.style.setProperty('--ntpc-v125-vvh',Math.round(height)+'px');
+    root.style.setProperty('--ntpc-v125-vvtop',Math.max(0,Math.round(top))+'px');
+  }
+  function schedule(){if(raf)return;raf=window.requestAnimationFrame(syncViewport);}
+  schedule();
+  window.addEventListener('resize',schedule,{passive:true});
+  window.addEventListener('orientationchange',schedule,{passive:true});
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize',schedule,{passive:true});
+    window.visualViewport.addEventListener('scroll',schedule,{passive:true});
+  }
+  // Prevent a fixed overlay from retaining an obsolete scroll position after a re-open.
+  const ids=['modal-police-document-choice','modal-police-traffic','modal-police-interview','modal-police-forensic'];
+  function installObservers(){
+    ids.forEach(id=>{
+      const modal=document.getElementById(id);
+      if(!modal||modal.dataset.ntpcV125Observed)return;
+      modal.dataset.ntpcV125Observed='1';
+      let priorHidden=modal.classList.contains('hidden');
+      new MutationObserver(()=>{
+        const hidden=modal.classList.contains('hidden');
+        if(priorHidden&&!hidden){
+          schedule();
+          const scroller=id==='modal-police-document-choice'?modal.querySelector('.ntpc-doc-hub'):modal.querySelector('.ntpc-v124-form-body');
+          if(scroller)scroller.scrollTop=0;
+        }
+        priorHidden=hidden;
+      }).observe(modal,{attributes:true,attributeFilter:['class']});
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installObservers,{once:true});
+  else installObservers();
+})();
+</script>
+
+
+<script id="ntpc-v127-home-layout">
+(function(){
+'use strict';
+const navButtons=()=>document.querySelectorAll('#ntpc-v127-sidebar [data-v127-tab]');
+let shownAccount='',reportCache=null,reportFetchedAt=0,reportBusy=false;
+function el(id){return document.getElementById(id);}
+function display(id,value){const e=el(id); if(e)e.textContent=String(value);}
+function userAccount(){try{return String(currentUser?.account||'').trim().toLowerCase();}catch{return '';}}
+function isManagement(){try{return !!currentUser&&canUseManagementDispatch(currentUser);}catch{return false;}}
+function needUnit(unit){try{return currentUser&& (getEffectiveRole(currentUser)==='admin'||userHasUnit(unit));}catch{return false;}}
+function feedbackNotDone(r){return !['已處理','resolved','closed','done','completed'].includes(String(r?.status||'未處理').trim().toLowerCase());}
+function setSidebarStatus(){
+  navButtons().forEach(btn=>{
+    const tab=btn.dataset.v127Tab;
+    if(btn.dataset.v127Role==='admin')btn.classList.toggle('hidden',!currentUser||!canAccessManagementCenter());
+    if(btn.dataset.v127Role==='jiaxiao')btn.classList.toggle('hidden',!currentUser||!canAccessJiaxiao());
+    const pane=el('tab-'+tab),active=!!pane&&!pane.classList.contains('hidden');
+    btn.classList.toggle('is-active',active);
+  });
+  const name=el('ntpc-v127-welcome');
+  if(name)name.textContent=currentUser?`歡迎回來，${currentUser.name||currentUser.account}！`:'歡迎使用新北市 RP 公職服務系統';
+}
+function statusDuty(){
+  if(!currentUser)return {text:'請先登入',color:'#91a6c4'};
+  const acc=userAccount();
+  // Same-account + same-department clock-in/out matching: avoid mixing different staff.
+  const groups=[];
+  if(needUnit('police'))groups.push(appData.policeClocks||[]);
+  if(needUnit('fire'))groups.push(appData.fireClocks||[]);
+  if(canAccessJiaxiao() && typeof isJiaxiaoMember==='function' && isJiaxiaoMember())groups.push(appData.jiaxiaoClocks||[]);
+  if(groups.length===0)return {text:'無勤務資料',color:'#97a9c4'};
+  let last=null;
+  for(const group of groups){
+    const match=group.filter(r=>String(r.account||r.userAccount||'').trim().toLowerCase()===acc)
+    .sort((a,b)=>getClockTimestamp(b)-getClockTimestamp(a))[0];
+    if(match&&(!last||getClockTimestamp(match)>getClockTimestamp(last)))last=match;
+  }
+  if(!last)return {text:'尚未值班',color:'#9baecb'};
+  const active=['上班','上班打卡'].includes(String(last.status||last.action||last.type||''));
+  return {text:active?'值班中':'已下班',color:active?'#3ee1ad':'#9baecb'};
+}
+function localHours(){
+  if(!currentUser)return null;
+  // Read existing clock data; calculate in-memory. Existing helper excludes Jiaxiao.
+  try{
+    let h1=ntpcCurrentWeekHours(),h2=ntpcCurrentMonthHours();
+    if(typeof isJiaxiaoMember==='function' && isJiaxiaoMember()){
+      const records=(appData.jiaxiaoClocks||[]).filter(r=>String(r.account||'').trim().toLowerCase()===userAccount()).sort((a,b)=>getClockTimestamp(a)-getClockTimestamp(b));
+      let on=null,now=Date.now(),monday=new Date(),month=new Date(),weekly=0,monthly=0;
+      monday.setHours(0,0,0,0);monday.setDate(monday.getDate()-(monday.getDay()+6)%7);
+      month.setDate(1);month.setHours(0,0,0,0);
+      function addRange(end){
+        if(on===null)return;
+        weekly+=Math.max(0,Math.min(end,now)-Math.max(on,monday.getTime()))/3600000;
+        monthly+=Math.max(0,Math.min(end,now)-Math.max(on,month.getTime()))/3600000;
+        on=null;
+      }
+      for(const item of records){const t=getClockTimestamp(item),v=String(item.status||'');if(v==='上班'&&on===null)on=t;else if(v==='下班'&&on!==null)addRange(t);}
+      if(on!==null)addRange(now);
+      h1+=weekly;h2+=monthly;
+    }
+    return [Number.isFinite(h1)?h1.toFixed(1)+' h':'—',Number.isFinite(h2)?h2.toFixed(1)+' h':'—'];
+  }catch{return ['—','—'];}
+}
+function renderPersonalCard(){
+  const d=statusDuty(),h=localHours();
+  display('ntpc-v127-duty-state',d.text);
+  const duty=el('ntpc-v127-duty-state');if(duty)duty.style.color=d.color;
+  display('ntpc-v127-week',h?h[0]:'—'); display('ntpc-v127-month',h?h[1]:'—');
+  const acc=userAccount();
+  if(reportCache&&reportCache.account===acc){
+    display('ntpc-v127-pending',reportCache.pending);
+    display('ntpc-v127-rejected',reportCache.rejected);
+    display('ntpc-v127-personal-status',reportCache.partial?'查詢完成（部分集合無權限；結果可能不完整）':'已從個人案件查詢更新，僅計算自己的待審／退件');
+  }else{
+    display('ntpc-v127-pending','—'); display('ntpc-v127-rejected','—');
+    display('ntpc-v127-personal-status',acc?'按「查詢我的報告」才會讀取個人待審／退件':'登入後可查詢個人案件');
+  }
+  const query=el('ntpc-v127-query-personal'); if(query){query.disabled=!currentUser||reportBusy; query.textContent=reportBusy?'正在查詢…':'查詢我的報告';}
+}
+function manageCard(){
+  // Only for management center members; keep pending count as 'not loaded' when review collections are absent.
+  const items=[
+    ['警察案件待審',manualReadState.cases['police-review']?ntpcCountPendingReports(appData.policePendingReports):'—','fa-shield-halved'],
+    ['消防／EMS待審',manualReadState.cases['fire-review']?ntpcCountPendingReports(appData.firePendingReports)+ntpcCountPendingReports(appData.emsPendingReports):'—','fa-fire-flame-curved'],
+    ['通緝待審',(appData.wantedPendingRecords||[]).filter(x=>String(x.reviewStatus||'')==='pending').length,'fa-bullhorn'],
+    ['帳號協助單',getEffectiveRole(currentUser)==='admin'?(appData.faqIssues||[]).filter(x=>!['closed','done','已完成','已處理'].includes(String(x.status||'').toLowerCase())).length:'—','fa-folder-open'],
+    ['異常回報（未處理）',getEffectiveRole(currentUser)==='admin'?(appData.feedbackReports||[]).filter(feedbackNotDone).length:'—','fa-triangle-exclamation']
+  ];
+  const target=el('ntpc-v127-management-rows');if(!target)return;
+  target.replaceChildren();
+  items.forEach(([label,value,ico])=>{
+    const row=document.createElement('div');row.className='ntpc-v127-work-row';
+    const l=document.createElement('span');l.className='ntpc-v127-work-label';
+    const icon=document.createElement('i');icon.className='fa-solid '+ico;icon.setAttribute('aria-hidden','true');
+    const txt=document.createElement('span');txt.textContent=label;l.append(icon,txt);
+    const count=document.createElement('strong');count.textContent=String(value);if(value==='—')count.className='dim';else if(value>0)count.className='warn';
+    row.append(l,count);target.append(row);
+  });
+  display('ntpc-v127-manage-footnote','— 表示尚未載入或目前帳號無該集合讀取權限；本面板不額外查詢資料庫');
+}
+function renderHome(){
+  if(!el('ntpc-v127-home-top'))return;
+  const acc=userAccount();if(acc!==shownAccount){shownAccount=acc;reportCache=null;reportFetchedAt=0;}
+  const manager=isManagement();
+  el('ntpc-v127-manager-card')?.classList.toggle('hidden',!manager);
+  el('ntpc-v127-personal-card')?.classList.toggle('hidden',manager);
+  if(manager)manageCard();else renderPersonalCard();
+  setSidebarStatus();
+}
+window.ntpcV127RefreshHome=renderHome;
+async function queryPersonalReports(){
+  if(!currentUser||reportBusy)return;
+  const account=userAccount();
+  if(reportCache&&reportCache.account===account&&Date.now()-reportFetchedAt<60000){renderHome();return;}
+  if(!db||!fm){display('ntpc-v127-personal-status','資料庫尚未連線');return;}
+  const jobs=[];
+  if(needUnit('police'))jobs.push(['policePendingReports','registeredByAccount']);
+  if(needUnit('fire')){jobs.push(['firePendingReports','registeredByAccount']);jobs.push(['emsPendingReports','registeredByAccount']);}
+  if(canAccessJiaxiao()){
+    jobs.push(['jiaxiaoMedicalPendingReports','authorAccount']);
+    jobs.push(['jiaxiaoFuneralPendingReports','authorAccount']);
+  }
+  // No accessible department: do not issue an unrelated Firestore query.
+  if(!jobs.length){reportCache={account,pending:0,rejected:0,partial:false};reportFetchedAt=Date.now();renderHome();return;}
+  reportBusy=true;renderPersonalCard();
+  const results=await Promise.all(jobs.map(async([col,field])=>{
+    try{
+      const snap=await fm.getDocs(fm.query(fm.collection(db,col),fm.where(field,'==',currentUser.account),fm.limit(200)));
+      return {ok:true,rows:snap.docs.map(d=>d.data()),partial:snap.size===200};
+    }catch(err){console.warn('個人報告統計查詢失敗：'+col,err);return {ok:false,rows:[],partial:true};}
+  }));
+  // Ignore responses if current user logged out/switched before request completed.
+  if(account!==userAccount()){reportBusy=false;return;}
+  let pending=0,rejected=0;let complete=true;
+  for(const r of results){if(!r.ok||r.partial)complete=false;for(const item of r.rows){const status=String(item.reviewStatus||'').trim().toLowerCase();if(status==='pending')pending++;else if(status==='rejected')rejected++;}}
+  reportCache={account,pending:complete?pending:pending+'+',rejected:complete?rejected:rejected+'+',partial:!complete}; reportFetchedAt=Date.now();reportBusy=false;renderHome();
+}
+function init(){
+  if(el('ntpc-v127-home-top'))return;
+  document.body.classList.add('ntpc-v127-layout');
+  const header=document.querySelector('body > header > div:first-child');
+  if(header){const greet=document.createElement('div');greet.className='ntpc-v127-header-greeting hidden text-sm font-semibold';greet.innerHTML='<div class="bg-gradient-to-r from-sky-200 via-blue-400 to-fuchsia-400 bg-clip-text text-transparent font-black tracking-wide">新北市 RP 3.0</div><div id="ntpc-v127-welcome" class="text-xs text-slate-300 font-normal">歡迎使用新北市 RP</div>';header.insertBefore(greet,header.firstChild);}
+  const ann=el('site-announcement-bar');ann?.classList.add('ntpc-v127-announcement');
+  const home=el('tab-home');const hero=home?.querySelector(':scope > .relative.rounded-3xl');
+  if(!home||!hero)return;
+  const top=document.createElement('div');top.id='ntpc-v127-home-top';top.className='ntpc-v127-home-top';
+  home.insertBefore(top,hero);top.appendChild(hero);hero.classList.add('ntpc-v127-home-hero');
+  const buttons=hero.querySelector('div.flex.flex-wrap.justify-center');
+  const quick=document.createElement('section');quick.className='space-y-3';quick.innerHTML='<div class="flex items-center gap-2"><i class="fa-solid fa-bolt text-blue-400"></i><h3 class="font-bold text-white">快速進入</h3><span class="text-xs text-slate-500">常用功能快捷入口</span></div>';
+  if(buttons){buttons.classList.remove('flex','flex-wrap','justify-center','gap-4','pt-2');buttons.classList.add('ntpc-v127-quick-entry');quick.append(buttons);}
+  top.after(quick);
+  const cards=document.createElement('div');cards.id='ntpc-v127-work-cards';top.append(cards);
+  const manager=document.createElement('section');manager.id='ntpc-v127-manager-card';manager.className='ntpc-v127-work';
+  manager.innerHTML='<div class="flex flex-wrap items-center justify-between gap-2 mb-4"><h3 class="text-base font-bold text-white"><i class="fa-solid fa-inbox text-purple-400 mr-2"></i>管理中心待處理工作箱</h3><span class="text-[11px] text-slate-400">依已載入雲端資料統計</span></div><div id="ntpc-v127-management-rows" class="space-y-2"></div><div id="ntpc-v127-manage-footnote" class="ntpc-v127-extra-note mt-3"></div>';
+  const personal=document.createElement('section');personal.id='ntpc-v127-personal-card';personal.className='ntpc-v127-work hidden';
+  personal.innerHTML='<div class="flex items-center justify-between gap-2 mb-4"><h3 class="text-base font-bold text-white"><i class="fa-solid fa-id-badge text-cyan-300 mr-2"></i>我的勤務資訊</h3><span class="text-[11px] text-slate-400">僅顯示本人</span></div><div class="space-y-2"><div class="ntpc-v127-work-row"><span class="ntpc-v127-work-label"><i class="fa-solid fa-circle-dot"></i>目前值班狀態</span><strong id="ntpc-v127-duty-state">—</strong></div><div class="ntpc-v127-work-row"><span class="ntpc-v127-work-label"><i class="fa-solid fa-calendar-week"></i>本週值班時數</span><strong id="ntpc-v127-week">—</strong></div><div class="ntpc-v127-work-row"><span class="ntpc-v127-work-label"><i class="fa-solid fa-calendar-days"></i>本月值班時數</span><strong id="ntpc-v127-month">—</strong></div><div class="ntpc-v127-work-row"><span class="ntpc-v127-work-label"><i class="fa-solid fa-file-circle-question"></i>待審報告</span><strong id="ntpc-v127-pending">—</strong></div><div class="ntpc-v127-work-row"><span class="ntpc-v127-work-label"><i class="fa-solid fa-file-circle-xmark"></i>退件未補報告</span><strong id="ntpc-v127-rejected">—</strong></div></div><button type="button" id="ntpc-v127-query-personal" class="mt-4 w-full rounded-xl border border-sky-500/30 bg-blue-600/20 hover:bg-blue-600/35 text-sky-100 py-2.5 text-sm font-bold">查詢我的報告</button><p class="ntpc-v127-extra-note mt-3" id="ntpc-v127-personal-status">報告依按鈕查詢，避免額外讀取。</p>';
+  cards.append(manager,personal);
+  const update=home.querySelector('.bg-emerald-500\\/5');if(update)update.classList.add('ntpc-v127-home-update');
+  el('ntpc-v127-sidebar')?.addEventListener('click',ev=>{
+    const button=ev.target.closest('[data-v127-tab]');if(!button)return;
+    const tab=button.dataset.v127Tab;
+    // Reuse the original navigation permissions and bound handlers, not a new authorization system.
+    const original=el('nav-'+tab)||el('mobile-nav-'+tab)||document.querySelector(`.mobile-nav-btn[data-tab="${tab}"]`);
+    if(original&&!original.classList.contains('hidden'))original.click();
+    else if(tab==='home'||tab==='faq'||tab==='update-log'||tab==='academy'||tab==='notifications'||tab==='profile'||tab==='dashboard')switchTab(tab);
+    renderHome();
+  });
+  el('ntpc-v127-query-personal')?.addEventListener('click',queryPersonalReports);
+  // UI-only refresh, no cloud calls: existing Firestore listeners remain unchanged.
+  window.setInterval(()=>{if(!document.hidden&&!el('tab-home')?.classList.contains('hidden'))renderHome();},30000);
+  const originalSwitchTab=window.switchTab;
+  if(typeof originalSwitchTab==='function')window.switchTab=function(...args){const v=originalSwitchTab.apply(this,args);renderHome();return v;};
+  renderHome();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+
+
+<script id="ntpc-v128-home-refinement">
+(function(){
+'use strict';
+function get(id){return document.getElementById(id)}
+function make(tag,attrs={},html=''){const e=document.createElement(tag);Object.entries(attrs).forEach(([k,v])=>{if(k==='class')e.className=v;else e.setAttribute(k,v)});e.innerHTML=html;return e}
+function openTab(tab){
+  // Go through the existing navigation implementation. All original permission checks stay in place.
+  const existing=get('nav-'+tab)||get('mobile-nav-'+tab)||document.querySelector('.mobile-nav-btn[data-tab="'+tab+'"]');
+  if(existing && !existing.classList.contains('hidden'))existing.click();
+  else if(typeof switchTab==='function')switchTab(tab);
+}
+function updateCountBadge(){
+ const source=get('nav-notification-badge')||get('mobile-nav-notification-badge');
+ const badge=get('ntpc-v128-notification-count');
+ if(!source||!badge)return;
+ const count=Number(String(source.textContent||'0').trim())||0;
+ badge.textContent=String(count);
+ badge.style.display=count>0?'flex':'none';
+}
+function init(){
+ if(get('ntpc-v128-bottom')||!get('ntpc-v127-home-top'))return;
+ const sidebar=get('ntpc-v127-sidebar'),nav=sidebar?.querySelector('nav');
+ // Sidebar keeps the existing navigation, with an expandable more section.
+ if(nav){
+  const moreStart=nav.querySelector('[data-v127-tab="dashboard"]');
+  const rest=['dashboard','jiaxiao','academy','admin','update-log'];
+  if(moreStart && !get('ntpc-v128-more')){
+   const more=make('details',{id:'ntpc-v128-more',class:'ntpc-v128-more'});
+   more.innerHTML='<summary class="ntpc-v127-nav-item"><i class="fa-solid fa-table-cells-large"></i>更多功能<i class="fa-solid fa-chevron-down"></i></summary><div class="ntpc-v128-more-inner"></div>';
+   moreStart.before(more);
+   const container=more.querySelector('.ntpc-v128-more-inner');
+   rest.forEach(t=>{const btn=nav.querySelector('[data-v127-tab="'+t+'"]');if(btn)container.append(btn)});
+   // Open automatically when the current tab is inside the more group.
+   const faq=nav.querySelector('[data-v127-tab="faq"]');if(faq)more.before(faq);
+   const refreshMore=()=>{if(rest.some(t=>get('tab-'+t)&&!get('tab-'+t).classList.contains('hidden')))more.open=true};
+   new MutationObserver(refreshMore).observe(get('tab-home'),{attributes:true,attributeFilter:['class']});
+  }
+  nav.querySelectorAll('[data-v127-tab]').forEach(btn=>btn.setAttribute('type','button'));
+ }
+ // Desktop greeting / controls use the same session and notification data already loaded by the site.
+ const header=document.querySelector('body > header > div:first-child');
+ const greeting=header?.querySelector('.ntpc-v127-header-greeting');
+ if(greeting && !get('ntpc-v128-menu-toggle')){
+  const toggle=make('button',{id:'ntpc-v128-menu-toggle',class:'ntpc-v128-header-icon',type:'button','aria-label':'展開或收合左側選單','aria-expanded':'true'},'<i class="fa-solid fa-bars"></i>');
+  toggle.addEventListener('click',()=>{const collapsed=document.body.classList.toggle('ntpc-v128-sidebar-collapsed');toggle.setAttribute('aria-expanded',String(!collapsed))});
+  greeting.before(toggle);
+ }
+ const badge=get('user-badge');
+ if(badge && header && !get('ntpc-v128-header-controls')){
+  const controls=make('div',{id:'ntpc-v128-header-controls',class:'ntpc-v128-header-controls'},'<button id="ntpc-v128-notifications" class="ntpc-v128-header-icon" type="button" aria-label="開啟個人通知"><i class="fa-solid fa-bell"></i><span id="ntpc-v128-notification-count" class="ntpc-v128-alert"></span></button><img class="ntpc-v128-header-avatar" src="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/A3258911-D5A9-4109-9055-AA54BD1933E5.png" alt="新北市 RP 系統圖標">');
+  badge.before(controls);
+  get('ntpc-v128-notifications')?.addEventListener('click',()=>openTab('notifications'));
+  const counter=get('nav-notification-badge');if(counter)new MutationObserver(updateCountBadge).observe(counter,{childList:true,characterData:true,subtree:true,attributes:true,attributeFilter:['class']});
+  updateCountBadge();
+ }
+ const quick=document.querySelector('#ntpc-v127-home-top + section');
+ const buttons=quick?.querySelector('.ntpc-v127-quick-entry');
+ if(quick && buttons){
+  quick.classList.add('ntpc-v128-quick-wrap');
+  const original=Array.from(buttons.querySelectorAll(':scope > button'));
+  if(original.length===3){
+    const tutorial=make('button',{type:'button',class:'tab-shortcut-btn ntpc-v128-tutorial', 'data-tab':'faq'},'<i class="fa-solid fa-book-open"></i><span>使用教學</span>');
+    tutorial.addEventListener('click',()=>openTab('faq'));
+    buttons.append(tutorial);
+  }
+  const descriptions=['案件管理・筆錄・交通・鑑定','消防案件・EMS・出勤管理','回報系統問題或提供建議','系統操作說明與常見問題'];
+  Array.from(buttons.querySelectorAll(':scope > button')).forEach((b,i)=>{
+    if(b.querySelector('.ntpc-v128-shortcut-copy'))return;
+    const span=b.querySelector('span');
+    if(span){
+      const copy=make('span',{class:'ntpc-v128-shortcut-copy'});
+      const name=make('span',{},'');name.textContent=span.textContent.trim();
+      const sub=make('small',{},'');sub.textContent=descriptions[i]||'';
+      span.replaceWith(copy);copy.append(name,sub);
+    }
+    const arrow=make('i',{class:'fa-solid fa-chevron-right ntpc-v128-shortcut-arrow','aria-hidden':'true'});
+    b.append(arrow);
+  });
+ }
+ const home=get('tab-home');
+ const existingUpdate=home?.querySelector('.ntpc-v127-home-update');
+ const existingCards=existingUpdate?.nextElementSibling;
+ if(home && existingUpdate && existingCards){
+  const bottom=make('div',{id:'ntpc-v128-bottom',class:'ntpc-v128-bottom'});
+  existingUpdate.before(bottom);bottom.append(existingUpdate);existingUpdate.classList.remove('md:col-span-2','lg:col-span-3');
+  const timeline=make('div',{class:'ntpc-v128-timeline'},`<div class="ntpc-v128-timeline-row"><i class="ntpc-v128-timeline-dot"></i><div><strong>系統功能整合</strong>警務、消防與嘉蕭勤務資料依權限管理。</div></div><div class="ntpc-v128-timeline-row"><i class="ntpc-v128-timeline-dot"></i><div><strong>警務文件與現場圖</strong>交通事故勘察、詢問筆錄及刑事鑑定表單。</div></div><div class="ntpc-v128-timeline-row"><i class="ntpc-v128-timeline-dot"></i><div><strong>跨裝置操作優化</strong>手機、平板視窗與表單排版改善。</div></div>`);
+  const info=existingUpdate.querySelector('p.text-slate-400');if(info)info.after(timeline);
+  // The original update card was a 3-column-span home banner. Keep the original
+  // nodes/IDs and their handlers, but arrange them as a proper compact panel.
+  const updateShell=existingUpdate.firstElementChild;
+  const updateCopy=updateShell?.firstElementChild;
+  const updateTitle=updateCopy?.querySelector('.flex.items-center');
+  const updateAction=updateShell?.querySelector('button[data-tab="update-log"]');
+  if(updateShell&&updateTitle&&updateAction){
+    const updateHeader=make('div',{class:'ntpc-v131-update-header'});
+    updateShell.prepend(updateHeader);
+    updateHeader.append(updateTitle,updateAction);
+  }
+  const updateSummary=get('home-latest-update-summary');
+  if(updateSummary){
+    const moreInfo=make('details',{class:'ntpc-v131-update-more'},'<summary>閱讀完整版本摘要</summary>');
+    updateSummary.before(moreInfo);
+    moreInfo.append(updateSummary);
+  }
+
+  const features=make('section',{id:'ntpc-v128-features',class:'ntpc-v128-features'},`<div class="ntpc-v128-features-head"><div><i class="fa-solid fa-star text-amber-400 mr-2"></i>新北市 RP 3.0 系統特色</div><span class="text-[10px] text-cyan-300">NEW TAIPEI RP 3.0</span></div><div class="ntpc-v128-features-grid"><button type="button" class="ntpc-v128-feature" data-v128-feature="police"><i class="fa-solid fa-shield-halved"></i><span><strong>警務案件系統</strong><small>案件審核・警察勤務・交通事件</small></span><i class="fa-solid fa-chevron-right"></i></button><button type="button" class="ntpc-v128-feature" data-v128-feature="fire"><i class="fa-solid fa-fire-extinguisher"></i><span><strong>消防勤務系統</strong><small>消防報告・勤務與救護紀錄</small></span><i class="fa-solid fa-chevron-right"></i></button><button type="button" class="ntpc-v128-feature" data-v128-feature="wanted"><i class="fa-solid fa-car"></i><span><strong>交通與通緝查詢</strong><small>案件與車籍查詢等授權功能</small></span><i class="fa-solid fa-chevron-right"></i></button><button type="button" class="ntpc-v128-feature" data-v128-feature="bot-console"><i class="fa-solid fa-robot"></i><span><strong>勤務中心與 Bot 整合</strong><small>依帳號權限查看相關功能</small></span><i class="fa-solid fa-chevron-right"></i></button></div>`);
+  bottom.append(features);
+  features.addEventListener('click',ev=>{
+    const button=ev.target.closest('[data-v128-feature]');if(!button)return;
+    const choice=button.dataset.v128Feature;
+    if(choice==='wanted'){if(typeof switchTab==='function')switchTab('police');else openTab('police');try{if(typeof switchPoliceSubTab==='function'&&!get('tab-police').classList.contains('hidden'))switchPoliceSubTab('wanted')}catch(e){console.warn(e)} }
+    else if(choice==='bot-console'){
+      if(typeof canAccessManagementCenter==='function' && canAccessManagementCenter()){
+        if(typeof switchTab==='function')switchTab('admin');else openTab('admin');
+        if(!get('tab-admin')?.classList.contains('hidden') && typeof switchAdminSubTab==='function')switchAdminSubTab('bot-console');
+      }else if(typeof showToast==='function')showToast('Bot 控制台需要管理中心授權。','warning','權限不足');
+    }else openTab(choice);
+  });
+  // All the original six explanatory cards remain available behind a compact disclosure.
+  if(existingCards.matches('.grid')){
+    const details=make('details',{class:'ntpc-v128-all-features'},'<summary><i class="fa-solid fa-layer-group text-sky-400"></i>展開完整系統功能介紹</summary>');
+    existingCards.before(details); details.append(existingCards);
+  }
+ }
+ // Preserve top announcement, version log and original log-in / review handlers.
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 </script>
 
