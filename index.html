@@ -3348,6 +3348,38 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 </div>
 
                 <div id="faq-category-fire" class="faq-category-content hidden space-y-3">
+                    <!-- V157：消防系統影片，沿用警方系統 YouTube Error 153 修正版的內嵌設定。 -->
+                    <section class="rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-950/50 to-slate-950 p-4 sm:p-6" aria-labelledby="faq-fire-video-title">
+                        <div class="flex items-start gap-3 mb-4">
+                            <div class="shrink-0 w-10 h-10 rounded-xl bg-red-500/15 text-red-300 flex items-center justify-center"><i class="fa-solid fa-circle-play text-xl" aria-hidden="true"></i></div>
+                            <div>
+                                <h3 id="faq-fire-video-title" class="text-base sm:text-lg font-bold text-white">消防系統操作教學影片</h3>
+                                <p class="text-xs sm:text-sm text-slate-400 mt-1">直接點擊下方播放鍵，在新北市 RP 網站內觀看，無須前往 YouTube。</p>
+                            </div>
+                        </div>
+                        <div class="relative w-full overflow-hidden rounded-xl border border-slate-700 bg-black shadow-xl" style="aspect-ratio:16/9;">
+                            <iframe id="ntpc-faq-fire-video" class="absolute inset-0 w-full h-full" title="新北市 RP 消防系統操作教學影片" loading="lazy" referrerpolicy="origin" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                            <p id="ntpc-faq-fire-video-local-tip" class="hidden absolute inset-0 flex items-center justify-center px-6 text-center text-sm leading-7 text-slate-200 bg-slate-950">本機直接開啟的 HTML 無法提供 YouTube 要求的網站來源資訊。請從正式的 Cloudflare Pages 網址開啟網站後播放教學影片。</p>
+                        </div>
+                        <script>
+                        (() => {
+                          const player = document.getElementById('ntpc-faq-fire-video');
+                          const localTip = document.getElementById('ntpc-faq-fire-video-local-tip');
+                          if (!player) return;
+                          if (location.protocol !== 'https:' && location.protocol !== 'http:') {
+                            player.classList.add('hidden');
+                            localTip?.classList.remove('hidden');
+                            return;
+                          }
+                          const url = new URL('https://www.youtube.com/embed/rfMDu5bDuVY');
+                          url.searchParams.set('rel', '0');
+                          url.searchParams.set('playsinline', '1');
+                          url.searchParams.set('origin', location.origin);
+                          player.src = url.toString();
+                        })();
+                        </script>
+                    </section>
+
                     <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4"><summary class="cursor-pointer text-sm font-semibold text-white">救護報告的圖片附件怎麼放連結？</summary><p class="text-sm text-slate-400 mt-3">請到「常見問題 → 圖片連結教學」查看上傳與連結複製步驟，步驟同樣適用消防 EMS 及嘉蕭報告；不要公開上傳含敏感資料的照片。</p></details>
                     <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4" open>
                         <summary class="cursor-pointer text-sm font-semibold text-white">消防系統要怎麼進入？</summary>
