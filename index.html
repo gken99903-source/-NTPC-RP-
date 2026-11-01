@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- V147 本次更新：修正常見問題的警察教學影片嵌入 Error 153，使用標準 YouTube 內嵌播放器、明確來源資訊與本機檔案提示；保留其餘功能。 -->
+<!-- V152｜市民查詢預設存活人設、死亡人設需手動切換；一般查詢先由 Firestore 篩選生死狀態；保留 V151 案件身分隔離與全單位歷史報告條件載入。 -->
 <html lang="zh-TW" class="dark">
 <head>
     <meta charset="UTF-8">
@@ -7,6 +7,7 @@
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; media-src 'self' https://raw.githubusercontent.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://placehold.co; connect-src 'self' https://*.workers.dev https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com https://www.youtube-nocookie.com https://www.youtube.com; upgrade-insecure-requests">
     <title>新北市 RP 3.0 公職服務系統 V2.0｜ER:LC 智慧派遣</title>
+    <!-- V152 最新：市民身份搜尋預設存活並在 Firestore 查詢前套用生死狀態；切換至死亡人設才查已死亡紀錄；保留市民案件連動與新舊身份隔離。 -->
     <!-- 網站圖標與連結分享資訊 -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
     <link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
@@ -2530,7 +2531,26 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 </div>
 
                 <div id="police-sub-reports" class="space-y-4">
-                    <div class="flex flex-wrap items-center gap-2 rounded-xl border border-blue-500/20 bg-slate-900/50 p-3"><button type="button" id="load-police-reports-btn" onclick="loadCaseReportsOnDemand('police')" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:brightness-110"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理警務案件</button><span id="manual-load-police-status" class="text-xs text-slate-400">尚未載入；登入不自動讀取資料庫。</span></div>
+                    <!-- V150：歷史報告先篩選再讀取，避免整個集合讀取 -->
+                    <div class="rounded-xl border border-cyan-500/25 bg-slate-950/50 p-3 space-y-2" data-history-filter="police">
+                      <div class="flex flex-wrap gap-2 items-center">
+                        <label for="history-police-mode" class="text-sm text-cyan-200 font-semibold">先選擇查詢條件</label>
+                        <select id="history-police-mode" onchange="ntpcHistoryToggle('police')" class="min-w-[160px] rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 text-sm text-white">
+                          <option value="" selected>請選擇查詢方式</option><option value="dates">日期區間</option><option value="author">報告填寫人</option>
+                        </select>
+                        <div id="history-police-dates" class="hidden flex flex-wrap items-center gap-2">
+                          <label class="text-xs text-slate-300">開始 <input id="history-police-from" onchange="ntpcHistoryNextButton('police',false)" type="date" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"></label>
+                          <label class="text-xs text-slate-300">結束 <input id="history-police-to" onchange="ntpcHistoryNextButton('police',false)" type="date" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"></label>
+                        </div>
+                        <div id="history-police-author-box" class="hidden flex flex-wrap items-center gap-2">
+                          <select id="history-police-author-type" onchange="ntpcHistoryNextButton('police',false)" aria-label="填寫人查詢方式" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"><option value="account">填寫人帳號</option><option value="name">填寫人 RP 名稱</option></select>
+                          <input id="history-police-author" oninput="ntpcHistoryNextButton('police',false)" type="search" maxlength="100" autocomplete="off" placeholder="輸入完整帳號或 RP 名稱" class="rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 text-sm text-white w-full sm:w-60">
+                        </div>
+                      </div>
+                      <p class="text-xs text-slate-400">不會先載入全部報告；請填完整的日期區間或填寫人，按下方「查詢」後才會向 Firestore 讀取。每批最多 40 筆；下方既有搜尋只篩選已載入資料。</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 rounded-xl border border-blue-500/20 bg-slate-900/50 p-3"><button type="button" id="load-police-reports-btn" onclick="loadCaseReportsOnDemand('police')" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:brightness-110"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>依條件查詢警務案件</button><span id="manual-load-police-status" class="text-xs text-slate-400">尚未查詢；請先選擇日期區間或填寫人。</span></div>
+                    <button type="button" id="history-police-next" onclick="loadCaseReportsOnDemand('police',true)" class="hidden rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-3 py-2 text-sm text-cyan-200">載入下一批（最多 40 筆）</button>
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <h3 class="text-lg font-bold text-slate-200">全體員警案件報告總覽</h3>
                         <div class="w-full sm:w-80">
@@ -2671,9 +2691,9 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                     </div>
                     <div id="citizen-unlocked-view" class="hidden space-y-4">
                         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-                            <div class="flex flex-col sm:flex-row justify-between gap-3 sm:items-center"><div><div class="flex flex-wrap items-center gap-3"><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-id-card text-blue-400 mr-2"></i>市民身份查詢</h3><span id="citizen-total-count" class="inline-flex items-center px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs font-semibold"><i class="fa-solid fa-users mr-1.5"></i>市民資料：按查詢讀取</span></div><p class="text-xs text-slate-500 mt-1">市民資料不在登入時下載；輸入姓名開頭或證件末五碼再按查詢，保險標籤僅管理中心可修改。</p></div><button id="open-citizen-post-btn" type="button" class="hidden bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold"><i class="fa-solid fa-plus mr-2"></i>建立市民資料</button></div>
-                            <div class="flex flex-col sm:flex-row gap-2 mt-4"><input id="citizen-search-input" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono" placeholder="輸入關鍵字（姓名／證件末五碼／生日等）"><select id="citizen-deceased-filter" class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white sm:w-48"><option value="all">死亡證明：全部</option><option value="alive">不顯示死亡證明</option><option value="deceased">只顯示死亡證明</option></select><button id="citizen-search-btn" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl text-sm">查詢</button></div>
-                        </div><div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500"><span id="citizen-lookup-status">登入時不讀取市民資料，按「查詢」才會連線。</span><button type="button" id="citizen-full-search-btn" class="px-2 py-1 rounded-lg border border-amber-500/30 text-amber-300 hover:bg-amber-500/10">進階包含搜尋（需讀取整份市民資料）</button></div><div id="citizen-results" class="grid grid-cols-1 gap-4"></div>
+                            <div class="flex flex-col sm:flex-row justify-between gap-3 sm:items-center"><div><div class="flex flex-wrap items-center gap-3"><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-id-card text-blue-400 mr-2"></i>市民身份查詢</h3><span id="citizen-total-count" class="inline-flex items-center px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs font-semibold"><i class="fa-solid fa-users mr-1.5"></i>市民資料：按查詢讀取</span></div><p class="text-xs text-slate-500 mt-1">預設查詢存活人設，死亡人設請切換右側篩選器；輸入姓名開頭或證件末五碼並按查詢，才會讀取資料。保險標籤僅管理中心可修改。</p></div><button id="open-citizen-post-btn" type="button" class="hidden bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold"><i class="fa-solid fa-plus mr-2"></i>建立市民資料</button></div>
+                            <div class="flex flex-col sm:flex-row gap-2 mt-4"><input id="citizen-search-input" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono" placeholder="輸入關鍵字（姓名／證件末五碼／生日等）"><select id="citizen-deceased-filter" class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white sm:w-48"><option value="alive" selected>存活人設（預設）</option><option value="deceased">死亡人設（需切換）</option></select><button id="citizen-search-btn" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl text-sm">查詢</button></div>
+                        </div><div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500"><span id="citizen-lookup-status">登入時不讀取市民資料，按「查詢」才會連線。</span><button type="button" id="citizen-full-search-btn" class="px-2 py-1 rounded-lg border border-amber-500/30 text-amber-300 hover:bg-amber-500/10">進階／舊資料包含搜尋（高讀取量）</button></div><div id="citizen-results" class="grid grid-cols-1 gap-4"></div>
                     </div>
                 </div>
 
@@ -2744,7 +2764,26 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 </div>
 
                 <div id="fire-sub-reports" class="space-y-4">
-                    <div class="flex flex-wrap items-center gap-2 rounded-xl border border-red-500/20 bg-slate-900/50 p-3"><button type="button" id="load-fire-reports-btn" onclick="loadCaseReportsOnDemand('fire')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:brightness-110"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理消防案件</button><span id="manual-load-fire-status" class="text-xs text-slate-400">尚未載入；登入不自動讀取資料庫。</span></div>
+                    <!-- V150：歷史報告先篩選再讀取，避免整個集合讀取 -->
+                    <div class="rounded-xl border border-cyan-500/25 bg-slate-950/50 p-3 space-y-2" data-history-filter="fire">
+                      <div class="flex flex-wrap gap-2 items-center">
+                        <label for="history-fire-mode" class="text-sm text-cyan-200 font-semibold">先選擇查詢條件</label>
+                        <select id="history-fire-mode" onchange="ntpcHistoryToggle('fire')" class="min-w-[160px] rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 text-sm text-white">
+                          <option value="" selected>請選擇查詢方式</option><option value="dates">日期區間</option><option value="author">報告填寫人</option>
+                        </select>
+                        <div id="history-fire-dates" class="hidden flex flex-wrap items-center gap-2">
+                          <label class="text-xs text-slate-300">開始 <input id="history-fire-from" onchange="ntpcHistoryNextButton('fire',false)" type="date" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"></label>
+                          <label class="text-xs text-slate-300">結束 <input id="history-fire-to" onchange="ntpcHistoryNextButton('fire',false)" type="date" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"></label>
+                        </div>
+                        <div id="history-fire-author-box" class="hidden flex flex-wrap items-center gap-2">
+                          <select id="history-fire-author-type" onchange="ntpcHistoryNextButton('fire',false)" aria-label="填寫人查詢方式" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"><option value="account">填寫人帳號</option><option value="name">填寫人 RP 名稱</option></select>
+                          <input id="history-fire-author" oninput="ntpcHistoryNextButton('fire',false)" type="search" maxlength="100" autocomplete="off" placeholder="輸入完整帳號或 RP 名稱" class="rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 text-sm text-white w-full sm:w-60">
+                        </div>
+                      </div>
+                      <p class="text-xs text-slate-400">不會先載入全部報告；請填完整的日期區間或填寫人，按下方「查詢」後才會向 Firestore 讀取。每批最多 40 筆；下方既有搜尋只篩選已載入資料。</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 rounded-xl border border-red-500/20 bg-slate-900/50 p-3"><button type="button" id="load-fire-reports-btn" onclick="loadCaseReportsOnDemand('fire')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:brightness-110"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>依條件查詢消防案件</button><span id="manual-load-fire-status" class="text-xs text-slate-400">尚未查詢；請先選擇日期區間或填寫人。</span></div>
+                    <button type="button" id="history-fire-next" onclick="loadCaseReportsOnDemand('fire',true)" class="hidden rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-3 py-2 text-sm text-cyan-200">載入下一批（最多 40 筆）</button>
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <h3 class="text-lg font-bold text-slate-200">全體消防隊員案件報告總覽</h3>
                         <div class="w-full sm:w-80">
@@ -2769,7 +2808,26 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 </div>
 
                 <div id="fire-sub-ems" class="hidden space-y-4">
-                    <div class="flex flex-wrap items-center gap-2 rounded-xl border border-rose-500/20 bg-slate-900/50 p-3"><button type="button" id="load-ems-reports-btn" onclick="loadCaseReportsOnDemand('ems')" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:brightness-110"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理 EMS 報告</button><span id="manual-load-ems-status" class="text-xs text-slate-400">尚未載入；登入不自動讀取資料庫。</span></div>
+                    <!-- V150：歷史報告先篩選再讀取，避免整個集合讀取 -->
+                    <div class="rounded-xl border border-cyan-500/25 bg-slate-950/50 p-3 space-y-2" data-history-filter="ems">
+                      <div class="flex flex-wrap gap-2 items-center">
+                        <label for="history-ems-mode" class="text-sm text-cyan-200 font-semibold">先選擇查詢條件</label>
+                        <select id="history-ems-mode" onchange="ntpcHistoryToggle('ems')" class="min-w-[160px] rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 text-sm text-white">
+                          <option value="" selected>請選擇查詢方式</option><option value="dates">日期區間</option><option value="author">報告填寫人</option>
+                        </select>
+                        <div id="history-ems-dates" class="hidden flex flex-wrap items-center gap-2">
+                          <label class="text-xs text-slate-300">開始 <input id="history-ems-from" onchange="ntpcHistoryNextButton('ems',false)" type="date" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"></label>
+                          <label class="text-xs text-slate-300">結束 <input id="history-ems-to" onchange="ntpcHistoryNextButton('ems',false)" type="date" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"></label>
+                        </div>
+                        <div id="history-ems-author-box" class="hidden flex flex-wrap items-center gap-2">
+                          <select id="history-ems-author-type" onchange="ntpcHistoryNextButton('ems',false)" aria-label="填寫人查詢方式" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"><option value="account">填寫人帳號</option><option value="name">填寫人 RP 名稱</option></select>
+                          <input id="history-ems-author" oninput="ntpcHistoryNextButton('ems',false)" type="search" maxlength="100" autocomplete="off" placeholder="輸入完整帳號或 RP 名稱" class="rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 text-sm text-white w-full sm:w-60">
+                        </div>
+                      </div>
+                      <p class="text-xs text-slate-400">不會先載入全部報告；請填完整的日期區間或填寫人，按下方「查詢」後才會向 Firestore 讀取。每批最多 40 筆；下方既有搜尋只篩選已載入資料。</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 rounded-xl border border-rose-500/20 bg-slate-900/50 p-3"><button type="button" id="load-ems-reports-btn" onclick="loadCaseReportsOnDemand('ems')" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:brightness-110"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>依條件查詢 EMS 報告</button><span id="manual-load-ems-status" class="text-xs text-slate-400">尚未查詢；請先選擇日期區間或填寫人。</span></div>
+                    <button type="button" id="history-ems-next" onclick="loadCaseReportsOnDemand('ems',true)" class="hidden rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-3 py-2 text-sm text-cyan-200">載入下一批（最多 40 筆）</button>
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div><h3 class="text-lg font-bold text-slate-200"><i class="fa-solid fa-truck-medical text-rose-400 mr-2"></i>EMS救護出勤報告</h3><p class="text-xs text-slate-500 mt-1">支援後續編輯、刪除與高層多則批示。</p></div>
                         <div class="w-full sm:w-80"><input type="text" id="search-ems-report" placeholder="輸入報告編號／傷患ID／填寫人編號搜尋..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-rose-500 font-mono"></div>
@@ -3088,7 +3146,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8" role="tablist" aria-label="常見問題分類">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-8" role="tablist" aria-label="常見問題分類">
                     <button type="button" data-faq-category="info" class="faq-category-btn active bg-cyan-600/15 border border-cyan-500/30 text-cyan-300 rounded-2xl p-4 text-left transition hover:bg-slate-800">
                         <i class="fa-solid fa-circle-info mr-2"></i><span class="font-bold">網站資訊</span>
                         <span class="block text-xs text-slate-500 mt-1">網站聲明、遊戲提醒與聯絡方式</span>
@@ -3104,6 +3162,10 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                     <button type="button" data-faq-category="account" class="faq-category-btn bg-slate-950 border border-slate-800 text-slate-300 rounded-2xl p-4 text-left transition hover:bg-slate-800">
                         <i class="fa-solid fa-user-lock mr-2"></i><span class="font-bold">帳號疑問</span>
                         <span class="block text-xs text-slate-500 mt-1">登入、密碼與帳號問題</span>
+                    </button>
+                    <button type="button" data-faq-category="images" class="faq-category-btn bg-slate-950 border border-cyan-500/30 text-cyan-200 rounded-2xl p-4 text-left transition hover:bg-cyan-600/20">
+                        <i class="fa-solid fa-image mr-2"></i><span class="font-bold">圖片連結教學</span>
+                        <span class="block text-xs text-slate-400 mt-1">照片上傳、複製連結、貼入報告</span>
                     </button>
                 </div>
 
@@ -3130,6 +3192,33 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                         </a>
                         <p class="mt-3 text-xs leading-6 text-slate-500">本社群之「政府工單」不是現實政府機關的申訴或報案窗口；現實緊急情況請使用正式管道求助。</p>
                     </div>
+
+
+                </div>
+
+                <!-- V154：獨立顯示圖片連結教學，避免藏在網站資訊底部。 -->
+                <div id="faq-category-images" class="faq-category-content hidden space-y-4">
+                    <div class="rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4 text-cyan-100 text-sm">依照下方步驟，把遊戲截圖轉成能在報告中開啟的直接圖片網址。圖片上傳至第三方網站後可能被其他人查看，請勿上傳真實個資。</div>
+<details class="rounded-2xl border border-cyan-500/25 bg-slate-950 p-4 sm:p-5" id="faq-image-direct-link" open>
+                      <summary class="cursor-pointer text-sm sm:text-base font-semibold text-cyan-200"><i class="fa-solid fa-images mr-2"></i>如何把照片檔案變成可下載的連結，貼入案件／EMS／嘉蕭報告？</summary>
+                      <div class="mt-4 space-y-4 text-sm leading-7 text-slate-300">
+                        <p>可使用 <a href="https://postimages.org/" target="_blank" rel="noopener noreferrer" class="text-sky-300 underline">Postimages 圖片託管網站</a>。<strong class="text-amber-200">僅上傳遊戲畫面或不含敏感資料的圖片</strong>，不要上傳真實證件、個資、私人病歷或未授權的照片；圖片連結可能被其他人轉傳。</p>
+                        <ol class="list-decimal pl-5 space-y-2">
+                          <li>開啟 Postimages，點 <strong>Choose images／選擇圖片</strong>，挑選手機照片或電腦截圖。</li>
+                          <li>在上傳設定中選擇<strong>不調整大小</strong>與適合的有效期限；要長期使用就別選短期自動刪除。</li>
+                          <li>上傳完成後，找到 <strong>Direct link／直接連結</strong>（不是 Link／分享頁面，也不是 Markdown／HTML 代碼）。</li>
+                          <li>複製以 <code class="text-emerald-300">https://i.postimg.cc/</code> 開頭、結尾通常是 <code>.png</code> 或 <code>.jpg</code> 的圖片網址。</li>
+                          <li>先在新分頁貼上網址，確認能直接看到或下載圖片，再貼到新北市 RP 報告的<strong>圖片／影片／附件連結</strong>欄位。</li>
+                        </ol>
+                        <div class="rounded-xl border border-slate-700 bg-slate-900/70 p-4 space-y-2">
+                          <div class="font-semibold text-white"><i class="fa-solid fa-circle-info text-cyan-300 mr-1"></i>範例：分辨兩種連結</div>
+                          <div class="rounded-lg bg-slate-950 p-2 font-mono text-xs text-rose-300 break-all">分享頁面：https://postimg.cc/範例代碼　<span class="font-sans">（不是圖片檔）</span></div>
+                          <div class="rounded-lg bg-slate-950 p-2 font-mono text-xs text-emerald-300 break-all">直接圖片：https://i.postimg.cc/範例路徑/photo.jpg　<span class="font-sans">（示意格式，不是真實圖片）</span></div>
+                          <p class="text-xs text-slate-400">實際介面參考：<a href="https://postimg.cc/680MCMdR" target="_blank" rel="noopener noreferrer" class="text-sky-300 underline">上傳頁面截圖</a>、<a href="https://postimg.cc/87ZwHwpt" target="_blank" rel="noopener noreferrer" class="text-sky-300 underline">上傳成功後 Direct link 欄位截圖</a>。這是公開參考畫面，實際介面可能更新。</p>
+                        </div>
+                        <p class="text-xs text-amber-200">注意：免費圖片空間可能限制圖片大小、解析度或外連方式，也不保證永久保存；重要 RP 證據請另外備份原始檔。請勿使用 <code>file://</code> 本機檔案路徑，它不是別人能打開的網址。</p>
+                      </div>
+                    </details>
                 </div>
 
                 <div id="faq-category-police" class="faq-category-content hidden space-y-3">
@@ -3201,6 +3290,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 </div>
 
                 <div id="faq-category-fire" class="faq-category-content hidden space-y-3">
+                    <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4"><summary class="cursor-pointer text-sm font-semibold text-white">救護報告的圖片附件怎麼放連結？</summary><p class="text-sm text-slate-400 mt-3">請到「常見問題 → 圖片連結教學」查看上傳與連結複製步驟，步驟同樣適用消防 EMS 及嘉蕭報告；不要公開上傳含敏感資料的照片。</p></details>
                     <details class="bg-slate-950 border border-slate-800 rounded-2xl p-4" open>
                         <summary class="cursor-pointer text-sm font-semibold text-white">消防系統要怎麼進入？</summary>
                         <p class="text-sm text-slate-400 leading-7 mt-3">消防系統屬於勤務功能，必須先登入具有消防身分的帳號。消防人員登入後即可依權限使用消防、救護、案件與勤務相關功能。</p>
@@ -3496,6 +3586,24 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
 
                 <section id="jx-sub-hospital" role="tabpanel" aria-labelledby="btn-jiaxiao-hospital" class="hidden rounded-2xl border border-teal-500/20 bg-slate-900 p-5 sm:p-7 space-y-4">
                     <div class="flex flex-wrap justify-between items-center gap-3"><div><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-hospital text-teal-400 mr-2"></i>嘉蕭醫院｜紀錄中心</h3><p class="text-sm text-slate-400 mt-1">四種獨立表單；按鈕才載入 Firestore 資料，線上掛號採獨立集合。</p></div><div class="flex flex-wrap items-center gap-2"><label class="relative block w-full sm:w-72"><span class="sr-only">搜尋醫院各分類紀錄</span><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i><input id="jx-hospital-search" type="search" oninput="jxHospitalApplySearch()" placeholder="搜尋患者、身分證、填報人、項目…" autocomplete="off" class="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white"></label><button type="button" onclick="openJiaxiaoHospitalModal()" class="rounded-xl bg-teal-700 hover:bg-teal-600 px-4 py-2.5 text-white font-medium">新增醫院紀錄</button></div></div>
+<!-- V151：嘉蕭醫院全部紀錄類型也必須先選日期區間或填報人，不可直接載入 150 筆 -->
+                    <div class="rounded-xl border border-cyan-500/25 bg-slate-950/50 p-3 space-y-2" data-history-filter="jx-hospital">
+                      <div class="flex flex-wrap gap-2 items-center">
+                        <label for="history-jx-hospital-mode" class="text-sm font-semibold text-cyan-200">歷史醫院紀錄篩選（必填）</label>
+                        <select id="history-jx-hospital-mode" onchange="ntpcHistoryToggle('jx-hospital')" class="min-w-[160px] rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 text-sm text-white">
+                          <option value="" selected>請選擇查詢方式</option><option value="dates">日期區間</option><option value="author">報告填寫人</option>
+                        </select>
+                        <div id="history-jx-hospital-dates" class="hidden flex flex-wrap items-center gap-2">
+                          <label class="text-xs text-slate-300">開始 <input id="history-jx-hospital-from" type="date" onchange="ntpcHistoryNextButton('jx-hospital',false)" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"></label>
+                          <label class="text-xs text-slate-300">結束 <input id="history-jx-hospital-to" type="date" onchange="ntpcHistoryNextButton('jx-hospital',false)" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"></label>
+                        </div>
+                        <div id="history-jx-hospital-author-box" class="hidden flex flex-wrap items-center gap-2">
+                          <select id="history-jx-hospital-author-type" onchange="ntpcHistoryNextButton('jx-hospital',false)" aria-label="填寫人查詢方式" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"><option value="account">填寫人帳號</option><option value="name">填寫人 RP 名稱</option></select>
+                          <input id="history-jx-hospital-author" oninput="ntpcHistoryNextButton('jx-hospital',false)" type="search" maxlength="100" autocomplete="off" placeholder="輸入完整帳號或 RP 名稱" class="rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 text-sm text-white w-full sm:w-60">
+                        </div>
+                      </div>
+                      <p class="text-xs text-slate-400">先選查詢條件，再點下方病患就診／掛號／住院／收據等分類。Firestore 先篩選、每批最多 40 筆；月營收統計仍按月份獨立查詢。</p>
+                    </div>
                     <div class="flex flex-wrap gap-2" id="jx-hospital-record-tabs">
                       <button type="button" onclick="jxHospitalLoad('visit')" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2">病患就診紀錄</button>
                       <button type="button" onclick="jxHospitalLoad('registration')" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2">現場掛號紀錄</button>
@@ -3504,6 +3612,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                       <button type="button" onclick="jxHospitalLoad('receipt')" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2">醫院收據</button>
                       <button type="button" onclick="jxHospitalShowMonthly()" class="rounded-lg border border-amber-500/50 bg-amber-950/20 text-amber-100 px-3 py-2"><i class="fa-solid fa-chart-line mr-1"></i>月營收統計</button>
                     </div>
+                    <button type="button" id="history-jx-hospital-next" onclick="jxHospitalLoadNext()" class="hidden rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-3 py-2 text-sm text-cyan-200">載入下一批（最多 40 筆）</button>
                     <div id="jx-online-status-tools" class="hidden flex-wrap items-center gap-2" role="group" aria-label="線上掛號時效篩選">
                       <span class="text-sm text-slate-300 mr-1">依掛號時間：</span>
                       <button type="button" id="jx-online-filter-all" onclick="jxHospitalSetOnlineFilter('all')" aria-pressed="true" class="jx-online-filter rounded-lg border border-sky-500/60 px-3 py-2 text-sm text-sky-200">全部 <span id="jx-online-count-all">0</span></button>
@@ -3523,7 +3632,26 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 <section id="jx-sub-medical" role="tabpanel" aria-labelledby="btn-jiaxiao-medical" class="space-y-4">
                     <div id="jiaxiao-reports" class="bg-slate-900 border border-teal-500/20 rounded-2xl p-4 sm:p-6 space-y-4">
                         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-3"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-truck-medical text-teal-400 mr-2"></i>嘉蕭 EMS 救護歷史報告</h3><p class="text-xs text-slate-400 mt-1">EMS 派遣、傷病患、現場、處置、出勤與費用皆在原表單填寫。</p></div><div class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto"><label class="relative grow lg:w-72"><span class="sr-only">搜尋救護紀錄</span><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input id="jx-medical-search" type="search" oninput="renderJXReports()" placeholder="搜尋患者／填寫人 RP 名" class="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white"></label><button type="button" onclick="openJXReport('medical')" class="jx-member-create-btn rounded-xl bg-teal-600 hover:bg-teal-500 px-4 py-2 text-sm text-white font-semibold whitespace-nowrap">填寫 EMS 救護報告</button></div></div>
-                        <button type="button" onclick="loadJXReports('medical')" class="rounded-lg bg-slate-800 px-4 py-2 text-sm text-teal-300 hover:bg-slate-700"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理 EMS 紀錄</button>
+                        <!-- V150：歷史報告先篩選再讀取，避免整個集合讀取 -->
+                    <div class="rounded-xl border border-cyan-500/25 bg-slate-950/50 p-3 space-y-2" data-history-filter="jx-medical">
+                      <div class="flex flex-wrap gap-2 items-center">
+                        <label for="history-jx-medical-mode" class="text-sm text-cyan-200 font-semibold">先選擇查詢條件</label>
+                        <select id="history-jx-medical-mode" onchange="ntpcHistoryToggle('jx-medical')" class="min-w-[160px] rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 text-sm text-white">
+                          <option value="" selected>請選擇查詢方式</option><option value="dates">日期區間</option><option value="author">報告填寫人</option>
+                        </select>
+                        <div id="history-jx-medical-dates" class="hidden flex flex-wrap items-center gap-2">
+                          <label class="text-xs text-slate-300">開始 <input id="history-jx-medical-from" onchange="ntpcHistoryNextButton('jx-medical',false)" type="date" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"></label>
+                          <label class="text-xs text-slate-300">結束 <input id="history-jx-medical-to" onchange="ntpcHistoryNextButton('jx-medical',false)" type="date" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"></label>
+                        </div>
+                        <div id="history-jx-medical-author-box" class="hidden flex flex-wrap items-center gap-2">
+                          <select id="history-jx-medical-author-type" onchange="ntpcHistoryNextButton('jx-medical',false)" aria-label="填寫人查詢方式" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"><option value="account">填寫人帳號</option><option value="name">填寫人 RP 名稱</option></select>
+                          <input id="history-jx-medical-author" oninput="ntpcHistoryNextButton('jx-medical',false)" type="search" maxlength="100" autocomplete="off" placeholder="輸入完整帳號或 RP 名稱" class="rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 text-sm text-white w-full sm:w-60">
+                        </div>
+                      </div>
+                      <p class="text-xs text-slate-400">不會先載入全部報告；請填完整的日期區間或填寫人，按下方「查詢」後才會向 Firestore 讀取。每批最多 40 筆；下方既有搜尋只篩選已載入資料。</p>
+                    </div>
+                        <button type="button" onclick="loadJXReports('medical')" class="rounded-lg bg-slate-800 px-4 py-2 text-sm text-teal-300 hover:bg-slate-700"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>依條件查詢 EMS 紀錄</button>
+                        <button type="button" id="history-jx-medical-next" onclick="loadJXReports('medical',true)" class="hidden rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-3 py-2 text-sm text-cyan-200">載入下一批（最多 40 筆）</button>
                         <div id="jx-report-status" class="text-xs text-slate-400">為降低 Firestore 讀取量，只有按下按鈕才會載入紀錄。</div>
                         <div id="jx-medical-history-list" class="grid grid-cols-1 gap-3 text-sm text-slate-400">尚未載入</div>
                         <div id="jx-history-list" class="hidden" aria-hidden="true"></div>
@@ -3532,7 +3660,26 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 <section id="jx-sub-funeral" role="tabpanel" aria-labelledby="btn-jiaxiao-funeral" class="hidden space-y-4">
                     <div class="bg-slate-900 border border-indigo-500/20 rounded-2xl p-4 sm:p-6 space-y-4">
                         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-3"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-file-medical text-indigo-400 mr-2"></i>嘉蕭生命禮儀案件報告</h3><p class="text-xs text-slate-400 mt-1">依日期新到舊排列，可用往生者姓名或填寫人 RP 名稱搜尋。</p></div><div class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto"><label class="relative grow lg:w-72"><span class="sr-only">搜尋生命禮儀紀錄</span><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input id="jx-funeral-search" type="search" oninput="renderJXReports()" placeholder="搜尋往生者／填寫人 RP 名" class="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white"></label><button type="button" onclick="openJXReport('funeral')" class="jx-member-create-btn rounded-xl bg-indigo-700 hover:bg-indigo-600 px-4 py-2 text-sm text-white font-semibold whitespace-nowrap">填寫生命禮儀報告</button></div></div>
-                        <button type="button" onclick="loadJXReports('funeral')" class="rounded-lg bg-slate-800 px-4 py-2 text-sm text-indigo-300 hover:bg-slate-700"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理禮儀紀錄</button>
+                        <!-- V150：歷史報告先篩選再讀取，避免整個集合讀取 -->
+                    <div class="rounded-xl border border-cyan-500/25 bg-slate-950/50 p-3 space-y-2" data-history-filter="jx-funeral">
+                      <div class="flex flex-wrap gap-2 items-center">
+                        <label for="history-jx-funeral-mode" class="text-sm text-cyan-200 font-semibold">先選擇查詢條件</label>
+                        <select id="history-jx-funeral-mode" onchange="ntpcHistoryToggle('jx-funeral')" class="min-w-[160px] rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 text-sm text-white">
+                          <option value="" selected>請選擇查詢方式</option><option value="dates">日期區間</option><option value="author">報告填寫人</option>
+                        </select>
+                        <div id="history-jx-funeral-dates" class="hidden flex flex-wrap items-center gap-2">
+                          <label class="text-xs text-slate-300">開始 <input id="history-jx-funeral-from" onchange="ntpcHistoryNextButton('jx-funeral',false)" type="date" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"></label>
+                          <label class="text-xs text-slate-300">結束 <input id="history-jx-funeral-to" onchange="ntpcHistoryNextButton('jx-funeral',false)" type="date" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"></label>
+                        </div>
+                        <div id="history-jx-funeral-author-box" class="hidden flex flex-wrap items-center gap-2">
+                          <select id="history-jx-funeral-author-type" onchange="ntpcHistoryNextButton('jx-funeral',false)" aria-label="填寫人查詢方式" class="rounded-lg bg-slate-900 border border-slate-600 px-2 py-2 text-sm text-white"><option value="account">填寫人帳號</option><option value="name">填寫人 RP 名稱</option></select>
+                          <input id="history-jx-funeral-author" oninput="ntpcHistoryNextButton('jx-funeral',false)" type="search" maxlength="100" autocomplete="off" placeholder="輸入完整帳號或 RP 名稱" class="rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 text-sm text-white w-full sm:w-60">
+                        </div>
+                      </div>
+                      <p class="text-xs text-slate-400">不會先載入全部報告；請填完整的日期區間或填寫人，按下方「查詢」後才會向 Firestore 讀取。每批最多 40 筆；下方既有搜尋只篩選已載入資料。</p>
+                    </div>
+                        <button type="button" onclick="loadJXReports('funeral')" class="rounded-lg bg-slate-800 px-4 py-2 text-sm text-indigo-300 hover:bg-slate-700"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>依條件查詢禮儀紀錄</button>
+                        <button type="button" id="history-jx-funeral-next" onclick="loadJXReports('funeral',true)" class="hidden rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-3 py-2 text-sm text-cyan-200">載入下一批（最多 40 筆）</button>
                         <div id="jx-funeral-history-list" class="grid grid-cols-1 gap-3 text-sm text-slate-400">尚未載入</div>
                     </div>
                 </section>
@@ -4121,6 +4268,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                     <div class="relative"><input type="password" id="login-password" autocomplete="current-password" placeholder="請輸入密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-blue-500"><button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-2" aria-label="顯示密碼"><i class="fa-solid fa-eye"></i></button></div>
                 </div>
                 <button id="handle-login-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">立即登入</button>
+                <p class="text-xs leading-5 text-slate-400"><i class="fa-solid fa-shield-halved mr-1 text-blue-300"></i>登入後此瀏覽器會記住登入狀態最多 15 天；公用裝置使用後請按「登出」。</p>
                 <button type="button" id="login-forgot-password-btn" class="w-full text-sm text-slate-400 hover:text-blue-400 transition underline underline-offset-4">忘記密碼？前往常見問題</button>
                 <button type="button" id="login-view-agreement-btn" class="w-full text-sm text-slate-400 hover:text-blue-400 transition underline underline-offset-4"><i class="fa-solid fa-file-contract mr-2"></i>查看網站相關協議</button>
             </div>
@@ -5778,7 +5926,7 @@ const loginOpenBtn = document.getElementById('login-modal-open-btn');
             document.getElementById('open-citizen-post-btn')?.addEventListener('click',()=>openLookupPost('citizen'));
             document.getElementById('open-vehicle-post-btn')?.addEventListener('click',()=>openLookupPost('vehicles'));
             document.getElementById('open-wanted-post-btn')?.addEventListener('click',()=>openLookupPost('wanted'));
-            document.getElementById('citizen-search-btn')?.addEventListener('click',()=>loadLookupOnDemand('citizen'));document.getElementById('citizen-full-search-btn')?.addEventListener('click',()=>loadLookupOnDemand('citizen',true));document.getElementById('citizen-deceased-filter')?.addEventListener('change',searchCitizenRecords);
+            document.getElementById('citizen-search-btn')?.addEventListener('click',()=>loadLookupOnDemand('citizen'));document.getElementById('citizen-full-search-btn')?.addEventListener('click',()=>loadLookupOnDemand('citizen',true));document.getElementById('citizen-deceased-filter')?.addEventListener('change',ntpcCitizenFilterChanged);
             document.getElementById('vehicle-search-btn')?.addEventListener('click',()=>loadLookupOnDemand('vehicles'));document.getElementById('vehicle-full-search-btn')?.addEventListener('click',()=>loadLookupOnDemand('vehicles',true));
             document.getElementById('wanted-search-btn')?.addEventListener('click',searchWantedRecords);
             document.getElementById('citizen-search-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')loadLookupOnDemand('citizen');});
@@ -6395,12 +6543,76 @@ async function republishAnnouncement(id) {
                 renderSiteAnnouncements();
                 const ap=document.getElementById('announcement-publisher-input'); if(ap && !ap.value) ap.value=currentUser?.name||'';
                 populateMemberSelects();
-                restoreBrowserSession();
-                restoreAcademySession();
+                // 一般帳號已由 firebase-ready 流程驗證；專生代碼在此完成雲端有效性驗證。
+                await restoreAcademySession();
                 renderAdminAcademyCodes();
             } catch (e) {
                 console.error("雲端資料同步讀取失敗", e);
             }
+        }
+
+        // V150：歷史報告查詢規則。必須先選日期區間或填寫人，Firestore 伺服端先過濾再傳回文件。
+        const ntpcHistoryPageSize=40;
+        const ntpcHistoryPages=Object.create(null);
+        const ntpcHistoryWriterFields={
+            police:{account:'registeredByAccount',name:'registeredByName'},
+            fire:{account:'registeredByAccount',name:'registeredByName'},
+            ems:{account:'registeredByAccount',name:'registeredByName'},
+            'jx-medical':{account:'authorAccount',name:'authorName'},
+            'jx-funeral':{account:'authorAccount',name:'authorName'},
+            'jx-hospital':{account:'authorAccount',name:'authorName'}
+        };
+        function ntpcHistoryToggle(kind){
+            const mode=document.getElementById(`history-${kind}-mode`)?.value;
+            document.getElementById(`history-${kind}-dates`)?.classList.toggle('hidden',mode!=='dates');
+            document.getElementById(`history-${kind}-author-box`)?.classList.toggle('hidden',mode!=='author');
+            const next=document.getElementById(`history-${kind}-next`);
+            if(next)next.classList.add('hidden');
+        }
+        function ntpcHistorySelection(kind){
+            const value=id=>String(document.getElementById(`history-${kind}-${id}`)?.value||'').trim();
+            const mode=value('mode');
+            if(!mode){showToast('請先選擇日期區間或報告填寫人，再載入歷史報告。','warning','請選擇查詢條件');return null;}
+            if(mode==='dates'){
+                const from=value('from'),to=value('to');
+                if(!/^\d{4}-\d{2}-\d{2}$/.test(from)||!/^\d{4}-\d{2}-\d{2}$/.test(to)){
+                    showToast('請完整選擇開始及結束日期。','warning','日期未填');return null;
+                }
+                const start=Date.parse(from+'T00:00:00+08:00'),end=Date.parse(to+'T00:00:00+08:00')+86400000;
+                if(!Number.isFinite(start)||!Number.isFinite(end)||start>=end||start>Date.now()+86400000){
+                    showToast('日期區間不正確，請確認起迄日期。','warning','日期錯誤');return null;
+                }
+                return {mode,start,end,key:`dates:${start}:${end}`};
+            }
+            if(mode==='author'){
+                const author=value('author'),field=value('author-type');
+                if(!author||author.length>100){showToast('請輸入完整的填寫人帳號或 RP 名稱。','warning','填寫人未填');return null;}
+                return {mode,author,field:field==='name'?'name':'account',key:`author:${field}:${author}`};
+            }
+            showToast('請選擇有效的歷史報告查詢方式。','warning');return null;
+        }
+        function ntpcHistoryQuery(col,kind,criterion,last){
+            const filters=[];
+            if(criterion.mode==='dates'){
+                const dateField=kind==='jx-hospital'?'createdAt':'timestamp';
+                filters.push(fm.where(dateField,'>=',criterion.start),fm.where(dateField,'<',criterion.end),fm.orderBy(dateField,'desc'));
+            }else{
+                const field=ntpcHistoryWriterFields[kind]?.[criterion.field];
+                if(!field)throw new Error('填寫人查詢欄位不存在');
+                filters.push(fm.where(field,'==',criterion.author));
+            }
+            if(last)filters.push(fm.startAfter(last));
+            filters.push(fm.limit(ntpcHistoryPageSize));
+            return fm.query(fm.collection(db,col),...filters);
+        }
+        function ntpcHistoryNextButton(kind,hasNext){
+            const btn=document.getElementById(`history-${kind}-next`);
+            if(btn)btn.classList.toggle('hidden',!hasNext);
+        }
+        function ntpcHistoryMergeRows(previous,added){
+            const byId=new Map();
+            for(const r of [...previous,...added])byId.set(String(r.docId||r.id||r.caseId),r);
+            return [...byId.values()].sort((a,b)=>Number(b.timestamp||b.updatedAt||0)-Number(a.timestamp||a.updatedAt||0));
         }
 
         // V1.9.3：正式案件與登入紀錄只依手動按鈕讀取；單位高層的待審案件另設限定範圍即時監聽。
@@ -6408,6 +6620,8 @@ async function republishAnnouncement(id) {
         function resetManualReadFlags(){
             resetLookupDemandState();
             manualReadState.loginSessions=false;manualReadState.cases={};manualReadState.rejectedLoaded={};manualReadState.busy.clear();
+            for(const kind of Object.keys(ntpcHistoryPages))delete ntpcHistoryPages[kind];
+            ['police','fire','ems','jx-medical','jx-funeral','jx-hospital'].forEach(kind=>ntpcHistoryNextButton(kind,false));
             const status=document.getElementById('login-sessions-load-status');if(status)status.textContent='尚未查詢登入紀錄。';
             ['police','fire','ems','police-review','fire-review'].forEach(kind=>{
                 const el=document.getElementById(`manual-load-${kind}-status`);
@@ -6450,8 +6664,8 @@ async function republishAnnouncement(id) {
             if(state)state.textContent=results.every(Boolean)?'已完成手動查詢；再次按按鈕才會更新。':'部分資料讀取失敗，請查看上方提示後重試。';
             renderPersonalNotifications();
         }
-        async function loadCaseReportsOnDemand(kind){
-            if(!currentUser||!db||!fm)return;
+        async function loadCaseReportsOnDemand(kind,more=false){
+            if(!currentUser||!db||!fm)return false;
             const admin=getEffectiveRole(currentUser)==='admin';
             const police=admin||userHasUnit('police');
             const fire=admin||userHasUnit('fire');
@@ -6462,14 +6676,25 @@ async function republishAnnouncement(id) {
                 'police-review':{collections:['policePendingReports'],access:police},
                 'fire-review':{collections:['firePendingReports','emsPendingReports'],access:fire}
             };
-            const spec=specs[kind];if(!spec||!spec.access){showToast('你沒有權限查看此類案件。','warning','權限不足');return;}
-            if(manualReadState.busy.has(kind))return;
+            const spec=specs[kind];if(!spec||!spec.access){showToast('你沒有權限查看此類案件。','warning','權限不足');return false;}
+            const isHistory=['police','fire','ems'].includes(kind);
+            const criterion=isHistory?ntpcHistorySelection(kind):null;
+            if(isHistory&&!criterion)return false;
+            if(manualReadState.busy.has(kind))return false;
+            const oldPage=ntpcHistoryPages[kind];
+            const continuing=!!(more&&oldPage?.key===criterion?.key&&oldPage?.more);
+            if(more&&!continuing)return false;
             manualReadState.busy.add(kind);
-            const status=document.getElementById(`manual-load-${kind}-status`),btn=document.getElementById(`load-${kind}-reports-btn`);
-            if(status)status.textContent='正在向資料庫讀取...';if(btn)btn.disabled=true;
+            const status=document.getElementById(`manual-load-${kind}-status`),btn=document.getElementById(`load-${kind}-reports-btn`),next=document.getElementById(`history-${kind}-next`);
+            if(status)status.textContent='正在向 Firestore 條件查詢...';if(btn)btn.disabled=true;if(next)next.disabled=true;
             try{
                 const results=await Promise.all(spec.collections.map(async collection=>{
-                    // 一般成員只讀自己提交的待審案；高層與管理員可讀單位全部待審案。
+                    if(isHistory){
+                        const last=continuing?oldPage.last?.[collection]:null;
+                        const snap=await fm.getDocs(ntpcHistoryQuery(collection,kind,criterion,last));
+                        return {collection,rows:snap.docs.map(d=>({docId:d.id,...d.data(),remarks:ensureReportRemarks(d.data())})),size:snap.size,last:snap.docs[snap.docs.length-1]||null,more:snap.size===ntpcHistoryPageSize};
+                    }
+                    // 待審審核沿用現有即時監聽與權限限制，不改成歷史查詢。
                     const isPending=collection.endsWith('PendingReports');
                     const canFullRead=collection==='policePendingReports'?canReviewPoliceReports():canReviewFireReports();
                     const ref=isPending&&!canFullRead
@@ -6478,12 +6703,22 @@ async function republishAnnouncement(id) {
                     const snap=await fm.getDocs(ref);
                     return {collection,rows:snap.docs.map(d=>({docId:d.id,...d.data(),remarks:ensureReportRemarks(d.data())})),size:snap.size};
                 }));
-                // 全部查詢成功才覆蓋快取，避免消防與 EMS 半套更新。
-                for(const result of results){appData[result.collection]=result.rows;ntpcMarkSyncSuccess(result.collection+'（手動）',result.size);}
+                for(const result of results){
+                    appData[result.collection]=isHistory&&continuing?ntpcHistoryMergeRows(appData[result.collection]||[],result.rows):result.rows;
+                    ntpcMarkSyncSuccess(result.collection+'（手動）',result.size);
+                }
+                if(isHistory){
+                    const last=continuing?{...oldPage.last}:{};
+                    for(const result of results)last[result.collection]=result.last;
+                    ntpcHistoryPages[kind]={key:criterion.key,last,more:results.some(x=>x.more)};
+                    ntpcHistoryNextButton(kind,results.some(x=>x.more));
+                }
                 manualReadState.cases[kind]=true;
                 if(kind.endsWith('-review'))manualReadState.rejectedLoaded[kind]=true;
                 const total=results.reduce((sum,x)=>sum+x.size,0);
-                if(status)status.textContent=`已載入 ${total} 筆｜${formatDateTime(Date.now())}${kind.endsWith('-review')&&((kind==='police-review'&&canReviewPoliceReports())||(kind==='fire-review'&&canReviewFireReports()))?'（待審會自動同步，退件歷史須手動重新整理）':'（只有再次按下才重新查詢）'}`;
+                if(status)status.textContent=isHistory
+                    ?`本次讀取 ${total} 筆；目前已載入 ${(appData[spec.collections[0]]||[]).length} 筆${ntpcHistoryPages[kind].more?'，可再載入下一批':''}｜${formatDateTime(Date.now())}`
+                    :`已載入 ${total} 筆｜${formatDateTime(Date.now())}（待審即時偵測維持不變）`;
                 if(kind==='police')renderPoliceReports();
                 if(kind==='fire')renderFireReports();
                 if(kind==='ems')renderEMSReports();
@@ -6492,8 +6727,11 @@ async function republishAnnouncement(id) {
                 updateReviewTabBadges();renderPersonalNotifications();renderMyProfile();refreshDutyDashboard();
                 if(typeof ntpcRenderOpenAdminMonitorPanels==='function')ntpcRenderOpenAdminMonitorPanels();
                 return true;
-            }catch(e){if(status)status.textContent='讀取失敗：'+e.message;ntpcMarkSyncError(kind+'（手動）',e);showToast('案件讀取失敗：'+e.message,'error','讀取失敗');return false;}
-            finally{manualReadState.busy.delete(kind);if(btn)btn.disabled=false;}
+            }catch(e){
+                if(status)status.textContent='讀取失敗：'+e.message;
+                ntpcMarkSyncError(kind+'（手動）',e);
+                showToast('案件讀取失敗：'+(e.code==='failed-precondition'?'請檢查 Firestore 查詢索引。':e.message),'error','讀取失敗');return false;
+            }finally{manualReadState.busy.delete(kind);if(btn)btn.disabled=false;if(next)next.disabled=false;}
         }
 
         // 單位高層待審即時監聽：只查 reviewStatus=pending；初次載入僅讀取目前待審文件，之後由變更快照更新。
@@ -6933,7 +7171,7 @@ async function republishAnnouncement(id) {
         }
 
         function switchFAQCategory(category, focusId = '') {
-            const validCategories = ['police', 'fire', 'account', 'info'];
+            const validCategories = ['police', 'fire', 'account', 'info', 'images'];
             if (!validCategories.includes(category)) category = 'info';
             document.querySelectorAll('.faq-category-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.faq-category-btn').forEach(btn => {
@@ -6951,6 +7189,9 @@ async function republishAnnouncement(id) {
                 btn.classList.toggle('bg-cyan-600/15', active && category === 'info');
                 btn.classList.toggle('border-cyan-500/30', active && category === 'info');
                 btn.classList.toggle('text-cyan-300', active && category === 'info');
+                btn.classList.toggle('bg-cyan-600/15', active && category === 'images');
+                btn.classList.toggle('border-cyan-500/30', active && category === 'images');
+                btn.classList.toggle('text-cyan-300', active && category === 'images');
                 btn.classList.toggle('bg-slate-950', !active);
                 btn.classList.toggle('border-slate-800', !active);
                 btn.classList.toggle('text-slate-300', !active);
@@ -7816,7 +8057,7 @@ async function republishAnnouncement(id) {
                 });
             }
             host.replaceChildren();
-            status.textContent=`${JX_HOSPITAL_NAMES[type]}：符合 ${filtered.length} 筆／已載入 ${rows.length} 筆（最多 150 筆）`+(isOnline?'｜未逾時 '+totals.upcoming+'，已逾時 '+totals.overdue+(totals.unknown?'，時間不明 '+totals.unknown:''):'');
+            status.textContent=`${JX_HOSPITAL_NAMES[type]}：符合 ${filtered.length} 筆／已載入 ${rows.length} 筆（每批最多 40 筆）`+(isOnline?'｜未逾時 '+totals.upcoming+'，已逾時 '+totals.overdue+(totals.unknown?'，時間不明 '+totals.unknown:''):'');
             const hint=document.getElementById('jx-hospital-search-hint');
             if(hint)hint.textContent=term?'只搜尋已載入的紀錄；不增加 Firestore 讀取。':'輸入關鍵字可搜尋目前載入的紀錄；不會額外查詢資料庫。';
             if(!filtered.length){host.textContent=term?'沒有符合關鍵字的紀錄':isOnline?'目前沒有符合時效分類的線上掛號紀錄':'目前沒有紀錄';return;}
@@ -7919,20 +8160,50 @@ async function republishAnnouncement(id) {
             const pane=document.getElementById('jx-sub-hospital');
             if(!document.hidden&&!pane?.classList.contains('hidden')&&jxHospitalRecordsCache.loaded&&jxHospitalRecordsCache.type==='online'&&document.getElementById('jx-hospital-revenue')?.classList.contains('hidden'))jxHospitalRenderRecords();
         },60000);
-        async function jxHospitalLoad(type){
+        // V151：醫院各類歷史紀錄共享同一條件，但每種分類的分頁相互獨立。
+        async function jxHospitalLoadNext(){
+            const type=jxHospitalRecordsCache.type;
+            if(!type||!jxHospitalRecordsCache.loaded)return;
+            return jxHospitalLoad(type,true);
+        }
+        async function jxHospitalLoad(type,more=false){
             if(!canAccessJiaxiao()||!fm||!db||!JX_HOSPITAL_COLLECTIONS[type])return;
+            const kind='jx-hospital',criterion=ntpcHistorySelection(kind);
+            if(!criterion)return;
+            const key=`${type}:${criterion.key}`,page=ntpcHistoryPages[kind];
+            const continuing=!!(more&&page?.key===key&&page.more&&jxHospitalRecordsCache.type===type);
+            if(more&&!continuing){ntpcHistoryNextButton(kind,false);return;}
+            if(manualReadState.busy.has(kind))return;
+            manualReadState.busy.add(kind);
             document.getElementById('jx-hospital-revenue')?.classList.add('hidden');
-            jxHospitalRecordsCache.loaded=false;jxHospitalRecordsCache.type=type;jxHospitalRecordsCache.rows=[];
-            if(type==='online')jxHospitalOnlineFilter='all';
-            const toolbar=document.getElementById('jx-online-status-tools');toolbar?.classList.toggle('hidden',type!=='online');toolbar?.classList.toggle('flex',type==='online');
-            const status=document.getElementById('jx-hospital-record-status'),host=document.getElementById('jx-hospital-record-results');
-            status.textContent='正在讀取'+JX_HOSPITAL_NAMES[type]+'紀錄……';host.replaceChildren();
+            const toolbar=document.getElementById('jx-online-status-tools');
+            toolbar?.classList.toggle('hidden',type!=='online');toolbar?.classList.toggle('flex',type==='online');
+            if(!continuing){
+                jxHospitalRecordsCache.loaded=false;jxHospitalRecordsCache.type=type;jxHospitalRecordsCache.rows=[];
+                if(type==='online')jxHospitalOnlineFilter='all';
+                ntpcHistoryNextButton(kind,false);
+            }
+            const status=document.getElementById('jx-hospital-record-status'),host=document.getElementById('jx-hospital-record-results'),next=document.getElementById('history-jx-hospital-next');
+            status.textContent='正在依條件查詢'+JX_HOSPITAL_NAMES[type]+'紀錄……';
+            if(!continuing)host.replaceChildren();
+            if(next)next.disabled=true;
             try{
-                const snap=await fm.getDocs(fm.query(fm.collection(db,JX_HOSPITAL_COLLECTIONS[type]),fm.limit(150)));
-                jxHospitalRecordsCache.rows=snap.docs.map(d=>({id:d.id,...d.data(),__collection:JX_HOSPITAL_COLLECTIONS[type]})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+                const col=JX_HOSPITAL_COLLECTIONS[type];
+                const snap=await fm.getDocs(ntpcHistoryQuery(col,kind,criterion,continuing?page.last?.[col]:null));
+                const incoming=snap.docs.map(d=>({id:d.id,...d.data(),__collection:col}));
+                const rows=continuing?[...jxHospitalRecordsCache.rows,...incoming]:incoming;
+                jxHospitalRecordsCache.rows=[...new Map(rows.map(r=>[String(r.id),r])).values()].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
                 jxHospitalRecordsCache.loaded=true;
+                ntpcHistoryPages[kind]={key,last:{[col]:snap.docs[snap.docs.length-1]||null},more:snap.size===ntpcHistoryPageSize};
+                ntpcHistoryNextButton(kind,ntpcHistoryPages[kind].more);
                 jxHospitalRenderRecords();
-            }catch(error){status.textContent='讀取失敗：'+error.message;showToast('醫院紀錄讀取失敗，請檢查 Firestore 權限','error');}
+                status.textContent=`${JX_HOSPITAL_NAMES[type]}：本次讀取 ${snap.size} 筆／已載入 ${jxHospitalRecordsCache.rows.length} 筆${ntpcHistoryPages[kind].more?'｜可載入下一批':''}`;
+            }catch(error){
+                status.textContent='讀取失敗：'+error.message;
+                showToast('醫院紀錄條件查詢失敗：'+(error.code==='failed-precondition'?'Firestore 查詢索引尚未建立。':error.message),'error');
+            }finally{
+                manualReadState.busy.delete(kind);if(next)next.disabled=false;
+            }
         }
         // 醫院報告詳情依填寫時的章節名稱、欄位順序和重複紀錄分卡顯示。
         function jxViewHospitalRecord(r){
@@ -8230,50 +8501,126 @@ async function republishAnnouncement(id) {
         function safeSessionGet(key) { try { return sessionStorage.getItem(key); } catch (e) { return null; } }
         function safeSessionSet(key, value) { try { sessionStorage.setItem(key, value); } catch (e) {} }
         function safeSessionRemove(key) { try { sessionStorage.removeItem(key); } catch (e) {} }
+        function ntpcLocalGet(key) { try { return localStorage.getItem(key); } catch (_) { return null; } }
+        function ntpcLocalSet(key,value) { try { localStorage.setItem(key,value); return true; } catch (_) { return false; } }
+        function ntpcLocalRemove(key) { try { localStorage.removeItem(key); } catch (_) {} }
 
-        function saveBrowserSession() {
-            if (!currentUser) return;
-            safeSessionSet('ntpcrp_session', JSON.stringify({ account: currentUser.account, loginAt: Date.now(), lastActive: Date.now() }));
+        // V149｜每個瀏覽器獨立的「記住登入」；固定 15 天，重新整理不延長有效期。
+        // 不把明文密碼存進本機；只保存隨機權杖，Firestore users 文件僅存 SHA-256 校驗值。
+        // 這仍是既有前端帳密登入的相容改良；真正的權限隔離須使用 Firebase Auth + Rules。
+        const NTPC_REMEMBER_KEY='ntpcrp_remembered_login_v149';
+        const NTPC_REMEMBER_DAYS=15;
+        const NTPC_REMEMBER_MS=NTPC_REMEMBER_DAYS*86400000;
+        const NTPC_REMEMBER_FIELD='rememberedDevicesV149';
+        const NTPC_ACADEMY_REMEMBER_KEY='ntpcrp_academy_remember_v149';
+        function ntpcGetRememberedLogin(){
+            try{const v=JSON.parse(ntpcLocalGet(NTPC_REMEMBER_KEY)||'null');return v&&typeof v==='object'&&!Array.isArray(v)?v:null;}
+            catch(_){return null;}
         }
-
-        async function restoreBrowserSession() {
-            const raw = safeSessionGet('ntpcrp_session');
-            if (!raw) return false;
-            try {
-                const saved = JSON.parse(raw);
-                const lastActive = Number(saved.lastActive || saved.loginAt || 0);
-                // 保留「10 分鐘內重新整理不登出」：刷新只要仍在 10 分鐘活動期限內即可恢復。
-                if (!saved.account || !lastActive || Date.now() - lastActive > 10 * 60 * 1000) {
-                    safeSessionRemove('ntpcrp_session');
-                    return false;
-                }
-                let found = (appData.users || []).find(u => String(u.account).toLowerCase() === String(saved.account).toLowerCase());
-                if (!found && db && fm) {
-                    const userSnap = await fm.getDoc(fm.doc(db,'users',saved.account));
-                    if (userSnap.exists()) {
-                        const data=userSnap.data();
-                        found={docId:userSnap.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};
-                    }
-                }
-                if (!found) { safeSessionRemove('ntpcrp_session'); return false; }
-                if (!(await requireSiteAgreement(found))) { safeSessionRemove('ntpcrp_session'); return false; }
-                currentUser = found;
-                const sessionPayload = { account: currentUser.account, loginAt: Number(saved.loginAt || Date.now()), lastActive: Date.now() };
-                safeSessionSet('ntpcrp_session', JSON.stringify(sessionPayload));
-                updateUserBadge();
-                updateAccessLocks();
-                renderMyProfile();
-                startUserPresenceHeartbeat();
-                if (currentUser.role === 'admin') startAdminPresenceRefresh();
-                if (isAcademyInstructor(currentUser) && getEffectiveRole(currentUser) !== 'admin') {
-                    setTimeout(() => switchTab('admin'), 0);
-                }
-                return true;
-            } catch (e) {
-                console.warn('瀏覽器登入工作階段恢復失敗：', e);
-                safeSessionRemove('ntpcrp_session');
+        async function ntpcSha256(value){
+            return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(value)))),x=>x.toString(16).padStart(2,'0')).join('');
+        }
+        function ntpcSessionUserFromDoc(snap){
+            const data=snap.data();
+            return {docId:snap.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};
+        }
+        function ntpcRememberEntries(data,now=Date.now()){
+            return (Array.isArray(data?.[NTPC_REMEMBER_FIELD])?data[NTPC_REMEMBER_FIELD]:[])
+                .filter(x=>x&&typeof x.id==='string'&&/^[a-zA-Z0-9-]{10,80}$/.test(x.id)&&Number(x.expiresAt)>now&&Number(x.expiresAt)<=now+NTPC_REMEMBER_MS)
+                .slice(-10);
+        }
+        async function ntpcRememberThisDevice(user){
+            if(!user||!db||!fm||!crypto?.subtle)throw new Error('登入或資料庫未就緒');
+            const now=Date.now(),id=crypto.randomUUID();
+            const secret=Array.from(crypto.getRandomValues(new Uint8Array(32)),x=>x.toString(16).padStart(2,'0')).join('');
+            const expiresAt=now+NTPC_REMEMBER_MS;
+            const hash=await ntpcSha256(secret);
+            const proof=await ntpcSha256(secret+':'+String(user.pass||''));
+            const ref=fm.doc(db,'users',user.docId||user.account);
+            // 交易可避免兩台裝置同時登入時互相覆蓋登入紀錄。
+            await fm.runTransaction(db,async tx=>{
+                const snap=await tx.get(ref);
+                if(!snap.exists()||String(snap.data().account||snap.id).toLowerCase()!==String(user.account).toLowerCase())throw new Error('登入帳號已異動');
+                const list=ntpcRememberEntries(snap.data(),now);
+                list.push({id,hash,proof,createdAt:now,expiresAt});
+                tx.update(ref,{[NTPC_REMEMBER_FIELD]:list.slice(-10)});
+            });
+            const stored=ntpcLocalSet(NTPC_REMEMBER_KEY,JSON.stringify({version:1,account:user.account,docId:user.docId||user.account,id,secret,issuedAt:now,expiresAt}));
+            if(!stored)throw new Error('裝置瀏覽器禁止保存登入資訊');
+        }
+        async function ntpcRevokeRememberedLogin(saved){
+            if(!saved||!db||!fm||!saved.id||!saved.secret||!saved.docId)return;
+            const hash=await ntpcSha256(saved.secret);
+            const ref=fm.doc(db,'users',saved.docId);
+            await fm.runTransaction(db,async tx=>{
+                const snap=await tx.get(ref);if(!snap.exists())return;
+                const list=ntpcRememberEntries(snap.data()).filter(x=>!(x.id===saved.id&&x.hash===hash));
+                tx.update(ref,{[NTPC_REMEMBER_FIELD]:list});
+            });
+        }
+        async function ntpcDeviceIsBlocked(){
+            const device=getDeviceInfo(),fingerprint=getDeviceFingerprint(device),deviceKey=getDeviceKey(device);
+            const [match,related]=await Promise.all([
+                fm.getDoc(fm.doc(db,'blockedDevices',fingerprint)),
+                fm.getDocs(fm.query(fm.collection(db,'blockedDevices'),fm.where('deviceKey','==',deviceKey),fm.limit(20)))
+            ]);
+            return (match.exists()&&match.data()?.active!==false)||related.docs.some(d=>d.data()?.active!==false);
+        }
+        async function ntpcRestoreRememberedLogin(){
+            const saved=ntpcGetRememberedLogin();if(!saved)return null;
+            const now=Date.now();
+            if(saved.version!==1||!saved.account||!saved.docId||!saved.id||!/^([a-f0-9]{64})$/.test(saved.secret||'')||
+               !Number.isFinite(Number(saved.issuedAt))||now<Number(saved.issuedAt)-60000||
+               Number(saved.expiresAt)<=now||Number(saved.expiresAt)>Number(saved.issuedAt)+NTPC_REMEMBER_MS+1000){
+                ntpcLocalRemove(NTPC_REMEMBER_KEY);return null;
+            }
+            try{
+                const snap=await fm.getDoc(fm.doc(db,'users',saved.docId));
+                if(!snap.exists())throw new Error('帳號已不存在');
+                const found=ntpcSessionUserFromDoc(snap);
+                if(String(found.account||'').toLowerCase()!==String(saved.account).toLowerCase())throw new Error('帳號不相符');
+                const hash=await ntpcSha256(saved.secret),proof=await ntpcSha256(saved.secret+':'+String(found.pass||''));
+                if(!ntpcRememberEntries(snap.data(),now).some(x=>x.id===saved.id&&x.hash===hash&&x.proof===proof&&Number(x.expiresAt)===Number(saved.expiresAt)))throw new Error('登入憑證已失效');
+                if(await ntpcDeviceIsBlocked())throw new Error('此裝置已被封鎖');
+                return {found,loginAt:saved.issuedAt};
+            }catch(e){
+                console.warn('15 天登入狀態驗證失敗',e?.message||e);
+                // 網路暫時中斷時不要刪除合法憑證，恢復連線後還可以再次嘗試。
+                const network=/unavailable|offline|network|fetch|deadline-exceeded|timeout/i.test(String(e?.code||'')+' '+String(e?.message||''));
+                if(!network)ntpcLocalRemove(NTPC_REMEMBER_KEY);
+                return null;
+            }
+        }
+        function saveBrowserSession(){
+            if(!currentUser)return;
+            safeSessionSet('ntpcrp_session',JSON.stringify({account:currentUser.account,loginAt:Date.now(),lastActive:Date.now()}));
+        }
+        function ntpcCompleteSessionRestore(found,loginAt){
+            currentUser=found;
+            safeSessionSet('ntpcrp_session',JSON.stringify({account:found.account,loginAt:Number(loginAt||Date.now()),lastActive:Date.now()}));
+            updateUserBadge();updateAccessLocks();renderMyProfile();startUserPresenceHeartbeat();
+            if(found.role==='admin')startAdminPresenceRefresh();
+            // 警專教官不再因其身分被導向管理中心。
+            return true;
+        }
+        async function restoreBrowserSession(){
+            if(currentUser)return true;
+            // 優先驗證同瀏覽器的 15 日權杖（每次重新開站都查 Firestore 是否撤銷／更改密碼）。
+            const remembered=await ntpcRestoreRememberedLogin();
+            if(remembered){
+                try{if(await requireSiteAgreement(remembered.found))return ntpcCompleteSessionRestore(remembered.found,remembered.loginAt);}catch(e){console.warn('同意協議檢查失敗',e);}
                 return false;
             }
+            // 舊版使用者仍可恢復原有 10 分鐘內的分頁暫存，重新登入後會升級為 15 日憑證。
+            const raw=safeSessionGet('ntpcrp_session');if(!raw)return false;
+            try{
+                const saved=JSON.parse(raw),lastActive=Number(saved.lastActive||saved.loginAt||0);
+                if(!saved.account||!lastActive||Date.now()-lastActive>10*60000){safeSessionRemove('ntpcrp_session');return false;}
+                let found=(appData.users||[]).find(u=>String(u.account).toLowerCase()===String(saved.account).toLowerCase());
+                if(!found&&db&&fm){const snap=await fm.getDoc(fm.doc(db,'users',saved.account));if(snap.exists())found=ntpcSessionUserFromDoc(snap);}
+                if(!found||!(await requireSiteAgreement(found))){safeSessionRemove('ntpcrp_session');return false;}
+                return ntpcCompleteSessionRestore(found,saved.loginAt);
+            }catch(e){console.warn('舊版分頁登入恢復失敗',e);safeSessionRemove('ntpcrp_session');return false;}
         }
 
         function calculateUserTotalDutyHours(account) {
@@ -8629,13 +8976,19 @@ async function republishAnnouncement(id) {
                 if (expired.length) void cleanupExpiredAcademyCodes(expired);
             }
         }
+        function ntpcAcademyRemainingLabel(remain){
+            const days=Math.floor(remain/86400000),hours=Math.floor(remain%86400000/3600000);
+            if(days>0)return `代碼剩餘：${days}天 ${hours}小時`;
+            if(hours>0)return `代碼剩餘：${hours}小時 ${Math.floor(remain%3600000/60000)}分`;
+            return `代碼剩餘：${Math.floor(remain/60000)}分 ${String(Math.floor(remain%60000/1000)).padStart(2,'0')}秒`;
+        }
         function updateAcademySessionCountdown() {
             if (!academyExamSession) return;
             if (Number(academyExamSession.expiresAt) <= Date.now()) { renderAcademySession(); return; }
             const el = document.getElementById('academy-expiry');
             if (!el) return;
             const remain = Math.max(0, Number(academyExamSession.expiresAt) - Date.now());
-            el.textContent = `代碼剩餘：${Math.floor(remain/60000)}分 ${String(Math.floor(remain%60000/1000)).padStart(2,'0')}秒`;
+            el.textContent=ntpcAcademyRemainingLabel(remain);
         }
 
         async function renderAdminAcademyCodes() {
@@ -8692,29 +9045,39 @@ async function republishAnnouncement(id) {
             } catch (e) {}
         }
 
-        function saveAcademySession() {
-            if (academyExamSession) safeSessionSet('ntpcrp_academy_session', JSON.stringify(academyExamSession));
+        function saveAcademySession(){
+            if(!academyExamSession)return;
+            safeSessionSet('ntpcrp_academy_session',JSON.stringify(academyExamSession));
+            // 只有綁定專生的專用碼保留 15 天；臨時碼不寫入持久儲存。
+            if(academyExamSession.codeKind==='dedicated'&&academyExamSession.studentToken){
+                ntpcLocalSet(NTPC_ACADEMY_REMEMBER_KEY,JSON.stringify(academyExamSession));
+            }else ntpcLocalRemove(NTPC_ACADEMY_REMEMBER_KEY);
         }
 
-        function restoreAcademySession() {
+        async function restoreAcademySession(){
             restoreAcademyCache();
-            const raw = safeSessionGet('ntpcrp_academy_session');
-            if (!raw) return;
-            try {
-                const saved = JSON.parse(raw);
-                if(String(saved.code||'').startsWith('NTPC-')&&saved.studentToken&&saved.expiresAt>Date.now()) {
-                    academyExamSession={...saved,codeKind:saved.codeKind==='dedicated'?'dedicated':'temporary'};renderAcademySession();renderAcademyCache();return;
+            const raw=safeSessionGet('ntpcrp_academy_session')||ntpcLocalGet(NTPC_ACADEMY_REMEMBER_KEY);
+            if(!raw)return;
+            try{
+                const saved=JSON.parse(raw),now=Date.now();
+                if(!saved||Number(saved.expiresAt)<=now)throw new Error('代碼工作階段已過期');
+                if(String(saved.code||'').startsWith('NTPC-')&&saved.studentToken){
+                    // 專用碼每次重開都讀取個別代碼與學員文件，遭撤銷／刪除後立即失效。
+                    const valid=await ntpcAcadStudent(saved.studentToken);
+                    if(valid.id!==saved.studentId||valid.department!==(saved.type==='fire'?'fire':'police')||
+                       valid.kind!==(saved.codeKind==='dedicated'?'dedicated':'temporary'))throw new Error('專生代碼已更換');
+                    const expiresAt=Math.min(Number(saved.expiresAt),valid.expiresAt,Number(saved.rememberedUntil||saved.expiresAt));
+                    if(expiresAt<=now)throw new Error('專生代碼已過期');
+                    academyExamSession={...saved,expiresAt,codeKind:valid.kind};
+                    saveAcademySession();renderAcademySession();renderAcademyCache();return;
                 }
-                const parsed = parseAcademyCode(saved.code);
-                if (!parsed || parsed.type !== saved.type) {
-                    safeSessionRemove('ntpcrp_academy_session');
-                    return;
-                }
-                academyExamSession = parsed;
-                renderAcademySession();
-                renderAcademyCache();
-            } catch (e) {
-                safeSessionRemove('ntpcrp_academy_session');
+                // 舊版臨時碼維持本分頁可恢復與原有 30 分鐘限制。
+                const parsed=parseAcademyCode(saved.code);
+                if(!parsed||parsed.type!==saved.type||Number(parsed.expiresAt)<=now)throw new Error('臨時考核代碼已過期');
+                academyExamSession=parsed;renderAcademySession();renderAcademyCache();
+            }catch(e){
+                console.warn('考核工作階段恢復失敗',e?.message||e);
+                safeSessionRemove('ntpcrp_academy_session');ntpcLocalRemove(NTPC_ACADEMY_REMEMBER_KEY);
             }
         }
 
@@ -8741,7 +9104,7 @@ async function republishAnnouncement(id) {
             document.getElementById('academy-ems-report-btn').classList.toggle('hidden', isPolice);
             const remain = Math.max(0, academyExamSession.expiresAt - Date.now());
             const mins = Math.floor(remain / 60000), secs = Math.floor((remain % 60000) / 1000);
-            document.getElementById('academy-expiry').textContent = `代碼剩餘：${mins}分 ${String(secs).padStart(2,'0')}秒`;
+            document.getElementById('academy-expiry').textContent = ntpcAcademyRemainingLabel(remain);
             ntpcAcademyUpdateReportMode();
         }
 
@@ -8756,7 +9119,7 @@ async function republishAnnouncement(id) {
             if (rawCode.startsWith('NTPC-')) {
                 try {
                     const result=await ntpcAcademyAPI('student-login',{code:rawCode});
-                    academyExamSession={code:rawCode,type:result.type,expiresAt:result.expiresAt,studentId:result.studentId,studentName:result.studentName,studentToken:result.studentToken,codeKind:result.codeKind};
+                    academyExamSession={code:rawCode,type:result.type,expiresAt:result.expiresAt,rememberedUntil:result.expiresAt,studentId:result.studentId,studentName:result.studentName,studentToken:result.studentToken,codeKind:result.codeKind};
                     academyExamCache={policeReports:[],fireReports:[],emsReports:[],wantedSimulations:[]};
                     saveAcademySession();saveAcademyCache();
                     if(input)input.value='';if(status)status.textContent='';
@@ -8832,6 +9195,7 @@ async function republishAnnouncement(id) {
             academyExamSession = null;
             academyExamCache = { policeReports: [], fireReports: [], emsReports: [], wantedSimulations: [] };
             safeSessionRemove('ntpcrp_academy_session');
+            ntpcLocalRemove(NTPC_ACADEMY_REMEMBER_KEY);
             safeSessionRemove('ntpcrp_academy_cache');
             if(!currentUser && db && fm) startRealtimeListeners();
             renderAcademySession();
@@ -9018,8 +9382,8 @@ async function republishAnnouncement(id) {
 
         const SECURITY_ACTION_COOLDOWN=new Map();
         function securityActionAllowed(key,cooldownMs=700){const now=Date.now(),last=SECURITY_ACTION_COOLDOWN.get(key)||0;if(now-last<cooldownMs)return false;SECURITY_ACTION_COOLDOWN.set(key,now);return true;}
-        async function handleLogin(){if(!securityActionAllowed('login',900))return;await cloudDataReadyPromise;const device=getDeviceInfo();const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}try{const fingerprint=getDeviceFingerprint(device),deviceKey=getDeviceKey(device);const [blockedByFingerprint,blockedByKey]=await Promise.all([fm.getDoc(fm.doc(db,'blockedDevices',fingerprint)),fm.getDocs(fm.query(fm.collection(db,'blockedDevices'),fm.where('deviceKey','==',deviceKey)))]);const matches=[];if(blockedByFingerprint.exists())matches.push({docId:blockedByFingerprint.id,...blockedByFingerprint.data()});blockedByKey.docs.forEach(d=>{if(!matches.some(x=>String(x.docId)===String(d.id)))matches.push({docId:d.id,...d.data()});});appData.blockedDevices=matches;/* 登入失敗紀錄只在失敗時依裝置 ID 單筆讀取，不下載整個集合。 */}catch(e){console.warn('登入安全資料讀取失敗：',e);}if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}let found=null;try{const userSnap=await fm.getDoc(fm.doc(db,'users',acc));if(userSnap.exists()){const data=userSnap.data();found={docId:userSnap.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}if(!found&&isSuperAdminAccount(acc)){const all=await fm.getDocs(fm.collection(db,'users'));const d=all.docs.find(x=>isSuperAdminAccount(x.id)||isSuperAdminAccount(x.data().account));if(d){const data=d.data();found={docId:d.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}}}catch(e){showToast('帳號驗證失敗，請稍後重試：'+e.message,'error','登入失敗');return;}if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));if(!(await requireSiteAgreement(found)))return;currentUser=found;appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);resetManualReadFlags();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();switchTab('home');}
-        async function logout(){ntpcBotAdminLogout();ntpcMapDisconnectAll();ntpcDispatchStop(true);resetManualReadFlags();stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','jiaxiaoClocks','jiaxiaoMedicalReports','jiaxiaoMedicalPendingReports','jiaxiaoFuneralReports','jiaxiaoFuneralPendingReports','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
+        async function handleLogin(){if(!securityActionAllowed('login',900))return;await cloudDataReadyPromise;const device=getDeviceInfo();const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}try{const fingerprint=getDeviceFingerprint(device),deviceKey=getDeviceKey(device);const [blockedByFingerprint,blockedByKey]=await Promise.all([fm.getDoc(fm.doc(db,'blockedDevices',fingerprint)),fm.getDocs(fm.query(fm.collection(db,'blockedDevices'),fm.where('deviceKey','==',deviceKey)))]);const matches=[];if(blockedByFingerprint.exists())matches.push({docId:blockedByFingerprint.id,...blockedByFingerprint.data()});blockedByKey.docs.forEach(d=>{if(!matches.some(x=>String(x.docId)===String(d.id)))matches.push({docId:d.id,...d.data()});});appData.blockedDevices=matches;/* 登入失敗紀錄只在失敗時依裝置 ID 單筆讀取，不下載整個集合。 */}catch(e){console.warn('登入安全資料讀取失敗：',e);}if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}let found=null;try{const userSnap=await fm.getDoc(fm.doc(db,'users',acc));if(userSnap.exists()){const data=userSnap.data();found={docId:userSnap.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}if(!found&&isSuperAdminAccount(acc)){const all=await fm.getDocs(fm.collection(db,'users'));const d=all.docs.find(x=>isSuperAdminAccount(x.id)||isSuperAdminAccount(x.data().account));if(d){const data=d.data();found={docId:d.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}}}catch(e){showToast('帳號驗證失敗，請稍後重試：'+e.message,'error','登入失敗');return;}if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));if(!(await requireSiteAgreement(found)))return;currentUser=found;appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);try{await ntpcRememberThisDevice(currentUser);}catch(e){console.warn('裝置 15 天登入設定失敗',e);showToast('本次已登入，但裝置記住 15 天失敗：'+(e?.message||e),'warning','記住登入未啟用');}resetManualReadFlags();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();switchTab('home');}
+        async function logout(){const remembered=ntpcGetRememberedLogin();ntpcLocalRemove(NTPC_REMEMBER_KEY);safeSessionRemove('ntpcrp_session');if(remembered)void ntpcRevokeRememberedLogin(remembered).catch(e=>console.warn('雲端登入憑證撤銷稍後再試',e));ntpcBotAdminLogout();ntpcMapDisconnectAll();ntpcDispatchStop(true);resetManualReadFlags();stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','jiaxiaoClocks','jiaxiaoMedicalReports','jiaxiaoMedicalPendingReports','jiaxiaoFuneralReports','jiaxiaoFuneralPendingReports','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
             const badge = document.getElementById('user-badge');
@@ -9250,7 +9614,7 @@ async function republishAnnouncement(id) {
 
         function renderLookupSystems(){
             const citizenCount=document.getElementById('citizen-total-count');
-            if(citizenCount) citizenCount.innerHTML=`<i class="fa-solid fa-magnifying-glass mr-1.5"></i>${lookupDemandState.citizen.loaded?'本次查詢：'+lookupDemandState.citizen.rows.length+' 筆':'按查詢才讀取'}`;
+            if(citizenCount) citizenCount.innerHTML=`<i class="fa-solid fa-magnifying-glass mr-1.5"></i>${lookupDemandState.citizen.loaded?'本次查詢：'+lookupDemandState.citizen.rows.filter(r=>!!r.deceased===(document.getElementById('citizen-deceased-filter')?.value==='deceased')).length+' 筆':'按查詢才讀取'}`;
             const map=[['citizen','citizen'],['vehicles','vehicles'],['wanted','wanted']];
             map.forEach(([type,key])=>{
                 const accessible=lookupAccessible(type);
@@ -9484,22 +9848,38 @@ async function republishAnnouncement(id) {
         let lookupDemandEpoch=0;
         // 市民查詢才載入正式警務案件；不依賴另一頁是否曾按「載入案件」。
         // 本快取只保留本次查詢市民真正相符的案件，避免將正式案件整批留在其他頁面狀態。
-        const citizenCaseLookupState={loaded:false,error:null,reports:[]};
+        const citizenCaseLookupState={loaded:false,error:null,reports:[],identities:[]};
         const LOOKUP_ON_DEMAND_LIMIT=80;
         function lookupDemandKey(type){
             const q=lookupKeyword(document.getElementById(type==='citizen'?'citizen-search-input':'vehicle-search-input')?.value||'');
-            return type==='citizen'?`${q}|${document.getElementById('citizen-deceased-filter')?.value||'all'}`:q;
+            return type==='citizen'?`${q}|${document.getElementById('citizen-deceased-filter')?.value||'alive'}`:q;
         }
         function lookupDemandPrompt(type){
             const isCitizen=type==='citizen';
             const keyword=lookupKeyword(document.getElementById(isCitizen?'citizen-search-input':'vehicle-search-input')?.value||'');
             return `<div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-8 text-center text-slate-500"><i class="fa-solid fa-magnifying-glass text-2xl mb-2"></i><div>${keyword?'搜尋條件已更新，請按「查詢」取得資料。':'輸入關鍵字後按「查詢」才會讀取雲端資料。'}</div><div class="text-xs mt-1">一般關鍵字使用資料庫索引；車輛純數字會自動包含搜尋（按下查詢才讀取車輛資料）；其他中間字元請使用進階搜尋。</div></div>`;
         }
+        // V152：切換存活／死亡人設只變更查詢條件，不自動讀取 Firestore。
+        // 先移除前一次查詢的可見結果及案件關聯，避免舊身分案件殘留於新篩選畫面。
+        function ntpcCitizenFilterChanged(){
+            const state=lookupDemandState.citizen;
+            state.key='';state.loaded=false;state.rows=[];
+            citizenCaseLookupState.loaded=false;citizenCaseLookupState.error=null;
+            citizenCaseLookupState.reports=[];citizenCaseLookupState.identities=[];
+            const target=document.getElementById('citizen-results');
+            if(target)target.innerHTML=lookupDemandPrompt('citizen');
+            const status=document.getElementById('citizen-lookup-status');
+            const dead=document.getElementById('citizen-deceased-filter')?.value==='deceased';
+            if(status)status.textContent=`已切換至${dead?'死亡':'存活'}人設，請按「查詢」重新載入；切換本身不讀取資料。${state.busy?'（前一次查詢尚在完成）':''}`;
+            const count=document.getElementById('citizen-total-count');
+            if(count)count.textContent='市民資料：待查詢';
+        }
         function resetLookupDemandState(){
             lookupDemandEpoch++;
             citizenCaseLookupState.loaded=false;
             citizenCaseLookupState.error=null;
             citizenCaseLookupState.reports=[];
+            citizenCaseLookupState.identities=[];
             for(const type of ['citizen','vehicles']){
                 Object.assign(lookupDemandState[type],{key:'',loaded:false,rows:[],busy:false});
                 const btn=document.getElementById(type==='citizen'?'citizen-search-btn':'vehicle-search-btn'); if(btn)btn.disabled=false;
@@ -9539,40 +9919,49 @@ async function republishAnnouncement(id) {
             if(epoch===lookupDemandEpoch&&currentUser)lookupDemandRemember('vehicles',collected);
         }
         async function lookupDemandCasesForCitizens(rows,epoch,account){
-            // 市民案件以「證件末五碼＋RP 姓名」雙重比對，涵蓋舊案件曾填完整證件號碼的情形。
-            citizenCaseLookupState.loaded=false;
-            citizenCaseLookupState.error=null;
-            citizenCaseLookupState.reports=[];
+            // V151：案件連動獨立於歷史報告 40 筆分頁。確保舊案件不會因日期篩選而漏掉。
+            citizenCaseLookupState.loaded=false;citizenCaseLookupState.error=null;
+            citizenCaseLookupState.reports=[];citizenCaseLookupState.identities=[];
             const identities=rows.map(r=>({id5:getLastFive(r.id5||''),name:normalizeCitizenCaseName(r.name)}))
                 .filter(r=>/^\d{5}$/.test(r.id5)&&r.name);
             if(!identities.length){citizenCaseLookupState.loaded=true;return;}
-            // 案件列表若已由使用者手動完整載入，直接沿用，避免重複讀取集合。
-            // 否則僅在市民主動查詢時讀取一次正式案件，登入階段不新增 Firestore 查詢。
             try{
-                const rowsOfReports=manualReadState.cases.police
-                    ?(appData.policeReports||[])
-                    :(await fm.getDocs(fm.collection(db,'policeReports'))).docs.map(d=>({docId:d.id,...d.data()}));
+                // 為本次查到的證件末五碼額外查詢已死亡／新身分，不能只拿畫面顯示的篩選結果比對。
+                const allMatches=new Map();
+                for(const id5 of [...new Set(identities.map(x=>x.id5))]){
+                    const snap=await fm.getDocs(fm.query(fm.collection(db,'citizenRecords'),fm.where('id5','==',id5)));
+                    for(const d of snap.docs)allMatches.set(d.id,{docId:d.id,...d.data()});
+                }
                 if(epoch!==lookupDemandEpoch||!currentUser||currentUser.account!==account)return;
-                citizenCaseLookupState.reports=rowsOfReports.filter(report=>{
-                    const id5=getLastFive(report.suspectId||'');
-                    const name=normalizeCitizenCaseName(report.suspectName);
+                citizenCaseLookupState.identities=[...allMatches.values()];
+                // 舊案件資料包含完整證件號碼或經過大小寫、空白正規化的 RP 名稱；
+                // 因此保留原先獨立讀取正式 policeReports 的相容路徑，不拿已過濾 40 筆的歷史頁當全部案件。
+                const reportSnap=await fm.getDocs(fm.collection(db,'policeReports'));
+                if(epoch!==lookupDemandEpoch||!currentUser||currentUser.account!==account)return;
+                citizenCaseLookupState.reports=reportSnap.docs.map(d=>({docId:d.id,...d.data()})).filter(report=>{
+                    const id5=getLastFive(report.suspectId||''),name=normalizeCitizenCaseName(report.suspectName);
                     return identities.some(r=>r.id5===id5&&r.name===name);
                 });
                 citizenCaseLookupState.loaded=true;
             }catch(err){
                 if(epoch!==lookupDemandEpoch||!currentUser||currentUser.account!==account)return;
                 citizenCaseLookupState.error=err;
-                console.warn('市民相關案件讀取失敗（保留市民查詢結果，不誤報為零件）：',err);
+                console.warn('市民相關案件查詢失敗，不將失敗誤認為沒有案件：',err);
             }
         }
         async function lookupDemandIndexedDocs(type,q,filter){
             const col=type==='citizen'?'citizenRecords':'vehicleRecords';
+            const collectionRef=fm.collection(db,col);
+            // 先由 Firestore 篩掉另一種身份狀態，避免把已死亡的人設下載後才丟棄。
+            // 舊文件若沒有 deceased 欄位，普通存活索引查詢不會命中；可用進階搜尋找舊資料。
+            const statusWhere=type==='citizen'?[fm.where('deceased','==',filter==='deceased')]:[];
+            const indexedQuery=(...conditions)=>fm.query(collectionRef,...statusWhere,...conditions);
             const fields=type==='citizen'?['id5','name','birthday','gender']:['id5','plate','owner','model','color'];
             const candidates=[q];
             if(/[a-z]/i.test(q))for(const variant of [q.toUpperCase(),q.toLowerCase()])if(!candidates.includes(variant))candidates.push(variant);
             // 避免在空條件時誤下載全部；只有選擇「只顯示死亡證明」才允許無關鍵字查詢。
             if(!q&&type==='citizen'&&filter==='deceased'){
-                const snap=await fm.getDocs(fm.query(fm.collection(db,col),fm.where('deceased','==',true),fm.limit(LOOKUP_ON_DEMAND_LIMIT)));
+                const snap=await fm.getDocs(indexedQuery(fm.limit(LOOKUP_ON_DEMAND_LIMIT)));
                 return {rows:snap.docs.map(d=>({docId:d.id,...d.data()})),truncated:snap.size>=LOOKUP_ON_DEMAND_LIMIT};
             }
             if(!q)return {rows:[],truncated:false};
@@ -9584,32 +9973,59 @@ async function republishAnnouncement(id) {
                 return {rows:snap.docs.map(d=>({docId:d.id,...d.data()})),truncated:false,numericContainsScan:true};
             }
             const probes=[];
+            const probeFallbacks=[];
             if(/^\d{5}$/.test(q)){
                 // 完整五碼可直接以單一精確查詢取得資料，不必額外查詢無關欄位。
-                const snap=await fm.getDocs(fm.query(fm.collection(db,col),fm.where('id5','==',q)));
-                return {rows:snap.docs.map(d=>({docId:d.id,...d.data()})),truncated:false};
+                let snap,indexFallback=false;
+                try{snap=await fm.getDocs(indexedQuery(fm.where('id5','==',q)));}
+                catch(err){
+                    if(type!=='citizen'||!/index|索引|failed-precondition/i.test(String(err?.message||err)))throw err;
+                    snap=await fm.getDocs(fm.query(collectionRef,fm.where('id5','==',q)));
+                    indexFallback=true;
+                }
+                return {rows:snap.docs.map(d=>({docId:d.id,...d.data()})).filter(r=>type!=='citizen'||!!r.deceased===(filter==='deceased')),truncated:false,indexFallback};
             }
-            if(/^\d+$/.test(q))probes.push(fm.query(fm.collection(db,col),fm.where('id5','>=',q),fm.where('id5','<=',q+'\uf8ff'),fm.limit(LOOKUP_ON_DEMAND_LIMIT)));
+            if(/^\d+$/.test(q)){
+                const base=[fm.where('id5','>=',q),fm.where('id5','<=',q+'\uf8ff'),fm.limit(LOOKUP_ON_DEMAND_LIMIT)];
+                probes.push(indexedQuery(...base));probeFallbacks.push(base);
+            }
             for(const field of fields.filter(f=>f!=='id5'))for(const word of candidates){
-                probes.push(fm.query(fm.collection(db,col),fm.where(field,'>=',word),fm.where(field,'<=',word+'\uf8ff'),fm.limit(LOOKUP_ON_DEMAND_LIMIT)));
+                const base=[fm.where(field,'>=',word),fm.where(field,'<=',word+'\uf8ff'),fm.limit(LOOKUP_ON_DEMAND_LIMIT)];
+                probes.push(indexedQuery(...base));probeFallbacks.push(base);
             }
             const results=await Promise.allSettled(probes.map(query=>fm.getDocs(query)));
-            const rows=new Map(); let failed=0,truncated=false,lastError=null;
-            for(const result of results){
+            const rows=new Map(); let failed=0,truncated=false,lastError=null,indexFallback=false;
+            for(let i=0;i<results.length;i++){
+                let result=results[i];
+                if(result.status==='rejected' && type==='citizen' && /index|索引|failed-precondition/i.test(String(result.reason?.message||result.reason||''))){
+                    // 相容既有未建立複合索引的 Firestore：退回舊版前綴查詢，仍只顯示所選生死狀態。
+                    // 退回時不保證有節省額外讀取；建立所需索引後才會完全在伺服器端篩選。
+                    try{
+                        const filteredConditions=probeFallbacks[i];
+                        if(filteredConditions){
+                            result={status:'fulfilled',value:await fm.getDocs(fm.query(collectionRef,...filteredConditions))};
+                            indexFallback=true;
+                        }
+                    }catch(_){/* 保留失敗狀態並在下方顯示部分失敗 */}
+                }
                 if(result.status==='rejected'){failed++;lastError=result.reason;continue;}
                 if(result.value.size>=LOOKUP_ON_DEMAND_LIMIT)truncated=true;
-                for(const doc of result.value.docs)rows.set(doc.id,{docId:doc.id,...doc.data()});
+                for(const doc of result.value.docs){
+                    const data=doc.data();
+                    if(type==='citizen' && !!data.deceased !== (filter==='deceased'))continue;
+                    rows.set(doc.id,{docId:doc.id,...data});
+                }
             }
             if(failed===results.length)throw lastError||new Error('所有資料庫查詢均失敗');
             if(failed)console.warn(`按需查詢 ${col} 有 ${failed} 個索引條件失敗，其他結果仍顯示。`,lastError);
-            return {rows:[...rows.values()],truncated,partial:failed>0};
+            return {rows:[...rows.values()],truncated,partial:failed>0,indexFallback};
         }
         async function loadLookupOnDemand(type,full=false){
             if(!lookupAccessible(type)||!currentUser||!fm||!db)return;
             if(type!=='citizen'&&type!=='vehicles')return;
             const state=lookupDemandState[type];if(state.busy)return;
             const q=lookupKeyword(document.getElementById(type==='citizen'?'citizen-search-input':'vehicle-search-input')?.value||'');
-            const filter=type==='citizen'?document.getElementById('citizen-deceased-filter')?.value||'all':'all';
+            const filter=type==='citizen'?document.getElementById('citizen-deceased-filter')?.value||'alive':'all';
             if(!q&&!(type==='citizen'&&filter==='deceased'&&!full)){
                 showToast('請先輸入查詢條件，避免讀取整個資料庫。','warning','請輸入條件');return;
             }
@@ -9623,7 +10039,7 @@ async function republishAnnouncement(id) {
             try{
                 const col=type==='citizen'?'citizenRecords':'vehicleRecords';
                 const result=full?{rows:(await fm.getDocs(fm.collection(db,col))).docs.map(d=>({docId:d.id,...d.data()})),truncated:false}:await lookupDemandIndexedDocs(type,q,filter);
-                if(epoch!==lookupDemandEpoch||!currentUser||currentUser.account!==account)return;
+                if(epoch!==lookupDemandEpoch||!currentUser||currentUser.account!==account||key!==lookupDemandKey(type))return;
                 const rawRows=result.rows.filter(r=>type==='citizen'?(filter==='all'||(filter==='alive'?!r.deceased:!!r.deceased))&&(!q||recordMatchesCitizen(r,q)):
                     lookupTextMatch([r.model,r.owner,r.id5,r.plate,r.color,r.note,r.createdByAccount,r.createdByName],q));
                 lookupDemandRemember(type,result.rows);
@@ -9635,8 +10051,8 @@ async function republishAnnouncement(id) {
                     // 改為按下市民查詢後才取得案件，避免一直錯誤顯示 0 件。
                     await lookupDemandCasesForCitizens(rawRows,epoch,account);
                 }
-                if(epoch!==lookupDemandEpoch||!currentUser||currentUser.account!==account)return;
-                if(status)status.textContent=`本次從雲端查詢到 ${rawRows.length} 筆${full?'（進階包含搜尋）':result.numericContainsScan?'（數字包含搜尋）':'（索引搜尋）'}${result.truncated?'；結果可能不完整，請縮小條件':''}${result.partial?'；部分條件失敗':''}${type==='citizen'&&citizenCaseLookupState.error?'；相關案件讀取失敗，請確認權限後重新查詢':''}。`;
+                if(epoch!==lookupDemandEpoch||!currentUser||currentUser.account!==account||key!==lookupDemandKey(type))return;
+                if(status)status.textContent=`本次從雲端查詢到 ${rawRows.length} 筆${full?'（進階／舊資料包含搜尋，讀取完整集合）':result.numericContainsScan?'（數字包含搜尋）':'（索引搜尋）'}${result.indexFallback?'；部分條件因缺少複合索引，已改用較高讀取量的相容查詢':''}${result.truncated?'；結果可能不完整，請縮小條件':''}${result.partial?'；部分條件失敗':''}${type==='citizen'&&citizenCaseLookupState.error?'；相關案件讀取失敗，請確認權限後重新查詢':''}。`;
                 renderLookupSystems();
                 ntpcPlayWantedLookupAlert(type, rawRows);
                 if(result.truncated)showToast('符合條件的資料較多，僅顯示部分結果；可縮小條件或改用進階搜尋。','warning','資料筆數提醒');
@@ -9654,16 +10070,28 @@ async function republishAnnouncement(id) {
         function recordMatchesCitizen(r,q){return lookupTextMatch([r.name,r.id5,r.gender,r.birthday,r.note],q);}
         // 市民「相關案件報號」固定要求證件末五碼與嫌疑人 RP 姓名一致，避免誤認同一人。
         function normalizeCitizenCaseName(name){return String(name||'').normalize('NFKC').replace(/\s+/g,'').toLocaleLowerCase('zh-TW');}
+        function ntpcCitizenCaseIdentityMatch(report,citizen){
+            const citizenId=String(citizen?.docId||citizen?.id||'');
+            const linkedId=String(report.suspectCitizenDocId||report.suspectCitizenRecordId||report.citizenRecordId||'');
+            if(linkedId)return !!citizenId&&citizenId===linkedId;
+            const id5=getLastFive(citizen?.id5||''),name=normalizeCitizenCaseName(citizen?.name);
+            if(!/^\d{5}$/.test(id5)||!name||getLastFive(report.suspectId||'')!==id5||normalizeCitizenCaseName(report.suspectName)!==name)return false;
+            // 同一末五碼及姓名曾有多個身份（死亡後重新建立、同名）：舊報告沒有身份ID時不准直接掛給新身份。
+            // 舊歷史最多自動匹配最早建立身份且在下一身份建立前的案件；其餘須人工確認並明確補上身份ID。
+            const same=(citizenCaseLookupState.identities||[]).filter(x=>getLastFive(x.id5||'')===id5&&normalizeCitizenCaseName(x.name)===name);
+            if(same.length<2)return true;
+            const valid=same.every(x=>Number.isFinite(Number(x.createdAt))&&Number(x.createdAt)>0);
+            if(!valid)return false;
+            same.sort((a,b)=>Number(a.createdAt)-Number(b.createdAt));
+            if(String(same[0].docId||same[0].id||'')!==citizenId)return false;
+            const nextCreated=Number(same[1].createdAt),reportTime=Number(report.timestamp||report.registeredAt||0);
+            return !!reportTime&&reportTime<nextCreated;
+        }
         function getCitizenRelatedCases(citizen){
-            const id5=getLastFive(citizen?.id5||'');
-            if(!id5 || String(id5).length!==5)return [];
-            const wantedName=normalizeCitizenCaseName(citizen?.name);
-            const sources=citizenCaseLookupState.loaded?citizenCaseLookupState.reports:
-                (manualReadState.cases.police?(appData.policeReports||[]):[]);
-            return sources.filter(report=>{
-                if(getLastFive(report.suspectId||'')!==id5)return false;
-                return !!wantedName && wantedName===normalizeCitizenCaseName(report.suspectName);
-            }).sort((a,b)=>getReportSortTimestamp(b)-getReportSortTimestamp(a));
+            // 新查詢尚未完成或失敗時絕不退回舊快取，避免把死亡舊身分案件誤掛新身分。
+            const sources=citizenCaseLookupState.loaded?citizenCaseLookupState.reports:[];
+            return sources.filter(report=>ntpcCitizenCaseIdentityMatch(report,citizen))
+                .sort((a,b)=>getReportSortTimestamp(b)-getReportSortTimestamp(a));
         }
         function citizenCasesHtml(r,matched){
             const related=matched.map(x=>{
@@ -9671,7 +10099,7 @@ async function republishAnnouncement(id) {
                 const name=String(x.suspectName||'未填寫');
                 return `<div class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-red-500/10 bg-slate-950/50 px-3 py-2"><div><span class="font-mono font-semibold text-red-200">${escapeHtml(reportId)}</span><span class="ml-2 text-slate-400">${escapeHtml(x.title||'未命名案件')}</span></div><span class="text-slate-500">嫌疑人：${escapeHtml(name)}</span></div>`;
             }).join('');
-            return `<div class="mt-4 p-3 rounded-xl bg-red-500/5 border border-red-500/15 text-xs text-red-200"><div class="flex flex-wrap items-center justify-between gap-2 mb-2"><span>相關案件報號：${matched.length} 件</span><span class="text-slate-400">證件末五碼＋RP 姓名一致</span></div>${matched.length?`<div class="space-y-1">${related}</div>`:(citizenCaseLookupState.error?'<div class="text-amber-300">案件資料讀取失敗，無法判定是否有關聯案件。請確認資料庫讀取權限並重新查詢。</div>':(!citizenCaseLookupState.loaded&&!manualReadState.cases.police?'<div class="text-slate-500">案件資料尚未載入，請按「查詢」取得關聯案件。</div>':'<div class="text-slate-500">沒有證件末五碼及 RP 姓名皆一致的案件。</div>'))}</div>`;
+            return `<div class="mt-4 p-3 rounded-xl bg-red-500/5 border border-red-500/15 text-xs text-red-200"><div class="flex flex-wrap items-center justify-between gap-2 mb-2"><span>相關案件報號：${matched.length} 件</span><span class="text-slate-400">末五碼＋RP 姓名；同名新舊身分會隔離</span></div>${matched.length?`<div class="space-y-1">${related}</div>`:(citizenCaseLookupState.error?'<div class="text-amber-300">案件資料讀取失敗，無法判定是否有關聯案件。請確認資料庫讀取權限並重新查詢。</div>':(!citizenCaseLookupState.loaded&&!manualReadState.cases.police?'<div class="text-slate-500">案件資料尚未載入，請按「查詢」取得關聯案件。</div>':'<div class="text-slate-500">沒有證件末五碼及 RP 姓名皆一致的案件。</div>'))}</div>`;
         }
         function renderCitizenCard(r){const suspectCases=getCitizenRelatedCases(r);const linkedVehicles=(appData.vehicleRecords||[]).filter(v=>!v.decommissioned&&getLastFive(v.id5)===getLastFive(r.id5));const wantedRecords=(appData.wantedRecords||[]).filter(w=>isWantedActive(w)&&getLastFive(w.id5)===getLastFive(r.id5));const isWanted=!r.deceased&&wantedRecords.length>0;const cardBg=isWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.deceased?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><h4 class="text-lg font-bold text-white">${escapeHtml(r.name||'--')}</h4>${ntpcInsuranceBadge('citizen',r)}${isWanted?'<span class="px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>通緝狀態</span>':''}${r.deceased?'<span class="px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-skull-crossbones mr-1"></i>死亡證明</span>':''}</div><p class="text-xs text-slate-500 font-mono">證件末五碼：${escapeHtml(r.id5||'--')}</p><p class="text-xs text-slate-500 mt-1">發布帳號：${escapeHtml(r.createdByAccount||'--')}</p></div><span class="text-xs text-slate-400">${escapeHtml(r.gender||'--')}｜${escapeHtml(r.birthday||'--')}</span></div><div class="mt-4 text-sm text-slate-300"><span class="text-slate-500">駕照狀況：</span>${escapeHtml((r.licenses||[]).length?(r.licenses||[]).join('、'):'無')}</div>${linkedVehicles.length?`<div class="mt-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15 text-sm"><span class="text-xs text-cyan-300 block mb-2">名下車輛（依證件末五碼自動比對）</span><div class="space-y-1">${linkedVehicles.map(v=>`<div class="text-slate-300">${escapeHtml(v.model||'未知型號')}｜車牌：<span class="font-mono text-cyan-300">${escapeHtml(v.plate||'--')}</span><span class="ml-2">${ntpcInsuranceBadge('vehicles',v)}</span></div>`).join('')}</div></div>`:''}${r.note?`<div class="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm"><span class="text-xs text-slate-500 block mb-1">備注</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}<div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-blue-600/15 text-blue-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('citizen','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">編輯</button><button type="button" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="deleteLookupRecord('citizen','${escapeHtml(r.docId||r.id)}')">移除</button>`:''}${canReviewPoliceReports()?`<button type="button" class="px-3 py-2 bg-rose-700/20 text-rose-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="ntpcOpenVehicleRevocation('${escapeHtml(r.docId||r.id)}')">吊銷管理</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">新增備註／修改駕照</button>`:''}</div>${citizenCasesHtml(r,suspectCases)}</div>`;}
         // 市民搜尋排序：無標籤優先，其次是通緝中的市民，死亡證明永遠置底。
@@ -9716,7 +10144,7 @@ async function republishAnnouncement(id) {
             if(!lookupAccessible('citizen'))return;
             const c=document.getElementById('citizen-results'); if(!c)return;
             const q=lookupKeyword(document.getElementById('citizen-search-input')?.value||'');
-            const filter=document.getElementById('citizen-deceased-filter')?.value||'all';
+            const filter=document.getElementById('citizen-deceased-filter')?.value||'alive';
             const state=lookupDemandState.citizen;
             if(!state.loaded||state.key!==lookupDemandKey('citizen')){c.innerHTML=lookupDemandPrompt('citizen');return;}
             const rows=sortCitizenSearchResults(state.rows.filter(r=>{
@@ -11137,12 +11565,12 @@ async function republishAnnouncement(id) {
             const input = document.getElementById('search-police-report');
             const queryVal = input ? input.value.trim().toLowerCase() : '';
             if (!container) return;
-            if(!manualReadState.cases.police&&!(appData.policeReports||[]).length){container.innerHTML='<div class="rounded-xl bg-slate-900 border border-slate-700 p-6 text-center text-slate-400">尚未查詢警務案件。請按上方「載入／重新整理警務案件」。</div>';return;}
+            if(!manualReadState.cases.police&&!(appData.policeReports||[]).length){container.innerHTML='<div class="rounded-xl bg-slate-900 border border-slate-700 p-6 text-center text-slate-400">尚未查詢警務案件。請先選日期區間或填寫人，再按「依條件查詢警務案件」。</div>';return;}
             container.innerHTML='';
 
             const filtered=(appData.policeReports||[]).filter(r=>{
                 if(!queryVal) return true;
-                const values=[r.suspectId,r.authorId,r.registeredByAccount,r.caseId,r.title,r.authorName,r.interviewRecord?.person,r.interviewRecord?.cause,r.interviewRecord?.place].map(v=>String(v||'').toLowerCase());
+                const values=[r.suspectId,r.authorId,r.registeredByAccount,r.caseId,r.title,r.authorName,r.interviewRecord?.person,r.interviewRecord?.cause,r.interviewRecord?.place,r.forensicRecord?.subject,r.forensicRecord?.location,r.forensicRecord?.officer,r.forensicRecord?.unit].map(v=>String(v||'').toLowerCase());
                 return values.some(v=>v.includes(queryVal));
             }).sort((a,b)=>getReportSortTimestamp(b)-getReportSortTimestamp(a));
             if(!filtered.length){
@@ -11156,11 +11584,20 @@ async function republishAnnouncement(id) {
                 card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hover:border-slate-700 transition';
                 card.innerHTML=`
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
-                        <div class="flex items-center space-x-3 min-w-0"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono shrink-0">${r.caseId||'--'}</span><h4 class="text-base font-bold text-white truncate">${escapeHtml(r.title||'未命名案件')}</h4>${r.reportType==='policeInterview'?'<span class="text-xs font-bold bg-cyan-500/10 text-cyan-300 px-2 py-1 rounded-md">調查筆錄</span>':r.reportType==='policeTrafficAnalysis'?'<span class="text-xs font-bold bg-amber-500/10 text-amber-300 px-2 py-1 rounded-md">交通事件處理表</span>':''}</div>
+                        <div class="flex items-center space-x-3 min-w-0"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono shrink-0">${r.caseId||'--'}</span><h4 class="text-base font-bold text-white truncate">${escapeHtml(r.title||'未命名案件')}</h4>${r.reportType==='policeInterview'?'<span class="text-xs font-bold bg-cyan-500/10 text-cyan-300 px-2 py-1 rounded-md">調查筆錄</span>':r.reportType==='policeTrafficAnalysis'?'<span class="text-xs font-bold bg-amber-500/10 text-amber-300 px-2 py-1 rounded-md">交通事件處理表</span>':r.reportType==='policeForensicRecord'?'<span class="text-xs font-bold bg-fuchsia-500/10 text-fuchsia-300 px-2 py-1 rounded-md">刑事鑑定紀錄表</span>':''}</div>
                         <span class="text-xs text-slate-400 shrink-0">${r.time||'--'}</span>
                     </div>
                     ${ntpcReviewBadgeHtml(r)}
-                    ${r.reportType==='policeTrafficAnalysis'?`<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-amber-500/15 bg-slate-950 p-4 text-xs"><div><span class="text-slate-500 block">事故日期／時間</span><span class="text-white">${escapeHtml((r.trafficRecord?.date||'--')+' '+(r.trafficRecord?.time||''))}</span></div><div><span class="text-slate-500 block">事故地點</span><span class="text-white">${escapeHtml(r.trafficRecord?.location||'--')}</span></div><div><span class="text-slate-500 block">當事人數</span><span class="text-amber-200">${Array.isArray(r.trafficRecord?.parties)?r.trafficRecord.parties.length:0}</span></div><div><span class="text-slate-500 block">承辦員警</span><span class="text-white">${escapeHtml(r.trafficRecord?.officer||'--')}</span></div></div>`:r.reportType==='policeInterview'?`<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-cyan-500/15 bg-slate-950 p-4 text-xs"><div><span class="text-slate-500 block">受詢問人</span><span class="text-white">${escapeHtml(r.interviewRecord?.person||'--')}</span></div><div><span class="text-slate-500 block">案由</span><span class="text-white">${escapeHtml(r.interviewRecord?.cause||'--')}</span></div><div><span class="text-slate-500 block">詢問地點</span><span class="text-white">${escapeHtml(r.interviewRecord?.place||'--')}</span></div><div><span class="text-slate-500 block">詢問組數</span><span class="text-cyan-200">${Array.isArray(r.interviewRecord?.questions)?r.interviewRecord.questions.length:0}</span></div><div class="sm:col-span-2"><span class="text-slate-500 block">登記帳號／審核狀態</span><span class="text-slate-300">${escapeHtml(getRegisteredAccount(r))}｜${escapeHtml(r.reviewStatus||'')}</span></div></div>`:`<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60">
+                    ${r.reportType==='policeForensicRecord'?`<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs rounded-xl border border-fuchsia-500/20 bg-slate-950 p-4">
+                        <div><span class="text-slate-500 block">勘察單位</span><span class="font-medium text-slate-200">${escapeHtml(r.forensicRecord?.unit||'未填')}</span></div>
+                        <div><span class="text-slate-500 block">勘察日期／時間</span><span class="font-medium text-slate-200">${escapeHtml([r.forensicRecord?.date,r.forensicRecord?.time].filter(Boolean).join(' ')||'未填')}</span></div>
+                        <div><span class="text-slate-500 block">勘察人員</span><span class="font-medium text-slate-200">${escapeHtml(r.forensicRecord?.officer||'未填')}</span></div>
+                        <div class="sm:col-span-2"><span class="text-slate-500 block">勘察地點</span><span class="font-medium text-slate-200">${escapeHtml(r.forensicRecord?.location||'未填')}</span></div>
+                        <div><span class="text-slate-500 block">證物數量</span><span class="font-bold text-fuchsia-300">${Array.isArray(r.forensicRecord?.evidence)?r.forensicRecord.evidence.length:0} 項</span></div>
+                        <div class="sm:col-span-2 lg:col-span-3"><span class="text-slate-500 block">現場概況</span><span class="text-slate-300 break-words line-clamp-2">${escapeHtml(r.forensicRecord?.sceneSummary||'未填')}</span></div>
+                        <div class="sm:col-span-2 lg:col-span-3"><span class="text-slate-500 block">採證與勘察過程</span><span class="text-slate-300 break-words line-clamp-2">${escapeHtml(r.forensicRecord?.process||'未填')}</span></div>
+                        <div class="sm:col-span-2 lg:col-span-3"><span class="text-slate-500 block">登記帳號</span><span class="font-mono text-cyan-300">${escapeHtml(getRegisteredAccount(r))}</span></div>
+                    </div>`:r.reportType==='policeTrafficAnalysis'?`<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-amber-500/15 bg-slate-950 p-4 text-xs"><div><span class="text-slate-500 block">事故日期／時間</span><span class="text-white">${escapeHtml((r.trafficRecord?.date||'--')+' '+(r.trafficRecord?.time||''))}</span></div><div><span class="text-slate-500 block">事故地點</span><span class="text-white">${escapeHtml(r.trafficRecord?.location||'--')}</span></div><div><span class="text-slate-500 block">當事人數</span><span class="text-amber-200">${Array.isArray(r.trafficRecord?.parties)?r.trafficRecord.parties.length:0}</span></div><div><span class="text-slate-500 block">承辦員警</span><span class="text-white">${escapeHtml(r.trafficRecord?.officer||'--')}</span></div></div>`:r.reportType==='policeInterview'?`<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-cyan-500/15 bg-slate-950 p-4 text-xs"><div><span class="text-slate-500 block">受詢問人</span><span class="text-white">${escapeHtml(r.interviewRecord?.person||'--')}</span></div><div><span class="text-slate-500 block">案由</span><span class="text-white">${escapeHtml(r.interviewRecord?.cause||'--')}</span></div><div><span class="text-slate-500 block">詢問地點</span><span class="text-white">${escapeHtml(r.interviewRecord?.place||'--')}</span></div><div><span class="text-slate-500 block">詢問組數</span><span class="text-cyan-200">${Array.isArray(r.interviewRecord?.questions)?r.interviewRecord.questions.length:0}</span></div><div class="sm:col-span-2"><span class="text-slate-500 block">登記帳號／審核狀態</span><span class="text-slate-300">${escapeHtml(getRegisteredAccount(r))}｜${escapeHtml(r.reviewStatus||'')}</span></div></div>`:`<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60">
                         <div><span class="text-slate-500 block">填寫人</span><span class="font-medium text-slate-200">${r.authorName||'--'} (${r.authorId||'--'})</span></div>
                         <div><span class="text-slate-500 block">發布登記帳號</span><span class="font-mono text-cyan-400">${getRegisteredAccount(r)}</span></div>
                         <div><span class="text-slate-500 block">嫌疑人／證件 ID</span><span class="font-medium text-slate-200">${r.suspectName||'無'} / <span class="font-mono text-amber-400">${r.suspectId||'無'}</span></span></div>
@@ -11173,7 +11610,7 @@ async function republishAnnouncement(id) {
                         
                         <div class="lg:col-span-4"><span class="text-slate-500 block">長官批示</span><span class="font-medium text-slate-300">${getLatestRemarkText(r)}</span></div>
                     </div>`}
-                    <p class="text-sm text-slate-300 line-clamp-2">${r.content||''}</p>
+                    <p class="text-sm text-slate-300 line-clamp-2">${r.reportType==='policeForensicRecord'?escapeHtml(r.forensicRecord?.note||'點擊檢視完整鑑定內容、採證紀錄與附件。'):escapeHtml(r.content||'')}</p>
                     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
                         <button type="button" onclick="viewReportDetail('police','${r.caseId}')" class="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center justify-center space-x-1 px-3 py-2 rounded-lg hover:bg-blue-500/10 transition min-h-[44px]"><i class="fa-solid fa-eye mr-1"></i><span>檢視詳細內容與影片</span></button>
                         <div class="mobile-report-actions flex flex-wrap items-center gap-2">
@@ -11927,7 +12364,7 @@ async function republishAnnouncement(id) {
         function renderEMSRemarkHistory(r){const el=document.getElementById('ems-remark-history');if(!el)return;const rr=getReportRemarks(r);el.innerHTML=rr.length?rr.map(x=>`<div class="rounded-lg border border-slate-800 bg-slate-950/70 p-3"><div class="flex justify-between"><span class="text-xs text-amber-400">${x.authorName||'高層'}</span><span class="text-[11px] text-slate-500">${x.time||formatDateTime(x.timestamp)}</span></div><div class="text-xs text-slate-300 mt-1 whitespace-pre-wrap">${x.text||''}</div></div>`).join(''):'<div class="text-xs text-slate-500">目前尚無高層批示。</div>';}
         function viewEMSReportDetail(id){const r=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r)return;document.getElementById('ems-detail-id').textContent=r.id||r.docId;document.getElementById('ems-detail-title').textContent=`${r.patient||'傷患'} 的EMS救護出勤報告`;renderEMSDetailFields(r);renderEMSRemarkHistory(r);const reviewHost=document.getElementById('ems-detail-review-meta');if(reviewHost){reviewHost.innerHTML=ntpcReviewBadgeHtml(r);reviewHost.classList.toggle('hidden',!reviewHost.innerHTML);}const actionHost=document.getElementById('ems-detail-action-bar');if(actionHost){const a=[];if(canModifyEMS(r))a.push(`<button type="button" onclick="closeModal('modal-ems-detail');openEMSReportModal('${id}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs"><i class="fa-solid fa-pen mr-1"></i>編輯</button>`);if(canModifyEMS(r))a.push(`<button type="button" onclick="deleteEMSReport('${id}'); closeModal('modal-ems-detail')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs"><i class="fa-solid fa-trash mr-1"></i>刪除</button>`);if(currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire'))) )a.push(`<button type="button" onclick="closeModal('modal-ems-detail');openRemarkModal('emsReports','${id}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs"><i class="fa-solid fa-pen-nib mr-1"></i>高層批示</button>`);actionHost.innerHTML=a.join('');}document.getElementById('modal-ems-detail').classList.remove('hidden');}
         async function deleteEMSReport(id){const r=(appData.emsReports||[]).find(x=>String(x.docId||x.id)===String(id));if(!r||!canModifyEMS(r)){showToast('你無權限刪除這筆EMS報告。','warning','權限不足');return;}if(!(await showConfirm('確定要刪除這筆 EMS 救護出勤報告嗎？','刪除 EMS 報告','確定刪除')))return;try{await fm.deleteDoc(fm.doc(db,'emsReports',r.docId||r.id));appData.emsReports=appData.emsReports.filter(x=>String(x.docId||x.id)!==String(id));await logAdminAction('刪除EMS救護報告',r.id||id);renderEMSReports();renderMyProfile();showToast('EMS救護出勤報告已刪除。','success','刪除成功');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
-        function renderEMSReports(){const c=document.getElementById('ems-reports-list');if(!c)return;if(!manualReadState.cases.ems&&!(appData.emsReports||[]).length){c.innerHTML='<div class="rounded-xl bg-slate-900 border border-slate-700 p-6 text-center text-slate-400">尚未查詢 EMS 報告，請先按上方「載入／重新整理 EMS 報告」。</div>';return;}const q=(document.getElementById('search-ems-report')?.value||'').trim().toLowerCase(),arr=(appData.emsReports||[]).filter(r=>!q||[r.id,r.patient,r.authorId,r.authorName,r.dispatchCategory].some(v=>String(v||'').toLowerCase().includes(q))).sort((a,b)=>getReportSortTimestamp(b)-getReportSortTimestamp(a));c.innerHTML=arr.length?'':'<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">尚無EMS報告。</div>';arr.forEach(r=>{const key=r.docId||r.id,card=document.createElement('div');card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4';card.innerHTML=`<div class="flex justify-between gap-3"><span class="text-xs text-rose-400 font-mono">${r.id||key}</span><span class="text-xs text-slate-500">${r.time||'--'}</span></div>${ntpcReviewBadgeHtml(r)}<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs"><div><span class="text-slate-500 block">主訴</span>${r.chiefComplaint||'--'}</div><div><span class="text-slate-500 block">傷患</span>${r.patient||'--'}</div><div><span class="text-slate-500 block">出勤單位／車輛</span>${r.unitVehicle||'--'}</div><div><span class="text-slate-500 block">填寫人</span>${r.authorName||'--'} (${r.authorId||'--'})</div></div><div class="flex flex-wrap gap-2"><button onclick="viewEMSReportDetail('${key}')" class="px-3 py-2 bg-rose-500/10 text-rose-300 rounded-lg text-xs">檢視</button>${canModifyEMS(r)?`<button onclick="openEMSReportModal('${key}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs">編輯</button><button onclick="deleteEMSReport('${key}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button>`:''}${currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire')))?`<button onclick="openRemarkModal('emsReports','${key}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs">高層批示</button>`:''}${canEditReviewStatus('ems')?`<button onclick="openEditReviewStatus('ems','${key}','approved')" class="px-3 py-2 bg-blue-600/20 text-blue-300 rounded-lg text-xs"><i class="fa-solid fa-stamp mr-1"></i>編輯審核狀況</button>`:''}</div>`;c.appendChild(card);});}
+        function renderEMSReports(){const c=document.getElementById('ems-reports-list');if(!c)return;if(!manualReadState.cases.ems&&!(appData.emsReports||[]).length){c.innerHTML='<div class="rounded-xl bg-slate-900 border border-slate-700 p-6 text-center text-slate-400">尚未查詢 EMS 報告，請先先選日期區間或填寫人，再按「依條件查詢 EMS 報告」。</div>';return;}const q=(document.getElementById('search-ems-report')?.value||'').trim().toLowerCase(),arr=(appData.emsReports||[]).filter(r=>!q||[r.id,r.patient,r.authorId,r.authorName,r.dispatchCategory].some(v=>String(v||'').toLowerCase().includes(q))).sort((a,b)=>getReportSortTimestamp(b)-getReportSortTimestamp(a));c.innerHTML=arr.length?'':'<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">尚無EMS報告。</div>';arr.forEach(r=>{const key=r.docId||r.id,card=document.createElement('div');card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4';card.innerHTML=`<div class="flex justify-between gap-3"><span class="text-xs text-rose-400 font-mono">${r.id||key}</span><span class="text-xs text-slate-500">${r.time||'--'}</span></div>${ntpcReviewBadgeHtml(r)}<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs"><div><span class="text-slate-500 block">主訴</span>${r.chiefComplaint||'--'}</div><div><span class="text-slate-500 block">傷患</span>${r.patient||'--'}</div><div><span class="text-slate-500 block">出勤單位／車輛</span>${r.unitVehicle||'--'}</div><div><span class="text-slate-500 block">填寫人</span>${r.authorName||'--'} (${r.authorId||'--'})</div></div><div class="flex flex-wrap gap-2"><button onclick="viewEMSReportDetail('${key}')" class="px-3 py-2 bg-rose-500/10 text-rose-300 rounded-lg text-xs">檢視</button>${canModifyEMS(r)?`<button onclick="openEMSReportModal('${key}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs">編輯</button><button onclick="deleteEMSReport('${key}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">刪除</button>`:''}${currentUser&&(currentUser.role==='admin'||(currentUser.role==='high'&&userHasUnit('fire')))?`<button onclick="openRemarkModal('emsReports','${key}')" class="px-3 py-2 bg-amber-600/20 text-amber-400 rounded-lg text-xs">高層批示</button>`:''}${canEditReviewStatus('ems')?`<button onclick="openEditReviewStatus('ems','${key}','approved')" class="px-3 py-2 bg-blue-600/20 text-blue-300 rounded-lg text-xs"><i class="fa-solid fa-stamp mr-1"></i>編輯審核狀況</button>`:''}</div>`;c.appendChild(card);});}
 
         function renderFireReports() {
             const container=document.getElementById('fire-reports-list');
@@ -14855,26 +15292,50 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             }catch(e){showToast('嘉蕭報告送審失敗：'+e.message,'error','操作失敗');}
             finally{jxReportSaving=false;if(btn){btn.disabled=false;btn.textContent='送交高層審核';}}
         }
-        async function loadJXReports(view='history'){
+        async function loadJXReports(view='history',more=false){
             if(!canAccessJiaxiao()||!fm||!db)return;
-            const host=document.getElementById('jx-report-status');if(host)host.textContent='正在讀取嘉蕭報告……';
-            const collectionNames=view==='review'?['jiaxiaoMedicalPendingReports','jiaxiaoFuneralPendingReports']:
-                view==='medical'?['jiaxiaoMedicalReports','jiaxiaoMedicalPendingReports']:
-                view==='funeral'?['jiaxiaoFuneralReports','jiaxiaoFuneralPendingReports']:
-                ['jiaxiaoMedicalReports','jiaxiaoFuneralReports','jiaxiaoMedicalPendingReports','jiaxiaoFuneralPendingReports'];
-            const results=await Promise.allSettled(collectionNames.map(async col=>{
-                // 非嘉蕭高層只能按自己的帳號查詢待審報告，避免全量抓取別人的未審資料。
-                const ownOnly=!canReviewJX() && col.includes('PendingReports');
+            if(view==='medical'||view==='funeral'){
+                const kind='jx-'+view,criterion=ntpcHistorySelection(kind);
+                if(!criterion)return;
+                if(manualReadState.busy.has(kind))return;
+                const col=JX_COLLECTIONS[view].history;
+                const page=ntpcHistoryPages[kind];
+                const continuing=!!(more&&page?.key===criterion.key&&page.more);
+                if(more&&!continuing)return;
+                manualReadState.busy.add(kind);
+                const host=document.getElementById('jx-report-status'),next=document.getElementById(`history-${kind}-next`);
+                if(host)host.textContent='正在依條件查詢'+(view==='medical'?' EMS':'生命禮儀')+'歷史報告……';
+                if(next)next.disabled=true;
+                try{
+                    const snap=await fm.getDocs(ntpcHistoryQuery(col,kind,criterion,continuing?page.last?.[col]:null));
+                    const incoming=snap.docs.map(doc=>({docId:doc.id,...doc.data()}));
+                    appData[col]=continuing?ntpcHistoryMergeRows(appData[col]||[],incoming):incoming;
+                    ntpcHistoryPages[kind]={key:criterion.key,last:{[col]:snap.docs[snap.docs.length-1]||null},more:snap.size===ntpcHistoryPageSize};
+                    ntpcHistoryNextButton(kind,ntpcHistoryPages[kind].more);
+                    renderJXReports();
+                    if(host)host.textContent=`本次讀取 ${snap.size} 筆；此類歷史共已載入 ${(appData[col]||[]).length} 筆${ntpcHistoryPages[kind].more?'，可再載入下一批':''}`;
+                }catch(e){
+                    if(host)host.textContent='讀取失敗：'+e.message;
+                    showToast('嘉蕭歷史報告查詢失敗：'+e.message,'error','讀取失敗');
+                }finally{manualReadState.busy.delete(kind);if(next)next.disabled=false;}
+                return;
+            }
+            // 待審流程維持既有高層審核查詢；不把歷史分頁改動套到即時待審。
+            const host=document.getElementById('jx-report-status');if(host)host.textContent='正在讀取嘉蕭待審報告……';
+            const collections=['jiaxiaoMedicalPendingReports','jiaxiaoFuneralPendingReports'];
+            const results=await Promise.allSettled(collections.map(async col=>{
+                const ownOnly=!canReviewJX();
                 const q=ownOnly
-                    ? fm.query(fm.collection(db,col),fm.where('authorAccount','==',currentUser.account),fm.limit(200))
-                    : fm.query(fm.collection(db,col),fm.limit(200));
-                const snap=await fm.getDocs(q);return {col,rows:snap.docs.map(doc=>({docId:doc.id,...doc.data()}))};
+                    ?fm.query(fm.collection(db,col),fm.where('authorAccount','==',currentUser.account),fm.limit(200))
+                    :fm.query(fm.collection(db,col),fm.limit(200));
+                const snap=await fm.getDocs(q);
+                return {col,rows:snap.docs.map(doc=>({docId:doc.id,...doc.data()}))};
             }));
             let successes=0,failures=[];
-            results.forEach((result,i)=>{if(result.status==='fulfilled'){appData[result.value.col]=result.value.rows;successes++;}else failures.push(collectionNames[i]+': '+(result.reason?.message||String(result.reason)));});
+            results.forEach((result,i)=>{if(result.status==='fulfilled'){appData[result.value.col]=result.value.rows;successes++;}else failures.push(collections[i]+': '+(result.reason?.message||String(result.reason)));});
             renderJXReports();
-            if(host)host.textContent=`${successes} 個集合已更新${failures.length?'；讀取失敗：'+failures.join('；'):''}`;
-            if(failures.length)showToast('部分嘉蕭資料讀取失敗，請檢查 Firestore Rules','warning','讀取結果');
+            if(host)host.textContent=`${successes} 個待審集合已更新${failures.length?'；讀取失敗：'+failures.join('；'):''}`;
+            if(failures.length)showToast('部分嘉蕭待審資料讀取失敗，請檢查 Firestore Rules','warning','讀取結果');
         }
         function jxReportCard(r,type,pending=false){
             const d=r.details||{},id=String(r.docId||r.id||''),encoded=encodeURIComponent(id),label=type==='medical'?'EMS 救護':'生命禮儀',patient=type==='medical'?d.patientName:d.deceasedName;
@@ -15170,7 +15631,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
         submitFeedback=ntpcV60SingleFlight(submitFeedback,'意見回報');
         reviewJXReport=ntpcV60SingleFlight(reviewJXReport,'嘉蕭報告審核');
 
-        // V140 | 畢業證書教官簽署／評等／手動編號：直接使用原有 Firestore SDK。
+        // V148 | 警專新增／修改／刪除／核發操作寫入 Discord 異動 LOG 佇列；BOT 發送後保存於 Discord。
         // 原管理中心不再授予警專教官權限，舊代碼驗證流程保留。
         // V144：前 13 項各 6 分且可填訓練，學科 22 分且無訓練欄位；總分 100 分，複試有填則取代初試。
         const NTPC_ACADEMY_SUBJECTS = ['實際交通攔查','實際車輛追緝','逮捕＋宣讀＋搜身','審訊＋筆錄','移送嫌犯','打靶','攻堅','情境模擬','事故處理','水下抓人','船隻追緝','案件登記（線上系統）','模擬開罰','學科'];
@@ -15234,12 +15695,50 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 ntpcAcadErr('這組專用代碼已被新的專生代碼取代');
             return {id:code.studentId,name:student.rpName,department:code.department,kind:code.kind==='dedicated'?'dedicated':'temporary',expiresAt:ntpcAcadDate(code.expireAt)};
         }
+        // V148｜專生共用異動 LOG：網站只寫 Firestore 待發佇列，Discord 由 BOT 發送。
+        // 新增專生功能務必在同一筆 batch / transaction 裡 ntpcAcadQueueAudit，避免操作成功卻遺漏 LOG。
+        // 不寫入證件末五碼、生日、考核代碼、報告內容或附件檔案；共用密碼未辨識真實個別教官。
+        const NTPC_ACADEMY_AUDIT_OUTBOX='academyAuditOutboxV148';
+        function ntpcAcadAuditEvent(action,studentId,studentName,subject,changes=[],extra={}){
+            const actor=String(currentUser?.account||'').trim();
+            const short=v=>String(v??'').replace(/[\r\n\t]/g,' ').slice(0,150);
+            return {
+                category:'academy',action:short(action),studentId:short(studentId),studentName:short(studentName),
+                subject:short(subject),actor:actor?short(actor):'教官共用密碼／專生專用代碼',
+                actorVerified:false, // 目前是前端共用密碼；不聲稱能可靠追溯操作者身分。
+                changes:(Array.isArray(changes)?changes:[]).slice(0,55).map(x=>({
+                    field:short(x.field),before:short(x.before),after:short(x.after)
+                })),
+                extra:Object.fromEntries(Object.entries(extra||{}).slice(0,10).map(([k,v])=>[short(k),short(v)])),
+                createdAt:new Date(),status:'ready',attempts:0,version:'V148'
+            };
+        }
+        function ntpcAcadQueueAudit(writer,action,studentId,studentName,subject,changes=[],extra={}){
+            const ref=fm.doc(fm.collection(db,NTPC_ACADEMY_AUDIT_OUTBOX));
+            writer.set(ref,ntpcAcadAuditEvent(action,studentId,studentName,subject,changes,extra));
+            return ref.id;
+        }
+        const ntpcAcadScoreText=value=>value===null||value===undefined||value===''?'未填':String(value);
+        function ntpcAcadScoreDiff(before,after){
+            const fields=[['training','訓練'],['initial_exam','初試'],['retest','複試']],changes=[];
+            for(let i=0;i<NTPC_ACADEMY_SUBJECTS.length;i++)for(const [key,label] of fields){
+                if(i===13&&key==='training')continue;
+                const old=ntpcAcadScoreText(before?.[i]?.[key]),now=ntpcAcadScoreText(after?.[i]?.[key]);
+                if(old!==now)changes.push({field:`第${i+1}課 ${NTPC_ACADEMY_SUBJECTS[i]}｜${label}`,before:old,after:now});
+            }
+            return changes;
+        }
         async function ntpcAcadBatchDelete(col,items){
             for(let i=0;i<items.length;i+=400){const batch=fm.writeBatch(db);for(const row of items.slice(i,i+400))batch.delete(ntpcAcadDoc(col,row._id));await batch.commit();}
         }
-        async function ntpcAcadDeleteRelated(studentId){
-            // 先刪除學生主文件，舊代碼立即失去身份驗證依據。
-            await fm.deleteDoc(ntpcAcadDoc('academyStudents',studentId));
+        async function ntpcAcadDeleteRelated(studentId,studentName){
+            // 先以同一 batch 撤銷學員身分並排入 Discord 異動 LOG，避免刪除後失去追蹤。
+            const revoke=fm.writeBatch(db);
+            revoke.delete(ntpcAcadDoc('academyStudents',studentId));
+            ntpcAcadQueueAudit(revoke,'DELETE',studentId,studentName,'刪除專生身分',[
+                {field:'學員狀態',before:'有效',after:'已刪除（代碼立即失效）'}
+            ]);
+            await revoke.commit();
             const collections=['academyCodesV138','academyStudentSessions','academyReportsV138','academyFilesV138','academyFileChunksV138','academyGraduationPdfPartsV141'];
             for(const col of collections){
                 for(let page=0;page<50;page++){
@@ -15299,7 +15798,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             if(action==='student-login'){
                 const code=String(fields.code||'').trim().toUpperCase();
                 const s=await ntpcAcadStudent(code);
-                return {ok:true,studentToken:code,studentId:s.id,studentName:s.name,codeKind:s.kind,type:s.department==='fire'?'fire':'police',expiresAt:Math.min(Date.now()+12*3600000,s.expiresAt)};
+                return {ok:true,studentToken:code,studentId:s.id,studentName:s.name,codeKind:s.kind,type:s.department==='fire'?'fire':'police',expiresAt:Math.min(Date.now()+(s.kind==='dedicated'?NTPC_REMEMBER_MS:12*3600000),s.expiresAt)};
             }
             const teacher=ntpcAcadTeacherOK();
             const currentStudent=token?await ntpcAcadStudent(token):null;
@@ -15319,14 +15818,19 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
               case 'create-student':{
                 teacherOnly();const name=String(fields.name||'').trim(),last5=String(fields.last5||'').trim(),gender=String(fields.gender||''),birthday=String(fields.birthday||'');
                 if(!name||name.length>80||!/^[0-9]{5}$/.test(last5)||!['男','女','其他','未提供'].includes(gender)||!/^\d{4}-\d{2}-\d{2}$/.test(birthday)||isNaN(Date.parse(birthday))||new Date(birthday).toISOString().slice(0,10)!==birthday)ntpcAcadErr('請確認 RP 名稱、證件末五碼、性別及西元生日');
-                const id=crypto.randomUUID();await fm.setDoc(ntpcAcadDoc('academyStudents',id),{rpName:name,idLast5:last5,gender,birthday,status:'active',createdAt:new Date()});
-                return {ok:true,id};
+                const id=crypto.randomUUID(),batch=fm.writeBatch(db);
+                batch.set(ntpcAcadDoc('academyStudents',id),{rpName:name,idLast5:last5,gender,birthday,status:'active',createdAt:new Date()});
+                ntpcAcadQueueAudit(batch,'CREATE',id,name,'建立專生名單',[
+                    {field:'身分狀態',before:'不存在',after:'在學'},
+                    {field:'性別',before:'—',after:gender}
+                ]); // 不將證件末五碼與出生日期發送至 Discord。
+                await batch.commit();return {ok:true,id};
               }
               case 'delete-student':{
                 teacherOnly();const id=String(fields.id||'');const st=await ntpcAcadOne('academyStudents',id);
                 if(!st)ntpcAcadErr('專生不存在或已刪除');
                 if(st.rpName!==String(fields.confirmName||''))ntpcAcadErr('RP 名稱不符，已取消刪除');
-                await ntpcAcadDeleteRelated(id);return {ok:true,deleted:true};
+                await ntpcAcadDeleteRelated(id,st.rpName);return {ok:true,deleted:true};
               }
               case 'issue-code':{
                 teacherOnly();const id=String(fields.id||''),student=await ntpcAcadOne('academyStudents',id);if(!student)ntpcAcadErr('請先建立專生');
@@ -15342,6 +15846,11 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                     batch.update(ntpcAcadDoc('academyStudents',id),{activeDedicatedHash:digest,codeUpdatedAt:now});
                 }
                 batch.set(ntpcAcadDoc('academyCodesV138',digest),{studentId:id,studentName:student.rpName,kind,department,expireAt:new Date(Date.now()+expiresInHours*3600000),createdAt:now});
+                ntpcAcadQueueAudit(batch,'CREATE',id,student.rpName,'建立／更新考核代碼',[
+                    {field:'代碼類型',before:'—',after:kind==='dedicated'?'專生專用':'臨時考核'},
+                    {field:'考核部門',before:'—',after:department==='fire'?'消防':'警務'},
+                    {field:'有效期限',before:'—',after:kind==='dedicated'?'30天':'30分鐘'}
+                ],{note:kind==='dedicated'?'重新核發時舊專用碼自動撤銷':''}); // 不記錄原始代碼或雜湊。
                 await batch.commit();
                 return {ok:true,code,kind,expiresInHours,studentName:student.rpName};
               }
@@ -15351,12 +15860,21 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 return {ok:true,student:{id,rp_name:st.rpName,gender:st.gender,birthday:st.birthday,status:st.status,certificate_number:cert?.certificateNumber??st.certificateNumber??null,issued_at:ntpcAcadIso(cert?.issuedAt||st.issuedAt),total_score:cert?.totalScore??null,certificate_grade:cert?.grade??st.certificateGrade??'',instructor_name:cert?.instructorName??st.instructorName??''},scores:score?.scores||[],subjects:NTPC_ACADEMY_SUBJECTS};
               }
               case 'save-scores':{
-                teacherOnly();const id=String(fields.id||'');if(!await ntpcAcadOne('academyStudents',id))ntpcAcadErr('專生不存在');
-                if(await ntpcAcadOne('academyCertificates',id))ntpcAcadErr('已畢業，成績已鎖定');
+                teacherOnly();const id=String(fields.id||'');
                 if(!Array.isArray(fields.scores)||fields.scores.length!==NTPC_ACADEMY_SUBJECTS.length)ntpcAcadErr('請填寫全部 '+NTPC_ACADEMY_SUBJECTS.length+' 項成績欄位');
                 const normalize=(v,i)=>{if(v===''||v===undefined||v===null)return null;const n=Number(v),max=NTPC_ACADEMY_SUBJECT_MAX(i);if(!Number.isFinite(n)||n<0||n>max)ntpcAcadErr(`第 ${i+1} 項分數必須介於 0～${max}`);return n;};
                 const scores=fields.scores.map((r,i)=>({subject_no:i+1,training:i===13?null:normalize(r.training,i),initial_exam:normalize(r.initial_exam,i),retest:normalize(r.retest,i)}));
-                await fm.setDoc(ntpcAcadDoc('academyScores',id),{studentId:id,scores,updatedAt:new Date()});return {ok:true};
+                const scoreRef=ntpcAcadDoc('academyScores',id),studentRef=ntpcAcadDoc('academyStudents',id),certRef=ntpcAcadDoc('academyCertificates',id);
+                const changed=await fm.runTransaction(db,async tx=>{
+                    const [st,ce,old]=await Promise.all([tx.get(studentRef),tx.get(certRef),tx.get(scoreRef)]);
+                    if(!st.exists())ntpcAcadErr('專生不存在');
+                    if(ce.exists())ntpcAcadErr('已畢業，成績已鎖定');
+                    const before=old.exists()?old.data().scores||[]:[],diff=ntpcAcadScoreDiff(before,scores);
+                    if(!diff.length)return false;
+                    tx.set(scoreRef,{studentId:id,scores,updatedAt:new Date()});
+                    ntpcAcadQueueAudit(tx,old.exists()?'UPDATE':'CREATE',id,st.data().rpName,'新增／修改考核成績',diff);
+                    return true;
+                });return {ok:true,changed};
               }
               case 'certificate-status':{
                 teacherOnly();
@@ -15391,6 +15909,13 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                     tx.set(numberRef,{studentId:id,certificateNumber:requested,issuedAt,grade});
                     tx.set(certRef,{studentId:id,certificateNumber:requested,totalScore:total,grade,instructorName,issuedAt});
                     tx.update(stRef,{status:'graduated',certificateNumber:requested,certificateGrade:grade,instructorName,issuedAt});
+                    ntpcAcadQueueAudit(tx,'GRADUATE',id,st.data().rpName,'核發畢業證書',[
+                        {field:'學員狀態',before:'在學',after:'畢業'},
+                        {field:'畢業總分',before:'—',after:`${total}/100`},
+                        {field:'評等',before:'—',after:grade},
+                        {field:'證書號碼',before:'—',after:String(requested).padStart(4,'0')},
+                        {field:'技術教官（手動填寫）',before:'—',after:instructorName}
+                    ]);
                     return {certificate_number:requested,total_score:total,grade,instructor_name:instructorName,issued_at:issuedAt.toISOString()};
                 });return {ok:true,certificate};
               }
@@ -15404,8 +15929,13 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 const id=student.id+'_'+(await ntpcAcadSHA(category+'|'+key)).slice(0,24),old=await ntpcAcadOne('academyReportsV138',id),now=Date.now();
                 if(old&&!ntpcAcadActive(old))ntpcAcadErr('這份報告已超過 24 小時，不能重新同步');
                 const expireAt=old?.expireAt||new Date(now+NTPC_ACADEMY_24H),createdAt=old?.createdAt||new Date(now);
-                await fm.setDoc(ntpcAcadDoc('academyReportsV138',id),{studentId:student.id,reportKey:key,category,title,content,createdAt,submittedAt:new Date(),expireAt});
-                return {ok:true};
+                const batch=fm.writeBatch(db);
+                batch.set(ntpcAcadDoc('academyReportsV138',id),{studentId:student.id,reportKey:key,category,title,content,createdAt,submittedAt:new Date(),expireAt});
+                ntpcAcadQueueAudit(batch,old?'UPDATE':'CREATE',student.id,student.name,old?'更新考核報告':'提交考核報告',[
+                    {field:'報告類型',before:old?.category||'—',after:category},
+                    {field:'報告標題',before:old?.title||'—',after:title}
+                ],{reportId:id,retention:'報告內容24小時後清理；LOG只留摘要'});
+                await batch.commit();return {ok:true};
               }
               case 'list-reports':{
                 const id=targetId(),rows=(await ntpcAcadList('academyReportsV138','studentId',id,180)).filter(ntpcAcadActive).sort((a,b)=>ntpcAcadDate(b.submittedAt)-ntpcAcadDate(a.submittedAt));
@@ -15425,6 +15955,10 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 const batch=fm.writeBatch(db);
                 chunks.forEach((chunk,index)=>batch.set(ntpcAcadDoc('academyFileChunksV138',`${id}_${index}`),{studentId:student.id,fileId:id,index,base64:chunk,expireAt}));
                 batch.set(ntpcAcadDoc('academyFilesV138',id),{studentId:student.id,filename,mediaType,sizeBytes:bytes,chunkCount:chunks.length,uploadedAt:new Date(now),createdAt:new Date(now),expireAt});
+                ntpcAcadQueueAudit(batch,'CREATE',student.id,student.name,'上傳考核附件',[
+                    {field:'檔名',before:'—',after:filename},
+                    {field:'檔案類型',before:'—',after:mediaType}
+                ],{fileId:id,retention:'附件24小時後清理；LOG不保存檔案'});
                 await batch.commit();return {ok:true,id};
               }
               case 'list-files':{
