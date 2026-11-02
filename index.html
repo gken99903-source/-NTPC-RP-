@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- V156｜修復消防中心手機版分類按鈕被壓縮造成文字重疊；分類可橫向滑動，保留原有歷史查詢與其他功能。 -->
+<!-- V158｜全站手機版橫向分類與資料表排版：修正管理中心、嘉蕭、警察、消防分類列及六組長表格的文字擠壓；僅介面，不改資料庫與權限。 -->
 <html lang="zh-TW" class="dark">
 <head>
     <meta charset="UTF-8">
@@ -2279,6 +2279,114 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
 }
 
 </style>
+
+<style id="ntpc-v158-global-mobile-overflow">
+/* V158：全站橫向分類列，不讓 flex 子項縮成極窄按鈕。 */
+.ntpc-v158-responsive-subnav {
+  display:flex !important;
+  flex-flow:row nowrap !important;
+  align-items:stretch;
+  gap:8px !important;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow-x:auto !important;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+  scrollbar-width:thin;
+  scroll-padding-inline:8px;
+}
+.ntpc-v158-responsive-subnav > button {
+  display:inline-flex !important;
+  flex:0 0 auto !important;
+  width:max-content !important;
+  min-width:max-content !important;
+  max-width:none !important;
+  box-sizing:border-box;
+  min-height:46px;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  margin-left:0 !important;
+  padding:10px 14px;
+  text-align:center;
+  white-space:nowrap !important;
+  line-height:1.35;
+  scroll-snap-align:start;
+}
+.ntpc-v158-responsive-subnav > button.hidden { display:none !important; }
+.ntpc-v158-responsive-subnav > button i { flex:0 0 auto; }
+.ntpc-v158-responsive-subnav > button > span { flex:0 0 auto; }
+/* 六張既有警消/管理表格需獨立橫向滑動，不再壓窄欄位。 */
+.ntpc-v158-table-scroll {
+  display:block;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow-x:auto !important;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+  scrollbar-width:thin;
+  scrollbar-color:#64748b #0f172a;
+}
+.ntpc-v158-table-scroll > table {
+  width:100%;
+  min-width:850px;
+  table-layout:auto;
+}
+#admin-sub-users .ntpc-v158-table-scroll > table,
+#admin-sub-logs .ntpc-v158-table-scroll > table,
+#admin-sub-devices .ntpc-v158-table-scroll > table { min-width:960px; }
+.ntpc-v158-table-scroll th {
+  white-space:nowrap;
+  word-break:normal;
+  min-width:108px;
+  vertical-align:middle;
+}
+.ntpc-v158-table-scroll td {
+  min-width:106px;
+  vertical-align:middle;
+  word-break:normal;
+  overflow-wrap:anywhere;
+}
+.ntpc-v158-table-scroll th:first-child,
+.ntpc-v158-table-scroll td:first-child { min-width:132px; }
+.ntpc-v158-table-scroll th:last-child,
+.ntpc-v158-table-scroll td:last-child { min-width:126px; }
+.ntpc-v158-table-scroll :is(button,a) { overflow-wrap:normal; }
+.ntpc-v158-mobile-hint { display:none; }
+@media (max-width:767px) {
+  #tab-police, #tab-fire, #tab-jiaxiao, #tab-admin,
+  #police-content-container, #fire-content-container,
+  #jiaxiao-content-container, #admin-content-container {
+    min-width:0;
+    max-width:100%;
+  }
+  .ntpc-v158-responsive-subnav {
+    padding-bottom:11px;
+    scroll-snap-type:x proximity;
+    touch-action:pan-x pan-y;
+  }
+  .ntpc-v158-responsive-subnav > button {
+    min-height:48px;
+    padding:11px 14px;
+    font-size:13px;
+  }
+  .ntpc-v158-mobile-hint {
+    display:block;
+    color:#94a3b8;
+    font-size:12px;
+    line-height:1.5;
+    margin:0 2px 7px;
+  }
+  .ntpc-v158-mobile-hint span { color:#67e8f9; }
+  .ntpc-v158-table-hint { margin:5px 3px 7px; }
+  .ntpc-v158-table-scroll { touch-action:pan-x pan-y; }
+}
+</style>
+
 </head>
 <body class="ntpc-premium-ui bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
     <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
@@ -2576,7 +2684,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
 
 
                 <p id="ntpc-police-subnav-hint" class="hidden text-xs text-slate-400" aria-hidden="true">左右滑動下方分類列，可查看更多警務功能 <i class="fa-solid fa-arrows-left-right ml-1"></i></p>
-                <div id="ntpc-police-subnav" class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto" role="group" aria-label="警務各功能分類（可左右滑動）">
+                <div id="ntpc-police-subnav" class="ntpc-v158-responsive-subnav flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto" role="group" aria-label="警務各功能分類（可左右滑動）">
                     <button id="btn-police-reports" data-sub="reports" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史案件報告庫</button>
                     <button id="btn-police-review" data-sub="review" class="police-sub-btn hidden px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-stamp mr-2"></i>高層審核系統 <span id="police-review-tab-badge" class="ml-1 inline-flex min-w-[20px] h-5 px-1.5 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">0</span></button>
                     <button id="btn-police-punishments" data-sub="punishments" class="police-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-gavel mr-2"></i>警用獎懲專區</button>
@@ -2691,7 +2799,8 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                         </div>
                         <p id="police-clocks-anomaly-summary" class="mt-3 text-xs text-amber-300/80" aria-live="polite"></p>
                     </div>
-                    <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
+                    <p class="ntpc-v158-mobile-hint ntpc-v158-table-hint" aria-hidden="true">此資料表可左右滑動，查看更多欄位 <span>↔</span></p>
+                    <div class="ntpc-v158-table-scroll overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl" role="region" tabindex="0" aria-label="詳細資料表，可橫向滑動">
                         <table class="w-full text-left border-collapse text-sm">
                             <thead>
                                 <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
@@ -2811,7 +2920,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
 
                 
 
-                <div id="ntpc-fire-subnav" class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto" aria-label="消防功能分類（手機版可左右滑動）">
+                <div id="ntpc-fire-subnav" class="ntpc-v158-responsive-subnav flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto" aria-label="消防功能分類（手機版可左右滑動）">
                     <button id="btn-fire-reports" data-sub="reports" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-red-600 text-white whitespace-nowrap"><i class="fa-solid fa-folder-open mr-2"></i>歷史消防案件報告</button>
                     <button id="btn-fire-review" data-sub="review" class="fire-sub-btn hidden px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-stamp mr-2"></i>高層審核系統 <span id="fire-review-tab-badge" class="ml-1 inline-flex min-w-[20px] h-5 px-1.5 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">0</span></button>
                     <button id="btn-fire-ems" data-sub="ems" class="fire-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-truck-medical mr-2"></i>EMS救護出勤報告</button>
@@ -2912,7 +3021,8 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                             <button id="fire-clocks-date-clear" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl text-xs transition">清除</button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
+                    <p class="ntpc-v158-mobile-hint ntpc-v158-table-hint" aria-hidden="true">此資料表可左右滑動，查看更多欄位 <span>↔</span></p>
+                    <div class="ntpc-v158-table-scroll overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl" role="region" tabindex="0" aria-label="詳細資料表，可橫向滑動">
                         <table class="w-full text-left border-collapse text-sm">
                             <thead>
                                 <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
@@ -3665,7 +3775,8 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                         </div>
                     </div>
                 </div>
-                <div class="flex gap-2 overflow-x-auto border-b border-slate-800 pb-2" role="tablist" aria-label="嘉蕭集團分類">
+                <p class="ntpc-v158-mobile-hint" aria-hidden="true">左右滑動，查看更多嘉蕭功能 <span>↔</span></p>
+                <div id="ntpc-jiaxiao-subnav" class="ntpc-v158-responsive-subnav flex gap-2 overflow-x-auto border-b border-slate-800 pb-2" role="tablist" aria-label="嘉蕭集團分類（可左右滑動）">
                     <button type="button" id="btn-jiaxiao-hospital" data-sub="hospital" aria-controls="jx-sub-hospital" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-hospital mr-2"></i>醫院報告／登記紀錄</button>
                     <button type="button" id="btn-jiaxiao-medical" data-sub="medical" aria-controls="jx-sub-medical" aria-selected="true" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-teal-600 text-white whitespace-nowrap"><i class="fa-solid fa-truck-medical mr-2"></i>EMS 歷史報告</button>
                     <button type="button" id="btn-jiaxiao-funeral" data-sub="funeral" aria-controls="jx-sub-funeral" aria-selected="false" role="tab" class="jiaxiao-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-file-medical mr-2"></i>生命禮儀歷史報告</button>
@@ -3836,7 +3947,8 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                     </div>
                 </div>
 
-                <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
+                <p class="ntpc-v158-mobile-hint" aria-hidden="true">左右滑動，查看更多管理中心功能 <span>↔</span></p>
+                <div id="ntpc-admin-subnav" class="ntpc-v158-responsive-subnav flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto" aria-label="管理中心功能分類（可左右滑動）">
                     <button id="btn-admin-users" data-sub="users" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap"><i class="fa-solid fa-users mr-2"></i>帳號與人員管理</button>
                     <button id="btn-admin-dispatch" data-sub="dispatch" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-tower-broadcast mr-2"></i>智慧派遣中心</button>
                     <button id="btn-admin-bot-console" data-sub="bot-console" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-robot mr-2"></i>Discord Bot 控制台</button>
@@ -3868,7 +3980,8 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
 
                 <div id="admin-sub-users" class="space-y-4">
                     <h3 class="text-lg font-bold text-slate-200">系統所有公職人員與高層帳號</h3>
-                    <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
+                    <p class="ntpc-v158-mobile-hint ntpc-v158-table-hint" aria-hidden="true">此資料表可左右滑動，查看更多欄位 <span>↔</span></p>
+                    <div class="ntpc-v158-table-scroll overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl" role="region" tabindex="0" aria-label="詳細資料表，可橫向滑動">
                         <table class="w-full text-left border-collapse text-sm">
                             <thead>
                                 <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
@@ -3955,7 +4068,8 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                         </div>
                         <p class="text-xs text-slate-500 mt-3">預設只顯示今天的管理中心打卡紀錄；查詢其他日期請選擇日期，也可輸入姓名或帳號縮小到特定人員。</p>
                     </div>
-                    <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl"><table class="w-full text-left text-sm"><thead><tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50"><th class="p-4">管理員</th><th class="p-4">狀態</th><th class="p-4">時間</th><th class="p-4">備註</th><th class="p-4 text-right">操作</th></tr></thead><tbody id="admin-clocks-tbody" class="divide-y divide-slate-800/60"></tbody></table></div>
+                    <p class="ntpc-v158-mobile-hint ntpc-v158-table-hint" aria-hidden="true">此資料表可左右滑動，查看更多欄位 <span>↔</span></p>
+                    <div class="ntpc-v158-table-scroll overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl" role="region" tabindex="0" aria-label="詳細資料表，可橫向滑動"><table class="w-full text-left text-sm"><thead><tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50"><th class="p-4">管理員</th><th class="p-4">狀態</th><th class="p-4">時間</th><th class="p-4">備註</th><th class="p-4 text-right">操作</th></tr></thead><tbody id="admin-clocks-tbody" class="divide-y divide-slate-800/60"></tbody></table></div>
                 </div>
 
                 <div id="admin-sub-logs" class="hidden space-y-4">
@@ -3972,7 +4086,8 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4"><div><h4 class="font-bold text-white"><i class="fa-solid fa-timeline mr-2 text-cyan-400"></i>全站操作時間軸</h4><p class="text-xs text-slate-500 mt-1">沿用既有 adminLogs，只在前端整理顯示，不新增雲端紀錄。</p></div><span class="text-[11px] text-slate-500">最近 20 筆</span></div>
                         <div id="admin-activity-timeline-list" class="space-y-2"></div>
                     </div>
-                    <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
+                    <p class="ntpc-v158-mobile-hint ntpc-v158-table-hint" aria-hidden="true">此資料表可左右滑動，查看更多欄位 <span>↔</span></p>
+                    <div class="ntpc-v158-table-scroll overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl" role="region" tabindex="0" aria-label="詳細資料表，可橫向滑動">
                         <table class="w-full text-left border-collapse text-sm">
                             <thead>
                                 <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
@@ -4069,7 +4184,8 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 </div>
                 <div id="admin-sub-devices" class="hidden space-y-4">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-3"><div><h3 class="text-lg font-bold text-slate-200">最近 3 日登入裝置資訊</h3><p class="text-xs text-slate-500 mt-1">為節省讀取數，進入管理中心不自動下載登入紀錄；按按鈕才查詢（最多 200 筆）。</p><p id="login-sessions-load-status" class="text-xs text-cyan-300 mt-1">尚未查詢登入紀錄。</p></div><div class="flex flex-wrap items-center gap-2"><button type="button" id="load-login-sessions-btn" onclick="loadLoginSessionsOnDemand()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>載入／重新整理登入紀錄</button><button type="button" id="prune-login-sessions-btn" onclick="pruneOldLoginSessions()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl text-xs">手動清理 3 日前紀錄</button><button id="clear-all-login-sessions-btn" class="hidden bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/20 px-3 py-2 rounded-xl text-xs">一鍵刪除所有登入紀錄</button></div></div>
-                    <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl"><table class="w-full text-left border-collapse text-xs"><thead><tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50"><th class="p-3">帳號</th><th class="p-3">登入時間</th><th class="p-3">平台／瀏覽器</th><th class="p-3">螢幕</th><th class="p-3">裝置識別</th><th class="p-3 text-right">操作</th></tr></thead><tbody id="admin-devices-tbody" class="divide-y divide-slate-800/60"></tbody></table></div>
+                    <p class="ntpc-v158-mobile-hint ntpc-v158-table-hint" aria-hidden="true">此資料表可左右滑動，查看更多欄位 <span>↔</span></p>
+                    <div class="ntpc-v158-table-scroll overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl" role="region" tabindex="0" aria-label="詳細資料表，可橫向滑動"><table class="w-full text-left border-collapse text-xs"><thead><tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50"><th class="p-3">帳號</th><th class="p-3">登入時間</th><th class="p-3">平台／瀏覽器</th><th class="p-3">螢幕</th><th class="p-3">裝置識別</th><th class="p-3 text-right">操作</th></tr></thead><tbody id="admin-devices-tbody" class="divide-y divide-slate-800/60"></tbody></table></div>
                     <div><h4 class="text-sm font-bold text-slate-300 mb-2">目前封鎖中的裝置</h4><div id="admin-blocked-devices-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div></div>
                 </div>
                 <div id="admin-sub-issues" class="hidden space-y-6"><div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl"><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-circle-question text-blue-400 mr-2"></i>FAQ 問題回報</h3><p class="text-xs text-slate-500 mt-1">使用者從常見問題提交的協助單。</p><div id="admin-faq-issues-list" class="space-y-3 mt-4"></div></div></div>
@@ -5720,7 +5836,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                     if (!currentUser) {
                         showToast('勤務中心需要先登入系統。', 'warning', '需要登入');
                         switchTab('home');
-                        setTimeout(() => document.getElementById('login-modal')?.classList.remove('hidden'), 80);
+                        setTimeout(() => document.getElementById('modal-login')?.classList.remove('hidden'), 80);
                         return;
                     }
                 }
@@ -8167,7 +8283,7 @@ async function republishAnnouncement(id) {
                     const appointment=document.createElement('p');appointment.className='text-xs text-slate-300';
                     appointment.textContent='預約掛號：'+(r.details?.registeredAt?String(r.details.registeredAt).replace('T',' '):'未填寫');card.appendChild(appointment);
                 }
-                const meta=document.createElement('p');meta.className='text-xs text-slate-400';meta.textContent=`${new Date(r.createdAt||0).toLocaleString('zh-TW')}｜${r.authorName||r.authorAccount||'--'}`;card.appendChild(meta);
+                const meta=document.createElement('p');meta.className='text-xs text-slate-400';meta.textContent=`${formatDateTime(r.createdAt||0)}｜${r.authorName||r.authorAccount||'--'}`;card.appendChild(meta);
                 const view=document.createElement('button');view.type='button';view.className='rounded-xl bg-slate-800 border border-slate-700 hover:border-teal-500 px-4 py-2 text-sm text-teal-200';view.textContent='放大檢視原始表單';
                 view.addEventListener('click',()=>jxViewHospitalRecord(r));card.appendChild(view);
                 if(canWriteJXReport()&&(canReviewJX()||String(r.authorAccount||'').toLowerCase()===String(currentUser?.account||'').toLowerCase())){
@@ -10191,7 +10307,13 @@ async function republishAnnouncement(id) {
             }).join('');
             return `<div class="mt-4 p-3 rounded-xl bg-red-500/5 border border-red-500/15 text-xs text-red-200"><div class="flex flex-wrap items-center justify-between gap-2 mb-2"><span>相關案件報號：${matched.length} 件</span><span class="text-slate-400">末五碼＋RP 姓名；同名新舊身分會隔離</span></div>${matched.length?`<div class="space-y-1">${related}</div>`:(citizenCaseLookupState.error?'<div class="text-amber-300">案件資料讀取失敗，無法判定是否有關聯案件。請確認資料庫讀取權限並重新查詢。</div>':(!citizenCaseLookupState.loaded&&!manualReadState.cases.police?'<div class="text-slate-500">案件資料尚未載入，請按「查詢」取得關聯案件。</div>':'<div class="text-slate-500">沒有證件末五碼及 RP 姓名皆一致的案件。</div>'))}</div>`;
         }
-        function renderCitizenCard(r){const suspectCases=getCitizenRelatedCases(r);const linkedVehicles=(appData.vehicleRecords||[]).filter(v=>!v.decommissioned&&getLastFive(v.id5)===getLastFive(r.id5));const wantedRecords=(appData.wantedRecords||[]).filter(w=>isWantedActive(w)&&getLastFive(w.id5)===getLastFive(r.id5));const isWanted=!r.deceased&&wantedRecords.length>0;const cardBg=isWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.deceased?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><h4 class="text-lg font-bold text-white">${escapeHtml(r.name||'--')}</h4>${ntpcInsuranceBadge('citizen',r)}${isWanted?'<span class="px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>通緝狀態</span>':''}${r.deceased?'<span class="px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-skull-crossbones mr-1"></i>死亡證明</span>':''}</div><p class="text-xs text-slate-500 font-mono">證件末五碼：${escapeHtml(r.id5||'--')}</p><p class="text-xs text-slate-500 mt-1">發布帳號：${escapeHtml(r.createdByAccount||'--')}</p></div><span class="text-xs text-slate-400">${escapeHtml(r.gender||'--')}｜${escapeHtml(r.birthday||'--')}</span></div><div class="mt-4 text-sm text-slate-300"><span class="text-slate-500">駕照狀況：</span>${escapeHtml((r.licenses||[]).length?(r.licenses||[]).join('、'):'無')}</div>${linkedVehicles.length?`<div class="mt-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15 text-sm"><span class="text-xs text-cyan-300 block mb-2">名下車輛（依證件末五碼自動比對）</span><div class="space-y-1">${linkedVehicles.map(v=>`<div class="text-slate-300">${escapeHtml(v.model||'未知型號')}｜車牌：<span class="font-mono text-cyan-300">${escapeHtml(v.plate||'--')}</span><span class="ml-2">${ntpcInsuranceBadge('vehicles',v)}</span></div>`).join('')}</div></div>`:''}${r.note?`<div class="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm"><span class="text-xs text-slate-500 block mb-1">備注</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}<div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-blue-600/15 text-blue-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('citizen','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">編輯</button><button type="button" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="deleteLookupRecord('citizen','${escapeHtml(r.docId||r.id)}')">移除</button>`:''}${canReviewPoliceReports()?`<button type="button" class="px-3 py-2 bg-rose-700/20 text-rose-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="ntpcOpenVehicleRevocation('${escapeHtml(r.docId||r.id)}')">吊銷管理</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">新增備註／修改駕照</button>`:''}</div>${citizenCasesHtml(r,suspectCases)}</div>`;}
+        // 同末五碼可能包含已死亡舊身分／重新入境新身分；舊車籍、通緝尚無人設文件 ID 時，不可自動錯掛。
+        function ntpcCitizenSharedLastFive(r){
+            const id5=getLastFive(r?.id5||'');
+            if(!/^\d{5}$/.test(id5))return false;
+            return (citizenCaseLookupState.identities||[]).filter(x=>getLastFive(x.id5||'')===id5).length>1;
+        }
+        function renderCitizenCard(r){const suspectCases=getCitizenRelatedCases(r);const sameIdentityAmbiguous=ntpcCitizenSharedLastFive(r);const linkedVehicles=sameIdentityAmbiguous?[]:(appData.vehicleRecords||[]).filter(v=>!v.decommissioned&&getLastFive(v.id5)===getLastFive(r.id5));const wantedRecords=sameIdentityAmbiguous?[]:(appData.wantedRecords||[]).filter(w=>isWantedActive(w)&&getLastFive(w.id5)===getLastFive(r.id5));const isWanted=!r.deceased&&wantedRecords.length>0;const cardBg=isWanted?'bg-gradient-to-br from-blue-950/95 via-red-950/90 to-slate-950 border-blue-500/70':(r.deceased?'bg-red-950/80 border-red-500/60':'bg-slate-900 border-slate-800');return `<div class="${cardBg} border rounded-2xl p-5 shadow-xl"><div class="flex justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><h4 class="text-lg font-bold text-white">${escapeHtml(r.name||'--')}</h4>${ntpcInsuranceBadge('citizen',r)}${isWanted?'<span class="px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-red-600 text-white text-xs font-bold shadow-lg"><i class="fa-solid fa-handcuffs mr-1"></i>通緝狀態</span>':''}${r.deceased?'<span class="px-2 py-1 rounded-full bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-skull-crossbones mr-1"></i>死亡證明</span>':''}</div><p class="text-xs text-slate-500 font-mono">證件末五碼：${escapeHtml(r.id5||'--')}</p><p class="text-xs text-slate-500 mt-1">發布帳號：${escapeHtml(r.createdByAccount||'--')}</p></div><span class="text-xs text-slate-400">${escapeHtml(r.gender||'--')}｜${escapeHtml(r.birthday||'--')}</span></div><div class="mt-4 text-sm text-slate-300"><span class="text-slate-500">駕照狀況：</span>${escapeHtml((r.licenses||[]).length?(r.licenses||[]).join('、'):'無')}</div>${sameIdentityAmbiguous?'<div class="mt-3 rounded-lg border border-amber-500/40 bg-amber-950/30 p-3 text-xs text-amber-200">此證件末五碼存在多筆人設，名下車輛與通緝紀錄暫不自動關聯，請人工確認對應身分。</div>':''}${linkedVehicles.length?`<div class="mt-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15 text-sm"><span class="text-xs text-cyan-300 block mb-2">名下車輛（依證件末五碼自動比對）</span><div class="space-y-1">${linkedVehicles.map(v=>`<div class="text-slate-300">${escapeHtml(v.model||'未知型號')}｜車牌：<span class="font-mono text-cyan-300">${escapeHtml(v.plate||'--')}</span><span class="ml-2">${ntpcInsuranceBadge('vehicles',v)}</span></div>`).join('')}</div></div>`:''}${r.note?`<div class="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm"><span class="text-xs text-slate-500 block mb-1">備注</span><span class="text-slate-300 whitespace-pre-wrap">${escapeHtml(r.note)}</span></div>`:''}<div class="lookup-card-actions flex flex-wrap gap-2 mt-4 w-full"><button type="button" class="px-3 py-2 bg-blue-600/15 text-blue-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="viewLookupDetail('citizen','${escapeHtml(r.docId||r.id)}')">放大檢視</button>${isTotalManagementUser()?`<button type="button" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">編輯</button><button type="button" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="deleteLookupRecord('citizen','${escapeHtml(r.docId||r.id)}')">移除</button>`:''}${canReviewPoliceReports()?`<button type="button" class="px-3 py-2 bg-rose-700/20 text-rose-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="ntpcOpenVehicleRevocation('${escapeHtml(r.docId||r.id)}')">吊銷管理</button>`:''}${isPoliceUser()?`<button type="button" class="px-3 py-2 bg-emerald-600/15 text-emerald-300 rounded-lg text-xs min-h-[44px] flex-1 sm:flex-none" onclick="openLookupPost('citizen','${escapeHtml(r.docId||r.id)}')">新增備註／修改駕照</button>`:''}</div>${citizenCasesHtml(r,suspectCases)}</div>`;}
         // 市民搜尋排序：無標籤優先，其次是通緝中的市民，死亡證明永遠置底。
         // 排序只影響畫面，不修改 Firestore 內的原始資料順序。
         function citizenDisplayRank(r){
@@ -10218,7 +10340,7 @@ async function republishAnnouncement(id) {
                 const hit = rows.some(r => {
                     const id = String(getLastFive(r.id5) || '');
                     return /^\d{5}$/.test(id) && wantedIds.has(id) &&
-                        (type === 'vehicles' || !r.deceased);
+                        (type === 'vehicles' || (!r.deceased && !ntpcCitizenSharedLastFive(r)));
                 });
                 if (!hit || Date.now() - ntpcWantedLookupSoundLastAt < 2000) return;
                 ntpcWantedLookupSoundLastAt = Date.now();
@@ -11008,7 +11130,7 @@ async function republishAnnouncement(id) {
 
 
         function calculatePoliceJailTime(violations,organizedCrime){const base=(Array.isArray(violations)?violations:[]).reduce((sum,name)=>{const row=POLICE_VIOLATION_RULES.find(x=>x[0]===name);return sum+(row?row[1]:0);},0);return Math.round((organizedCrime?base*4/3:base)*10)/10;}
-        function renderViolationOptions(prefix='report',selected=[]){const host=document.getElementById(`${prefix}-violation-options`);if(!host)return;if(!policeJailRulesReady){host.innerHTML='<div class="col-span-2 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-sm text-amber-200">刑期規則同步中或讀取受限，目前暫不可選擇條例或儲存警務案件。</div>';updateViolationJailTotal(prefix);return;}const set=new Set(Array.isArray(selected)?selected:[]);host.innerHTML=POLICE_VIOLATION_RULES.map(([name,min])=>`<label data-violation-name="${name.toLowerCase()}" class="violation-option flex items-center justify-between gap-2 min-h-[44px] p-3 rounded-xl border border-slate-800 bg-slate-900/70 cursor-pointer"><span class="flex items-center gap-2 min-w-0"><input type="checkbox" name="${prefix}-violation" value="${name}" ${set.has(name)?'checked':''} onchange="updateViolationJailTotal('${prefix}')" class="w-4 h-4 accent-amber-500"><span class="text-sm text-slate-200 truncate">${name}</span></span><span class="text-[11px] text-slate-500 shrink-0">${min}min</span></label>`).join('');updateViolationJailTotal(prefix);}
+        function renderViolationOptions(prefix='report',selected=[]){const host=document.getElementById(`${prefix}-violation-options`);if(!host)return;if(!policeJailRulesReady){host.innerHTML='<div class="col-span-2 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-sm text-amber-200">刑期規則同步中或讀取受限，目前暫不可選擇條例或儲存警務案件。</div>';updateViolationJailTotal(prefix);return;}const set=new Set(Array.isArray(selected)?selected:[]);host.innerHTML=POLICE_VIOLATION_RULES.map(([name,min])=>`<label data-violation-name="${escapeHtml(String(name).toLowerCase())}" class="violation-option flex items-center justify-between gap-2 min-h-[44px] p-3 rounded-xl border border-slate-800 bg-slate-900/70 cursor-pointer"><span class="flex items-center gap-2 min-w-0"><input type="checkbox" name="${prefix}-violation" value="${escapeHtml(name)}" ${set.has(name)?'checked':''} onchange="updateViolationJailTotal('${prefix}')" class="w-4 h-4 accent-amber-500"><span class="text-sm text-slate-200 truncate">${escapeHtml(name)}</span></span><span class="text-[11px] text-slate-500 shrink-0">${escapeHtml(min)}min</span></label>`).join('');updateViolationJailTotal(prefix);}
         function filterViolationOptions(prefix='report'){const q=(document.getElementById(`${prefix}-violation-search`)?.value||'').trim().toLowerCase();document.querySelectorAll(`#${prefix}-violation-options .violation-option`).forEach(el=>el.classList.toggle('hidden',!!q&&!el.dataset.violationName.includes(q)));}
         function updateViolationJailTotal(prefix='report'){if(!policeJailRulesReady){const out=document.getElementById(`${prefix}-jail-total`);if(out)out.textContent='總計：等待刑期規則同步';const note=document.getElementById(`${prefix}-jail-reduced`);if(note)note.textContent='等待取得最新雲端刑期表';return {violations:[],organizedCrime:false,jailMinutes:NaN};}const violations=Array.from(document.querySelectorAll(`input[name="${prefix}-violation"]:checked`)).map(x=>x.value),organized=!!document.getElementById(`${prefix}-organized-crime`)?.checked,total=calculatePoliceJailTime(violations,organized),out=document.getElementById(`${prefix}-jail-total`);if(out)out.textContent=`總計 ${formatJailMinutes(total)}`;const reducedNote=document.getElementById(`${prefix}-jail-reduced`);if(reducedNote)reducedNote.textContent=formatReducedPoliceJailNote(total);return {violations,organizedCrime:organized,jailMinutes:total};}
         function getViolationSelection(prefix='report'){return updateViolationJailTotal(prefix);}
@@ -12607,14 +12729,14 @@ async function republishAnnouncement(id) {
             container.innerHTML=`
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件編號</label>
-                    <input id="edit-rep-case-id" value="${r.caseId||caseId}" ${canChangeId?'':'readonly'} class="w-full bg-slate-950 ${canChangeId?'':'opacity-60 cursor-not-allowed'} border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono">
+                    <input id="edit-rep-case-id" value="${escapeHtml(r.caseId||caseId)}" ${canChangeId?'':'readonly'} class="w-full bg-slate-950 ${canChangeId?'':'opacity-60 cursor-not-allowed'} border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono">
                     ${canChangeId?'<p class="text-[11px] text-amber-400 mt-1">僅管理中心與警察高層可修改案件編號。</p>':''}
                 </div>
-                <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題</label><input id="edit-rep-title" value="${r.title||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div>
-                ${actualDept==='police'?`<div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯姓名</label><input id="edit-rep-sname" value="${r.suspectName||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">身分證件 ID</label><input id="edit-rep-sid" value="${r.suspectId||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div><div class="sm:col-span-2"><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑人車輛</label><input id="edit-rep-vehicle" value="${r.suspectVehicle||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件地點郵遞區號</label><input id="edit-rep-postal" value="${r.postalCode||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件指揮</label><input id="edit-rep-command" value="${r.command||''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">支援單位（可複選）</label><details class="bg-slate-950 border border-slate-800 rounded-xl"><summary class="cursor-pointer px-4 py-3 text-sm text-slate-300">編輯支援單位</summary><div id="edit-support-units" class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border-t border-slate-800">${['偵查隊','霹靂小組','海巡署北部分署第八岸巡隊','交通分隊','新莊分局','消防局第二救災救護大隊'].map(u=>`<label class="flex items-center gap-2 min-h-[44px] p-2 border border-slate-800 rounded-lg"><input type="checkbox" name="edit-support-unit" value="${u}" ${(r.supportUnits||[]).includes(u)?'checked':''}><span class="text-xs">${u}</span></label>`).join('')}</div></details></div><div class="space-y-3 bg-slate-950/70 border border-amber-500/20 rounded-2xl p-4"><div class="flex items-center justify-between gap-3"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">違反條例（可複選、可搜尋，可不填）</label><p class="text-[11px] text-slate-500 mt-1">組織犯罪刑罰加重⅓。</p></div><span id="edit-rep-jail-total" class="shrink-0 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold">總計 ${formatJailMinutes(r.jailMinutes)}</span></div><input id="edit-rep-violation-search" type="search" oninput="filterViolationOptions('edit-rep')" placeholder="搜尋條例名稱..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500"><div id="edit-rep-violation-options" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1"></div><label class="flex items-center gap-3 min-h-[44px] p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 cursor-pointer"><input type="checkbox" id="edit-rep-organized-crime" onchange="updateViolationJailTotal('edit-rep')" ${r.organizedCrime?'checked':''} class="w-4 h-4 accent-amber-500"><span class="text-sm text-amber-200">組織犯罪刑罰加重⅓</span></label><div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 space-y-1" role="status" aria-live="polite"><div id="edit-rep-jail-reduced" class="text-sm font-semibold text-emerald-300">${formatReducedPoliceJailNote(r.jailMinutes)}</div><p class="text-[11px] text-slate-400">減刑規則：未滿 10 分依原刑期；滿 10 分未滿 30 分 → 10 分鐘；滿 30 分以上 → 15 分鐘。</p></div></div>`:``}
+                <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件標題</label><input id="edit-rep-title" value="${escapeHtml(r.title||'')}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div>
+                ${actualDept==='police'?`<div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑犯姓名</label><input id="edit-rep-sname" value="${escapeHtml(r.suspectName||'')}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">身分證件 ID</label><input id="edit-rep-sid" value="${escapeHtml(r.suspectId||'')}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div><div class="sm:col-span-2"><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">嫌疑人車輛</label><input id="edit-rep-vehicle" value="${escapeHtml(r.suspectVehicle||'')}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件地點郵遞區號</label><input id="edit-rep-postal" value="${escapeHtml(r.postalCode||'')}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono"></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">案件指揮</label><input id="edit-rep-command" value="${escapeHtml(r.command||'')}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white"></div></div><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">支援單位（可複選）</label><details class="bg-slate-950 border border-slate-800 rounded-xl"><summary class="cursor-pointer px-4 py-3 text-sm text-slate-300">編輯支援單位</summary><div id="edit-support-units" class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border-t border-slate-800">${['偵查隊','霹靂小組','海巡署北部分署第八岸巡隊','交通分隊','新莊分局','消防局第二救災救護大隊'].map(u=>`<label class="flex items-center gap-2 min-h-[44px] p-2 border border-slate-800 rounded-lg"><input type="checkbox" name="edit-support-unit" value="${u}" ${(r.supportUnits||[]).includes(u)?'checked':''}><span class="text-xs">${u}</span></label>`).join('')}</div></details></div><div class="space-y-3 bg-slate-950/70 border border-amber-500/20 rounded-2xl p-4"><div class="flex items-center justify-between gap-3"><div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">違反條例（可複選、可搜尋，可不填）</label><p class="text-[11px] text-slate-500 mt-1">組織犯罪刑罰加重⅓。</p></div><span id="edit-rep-jail-total" class="shrink-0 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold">總計 ${formatJailMinutes(r.jailMinutes)}</span></div><input id="edit-rep-violation-search" type="search" oninput="filterViolationOptions('edit-rep')" placeholder="搜尋條例名稱..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500"><div id="edit-rep-violation-options" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1"></div><label class="flex items-center gap-3 min-h-[44px] p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 cursor-pointer"><input type="checkbox" id="edit-rep-organized-crime" onchange="updateViolationJailTotal('edit-rep')" ${r.organizedCrime?'checked':''} class="w-4 h-4 accent-amber-500"><span class="text-sm text-amber-200">組織犯罪刑罰加重⅓</span></label><div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 space-y-1" role="status" aria-live="polite"><div id="edit-rep-jail-reduced" class="text-sm font-semibold text-emerald-300">${formatReducedPoliceJailNote(r.jailMinutes)}</div><p class="text-[11px] text-slate-400">減刑規則：未滿 10 分依原刑期；滿 10 分未滿 30 分 → 10 分鐘；滿 30 分以上 → 15 分鐘。</p></div></div>`:``}
                 
-                <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細經過</label><textarea id="edit-rep-content" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white">${r.content||''}</textarea></div>
-                <div class="space-y-2"><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">附加證據／檔案連結（最多 3 筆，可不填）</label>${[1,2,3].map((n,i)=>`<input type="url" id="edit-rep-video-${n}" value="${videos[i]||''}" placeholder="影片連結 ${n}（可留空）" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">`).join('')}</div>`;
+                <div><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">詳細經過</label><textarea id="edit-rep-content" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white">${escapeHtml(r.content||'')}</textarea></div>
+                <div class="space-y-2"><label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">附加證據／檔案連結（最多 3 筆，可不填）</label>${[1,2,3].map((n,i)=>`<input type="url" id="edit-rep-video-${n}" value="${escapeHtml(videos[i]||'')}" placeholder="影片連結 ${n}（可留空）" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">`).join('')}</div>`;
             if(actualDept==='police') renderViolationOptions('edit-rep', r.violations||[]);
             document.getElementById('modal-edit').classList.remove('hidden');
         }
@@ -13684,7 +13806,7 @@ async function republishAnnouncement(id) {
                 return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-3"><div><b class="text-white">${name}</b><div class="text-xs text-slate-500 font-mono">${account}${staff}</div><div class="text-[11px] text-slate-600 mt-1">最後活動：${escapeHtml(last)}</div></div><span class="px-3 py-1 rounded-full text-xs whitespace-nowrap ${on?'bg-emerald-500/10 text-emerald-400':'bg-slate-800 text-slate-400'}">● ${on?'在線':'離線'}</span></div>`;
             }).join('');
         }
-        function renderAdminDevices(){const t=document.getElementById('admin-devices-tbody');if(!t)return;if(!manualReadState.loginSessions){t.innerHTML='<tr><td colspan="6" class="p-6 text-center text-slate-500">尚未讀取登入紀錄。按上方「載入／重新整理登入紀錄」才向 Firestore 查詢。</td></tr>';const clear=document.getElementById('clear-all-login-sessions-btn');if(clear)clear.classList.add('hidden');const prune=document.getElementById('prune-login-sessions-btn');if(prune)prune.classList.toggle('hidden',!isSuperAdminAccount(currentUser?.account));return;}const since=Date.now()-3*24*60*60*1000,rows=(appData.loginSessions||[]).filter(x=>Number(x.loginAt||0)>=since).sort((a,b)=>b.loginAt-a.loginAt);const blocked=(row)=>{const fp=row.fingerprint||getDeviceFingerprint(row.device||{}),dk=row.deviceKey||getDeviceKey(row.device||{});return (appData.blockedDevices||[]).some(x=>x.active!==false&&(String(x.fingerprint||'')===String(fp)||(x.deviceKey&&String(x.deviceKey)===String(dk))));};t.innerHTML=rows.length?rows.map(x=>`<tr><td class="p-3 font-mono text-white">${x.account}</td><td class="p-3 text-slate-300">${formatDateTime(x.loginAt,x.time)}</td><td class="p-3 text-slate-300">${getDeviceLabel(x.device)}</td><td class="p-3 text-slate-400">${x.device?.screen||'--'}</td><td class="p-3 text-slate-400 font-mono">${x.fingerprint||getDeviceFingerprint(x.device)}</td><td class="p-3 text-right">${blocked(x)?`<button onclick="unblockDevice('${x.fingerprint||getDeviceFingerprint(x.device)}')" class="px-2.5 py-1 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">解封裝置</button>`:`<button onclick="blockDevice('${x.fingerprint||getDeviceFingerprint(x.device)}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">封鎖裝置</button>`}</td></tr>`).join(''):'<tr><td colspan="6" class="p-6 text-center text-slate-500">最近 3 日尚無登入裝置紀錄。</td></tr>';const clear=document.getElementById('clear-all-login-sessions-btn');if(clear)clear.classList.toggle('hidden',!isSuperAdminAccount(currentUser?.account));const bc=document.getElementById('admin-blocked-devices-list');if(bc){const br=(appData.blockedDevices||[]).filter(x=>x.active!==false);bc.innerHTML=br.length?br.map(x=>`<div class="bg-slate-900 border border-red-500/10 rounded-2xl p-4 flex items-center justify-between gap-3"><div><div class="font-mono text-xs text-red-300">${x.fingerprint||'--'}</div><div class="text-xs text-slate-500 mt-1">封鎖人員：${x.blockedBy||'--'} ／ ${formatDateTime(x.blockedAt)}</div><div class="text-xs text-slate-400 mt-1">${getDeviceLabel(x.device)} ／ ${x.device?.screen||'--'}</div><div class="text-xs ${x.autoBlocked?'text-amber-300':'text-slate-500'} mt-1">${x.reason||'管理員手動封鎖'}</div></div><button onclick="unblockDevice('${x.fingerprint}')" class="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">解封</button></div>`).join(''):'<div class="text-xs text-slate-500 bg-slate-900 border border-slate-800 rounded-xl p-4">目前沒有被封鎖的裝置。</div>';}}
+        function renderAdminDevices(){const t=document.getElementById('admin-devices-tbody');if(!t)return;if(!manualReadState.loginSessions){t.innerHTML='<tr><td colspan="6" class="p-6 text-center text-slate-500">尚未讀取登入紀錄。按上方「載入／重新整理登入紀錄」才向 Firestore 查詢。</td></tr>';const clear=document.getElementById('clear-all-login-sessions-btn');if(clear)clear.classList.add('hidden');const prune=document.getElementById('prune-login-sessions-btn');if(prune)prune.classList.toggle('hidden',!isSuperAdminAccount(currentUser?.account));return;}const since=Date.now()-3*24*60*60*1000,rows=(appData.loginSessions||[]).filter(x=>Number(x.loginAt||0)>=since).sort((a,b)=>b.loginAt-a.loginAt);const ntpcSafeDeviceKey=v=>/^[A-Za-z0-9]{1,100}$/.test(String(v||''))?String(v):'';const blocked=(row)=>{const fp=row.fingerprint||getDeviceFingerprint(row.device||{}),dk=row.deviceKey||getDeviceKey(row.device||{});return (appData.blockedDevices||[]).some(x=>x.active!==false&&(String(x.fingerprint||'')===String(fp)||(x.deviceKey&&String(x.deviceKey)===String(dk))));};t.innerHTML=rows.length?rows.map(x=>`<tr><td class="p-3 font-mono text-white">${escapeHtml(x.account)}</td><td class="p-3 text-slate-300">${formatDateTime(x.loginAt,x.time)}</td><td class="p-3 text-slate-300">${escapeHtml(getDeviceLabel(x.device))}</td><td class="p-3 text-slate-400">${escapeHtml(x.device?.screen||'--')}</td><td class="p-3 text-slate-400 font-mono">${escapeHtml(x.fingerprint||getDeviceFingerprint(x.device))}</td><td class="p-3 text-right">${blocked(x)?`<button onclick="unblockDevice('${ntpcSafeDeviceKey(x.fingerprint||getDeviceFingerprint(x.device))}')" class="px-2.5 py-1 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">解封裝置</button>`:`<button onclick="blockDevice('${ntpcSafeDeviceKey(x.fingerprint||getDeviceFingerprint(x.device))}')" class="px-2.5 py-1 bg-red-600/20 text-red-400 rounded-lg text-xs">封鎖裝置</button>`}</td></tr>`).join(''):'<tr><td colspan="6" class="p-6 text-center text-slate-500">最近 3 日尚無登入裝置紀錄。</td></tr>';const clear=document.getElementById('clear-all-login-sessions-btn');if(clear)clear.classList.toggle('hidden',!isSuperAdminAccount(currentUser?.account));const bc=document.getElementById('admin-blocked-devices-list');if(bc){const br=(appData.blockedDevices||[]).filter(x=>x.active!==false);bc.innerHTML=br.length?br.map(x=>`<div class="bg-slate-900 border border-red-500/10 rounded-2xl p-4 flex items-center justify-between gap-3"><div><div class="font-mono text-xs text-red-300">${escapeHtml(x.fingerprint||'--')}</div><div class="text-xs text-slate-500 mt-1">封鎖人員：${escapeHtml(x.blockedBy||'--')} ／ ${formatDateTime(x.blockedAt)}</div><div class="text-xs text-slate-400 mt-1">${escapeHtml(getDeviceLabel(x.device))} ／ ${escapeHtml(x.device?.screen||'--')}</div><div class="text-xs ${x.autoBlocked?'text-amber-300':'text-slate-500'} mt-1">${escapeHtml(x.reason||'管理員手動封鎖')}</div></div><button onclick="unblockDevice('${ntpcSafeDeviceKey(x.fingerprint)}')" class="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs">解封</button></div>`).join(''):'<div class="text-xs text-slate-500 bg-slate-900 border border-slate-800 rounded-xl p-4">目前沒有被封鎖的裝置。</div>';}}
 
         async function deleteAllLoginSessions(){
             if(!isSuperAdminAccount(currentUser?.account)){showToast('只有 Dsuensx 可以刪除所有登入紀錄。','warning','權限不足');return;}
