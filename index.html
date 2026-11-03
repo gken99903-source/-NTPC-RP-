@@ -1,4 +1,4 @@
-<!-- V2.1：DSUENSX / Jerry 共用專屬外框與星月極光，全站頭像樣式一致，管理中心分項重製與管理 LOG，便利貼圓點訊息框。 -->
+<!-- V2.1：新增頭像圖片拖曳、圓形裁切模板、縮放與跨頁一致顯示；保留既有功能及歷史更新紀錄。 -->
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
 <head>
@@ -1406,6 +1406,24 @@ body.ntpc-premium-ui #ntpc-map-admin-toolbar button { min-height:38px; border:1p
 #btn-admin-academy, #admin-sub-academy, #academy-code-manage-btn, #academy-code-manage-btn-content {display:none!important;}
 </style>
 
+<style id="ntpc-v21-developer-style">
+  #tab-developer{max-width:1180px;margin-inline:auto}
+  #tab-developer .ntpc-dev-hero{background:linear-gradient(135deg,#102b57 0%,#111837 52%,#1b1848 100%);box-shadow:0 15px 38px rgba(0,5,22,.28)}
+  #tab-developer .ntpc-dev-panel{background:linear-gradient(155deg,rgba(10,28,57,.97),rgba(6,17,37,.99));border:1px solid rgba(92,153,238,.25)}
+  #tab-developer .ntpc-dev-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  #tab-developer .ntpc-dev-field{min-width:0;padding:15px;border-radius:16px;border:1px solid rgba(78,133,209,.28);background:rgba(3,14,35,.68)}
+  #tab-developer .ntpc-dev-exclusive{border-color:rgba(165,122,251,.52);background:rgba(36,23,66,.25)}
+  #tab-developer .ntpc-dev-field label{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:14px;font-weight:750;color:#e8f1ff;margin-bottom:10px}
+  #tab-developer .ntpc-dev-field label span{font-weight:500;font-size:10px;padding:3px 7px;border-radius:30px;background:rgba(99,128,192,.20);color:#a9c4ed}
+  #tab-developer .ntpc-dev-exclusive label span{color:#edd6ff;background:rgba(165,122,251,.2)}
+  #tab-developer textarea{width:100%;resize:vertical;min-height:85px;box-sizing:border-box;padding:12px 13px;background:rgba(1,9,26,.90);border:1px solid rgba(96,140,194,.38);border-radius:12px;color:#f3f8ff;line-height:1.7;font-size:14px}
+  #tab-developer textarea:focus-visible{outline:2px solid #70cbff;outline-offset:1px}
+  #tab-developer .ntpc-dev-btn-primary,#tab-developer .ntpc-dev-btn-secondary{min-height:45px;border-radius:12px;padding:11px 19px;font-size:14px;font-weight:700;touch-action:manipulation}
+  #tab-developer .ntpc-dev-btn-primary{background:linear-gradient(105deg,#2962dc,#704dd6);color:white}
+  #tab-developer .ntpc-dev-btn-secondary{background:#172b48;color:#c7e5ff;border:1px solid #466c9e}
+  #tab-developer button:disabled{opacity:.55;cursor:wait}
+  @media(max-width:640px){#tab-developer .ntpc-dev-grid{grid-template-columns:minmax(0,1fr)}#tab-developer .ntpc-dev-hero{padding:20px}}
+</style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, query, where, orderBy, limit, writeBatch, runTransaction, documentId, startAfter } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -2404,6 +2422,38 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
     @media(max-width:640px){#user-badge-name{max-width:115px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
 
 </style>
+
+<style id="ntpc-v21-avatar-crop-style">
+/* V2.1：頭像裁切採用位置參數；圓框特效仍留在外層，不被裁切容器遮住。 */
+.ntpc-avatar-chip{position:relative;}
+.ntpc-avatar-chip>.ntpc-avatar-image-window{
+  position:absolute;inset:0;z-index:1;display:block;border-radius:50%;overflow:hidden;pointer-events:none;
+}
+.ntpc-avatar-chip>.ntpc-avatar-image-window>img{
+  display:block;position:absolute!important;left:0;top:0;width:100%;height:100%;
+  max-width:none!important;max-height:none!important;object-fit:cover;
+  object-position:center;border-radius:0!important;transform:none!important;
+}
+.ntpc-avatar-chip>.ntpc-avatar-image-window>img[hidden]{display:none!important}
+.ntpc-avatar-chip>i{position:relative;z-index:1}
+.ntpc-avatar-crop-editor{display:grid;grid-template-columns:minmax(0,272px) minmax(190px,1fr);gap:20px;align-items:center;padding:17px;border:1px solid rgba(70,159,224,.28);background:linear-gradient(140deg,#081429,#0b1b36);border-radius:18px}
+.ntpc-avatar-crop-stage{position:relative;aspect-ratio:1;width:min(100%,272px);margin:0 auto;overflow:hidden;background:repeating-conic-gradient(#172944 0 25%,#101e35 0 50%) 50%/20px 20px;border-radius:16px;touch-action:none;cursor:grab;user-select:none;border:1px solid rgba(98,169,225,.48);box-shadow:0 14px 36px rgba(0,5,19,.33)}
+.ntpc-avatar-crop-stage.dragging{cursor:grabbing}
+.ntpc-avatar-crop-photo{position:absolute;left:0;top:0;width:100%;height:100%;max-width:none;max-height:none;object-fit:cover;pointer-events:none;-webkit-user-drag:none;user-select:none}
+.ntpc-avatar-crop-circle{position:absolute;inset:0;border-radius:50%;border:2px solid #a5efff;box-shadow:0 0 0 150px rgba(1,8,24,.63),inset 0 0 0 1px rgba(2,6,23,.65),0 0 15px #67e8f988;pointer-events:none}
+.ntpc-avatar-crop-circle::after{content:'';position:absolute;inset:12% 12%;border:1px dashed rgba(219,246,255,.44);border-radius:50%;pointer-events:none}
+.ntpc-avatar-crop-center{position:absolute;left:50%;top:50%;width:20px;height:20px;transform:translate(-50%,-50%);pointer-events:none;opacity:.66}
+.ntpc-avatar-crop-center::before,.ntpc-avatar-crop-center::after{content:'';position:absolute;background:#fff8;box-shadow:0 0 3px #000}
+.ntpc-avatar-crop-center::before{width:1px;height:20px;left:10px}.ntpc-avatar-crop-center::after{height:1px;width:20px;top:10px}
+.ntpc-avatar-crop-stage:focus-visible{outline:3px solid #67e8f9;outline-offset:4px}
+.ntpc-avatar-crop-tools{min-width:0;display:flex;flex-direction:column;gap:13px}
+.ntpc-avatar-crop-tools input[type=range]{width:100%;accent-color:#38bdf8;cursor:pointer}
+.ntpc-avatar-crop-result{display:flex;align-items:center;gap:12px;border:1px solid rgba(90,138,191,.24);border-radius:14px;background:rgba(2,10,28,.62);padding:12px}
+.ntpc-avatar-crop-result .ntpc-avatar-chip{width:76px;height:76px;flex:0 0 76px;font-size:26px}
+.ntpc-avatar-crop-status{min-height:18px;line-height:1.5}
+@media(max-width:620px){.ntpc-avatar-crop-editor{grid-template-columns:minmax(0,1fr);gap:12px;padding:12px}.ntpc-avatar-crop-stage{width:min(100%,258px)}.ntpc-avatar-crop-tools{gap:10px}}
+@media(prefers-reduced-motion:reduce){.ntpc-avatar-crop-stage,.ntpc-avatar-crop-photo{transition:none!important}}
+</style>
 <style id="ntpc-v164-account-role-lock-style">.ntpc-mandatory-admin{opacity:0.85!important;cursor:not-allowed}.ntpc-mandatory-admin input{accent-color:#8b5cf6}</style>
 <style id="ntpc-v2-public-profile-style">
 /* V2.1｜可點擊公開個人檔案：維持原站深色靛藍／青藍色系 */
@@ -2558,7 +2608,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
 .ntpc-border-silver{--start:#3d83c5;--mid:#b0d9fb;--end:#5168b7}
 .ntpc-border-emerald{--start:#158a82;--mid:#79d9b6;--end:#3a77ac}
 .ntpc-border-amethyst{--start:#6866bb;--mid:#c0a5ed;--end:#677ba9}
-/* DSUENSX 星月極光：多層炫彩環、星塵衛星環、冰藍和金色脈衝。只在原有 aurora 款啟用。 */
+/* 專屬版星月極光：多層炫彩環、星塵衛星環、冰藍和金色脈衝。只在 aurora 款啟用。 */
 .ntpc-avatar-chip[data-ntpc-frame="aurora"]{
   --ntpc-ring-a:#ffda78;--ntpc-ring-b:#9cf4ff;--ntpc-ring-c:#9876ff;
   box-shadow:0 0 0 2px rgba(183,236,255,.52),0 0 10px rgba(107,223,255,.85),0 0 24px rgba(88,128,253,.66),0 0 42px rgba(249,189,94,.30)!important;
@@ -3330,6 +3380,38 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
         </section>
 
         <!-- Update Log Tab：系統版本更新紀錄 -->
+        <!-- V2.1：開發者專區只有兩個指定登入帳號在導覽中可見；儲存仍需後端安全規則驗證。 -->
+        <section id="tab-developer" class="hidden space-y-6">
+          <div class="ntpc-dev-hero rounded-3xl border border-indigo-500/30 p-6 sm:p-8">
+            <div class="flex flex-wrap items-center justify-between gap-4"><div><div class="text-[11px] font-bold tracking-[.24em] text-indigo-300 mb-2">NTPC RP · V2.1</div><h2 class="text-2xl font-black text-white"><i class="fa-solid fa-code text-indigo-300 mr-2"></i>開發者專區</h2><p class="text-slate-300 text-sm mt-2">指定各種頭像框及個人檔案外框的使用名單；不必修改 HTML 即可調整授權。</p></div><span class="px-3 py-2 bg-indigo-500/15 border border-indigo-400/35 text-indigo-200 rounded-full text-xs font-semibold"><i class="fa-solid fa-lock mr-1"></i>開發者限定</span></div>
+          </div>
+          <div class="ntpc-dev-panel rounded-2xl p-5 sm:p-6 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-hat-wizard text-cyan-300 mr-2"></i>動態頭像框授權</h3><p class="text-xs text-slate-400 mt-1">各款獨立設定可使用的帳號，填入多個帳號時請換行或以逗號分隔。</p></div></div>
+            <label class="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/60 p-3 text-sm text-slate-200"><input id="ntpc-dev-manage-avatar" type="checkbox" checked class="w-4 h-4"><span>管理中心成員預設可使用三款低調頭像框</span></label>
+            <div class="ntpc-dev-grid">
+              <div class="ntpc-dev-field"><label for="ntpc-dev-avatar-glacier">冰藍巡光 <span>低調款</span></label><textarea id="ntpc-dev-avatar-glacier" rows="3" placeholder="額外授權帳號，每行一個"></textarea></div>
+              <div class="ntpc-dev-field"><label for="ntpc-dev-avatar-jade">青綠微光 <span>低調款</span></label><textarea id="ntpc-dev-avatar-jade" rows="3" placeholder="額外授權帳號，每行一個"></textarea></div>
+              <div class="ntpc-dev-field"><label for="ntpc-dev-avatar-violet">靛紫光環 <span>低調款</span></label><textarea id="ntpc-dev-avatar-violet" rows="3" placeholder="額外授權帳號，每行一個"></textarea></div>
+              <div class="ntpc-dev-field ntpc-dev-exclusive"><label for="ntpc-dev-avatar-aurora">星月極光・璀璨版 <span>專屬版</span></label><textarea id="ntpc-dev-avatar-aurora" rows="4" placeholder="獲得專屬頭像框的帳號"></textarea></div>
+            </div>
+          </div>
+          <div class="ntpc-dev-panel rounded-2xl p-5 sm:p-6 space-y-4">
+            <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-id-card-clip text-violet-300 mr-2"></i>個人檔案外框授權</h3>
+            <label class="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/60 p-3 text-sm text-slate-200"><input id="ntpc-dev-manage-border" type="checkbox" checked class="w-4 h-4"><span>管理中心成員預設可使用三款低調漸層外框</span></label>
+            <div class="ntpc-dev-grid">
+              <div class="ntpc-dev-field"><label for="ntpc-dev-border-silver">星際銀藍 <span>低調款</span></label><textarea id="ntpc-dev-border-silver" rows="3" placeholder="額外授權帳號，每行一個"></textarea></div>
+              <div class="ntpc-dev-field"><label for="ntpc-dev-border-emerald">翡翠守護 <span>低調款</span></label><textarea id="ntpc-dev-border-emerald" rows="3" placeholder="額外授權帳號，每行一個"></textarea></div>
+              <div class="ntpc-dev-field"><label for="ntpc-dev-border-amethyst">暮光紫晶 <span>低調款</span></label><textarea id="ntpc-dev-border-amethyst" rows="3" placeholder="額外授權帳號，每行一個"></textarea></div>
+              <div class="ntpc-dev-field ntpc-dev-exclusive"><label for="ntpc-dev-border-creator">烈焰・冰晶 <span>專屬版</span></label><textarea id="ntpc-dev-border-creator" rows="4" placeholder="獲得專屬外框的帳號"></textarea></div>
+            </div>
+            <p class="text-xs text-slate-400">授權只允許使用外觀，不會授予管理中心、開發者或其他系統權限。移除授權後，使用者原本選的外觀將在權限同步後停止顯示。</p>
+          </div>
+          <div class="ntpc-dev-panel rounded-2xl p-5 sm:p-6 space-y-4">
+            <div class="flex flex-wrap gap-3"><button type="button" id="ntpc-dev-reload" class="ntpc-dev-btn-secondary"><i class="fa-solid fa-rotate mr-2"></i>重新讀取授權</button><button type="button" id="ntpc-dev-save" class="ntpc-dev-btn-primary"><i class="fa-solid fa-floppy-disk mr-2"></i>儲存所有授權</button></div>
+            <p id="ntpc-dev-policy-status" class="text-xs text-cyan-200" aria-live="polite">尚未讀取雲端授權設定。</p>
+            <p class="text-xs text-amber-200/85">安全提醒：導覽隱藏及網頁帳號檢查只是介面限制；正式站必須在 Firestore Security Rules 或可信任的後端驗證寫入權限，否則不能視為安全的開發者專用功能。</p>
+          </div>
+        </section>
         <section id="tab-update-log" class="hidden space-y-8">
             <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-7">
@@ -3350,14 +3432,15 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 <div id="dynamic-update-log" class="space-y-4"></div>
                 <div class="space-y-4">
                     <article id="ntpc-update-summary-latest" class="rounded-2xl border border-cyan-500/25 bg-slate-900/70 p-5">
-                      <div class="flex items-center justify-between gap-3 mb-3"><div><h3 class="text-lg font-bold text-white">V2.1｜個人檔案視覺升級</h3>
-                      <p class="text-xs text-cyan-300 mt-1">本次：全站頭像框同步、Jerry 共享、管理中心分項重製、便利貼圓點訊息框</p></div>
+                      <div class="flex items-center justify-between gap-3 mb-3"><div><h3 class="text-lg font-bold text-white">V2.1｜個人檔案與外觀授權整合</h3>
+                      <p class="text-xs text-cyan-300 mt-1">本次：頭像圖片可拖曳裁切、縮放與圓形範圍預覽，儲存後全站共用</p></div>
                       <span id="ntpc-bundled-update-badge" class="text-xs font-semibold text-emerald-300">內建最新版本</span></div>
                       <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
-                        <li>個人中心分為個人檔案及帳號資訊，保留原本頭像、背景、社群媒體及帳密申請。</li>
-                        <li>DSUENSX 與 Jerry 共用星月極光・璀璨版頭像框及烈焰・冰晶專屬外框；DSUENSX 的動態星塵、月亮及彩環同步顯示於列表、頁首與公開名片。既有創作者標籤授權不變。</li>
+                        <li>個人中心分為個人檔案及帳號資訊；頭像連結可拖曳裁切範圍、用圓圈模板預覽，並全站套用。</li>
+                        <li>星月極光・璀璨版頭像框及烈焰・冰晶外框改為開發者授權的專屬款；動態星塵、月亮及彩環同步顯示於列表、頁首與公開名片，既有創作者標籤授權不變。</li>
+                        <li>「更多功能」新增僅指定開發者可見的開發者專區，能分別授權專屬款及三款低調頭像框、外框；授權調整同時寫入管理 LOG。</li>
                         <li>管理中心所有所屬成員在公開檔案右上角可單獨重製自我介紹、社群連結、頭像、背景；每次操作與管理 LOG 原子寫入。</li>
-                        <li>便利貼採圓點＋短線＋訊息框樣式，可自訂圖示及 100 字文字；修正自介 50 字限制。</li>
+                        <li>便利貼採圓點＋短線＋訊息框樣式，可自訂圖示，訊息最多 50 字；自我介紹最多 100 字。</li>
                         <li>管理中心外框採三款靜態漸層（銀藍、翡翠、紫晶），不加內部光效；既有設定與歷史更新紀錄保留。</li>
                       </ul>
                     </article>
@@ -3872,40 +3955,59 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                     </div>
                     <div class="rounded-xl border border-blue-500/20 bg-slate-950 p-4 space-y-2">
                         <label for="ntpc-my-avatar-input" class="block text-sm font-semibold text-slate-200">自行設定頭像圖片網址</label>
-                        <input type="url" id="ntpc-my-avatar-input" maxlength="2048" placeholder="https://i.postimg.cc/.../avatar.png" autocomplete="url" spellcheck="false" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-3 text-sm text-white" oninput="ntpcPreviewPhotoInput('ntpc-my-avatar-input','ntpc-profile-avatar')">
-                        <p class="text-xs text-slate-400">請貼入可公開存取的 HTTPS 圖片直連（如 Postimages 的「圖片直接連結」），不需要 Discord ID 或 BOT。清空後儲存即可移除頭像。</p>
+                        <input type="url" id="ntpc-my-avatar-input" maxlength="2048" placeholder="https://i.postimg.cc/.../avatar.png" autocomplete="url" spellcheck="false" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-3 text-sm text-white" oninput="ntpcAvatarCropUrlInput()">
+                        <p class="text-xs text-slate-400">請貼入可公開存取的 HTTPS 圖片直連（如 Postimages 的「圖片直接連結」）；貼上後可拖曳照片、調整縮放，再按儲存。清空網址可移除頭像。</p>
+                        <section id="ntpc-avatar-crop-editor" class="ntpc-avatar-crop-editor hidden" aria-label="調整圓形頭像裁切範圍">
+                          <div class="space-y-2">
+                            <div id="ntpc-avatar-crop-stage" class="ntpc-avatar-crop-stage" tabindex="0" role="group" aria-label="拖曳調整頭像位置；鍵盤方向鍵可微調">
+                              <img id="ntpc-avatar-crop-photo" class="ntpc-avatar-crop-photo" alt="待裁切的原始頭像圖片" draggable="false" referrerpolicy="no-referrer">
+                              <span class="ntpc-avatar-crop-circle" aria-hidden="true"></span><span class="ntpc-avatar-crop-center" aria-hidden="true"></span>
+                            </div>
+                            <p class="text-center text-[11px] text-sky-200/80"><i class="fa-solid fa-hand-pointer mr-1"></i>拖曳照片，讓想顯示的部分落在圓圈裡</p>
+                          </div>
+                          <div class="ntpc-avatar-crop-tools">
+                            <div class="flex items-center justify-between gap-2"><h4 class="font-bold text-sky-200 text-sm"><i class="fa-solid fa-crop-simple mr-1"></i>圓形頭像裁切</h4><span id="ntpc-avatar-crop-zoom-label" class="text-xs text-sky-300 tabular-nums">100%</span></div>
+                            <label for="ntpc-avatar-crop-zoom" class="block text-xs text-slate-300">放大／縮小</label>
+                            <input type="range" id="ntpc-avatar-crop-zoom" min="1" max="4" step="0.05" value="1" oninput="ntpcAvatarCropZoomChanged(this.value)" aria-label="頭像放大倍率">
+                            <div class="flex justify-between text-[11px] text-slate-500"><span>原始比例</span><span>放大 4 倍</span></div>
+                            <div class="ntpc-avatar-crop-result"><span id="ntpc-avatar-crop-result" class="ntpc-avatar-chip"><img alt="實際圓形頭像預覽" hidden><i class="fa-solid fa-user"></i></span><div class="min-w-0"><div class="text-xs font-semibold text-slate-200">實際顯示範圍</div><p class="text-[11px] text-slate-400 mt-1">全站大小頭像共用此位置</p></div></div>
+                            <button type="button" onclick="ntpcAvatarCropReset()" class="self-start bg-slate-800 border border-slate-600 hover:bg-slate-700 rounded-xl px-3 py-2 text-xs font-semibold"><i class="fa-solid fa-arrows-to-circle mr-1"></i>還原置中</button>
+                            <p id="ntpc-avatar-crop-status" class="ntpc-avatar-crop-status text-xs text-slate-400" aria-live="polite">載入圖片後即可調整</p>
+                          </div>
+                        </section>
+                        <p id="ntpc-avatar-crop-load-state" class="text-xs text-slate-400" aria-live="polite">尚未選擇圖片</p>
                         <button type="button" id="ntpc-my-avatar-save" onclick="ntpcSaveOwnPhotoLink()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm"><i class="fa-solid fa-floppy-disk mr-1"></i>儲存我的頭像</button>
                     </div>
 
 
                     <section id="ntpc-v21-my-frame-panel" class="ntpc-v21-frame-card hidden space-y-3">
-                      <div class="font-semibold text-cyan-200"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>管理中心｜動態頭像框</div>
+                      <div class="font-semibold text-cyan-200"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>動態頭像框</div>
                       <div class="flex gap-3 items-center"><span id="ntpc-v21-my-frame-preview" class="ntpc-avatar-chip ntpc-avatar-lg"><img alt="頭像框預覽" hidden><i class="fa-solid fa-user"></i></span>
-                      <div class="flex-1 min-w-0"><label class="block text-xs text-slate-400 mb-1" for="ntpc-v21-my-frame">選擇頭像框</label><select id="ntpc-v21-my-frame" class="ntpc-v2-input" onchange="ntpcV21PreviewFrame()"><option value="none">不使用頭像框</option><option value="glacier">冰藍巡光</option><option value="jade">青綠微光</option><option value="violet">靛紫光環</option><option value="aurora">星月極光・璀璨版（DSUENSX／Jerry）</option></select></div></div>
-                      <p class="text-xs text-slate-400">所有顯示你頭像的位置都會同步使用同款光環。管理中心成員可使用一般款；星月極光開放 DSUENSX、Jerry 共同使用。</p>
+                      <div class="flex-1 min-w-0"><label class="block text-xs text-slate-400 mb-1" for="ntpc-v21-my-frame">選擇頭像框</label><select id="ntpc-v21-my-frame" class="ntpc-v2-input" onchange="ntpcV21PreviewFrame()"><option value="none">不使用頭像框</option><option value="glacier">冰藍巡光</option><option value="jade">青綠微光</option><option value="violet">靛紫光環</option><option value="aurora">星月極光・璀璨版｜專屬版</option></select></div></div>
+                      <p class="text-xs text-slate-400">所有顯示你頭像的位置都會同步使用同款光環。專屬版及低調款式的使用資格，由開發者專區統一管理。</p>
                       <button type="button" onclick="ntpcV21SaveMyFrame()" class="bg-indigo-700 hover:bg-indigo-600 px-4 py-2.5 rounded-xl text-sm font-semibold">儲存頭像框</button>
                     </section>
 
                     <section id="ntpc-v21-my-border-panel" class="ntpc-v21-frame-card hidden space-y-4" aria-label="個人檔案外框">
                       <div><h3 class="font-bold text-cyan-200"><i class="fa-solid fa-wand-magic-sparkles mr-2" aria-hidden="true"></i>個人檔案外框</h3>
-                      <p class="text-xs text-slate-400 mt-1">管理中心提供三款低調的靜態漸層外框（預設星際銀藍），只有卡片外緣有漸層色、內部不加特效；也可以自行關閉。烈焰・冰晶款另開放 Jerry。</p></div>
+                      <p class="text-xs text-slate-400 mt-1">三款低調的靜態漸層外框只裝飾卡片外緣，內部不加特效；另有可授權的專屬版。使用資格由開發者專區統一管理。</p></div>
                       <div class="ntpc-v21-border-options" id="ntpc-v21-border-options" role="radiogroup" aria-label="選擇檔案外框">
                         <label class="ntpc-v21-border-choice"><input name="ntpc-v21-border-choice" type="radio" value="none" checked onchange="ntpcV21BorderChoiceChanged()"><span class="ntpc-v21-border-swatch ntpc-border-none"></span><span>不使用</span></label>
                         <label class="ntpc-v21-border-choice"><input name="ntpc-v21-border-choice" type="radio" value="silver" onchange="ntpcV21BorderChoiceChanged()"><span class="ntpc-v21-border-swatch ntpc-border-silver"></span><span>星際銀藍</span></label>
                         <label class="ntpc-v21-border-choice"><input name="ntpc-v21-border-choice" type="radio" value="emerald" onchange="ntpcV21BorderChoiceChanged()"><span class="ntpc-v21-border-swatch ntpc-border-emerald"></span><span>翡翠守護</span></label>
                         <label class="ntpc-v21-border-choice"><input name="ntpc-v21-border-choice" type="radio" value="amethyst" onchange="ntpcV21BorderChoiceChanged()"><span class="ntpc-v21-border-swatch ntpc-border-amethyst"></span><span>暮光紫晶</span></label>
-                        <label class="ntpc-v21-border-choice" id="ntpc-v21-creator-border-option"><input name="ntpc-v21-border-choice" type="radio" value="creator" onchange="ntpcV21BorderChoiceChanged()"><span class="ntpc-v21-border-swatch ntpc-border-creator"></span><span>烈焰・冰晶 <small id="ntpc-v21-creator-border-lock" class="ntpc-v21-locked-note"><i class="fa-solid fa-lock"></i> 創作者專屬</small></span></label>
+                        <label class="ntpc-v21-border-choice" id="ntpc-v21-creator-border-option"><input name="ntpc-v21-border-choice" type="radio" value="creator" onchange="ntpcV21BorderChoiceChanged()"><span class="ntpc-v21-border-swatch ntpc-border-creator"></span><span>烈焰・冰晶 <small id="ntpc-v21-creator-border-lock" class="ntpc-v21-locked-note"><i class="fa-solid fa-lock"></i> 專屬版</small></span></label>
                       </div>
                       <div id="ntpc-v21-border-status" class="text-xs text-slate-400" aria-live="polite">選擇款式後可先預覽，確認再儲存。</div>
                       <div class="flex flex-wrap gap-2"><button type="button" onclick="ntpcV21PreviewProfileBorder()" class="ntpc-v21-border-preview-btn"><i class="fa-solid fa-eye mr-1"></i>預覽檔案外框</button><button id="ntpc-v21-border-save" type="button" onclick="ntpcV21SaveProfileBorder()" class="ntpc-v21-border-save-btn"><i class="fa-solid fa-floppy-disk mr-1"></i>儲存外框設定</button></div>
                     </section>
                     <div class="rounded-2xl border border-cyan-500/20 bg-slate-950 p-4 sm:p-5 space-y-4" id="ntpc-v2-public-editor">
                       <div><h3 class="font-bold text-cyan-200"><i class="fa-solid fa-id-badge mr-2"></i>公開個人檔案</h3><p class="text-xs text-slate-400 mt-1">其他成員點擊你的帳號或頭像即可查看；背景與社群連結皆為選填。</p></div>
-                      <div><label for="ntpc-v2-bio" class="block text-sm mb-1 text-slate-300">自我介紹（最多 50 字）</label><textarea id="ntpc-v2-bio" class="ntpc-v2-input" rows="3" maxlength="50" placeholder="介紹一下自己…"></textarea><div id="ntpc-v2-bio-counter" class="text-xs text-right text-slate-400">0 / 50</div></div>
+                      <div><label for="ntpc-v2-bio" class="block text-sm mb-1 text-slate-300">自我介紹（最多 100 字）</label><textarea id="ntpc-v2-bio" class="ntpc-v2-input" rows="3" maxlength="100" placeholder="介紹一下自己…"></textarea><div id="ntpc-v2-bio-counter" class="text-xs text-right text-slate-400">0 / 100</div></div>
                       <!-- V2.1｜便利貼共用目前公開名片的儲存按鈕，沒有額外 Firebase 讀取。 -->
                       <section class="ntpc-v22-note-editor" aria-labelledby="ntpc-v22-note-editor-title">
                         <div class="flex flex-wrap items-center justify-between gap-3"><div><h4 id="ntpc-v22-note-editor-title" class="text-sm font-bold text-cyan-200"><i class="fa-solid fa-note-sticky mr-2"></i>個人便利貼</h4><p class="text-xs text-slate-400 mt-1">點開公開個人檔案時，在頭像旁以半透明對話泡泡顯示。</p></div><label class="ntpc-v22-note-toggle"><input id="ntpc-v22-note-enabled" type="checkbox" onchange="ntpcV22PreviewNote()"><span>顯示便利貼</span></label></div>
-                        <div class="grid grid-cols-1 sm:grid-cols-[140px_minmax(0,1fr)] gap-3"><div><label for="ntpc-v22-note-icon" class="block text-xs text-slate-300 mb-2">前方圖示</label><select id="ntpc-v22-note-icon" class="ntpc-v2-input" onchange="ntpcV22PreviewNote()"><option value="heart">❤️ 愛心</option><option value="moon">🌙 月亮</option><option value="star">⭐ 星星</option><option value="pin">📌 圖釘</option><option value="chat">💬 對話</option></select></div><div><label for="ntpc-v22-note-text" class="block text-xs text-slate-300 mb-2">訊息（最多 100 字）</label><textarea id="ntpc-v22-note-text" rows="3" maxlength="200" class="ntpc-v2-input" placeholder="最近有些重要事，先失蹤。" oninput="ntpcV22PreviewNote()"></textarea><p id="ntpc-v22-note-count" class="text-xs text-right text-slate-400 mt-1" aria-live="polite">0 / 100</p></div></div>
+                        <div class="grid grid-cols-1 sm:grid-cols-[140px_minmax(0,1fr)] gap-3"><div><label for="ntpc-v22-note-icon" class="block text-xs text-slate-300 mb-2">前方圖示</label><select id="ntpc-v22-note-icon" class="ntpc-v2-input" onchange="ntpcV22PreviewNote()"><option value="heart">❤️ 愛心</option><option value="moon">🌙 月亮</option><option value="star">⭐ 星星</option><option value="pin">📌 圖釘</option><option value="chat">💬 對話</option></select></div><div><label for="ntpc-v22-note-text" class="block text-xs text-slate-300 mb-2">訊息（最多 50 字）</label><textarea id="ntpc-v22-note-text" rows="3" maxlength="50" class="ntpc-v2-input" placeholder="最近有些重要事，先失蹤。" oninput="ntpcV22PreviewNote()"></textarea><p id="ntpc-v22-note-count" class="text-xs text-right text-slate-400 mt-1" aria-live="polite">0 / 50</p></div></div>
                         <div class="ntpc-v22-editor-preview"><div class="text-[11px] text-slate-400 mb-2">即時預覽（僅本機顯示，按下「儲存公開檔案」後才會同步）</div><div id="ntpc-v22-note-preview" class="ntpc-v22-note-bubble hidden"><span id="ntpc-v22-preview-icon" class="ntpc-v22-note-icon" aria-hidden="true">❤️</span><span id="ntpc-v22-preview-text" class="ntpc-v22-note-text"></span></div><p id="ntpc-v22-note-preview-empty" class="text-xs text-slate-500">便利貼目前隱藏</p></div>
                       </section>
                       <div><label for="ntpc-v2-background" class="block text-sm mb-1 text-slate-300">個人檔案背景圖片直連</label><input id="ntpc-v2-background" type="url" maxlength="2048" class="ntpc-v2-input" placeholder="https://i.postimg.cc/.../background.jpg"><p class="text-xs mt-1 text-slate-500">使用可公開存取的 HTTPS 圖片連結。清空後儲存可恢復預設背景。</p></div>
@@ -5916,8 +6018,8 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                     <p class="text-[11px] text-slate-400">可建立後由本人前往「我的資料」自行貼上圖片網址。不使用 Discord 自動同步。</p>
                 </div>
 
-                <div class="ntpc-v21-frame-card space-y-2"><label class="block text-xs font-semibold text-indigo-200" for="ntpc-v21-edit-frame">動態頭像框（限管理中心單位）</label>
-                  <select id="ntpc-v21-edit-frame" class="ntpc-v2-input"><option value="none">不使用</option><option value="glacier">冰藍巡光</option><option value="jade">青綠微光</option><option value="violet">靛紫光環</option><option value="aurora">星月極光・璀璨版（DSUENSX／Jerry）</option></select>
+                <div class="ntpc-v21-frame-card space-y-2"><label class="block text-xs font-semibold text-indigo-200" for="ntpc-v21-edit-frame">動態頭像框（依授權名單）</label>
+                  <select id="ntpc-v21-edit-frame" class="ntpc-v2-input"><option value="none">不使用</option><option value="glacier">冰藍巡光</option><option value="jade">青綠微光</option><option value="violet">靛紫光環</option><option value="aurora">星月極光・璀璨版｜專屬版</option></select>
                 </div>
                 <section class="ntpc-v21-frame-card space-y-3" id="ntpc-v21-moderate-public">
                   <div><h4 class="text-sm font-bold text-cyan-200"><i class="fa-solid fa-shield-heart mr-1"></i>公開檔案內容管理</h4>
@@ -6033,20 +6135,174 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
 
         // V2.1｜個人資料分頁 + 靜態公開檔案外框。此設定不影響原有動態頭像光環。
         const NTPC_V21_CREATORS=new Set(['dsuensx','tttwk4671']);
-        const NTPC_V21_SHARED_PREMIUM=new Set(['dsuensx','jerry']);
-        function ntpcV21IsPremium(account){return NTPC_V21_SHARED_PREMIUM.has(String(account||'').trim().toLowerCase());}
+        // V2.1｜開發者管理外觀授權：只讀取單一文件（無 listener）；每款頭像框／外框獨立授權。
+        // 開發者後台 UI 屬於便利功能；Firestore Rules 或受保護 API 必須在後端限制修改。
+        const NTPC_V21_POLICY_DOC='profileFramePermissions';
+        const NTPC_V21_INITIAL_PREMIUM=['dsuensx','tttwk4671','jerry','62316'];
+        const NTPC_V21_POLICY_GROUPS={
+            avatar:['glacier','jade','violet','aurora'],
+            border:['silver','emerald','amethyst','creator']
+        };
+        const NTPC_V21_SUBTLE_AVATAR=new Set(['glacier','jade','violet']);
+        const NTPC_V21_SUBTLE_BORDER=new Set(['silver','emerald','amethyst']);
+        function ntpcV21DefaultFramePolicy(){return {
+            avatar:{glacier:[],jade:[],violet:[],aurora:[...NTPC_V21_INITIAL_PREMIUM]},
+            border:{silver:[],emerald:[],amethyst:[],creator:[...NTPC_V21_INITIAL_PREMIUM]},
+            allowManagementAvatar:true,allowManagementBorder:true
+        };}
+        let ntpcV21FramePolicy=ntpcV21DefaultFramePolicy();
+        let ntpcV21FramePolicyLoaded=false,ntpcV21FramePolicyPending=null,ntpcV21FramePolicyFetchedAt=0;
+        const ntpcV21NormAccount=(value)=>String(value||'').trim().toLowerCase();
+        function ntpcV21IsDeveloper(account){return NTPC_V21_CREATORS.has(ntpcV21NormAccount(account));}
+        function ntpcV21IsManagementUnit(data){
+            const units=Array.isArray(data?.units)?data.units:(data?.unit?[data.unit]:[]);
+            return units.includes('admin')||data?.adminUnit===true;
+        }
+        function ntpcV21NormalizeFramePolicy(raw){
+            const defaults=ntpcV21DefaultFramePolicy(),src=raw&&typeof raw==='object'?raw:{};
+            const out={avatar:{},border:{},
+                allowManagementAvatar:typeof src.allowManagementAvatar==='boolean'?src.allowManagementAvatar:defaults.allowManagementAvatar,
+                allowManagementBorder:typeof src.allowManagementBorder==='boolean'?src.allowManagementBorder:defaults.allowManagementBorder};
+            for(const group of Object.keys(NTPC_V21_POLICY_GROUPS))for(const style of NTPC_V21_POLICY_GROUPS[group]){
+                const input=src[group]?.[style],items=Array.isArray(input)?input:defaults[group][style];
+                out[group][style]=[...new Set(items.map(ntpcV21NormAccount).filter(a=>/^[\p{L}\p{N}_.-]{1,80}$/u.test(a)))].slice(0,100);
+            }
+            return out;
+        }
+        function ntpcV21AllowedStyle(account,data,group,style){
+            const id=ntpcV21NormAccount(account);
+            if(!id||!NTPC_V21_POLICY_GROUPS[group]?.includes(style))return false;
+            const members=ntpcV21FramePolicy[group]?.[style]||[];
+            if(members.includes(id))return true;
+            const lowKey=group==='avatar'?NTPC_V21_SUBTLE_AVATAR.has(style):NTPC_V21_SUBTLE_BORDER.has(style);
+            const allowManagement=group==='avatar'?ntpcV21FramePolicy.allowManagementAvatar:ntpcV21FramePolicy.allowManagementBorder;
+            return lowKey&&allowManagement&&ntpcV21IsManagementUnit(data);
+        }
+        function ntpcV21HasAnyFrame(account,data){
+            return NTPC_V21_POLICY_GROUPS.avatar.some(style=>ntpcV21AllowedStyle(account,data,'avatar',style));
+        }
+        function ntpcV21HasAnyBorder(account,data){
+            return NTPC_V21_POLICY_GROUPS.border.some(style=>ntpcV21AllowedStyle(account,data,'border',style));
+        }
+        function ntpcV21IsPremium(account){
+            return ntpcV21AllowedStyle(account,null,'avatar','aurora');
+        }
+        function ntpcV21AfterPolicyUpdate(){
+            const ids=new Set([...document.querySelectorAll('[data-ntpc-avatar-account]')].map(el=>ntpcV21NormAccount(el.dataset.ntpcAvatarAccount)).filter(Boolean));
+            if(currentUser?.account)ids.add(ntpcV21NormAccount(currentUser.account));
+            for(const id of ids)ntpcV21PaintAllAvatarFrames(id);
+            if(currentUser){ntpcV21InitMyFrame();ntpcV21InitProfileBorderSettings(currentUser);}
+            const displayed=String(document.getElementById('ntpc-v2-modal-account')?.textContent||'').trim();
+            if(displayed&&!document.getElementById('ntpc-v2-profile-modal')?.classList.contains('hidden')){
+                const d=ntpcV2ProfileCache.get(displayed.toLowerCase())?.data||ntpcAvatarUserByAccount(displayed)||{account:displayed};
+                ntpcV21DecoratePublicProfile(displayed,d);
+                ntpcV21PaintAvatar(document.getElementById('ntpc-v2-modal-avatar'),displayed,d);
+            }
+        }
+        async function ntpcV21LoadFramePolicy(force=false){
+            if(!db||!fm)return false;
+            if(ntpcV21FramePolicyPending)return ntpcV21FramePolicyPending;
+            if(!force&&ntpcV21FramePolicyLoaded&&Date.now()-ntpcV21FramePolicyFetchedAt<300000)return true;
+            ntpcV21FramePolicyPending=(async()=>{
+                try{
+                    const snap=await fm.getDoc(fm.doc(db,'systemSettings',NTPC_V21_POLICY_DOC));
+                    ntpcV21FramePolicy=ntpcV21NormalizeFramePolicy(snap.exists()?snap.data():null);
+                    ntpcV21FramePolicyLoaded=true;ntpcV21FramePolicyFetchedAt=Date.now();
+                    ntpcV21AfterPolicyUpdate();return true;
+                }catch(err){
+                    console.warn('外觀授權設定未載入，沿用內建預設：',err?.message||err);
+                    const el=document.getElementById('ntpc-dev-policy-status');
+                    if(el)el.textContent='授權設定讀取失敗：'+String(err?.message||err)+'。目前顯示內建預設，不代表雲端資料已同步。';
+                    return false;
+                }finally{ntpcV21FramePolicyPending=null;}
+            })();
+            return ntpcV21FramePolicyPending;
+        }
+        function ntpcV21RefreshDevNav(){
+            const nav=document.getElementById('ntpc-v21-developer-nav');
+            if(nav)nav.classList.toggle('hidden',!ntpcV21IsDeveloper(currentUser?.account));
+        }
+        function ntpcV21RenderDevPolicy(){
+            if(!ntpcV21IsDeveloper(currentUser?.account))return;
+            for(const group of Object.keys(NTPC_V21_POLICY_GROUPS))for(const style of NTPC_V21_POLICY_GROUPS[group]){
+                const field=document.getElementById('ntpc-dev-'+group+'-'+style);
+                if(field)field.value=(ntpcV21FramePolicy[group]?.[style]||[]).join('\n');
+            }
+            const a=document.getElementById('ntpc-dev-manage-avatar'),b=document.getElementById('ntpc-dev-manage-border');
+            if(a)a.checked=!!ntpcV21FramePolicy.allowManagementAvatar;
+            if(b)b.checked=!!ntpcV21FramePolicy.allowManagementBorder;
+            const status=document.getElementById('ntpc-dev-policy-status');
+            if(status)status.textContent=(ntpcV21FramePolicyLoaded?'已讀取雲端授權':'目前顯示內建預設授權')+'，最後更新：'+(ntpcV21FramePolicyFetchedAt?new Date(ntpcV21FramePolicyFetchedAt).toLocaleString('zh-TW'):'尚未同步')+'。';
+        }
+        async function ntpcV21OpenDeveloperPanel(){
+            if(!ntpcV21IsDeveloper(currentUser?.account))return;
+            const ok=await ntpcV21LoadFramePolicy();
+            ntpcV21RenderDevPolicy();
+            if(!ok)document.getElementById('ntpc-dev-policy-status').textContent='無法讀取雲端設定，暫用內建預設。請檢查 Firestore 權限後重新讀取。';
+        }
+        function ntpcV21ReadDevPolicyForm(){
+            const config=ntpcV21DefaultFramePolicy();
+            for(const group of Object.keys(NTPC_V21_POLICY_GROUPS))for(const style of NTPC_V21_POLICY_GROUPS[group]){
+                const field=document.getElementById('ntpc-dev-'+group+'-'+style);
+                if(!field)throw new Error('找不到「'+group+'/'+style+'」欄位');
+                const raw=String(field.value||'').split(/[\s,，、;；]+/).filter(Boolean).map(ntpcV21NormAccount);
+                if(raw.length>100)throw new Error('每款外觀最多設定 100 個帳號');
+                if(raw.some(id=>!/^[\p{L}\p{N}_.-]{1,80}$/u.test(id)))throw new Error('帳號格式錯誤：請使用 1～80 字之文字、數字、底線、點或連字號');
+                config[group][style]=[...new Set(raw)];
+            }
+            config.allowManagementAvatar=!!document.getElementById('ntpc-dev-manage-avatar')?.checked;
+            config.allowManagementBorder=!!document.getElementById('ntpc-dev-manage-border')?.checked;
+            return config;
+        }
+        async function ntpcV21SaveDevPolicy(){
+            if(!ntpcV21IsDeveloper(currentUser?.account)||!fm||!db){showToast('只有指定開發者可更改外觀授權','warning');return;}
+            if(!ntpcV21FramePolicyLoaded){showToast('請先成功讀取雲端設定，以免覆蓋既有授權','warning');return;}
+            const btn=document.getElementById('ntpc-dev-save');
+            if(btn?.disabled)return;
+            let next;
+            try{next=ntpcV21ReadDevPolicyForm();}catch(e){showToast(e.message,'warning','名單格式錯誤');return;}
+            if(!(await showConfirm('確定更新所有專屬與低調外觀的使用帳號名單？\n這會立即影響其他使用者可使用的頭像框、檔案外框，並寫入管理 LOG。','開發者｜儲存外觀授權','確認更新')))return;
+            if(!ntpcV21IsDeveloper(currentUser?.account))return;
+            if(btn)btn.disabled=true;
+            try{
+                const now=Date.now(),operator=String(currentUser.account||'');
+                const batch=fm.writeBatch(db);
+                batch.set(fm.doc(db,'systemSettings',NTPC_V21_POLICY_DOC),{...next,updatedAt:now,updatedBy:operator},{merge:false});
+                const id='LOG-'+now+'-'+Math.random().toString(36).slice(2,8);
+                const log={id,action:'開發者更新頭像框及檔案外框授權',operation:'edit',operator:`${currentUser.name||operator} (${operator})`,target:'systemSettings/'+NTPC_V21_POLICY_DOC,
+                    detail:'更新授權帳號名單及管理中心低調款預設權限（各款授權數：'+Object.entries({...Object.fromEntries(Object.entries(next.avatar).map(([k,v])=>['頭像-'+k,v])),...Object.fromEntries(Object.entries(next.border).map(([k,v])=>['外框-'+k,v]))}).map(([k,v])=>k+':'+v.length).join('、')+'）',
+                    time:new Date(now).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour12:false}),timestamp:now};
+                batch.set(fm.doc(db,'adminLogs',id),log);
+                await batch.commit();
+                ntpcV21FramePolicy=ntpcV21NormalizeFramePolicy(next);ntpcV21FramePolicyLoaded=true;ntpcV21FramePolicyFetchedAt=now;
+                if(Array.isArray(appData.adminLogs))appData.adminLogs.unshift(log);
+                ntpcV21AfterPolicyUpdate();ntpcV21RenderDevPolicy();
+                if(typeof renderAdminLogs==='function')renderAdminLogs();
+                showToast('授權名單已同步並記錄管理 LOG','success','儲存完成');
+            }catch(e){showToast('儲存授權失敗：'+String(e?.message||e)+'。請檢查後端規則對設定與管理 LOG 的權限。','error','儲存失敗');}
+            finally{if(btn)btn.disabled=false;}
+        }
+        document.addEventListener('DOMContentLoaded',()=>{
+            document.getElementById('ntpc-dev-reload')?.addEventListener('click',async()=>{
+                if(!ntpcV21IsDeveloper(currentUser?.account))return;
+                const ok=await ntpcV21LoadFramePolicy(true);
+                if(ok)ntpcV21RenderDevPolicy();
+                else showToast('重新讀取失敗，請檢查雲端權限','warning');
+            });
+            document.getElementById('ntpc-dev-save')?.addEventListener('click',ntpcV21SaveDevPolicy);
+            ntpcV21RefreshDevNav();
+        });
         const NTPC_V21_PROFILE_BORDER_CHOICES=['none','silver','emerald','amethyst','creator'];
         let ntpcV21MyActiveTab='personal';
         function ntpcV21IsCreator(account){return NTPC_V21_CREATORS.has(String(account||'').trim().toLowerCase());}
         function ntpcV21CanUseProfileBorder(account,data){
-            return ntpcV21IsCreator(account)||ntpcV21Eligible(account,data);
+            return ntpcV21HasAnyBorder(account,data);
         }
         function ntpcV21AllowedProfileBorder(account,data,choice){
             const id=String(account||'').trim().toLowerCase();
             const value=String(choice||'none');
             if(!NTPC_V21_PROFILE_BORDER_CHOICES.includes(value))return 'none';
-            if(value==='creator')return (ntpcV21IsCreator(id)||ntpcV21IsPremium(id))?value:'none';
-            if(value!=='none'&&!ntpcV21CanUseProfileBorder(id,data))return 'none';
+            if(value!=='none'&&!ntpcV21AllowedStyle(id,data,'border',value))return 'none';
             return value;
         }
         function ntpcV21SetMyTab(tab){
@@ -6083,7 +6339,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
         function ntpcV23EffectiveProfileBorder(account,data){
             const saved=data?.profileBorderStyle;
             const hasChoice=typeof saved==='string'&&saved.trim().length>0;
-            const management=ntpcV21Eligible(account,data)&&!ntpcV21IsCreator(account);
+            const management=ntpcV21IsManagementUnit(data)&&ntpcV21AllowedStyle(account,data,'border','silver');
             // 未設定過外框的管理中心人員預設銀藍漸層；曾選擇「不使用」者保持關閉。
             return ntpcV21AllowedProfileBorder(account,data,hasChoice?saved:(management?'silver':'none'));
         }
@@ -6092,7 +6348,10 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
             const id=String(currentUser.account||''),eligible=ntpcV21CanUseProfileBorder(id,currentUser);
             document.getElementById('ntpc-v21-my-border-panel')?.classList.toggle('hidden',!eligible);
             if(!eligible)return;
-            const creator=ntpcV21IsCreator(id)||ntpcV21IsPremium(id);
+            const creator=ntpcV21AllowedStyle(id,currentUser,'border','creator');
+            for(const radio of document.querySelectorAll('input[name="ntpc-v21-border-choice"]')){
+                if(radio.value!=='none')radio.disabled=!ntpcV21AllowedStyle(id,currentUser,'border',radio.value);
+            }
             const opt=document.getElementById('ntpc-v21-creator-border-option');
             const radio=opt?.querySelector('input');
             if(radio)radio.disabled=!creator;
@@ -6141,13 +6400,13 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
         function ntpcV21Eligible(account,data){
             const key=String(account||'').trim().toLowerCase();
             const units=Array.isArray(data?.units)?data.units:(data?.unit?[data.unit]:[]);
-            return ntpcV21IsPremium(key)||units.includes('admin')||data?.adminUnit===true;
+            return ntpcV21HasAnyFrame(key,{...data,units});
         }
         function ntpcV21FrameStyle(account,data){
             const key=String(account||'').trim().toLowerCase();
             const value=String(data?.frameStyle||'none');
             if(!NTPC_V21_FRAME_CHOICES.includes(value)||!ntpcV21Eligible(account,data))return 'none';
-            if(value==='aurora'&&!ntpcV21IsPremium(key))return 'none';
+            if(value!=='none'&&!ntpcV21AllowedStyle(key,data,'avatar',value))return 'none';
             return value;
         }
         function ntpcV21PaintAvatar(host,account,data){
@@ -6184,11 +6443,12 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
         }
         function ntpcV21RenderFrameOptions(select,account,units){
             if(!select)return;
-            const eligible=ntpcV21Eligible(account,{units});
+            const eligible=ntpcV21Eligible(account,{units,adminUnit:false});
             select.closest('#ntpc-v21-my-frame-panel')?.classList.toggle('hidden',!eligible);
             select.disabled=!eligible;
             for(const opt of select.options){
-                if(opt.value==='aurora'){opt.hidden=!ntpcV21IsPremium(account);opt.disabled=!ntpcV21IsPremium(account);}
+                const allowed=opt.value==='none'||ntpcV21AllowedStyle(account,{units},'avatar',opt.value);
+                opt.hidden=!allowed;opt.disabled=!allowed;
             }
         }
         function ntpcV21InitMyFrame(){
@@ -6203,14 +6463,14 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
             if(!currentUser)return;
             const select=document.getElementById('ntpc-v21-my-frame'),host=document.getElementById('ntpc-v21-my-frame-preview');
             if(!select||!host)return;
-            ntpcSetProfileAvatarElement(host,ntpcAvatarValue(currentUser));
+            ntpcSetProfileAvatarElement(host,ntpcAvatarValue(currentUser),currentUser.avatarCrop);
             ntpcV21PaintAvatar(host,currentUser.account,{...currentUser,frameStyle:select.value});
         }
         async function ntpcV21SaveMyFrame(){
             if(!currentUser||!db||!fm)return;
             const id=String(currentUser.account||''),selected=document.getElementById('ntpc-v21-my-frame')?.value||'none';
-            if(!ntpcV21Eligible(id,currentUser)){showToast('僅管理中心成員可設定動態頭像框','warning');return;}
-            if(!NTPC_V21_FRAME_CHOICES.includes(selected)||(selected==='aurora'&&!ntpcV21IsPremium(id))){
+            if(!ntpcV21Eligible(id,currentUser)){showToast('目前帳號尚未取得動態頭像框使用權限','warning');return;}
+            if(!NTPC_V21_FRAME_CHOICES.includes(selected)||(selected!=='none'&&!ntpcV21AllowedStyle(id,currentUser,'avatar',selected))){
                 showToast('這款頭像框不適用目前帳號','warning');return;
             }
             try{
@@ -6254,10 +6514,148 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
             if(t&&!safe){showToast('請填寫公開 HTTPS 圖片直連，長度不可超過 2048 字元；或留空清除頭像。','warning','圖片網址格式不正確');return null;}
             return safe;
         }
-        function ntpcSetProfileAvatarElement(host,value){
+        // V2.1｜圓形頭像範圍自訂：只保存原圖連結與裁切參數，不把外部圖片繪入 canvas／上傳到資料庫。
+        // x/y = 原始圖片的焦點（0-1）；zoom = 封面縮放倍率；ratio = 原圖寬高比。
+        function ntpcAvatarCropNormalize(raw){
+            if(!raw||typeof raw!=='object')return null;
+            const x=Number(raw.x),y=Number(raw.y),zoom=Number(raw.zoom),ratio=Number(raw.ratio);
+            if(![x,y,zoom,ratio].every(Number.isFinite)||ratio<.05||ratio>20||zoom<1||zoom>4.01)return null;
+            return {x:Math.max(0,Math.min(1,x)),y:Math.max(0,Math.min(1,y)),zoom:Math.min(4,Math.max(1,zoom)),ratio};
+        }
+        function ntpcAvatarCropGeometry(value){
+            const c=ntpcAvatarCropNormalize(value);if(!c)return null;
+            const w=Math.max(1,c.ratio)*c.zoom,h=Math.max(1,1/c.ratio)*c.zoom;
+            const lowX=.5/w,lowY=.5/h;
+            const x=Math.max(lowX,Math.min(1-lowX,c.x)),y=Math.max(lowY,Math.min(1-lowY,c.y));
+            return {x,y,zoom:c.zoom,ratio:c.ratio,width:w*100,height:h*100,left:50-w*100*x,top:50-h*100*y};
+        }
+        function ntpcAvatarCropSetImageGeometry(img,crop){
+            if(!img)return;
+            const g=ntpcAvatarCropGeometry(crop);
+            if(g){
+                img.style.width=g.width+'%';img.style.height=g.height+'%';
+                img.style.left=g.left+'%';img.style.top=g.top+'%';img.style.objectFit='fill';
+                img.dataset.ntpcCropped='1';
+            }else{
+                img.style.width='100%';img.style.height='100%';img.style.left='0%';img.style.top='0%';
+                img.style.objectFit='cover';delete img.dataset.ntpcCropped;
+            }
+        }
+        function ntpcAvatarCropForAccount(account){
+            const id=String(account||'').trim().toLowerCase();if(!id)return null;
+            if(String(currentUser?.account||'').toLowerCase()===id)return ntpcAvatarCropNormalize(currentUser.avatarCrop);
+            const u=ntpcAvatarUserByAccount(account);
+            if(u&&Object.prototype.hasOwnProperty.call(u,'avatarCrop'))return ntpcAvatarCropNormalize(u.avatarCrop);
+            const cached=ntpcAvatarCache.get(account)||ntpcAvatarCache.get(id);
+            if(cached&&Object.prototype.hasOwnProperty.call(cached,'avatarCrop'))return ntpcAvatarCropNormalize(cached.avatarCrop);
+            return ntpcAvatarCropNormalize(ntpcV2ProfileCache?.get(id)?.data?.avatarCrop);
+        }
+        function ntpcAvatarCropForHost(host){
+            const id=String(host?.dataset?.ntpcAvatarAccount||'').trim();
+            if(id)return ntpcAvatarCropForAccount(id);
+            if(['ntpc-header-avatar','ntpc-report-author-avatar','ntpc-profile-avatar','ntpc-v21-my-frame-preview'].includes(host?.id))return ntpcAvatarCropNormalize(currentUser?.avatarCrop);
+            return null;
+        }
+        function ntpcAvatarEnsureImageWindow(host,img){
+            if(!host||!img)return;
+            if(img.parentElement?.classList.contains('ntpc-avatar-image-window'))return;
+            const windowEl=document.createElement('span');windowEl.className='ntpc-avatar-image-window';
+            img.parentNode.insertBefore(windowEl,img);windowEl.appendChild(img);
+        }
+        function ntpcAvatarCropApplyHost(host,crop){
+            if(!host)return;
+            const img=host.querySelector('img');if(!img)return;
+            ntpcAvatarEnsureImageWindow(host,img);
+            ntpcAvatarCropSetImageGeometry(img,crop);
+        }
+        const ntpcAvatarCropEditorState={url:'',draft:null,ready:false,serial:0,drag:null,account:''};
+        function ntpcAvatarCropPaintEditor(){
+            const state=ntpcAvatarCropEditorState,g=ntpcAvatarCropGeometry(state.draft);
+            ntpcAvatarCropSetImageGeometry(document.getElementById('ntpc-avatar-crop-photo'),g);
+            const slider=document.getElementById('ntpc-avatar-crop-zoom');
+            if(slider&&g)slider.value=String(g.zoom);
+            const percent=document.getElementById('ntpc-avatar-crop-zoom-label');if(percent)percent.textContent=Math.round((g?.zoom||1)*100)+'%';
+            const preview=document.getElementById('ntpc-avatar-crop-result');
+            if(preview){ntpcSetProfileAvatarElement(preview,state.url,g);}
+        }
+        function ntpcAvatarCropLoadEditor(){
+            const field=document.getElementById('ntpc-my-avatar-input'),url=ntpcSafeAvatarUrl(field?.value);
+            const state=ntpcAvatarCropEditorState,editor=document.getElementById('ntpc-avatar-crop-editor');
+            const loading=document.getElementById('ntpc-avatar-crop-load-state'),status=document.getElementById('ntpc-avatar-crop-status');
+            const account=String(currentUser?.account||'');
+            if(!field||!editor)return;
+            if(url===state.url&&state.ready&&state.account===account)return;
+            const serial=++state.serial;
+            state.url=url;state.account=account;state.draft=null;state.ready=false;state.drag=null;
+            editor.classList.toggle('hidden',!url);
+            if(!url){if(loading)loading.textContent=field.value.trim()?'請貼入有效的 HTTPS 圖片直連':'尚未選擇圖片';return;}
+            if(loading)loading.textContent='圖片載入中，正在讀取原圖比例…';
+            if(status)status.textContent='載入圖片後即可拖曳';
+            const image=new Image();image.referrerPolicy='no-referrer';
+            image.onload=()=>{
+                if(serial!==state.serial)return;
+                const ratio=image.naturalWidth/image.naturalHeight;
+                if(!Number.isFinite(ratio)||ratio<=0){if(loading)loading.textContent='無法判斷圖片尺寸';return;}
+                const own=String(currentUser?.account||'')===state.account&&ntpcAvatarValue(currentUser)===url;
+                const saved=own?ntpcAvatarCropNormalize(currentUser.avatarCrop):null;
+                state.draft=ntpcAvatarCropGeometry({...saved,x:saved?.x??.5,y:saved?.y??.5,zoom:saved?.zoom??1,ratio})||{x:.5,y:.5,zoom:1,ratio};
+                state.ready=true;
+                const photo=document.getElementById('ntpc-avatar-crop-photo');if(photo)photo.src=url;
+                if(loading)loading.textContent=`已載入 ${image.naturalWidth} × ${image.naturalHeight}；拖曳圓形範圍內的圖片即可調整。`;
+                if(status)status.textContent='修改後記得按「儲存我的頭像」才會同步到其他地方。';
+                ntpcAvatarCropPaintEditor();
+            };
+            image.onerror=()=>{if(serial!==state.serial)return;if(loading)loading.textContent='圖片無法載入，請確認是公開可存取的圖片直連。';if(status)status.textContent='目前無法調整裁切位置。';};
+            image.src=url;
+        }
+        function ntpcAvatarCropUrlInput(){
+            ntpcPreviewPhotoInput('ntpc-my-avatar-input','ntpc-profile-avatar');
+            ntpcAvatarCropLoadEditor();
+        }
+        function ntpcAvatarCropZoomChanged(value){
+            const state=ntpcAvatarCropEditorState;if(!state.ready||!state.draft)return;
+            const c={...state.draft,zoom:Math.max(1,Math.min(4,Number(value)||1))};
+            state.draft=ntpcAvatarCropGeometry(c);ntpcAvatarCropPaintEditor();
+        }
+        function ntpcAvatarCropReset(){
+            const state=ntpcAvatarCropEditorState;if(!state.ready||!state.draft)return;
+            state.draft=ntpcAvatarCropGeometry({...state.draft,x:.5,y:.5,zoom:1});ntpcAvatarCropPaintEditor();
+        }
+        function ntpcAvatarCropMove(dx,dy){
+            const state=ntpcAvatarCropEditorState;if(!state.ready||!state.draft)return;
+            const rect=document.getElementById('ntpc-avatar-crop-stage')?.getBoundingClientRect();if(!rect?.width)return;
+            const g=ntpcAvatarCropGeometry(state.draft);
+            state.draft=ntpcAvatarCropGeometry({...g,x:g.x-dx/(rect.width*(g.width/100)),y:g.y-dy/(rect.height*(g.height/100))});
+            ntpcAvatarCropPaintEditor();
+        }
+        function ntpcAvatarCropInitEvents(){
+            const stage=document.getElementById('ntpc-avatar-crop-stage');if(!stage||stage.dataset.ntpcBound)return;
+            stage.dataset.ntpcBound='1';
+            stage.addEventListener('pointerdown',event=>{
+                if(!ntpcAvatarCropEditorState.ready||!event.isPrimary)return;
+                if(event.button!==0&&event.pointerType==='mouse')return;
+                ntpcAvatarCropEditorState.drag={id:event.pointerId,x:event.clientX,y:event.clientY};
+                stage.setPointerCapture(event.pointerId);stage.classList.add('dragging');event.preventDefault();
+            });
+            stage.addEventListener('pointermove',event=>{
+                const drag=ntpcAvatarCropEditorState.drag;if(!drag||drag.id!==event.pointerId)return;
+                ntpcAvatarCropMove(event.clientX-drag.x,event.clientY-drag.y);
+                drag.x=event.clientX;drag.y=event.clientY;event.preventDefault();
+            });
+            const end=event=>{const drag=ntpcAvatarCropEditorState.drag;if(drag?.id===event.pointerId){ntpcAvatarCropEditorState.drag=null;stage.classList.remove('dragging');}};
+            stage.addEventListener('pointerup',end);stage.addEventListener('pointercancel',end);stage.addEventListener('lostpointercapture',end);
+            stage.addEventListener('keydown',event=>{
+                const dirs={ArrowLeft:[-4,0],ArrowRight:[4,0],ArrowUp:[0,-4],ArrowDown:[0,4]};
+                if(dirs[event.key]){event.preventDefault();ntpcAvatarCropMove(...dirs[event.key]);}
+            });
+        }
+        document.addEventListener('DOMContentLoaded',ntpcAvatarCropInitEvents);
+        function ntpcSetProfileAvatarElement(host,value,crop=undefined){
             if(!host)return;
             const img=host.querySelector('img'),icon=host.querySelector('i'),safe=ntpcSafeAvatarUrl(value);
             if(!img)return;
+            ntpcAvatarEnsureImageWindow(host,img);
+            ntpcAvatarCropSetImageGeometry(img,crop===undefined?ntpcAvatarCropForHost(host):crop);
             img.referrerPolicy='no-referrer';img.loading='lazy';
             img.onerror=()=>{img.hidden=true;if(icon)icon.hidden=false;};
             if(safe){img.hidden=false;if(img.getAttribute('src')!==safe)img.src=safe;if(icon)icon.hidden=true;}
@@ -6278,7 +6676,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
         }
         function ntpcAvatarMarkup(account,cssClass=''){
             const id=String(account||'').trim(),u=ntpcAvatarUserByAccount(id);
-            const safe=u?ntpcAvatarValue(u):ntpcSafeAvatarUrl(ntpcAvatarCache.get(id)?.url);
+            const safe=u?ntpcAvatarValue(u):ntpcSafeAvatarUrl((ntpcAvatarCache.get(id)||ntpcAvatarCache.get(id.toLowerCase()))?.url);
             const frame=ntpcV21FrameStyle(id,u||ntpcAvatarCache.get(id));
             return `<span class="ntpc-avatar-chip ${cssClass}" data-ntpc-avatar-account="${escapeHtml(id)}" ${frame==='none'?'':`data-ntpc-frame="${frame}"`}><img alt="" referrerpolicy="no-referrer" loading="lazy" ${safe?`src="${escapeHtml(safe)}"`:'hidden'}><i class="fa-solid fa-user" aria-hidden="true" ${safe?'hidden':''}></i>${frame==='aurora'?'<span class="ntpc-v23-aurora-celestial" aria-hidden="true"></span>':''}</span>`;
         }
@@ -6324,7 +6722,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                     const snap=await fm.getDoc(fm.doc(db,'staffPhotoLinks',id));
                     const data=snap.exists()?snap.data()||{}:{};
                     const url=ntpcSafeAvatarUrl(data.avatarUrl);
-                    ntpcAvatarCache.set(id,{url,frameStyle:data.frameStyle||'none',adminUnit:data.adminUnit===true,at:Date.now()});
+                    ntpcAvatarCache.set(id,{url,avatarCrop:ntpcAvatarCropNormalize(data.avatarCrop),frameStyle:data.frameStyle||'none',adminUnit:data.adminUnit===true,at:Date.now()});
                     ntpcAvatarApply(id,url);ntpcV21PaintAllAvatarFrames(id);
                     return url;
                 }catch(_){ntpcAvatarCache.set(id,{url:'',at:Date.now(),unavailable:true});return '';}
@@ -6347,8 +6745,8 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
             for(const el of document.querySelectorAll('[data-ntpc-avatar-account]')){
                 const id=String(el.dataset.ntpcAvatarAccount||'');if(!id)continue;
                 const u=ntpcAvatarUserByAccount(id),cached=ntpcAvatarCache.get(id);
-                if(u){ntpcSetProfileAvatarElement(el,ntpcAvatarValue(u));ntpcV21PaintAvatar(el,id,u);}
-                else if(cached){ntpcSetProfileAvatarElement(el,cached.url);ntpcV21PaintAvatar(el,id,cached);}
+                if(u){ntpcSetProfileAvatarElement(el,ntpcAvatarValue(u),ntpcAvatarCropForAccount(id));ntpcV21PaintAvatar(el,id,u);}
+                else if(cached){ntpcSetProfileAvatarElement(el,cached.url,cached.avatarCrop);ntpcV21PaintAvatar(el,id,cached);}
                 else if(ntpcAvatarVisibilityObserver && !el.dataset.ntpcAvatarObserved){
                     el.dataset.ntpcAvatarObserved='1';ntpcAvatarVisibilityObserver.observe(el);
                 }else if(!ntpcAvatarVisibilityObserver&&!ntpcAvatarPending.has(id))void ntpcGetRemoteAvatar(id);
@@ -6360,10 +6758,11 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
             host.insertAdjacentHTML('afterbegin',ntpcAvatarMarkup(account,'ntpc-avatar-sm'));
             ntpcHydrateAvatarNodes();
         }
-        async function ntpcSavePublicAvatar(account,url){
+        async function ntpcSavePublicAvatar(account,url,crop=undefined){
             const id=String(account||'').trim();if(!id||id.includes('/'))throw new Error('帳號識別格式錯誤');
-            await fm.setDoc(fm.doc(db,'staffPhotoLinks',id),{avatarUrl:ntpcSafeAvatarUrl(url),updatedAt:Date.now()});
-            ntpcAvatarCache.set(id,{...(ntpcAvatarCache.get(id)||{}),url:ntpcSafeAvatarUrl(url),at:Date.now()});
+            const nextCrop=crop===undefined?ntpcAvatarCropForAccount(id):ntpcAvatarCropNormalize(crop);
+            await fm.setDoc(fm.doc(db,'staffPhotoLinks',id),{avatarUrl:ntpcSafeAvatarUrl(url),avatarCrop:nextCrop,updatedAt:Date.now()});
+            ntpcAvatarCache.set(id,{...(ntpcAvatarCache.get(id)||{}),url:ntpcSafeAvatarUrl(url),avatarCrop:nextCrop,at:Date.now()});
             ntpcAvatarApply(id,url);
         }
         function ntpcAvatarStatusText(user){return ntpcAvatarValue(user)?'已設定自訂圖片連結':'尚未設定頭像，使用預設圖示';}
@@ -6372,16 +6771,24 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
             const input=document.getElementById('ntpc-my-avatar-input'),url=ntpcAvatarValidateForm(input?.value||'');
             if(url===null)return;
             const account=String(currentUser.account||''),docId=String(currentUser.docId||account),button=document.getElementById('ntpc-my-avatar-save');
+            const editor=ntpcAvatarCropEditorState;
+            if(url&&(!editor.ready||editor.url!==url||editor.account!==account)){
+                showToast('圖片尚未載入，請確認網址有效並等圓形裁切畫面顯示後再儲存。','warning');return;
+            }
+            const crop=url?ntpcAvatarCropNormalize(editor.draft):null;
             if(button)button.disabled=true;
             try{
-                await fm.updateDoc(fm.doc(db,'users',docId),{avatarUrl:url,avatarUpdatedAt:Date.now()});
-                currentUser.avatarUrl=url;
-                const inList=ntpcAvatarUserByAccount(account);if(inList)inList.avatarUrl=url;
+                const now=Date.now();
+                await fm.updateDoc(fm.doc(db,'users',docId),{avatarUrl:url,avatarCrop:crop,avatarUpdatedAt:now});
+                currentUser.avatarUrl=url;currentUser.avatarCrop=crop;
+                const inList=ntpcAvatarUserByAccount(account);if(inList){inList.avatarUrl=url;inList.avatarCrop=crop;}
                 let publicError=null;
-                try{await ntpcSavePublicAvatar(account,url);}catch(e){publicError=e;}
+                try{await ntpcSavePublicAvatar(account,url,crop);}catch(e){publicError=e;}
+                try{await fm.setDoc(ntpcV2ProfileDoc(account),{avatarUrl:url,avatarCrop:crop,metadataUpdatedAt:now},{merge:true});ntpcV2ProfileCache.delete(account.toLowerCase());}
+                catch(e){publicError=publicError||e;}
                 updateUserBadge();renderMyProfile();ntpcAvatarApply(account,url);ntpcV21PaintAllAvatarFrames(account);
-                if(publicError)showToast('頭像已儲存到個人資料，但案件列表頭像同步失敗：'+publicError.message,'warning','部分儲存成功');
-                else showToast(url?'頭像網址已儲存。':'已移除個人頭像。','success','更新成功');
+                if(publicError)showToast('頭像已儲存到個人資料，但公開顯示同步失敗：'+publicError.message,'warning','部分儲存成功');
+                else showToast(url?'頭像與裁切位置已儲存，全站顯示將採用相同範圍。':'已移除個人頭像。','success','更新成功');
             }catch(e){showToast('修改頭像失敗：'+e.message,'error','儲存失敗');renderMyProfile();}
             finally{if(button)button.disabled=false;}
         }
@@ -6618,7 +7025,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 try { await restoreBrowserSession(); } catch (e) { console.warn('登入工作階段恢復略過：', e); }
                 await loadAllDataFromCloud(); // 先恢復登入狀態，再依權限載入一次資料
             })();
-            cloudDataReadyPromise.finally(() => startRealtimeListeners());
+            cloudDataReadyPromise.finally(() => { startRealtimeListeners(); if(currentUser)void ntpcV21LoadFramePolicy(); ntpcV21RefreshDevNav(); });
         });
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -7223,7 +7630,7 @@ function compareSiteVersion(a, b){
         // V2.1：公開檔案與動態頭像框，V2 與 V1.x 原發布內容保留。
         const NTPC_BUNDLED_SITE_VERSION={
             version:'V2.1',title:'個人中心與公開名片整合修正版',
-            summary:'DSUENSX 與 Jerry 共用星月極光頭像框及專屬外框；全站同步頭像特效；管理中心全員可於公開名片分項重製自介、社群連結、頭像與背景並記錄管理 LOG；便利貼採圓點連接訊息框。'
+            summary:'新增頭像圖片連結裁切編輯器：拖曳照片選擇圓形顯示範圍、調整縮放及還原置中；儲存圖片位置參數後，頁首、列表、公開名片與動態頭像框共用同一範圍；其餘 V2.1 功能與歷史紀錄完整保留。'
         };
         // 相容新版本發布功能，但不把舊 V100+ 研發版誤判為較新的正式 V2 版本。
         function ntpcIsNewerPublishedVersion(version){
@@ -8307,7 +8714,7 @@ async function republishAnnouncement(id) {
         function switchTab(tabId) {
             hideSubmitSuccessAnimation();
             if(tabId!=='academy'&&typeof ntpcStopStudentDocRealtime==='function')ntpcStopStudentDocRealtime();
-            const privateTabs = ['dashboard', 'police', 'fire', 'notifications', 'profile', 'jiaxiao', 'admin'];
+            const privateTabs = ['dashboard', 'police', 'fire', 'notifications', 'profile', 'jiaxiao', 'admin', 'developer'];
             if (!currentUser && privateTabs.includes(tabId)) {
                 showToast('請先登入新北市 RP 系統，才能進入此功能。', 'warning', '需要登入');
                 tabId = 'home';
@@ -8323,11 +8730,15 @@ async function republishAnnouncement(id) {
                 tabId = 'home';
             }
             if (tabId === 'jiaxiao' && !canAccessJiaxiao()) {showToast('目前帳號沒有嘉蕭集團權限。','warning','權限不足');tabId='home';}
+            if (tabId === 'developer' && !ntpcV21IsDeveloper(currentUser?.account)) {
+                showToast('此功能僅供指定開發者帳號使用','warning','權限不足');
+                tabId='home';
+            }
             if (tabId === 'admin' && !canAccessManagementCenter()) {
                 showToast('目前帳號沒有管理中心權限。', 'warning', '權限不足');
                 tabId = 'home';
             }
-            ['dashboard', 'home', 'police', 'fire', 'faq', 'notifications', 'profile', 'academy', 'jiaxiao', 'admin', 'update-log'].forEach(t => {
+            ['dashboard', 'home', 'police', 'fire', 'faq', 'notifications', 'profile', 'academy', 'jiaxiao', 'admin', 'update-log', 'developer'].forEach(t => {
                 const tabEl = document.getElementById(`tab-${t}`);
                 if (tabEl) tabEl.classList.add('hidden');
                 
@@ -8354,7 +8765,8 @@ async function republishAnnouncement(id) {
             if (tabId === 'dashboard') { refreshDutyDashboard(); initHandoverDepartmentSelector(); loadHandoverNotesOnDemand(false); }
             if (tabId === 'faq') switchFAQCategory(document.querySelector('.faq-category-btn.active')?.getAttribute('data-faq-category') || 'info');
             if (tabId === 'notifications') renderPersonalNotifications();
-            if (tabId === 'profile') renderMyProfile();
+            if (tabId === 'profile') { renderMyProfile(); void ntpcV21LoadFramePolicy(); }
+            if (tabId === 'developer') void ntpcV21OpenDeveloperPanel();
             if (tabId === 'jiaxiao') { renderJXReports(); switchJiaxiaoSubTab('medical'); }
             if (tabId === 'academy') {
                 ntpcSelectAcademyPane(ntpcAcademyPane);
@@ -9850,6 +10262,7 @@ async function republishAnnouncement(id) {
             ntpcSetProfileAvatar('ntpc-profile-avatar',ntpcAvatarValue(currentUser));ntpcV21InitMyFrame();ntpcV21PaintAllAvatarFrames(String(currentUser.account||''));
             document.getElementById('ntpc-profile-avatar-status').textContent=ntpcAvatarStatusText(currentUser);
             const ownPhotoInput=document.getElementById('ntpc-my-avatar-input');if(ownPhotoInput)ownPhotoInput.value=ntpcAvatarValue(currentUser);
+            ntpcAvatarCropLoadEditor();
             ntpcV2MaybeRefreshPersonalPanel();
             document.getElementById('profile-total-hours').textContent = `${calculateUserTotalDutyHours(currentUser.account)} 小時`;
             document.getElementById('profile-total-reports').textContent = getUserReportCount(currentUser.account);
@@ -10506,7 +10919,7 @@ async function republishAnnouncement(id) {
             }
             return;
         }
-        if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));if(!(await requireSiteAgreement(found)))return;currentUser=found;appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);try{
+        if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));if(!(await requireSiteAgreement(found)))return;currentUser=found;void ntpcV21LoadFramePolicy();appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);try{
             if(document.getElementById('login-remember-device')?.checked!==false){
                 await ntpcRememberThisDevice(currentUser);
             }else{
@@ -10515,7 +10928,7 @@ async function republishAnnouncement(id) {
                 if(saved)void ntpcRevokeRememberedLogin(saved).catch(e=>console.warn('清除舊登入憑證失敗',e));
             }
         }catch(e){console.warn('裝置 15 天登入設定失敗',e);showToast('本次已登入，但裝置記住 15 天失敗：'+(e?.message||e),'warning','記住登入未啟用');}resetManualReadFlags();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();switchTab('home');}
-        async function logout(){const remembered=ntpcGetRememberedLogin();ntpcLocalRemove(NTPC_REMEMBER_KEY);safeSessionRemove('ntpcrp_session');if(remembered)void ntpcRevokeRememberedLogin(remembered).catch(e=>console.warn('雲端登入憑證撤銷稍後再試',e));ntpcBotAdminLogout();ntpcMapDisconnectAll();ntpcDispatchStop(true);resetManualReadFlags();stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','jiaxiaoClocks','jiaxiaoMedicalReports','jiaxiaoMedicalPendingReports','jiaxiaoFuneralReports','jiaxiaoFuneralPendingReports','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
+        async function logout(){const remembered=ntpcGetRememberedLogin();ntpcLocalRemove(NTPC_REMEMBER_KEY);safeSessionRemove('ntpcrp_session');if(remembered)void ntpcRevokeRememberedLogin(remembered).catch(e=>console.warn('雲端登入憑證撤銷稍後再試',e));ntpcBotAdminLogout();ntpcV21FramePolicy=ntpcV21DefaultFramePolicy();ntpcV21FramePolicyLoaded=false;ntpcV21FramePolicyFetchedAt=0;ntpcMapDisconnectAll();ntpcDispatchStop(true);resetManualReadFlags();stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','jiaxiaoClocks','jiaxiaoMedicalReports','jiaxiaoMedicalPendingReports','jiaxiaoFuneralReports','jiaxiaoFuneralPendingReports','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
             const badge = document.getElementById('user-badge');
@@ -10545,6 +10958,7 @@ async function republishAnnouncement(id) {
         }
 
         function updateAccessLocks() {
+            ntpcV21RefreshDevNav();
             if (typeof window.ntpcV128RefreshFeatureLocks === 'function') window.ntpcV128RefreshFeatureLocks();
             const policeLock = document.getElementById('police-lock-overlay');
             const policeContent = document.getElementById('police-content-container');
@@ -15014,12 +15428,12 @@ async function republishAnnouncement(id) {
             // 先建立待儲存物件；Firestore 失敗時保留原先畫面與快取。
             const unitRoles=ntpcReadUnitRoles('edit',units,u);
             const frameSelection=document.getElementById('ntpc-v21-edit-frame')?.value||'none';
-            if(frameSelection==='aurora'&&!ntpcV21IsPremium(account)){showToast('星月極光頭像框限 DSUENSX 與 Jerry 使用','warning');return;}
+            if(frameSelection!=='none'&&!ntpcV21AllowedStyle(account,{...u,units},'avatar',frameSelection)){showToast('此帳號尚未獲授權使用所選頭像框','warning');return;}
             const frameStyle=ntpcV21FrameStyle(account,{...u,units,frameStyle:frameSelection});
-            const updatedUser={...u,account,name,role,permissions,units,unitRoles,staffNumber,robloxId,avatarUrl,frameStyle,avatarUpdatedAt:avatarChanged?Date.now():(u.avatarUpdatedAt||0),policeDivision:units.includes('police')?policeDivision:'',fireDivision:units.includes('fire')?fireDivision:'',...(pass?{pass}:{})};
+            const updatedUser={...u,account,name,role,permissions,units,unitRoles,staffNumber,robloxId,avatarUrl,avatarCrop:avatarChanged?null:ntpcAvatarCropNormalize(u.avatarCrop),frameStyle,avatarUpdatedAt:avatarChanged?Date.now():(u.avatarUpdatedAt||0),policeDivision:units.includes('police')?policeDivision:'',fireDivision:units.includes('fire')?fireDivision:'',...(pass?{pass}:{})};
             if(superTarget) updatedUser.protected=true;
             const docId=u.docId||origAccount, targetDocId=superTarget?docId:account;
-            const userPayload={account:updatedUser.account,name:updatedUser.name,pass:updatedUser.pass,role:updatedUser.role,permissions:updatedUser.permissions,units:updatedUser.units,unitRoles:updatedUser.unitRoles,staffNumber:updatedUser.staffNumber||'',policeDivision:updatedUser.policeDivision||'',fireDivision:updatedUser.fireDivision||'',robloxId:updatedUser.robloxId||'',avatarUrl:updatedUser.avatarUrl||'',frameStyle:updatedUser.frameStyle||'none',avatarUpdatedAt:updatedUser.avatarUpdatedAt||0,online:false,lastSeen:0,lastLoginAt:updatedUser.lastLoginAt||0,lastDevice:updatedUser.lastDevice||null,...(updatedUser.siteAgreement?{siteAgreement:updatedUser.siteAgreement}:{}),...(superTarget?{protected:true}:{})};
+            const userPayload={account:updatedUser.account,name:updatedUser.name,pass:updatedUser.pass,role:updatedUser.role,permissions:updatedUser.permissions,units:updatedUser.units,unitRoles:updatedUser.unitRoles,staffNumber:updatedUser.staffNumber||'',policeDivision:updatedUser.policeDivision||'',fireDivision:updatedUser.fireDivision||'',robloxId:updatedUser.robloxId||'',avatarUrl:updatedUser.avatarUrl||'',avatarCrop:updatedUser.avatarCrop||null,frameStyle:updatedUser.frameStyle||'none',avatarUpdatedAt:updatedUser.avatarUpdatedAt||0,online:false,lastSeen:0,lastLoginAt:updatedUser.lastLoginAt||0,lastDevice:updatedUser.lastDevice||null,...(updatedUser.siteAgreement?{siteAgreement:updatedUser.siteAgreement}:{}),...(superTarget?{protected:true}:{})};
             try {
                 if(!superTarget && docId!==targetDocId){
                     await fm.runTransaction(db, async transaction => {
@@ -15043,9 +15457,9 @@ async function republishAnnouncement(id) {
                         ntpcAvatarCache.delete(oldAccount);
                         try{await fm.deleteDoc(fm.doc(db,'staffPhotoLinks',oldAccount));}catch(_){}
                     }
-                    try{await ntpcSavePublicAvatar(account,avatarUrl);}catch(e){showToast('帳號已更新，但案件列表頭像儲存失敗：'+e.message,'warning');}
+                    try{await ntpcSavePublicAvatar(account,avatarUrl,updatedUser.avatarCrop);}catch(e){showToast('帳號已更新，但案件列表頭像儲存失敗：'+e.message,'warning');}
                 }
-                if(currentUser?.account===account){currentUser.avatarUrl=avatarUrl;updateUserBadge();}
+                if(currentUser?.account===account){currentUser.avatarUrl=avatarUrl;currentUser.avatarCrop=updatedUser.avatarCrop;updateUserBadge();}
                 ntpcV2SyncPublicMetadata(u).catch(e=>console.warn('公開人員資料同步失敗',e));
                 ntpcV21SavePublicFrame(u).catch(e=>console.warn('頭像框同步失敗',e));
             }
@@ -17755,7 +18169,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
 
         // V2.1｜個人便利貼：文字只用 textContent 呈現，避免使用者 HTML 注入。
         const NTPC_V22_NOTE_ICONS=Object.freeze({heart:'❤️',moon:'🌙',star:'⭐',pin:'📌',chat:'💬'});
-        function ntpcV22NoteText(v){return Array.from(String(v??'').replace(/\r\n?/g,'\n')).slice(0,100).join('');}
+        function ntpcV22NoteText(v){return Array.from(String(v??'').replace(/\r\n?/g,'\n')).slice(0,50).join('');}
         function ntpcV22NoteIcon(v){return Object.hasOwn(NTPC_V22_NOTE_ICONS,String(v))?String(v):'heart';}
         function ntpcV22SetNoteBubble(hostId,iconId,textId,enabled,message,icon){
             const host=document.getElementById(hostId),iconEl=document.getElementById(iconId),textEl=document.getElementById(textId);
@@ -17770,7 +18184,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             // 用 Unicode 字元數計算；對超出上限的貼上內容立即截斷。
             const value=ntpcV22NoteText(field.value);
             if(field.value!==value)field.value=value;
-            document.getElementById('ntpc-v22-note-count').textContent=Array.from(value).length+' / 100';
+            document.getElementById('ntpc-v22-note-count').textContent=Array.from(value).length+' / 50';
             const icon=document.getElementById('ntpc-v22-note-icon')?.value;
             ntpcV22SetNoteBubble('ntpc-v22-note-preview','ntpc-v22-preview-icon','ntpc-v22-preview-text',enabled,value,icon);
             document.getElementById('ntpc-v22-note-preview-empty')?.classList.toggle('hidden',enabled&&!!value.trim());
@@ -17802,12 +18216,12 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             }
             return u.href;
         }
-        function ntpcV2Bio(v){return Array.from(String(v||'').trim()).slice(0,50).join('');}
+        function ntpcV2Bio(v){return Array.from(String(v||'').trim()).slice(0,100).join('');}
         function ntpcV2MinimalProfile(u){
             return {account:String(u?.account||''),name:String(u?.name||u?.account||'').slice(0,80),
                 units:getUserUnits(u),unitRoles:u?.unitRoles||{},permissions:getUserPermissions(u),
                 policeDivision:String(u?.policeDivision||'').slice(0,80),fireDivision:String(u?.fireDivision||'').slice(0,80),
-                avatarUrl:ntpcAvatarValue(u),frameStyle:ntpcV21FrameStyle(u?.account,u),staffNumber:String(u?.staffNumber||'').slice(0,60)};
+                avatarUrl:ntpcAvatarValue(u),avatarCrop:ntpcAvatarCropNormalize(u?.avatarCrop),frameStyle:ntpcV21FrameStyle(u?.account,u),staffNumber:String(u?.staffNumber||'').slice(0,60)};
         }
         async function ntpcV2SyncPublicMetadata(u){
             if(!fm||!db||!u?.account)return;
@@ -17837,6 +18251,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 // 使用者本身的頭像框以 users 已載入值為準，避免公開名片舊欄位蓋過新設定。
                 if(typeof local.frameStyle==='string')d.frameStyle=ntpcV21FrameStyle(id,local);
                 if(Object.prototype.hasOwnProperty.call(local,'avatarUrl'))d.avatarUrl=ntpcAvatarValue(local);
+                if(Object.prototype.hasOwnProperty.call(local,'avatarCrop'))d.avatarCrop=ntpcAvatarCropNormalize(local.avatarCrop);
             }
             if(!d){const url=await ntpcGetRemoteAvatar(id);d={account:id,name:id,avatarUrl:url,profileUnavailable:true};}
             ntpcV2ProfileCache.set(key,{data:d,at:Date.now()});return d;
@@ -17904,9 +18319,9 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 else if(field==='socials')batch.set(profileRef,{socials:{ig:'',discord:'',roblox:''},moderatedAt:now,moderatedBy:operator},{merge:true});
                 else if(field==='avatar'){
                     // 三處來源必須同時重製；不可只清掉公開名片，否則列表會顯示舊照片。
-                    batch.update(fm.doc(db,'users',String(user.docId||user.account)),{avatarUrl:'',avatarUpdatedAt:now});
-                    batch.set(fm.doc(db,'staffPhotoLinks',account),{avatarUrl:'',updatedAt:now},{merge:true});
-                    batch.set(profileRef,{avatarUrl:'',moderatedAt:now,moderatedBy:operator},{merge:true});
+                    batch.update(fm.doc(db,'users',String(user.docId||user.account)),{avatarUrl:'',avatarCrop:null,avatarUpdatedAt:now});
+                    batch.set(fm.doc(db,'staffPhotoLinks',account),{avatarUrl:'',avatarCrop:null,updatedAt:now},{merge:true});
+                    batch.set(profileRef,{avatarUrl:'',avatarCrop:null,moderatedAt:now,moderatedBy:operator},{merge:true});
                 }
                 // 使用同一 Firestore batch 寫入管理 LOG；LOG 沒權限時也不得單獨完成重製。
                 const log={id:'LOG-'+now+'-'+Math.random().toString(36).slice(2,8),action,operation:'edit',
@@ -17918,8 +18333,8 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 if(!Array.isArray(appData.adminLogs))appData.adminLogs=[];
                 appData.adminLogs.unshift(log);
                 if(field==='avatar'){
-                    user.avatarUrl='';user.avatarUpdatedAt=now;
-                    if(String(currentUser.account||'').toLowerCase()===account.toLowerCase()){currentUser.avatarUrl='';updateUserBadge();renderMyProfile();}
+                    user.avatarUrl='';user.avatarCrop=null;user.avatarUpdatedAt=now;
+                    if(String(currentUser.account||'').toLowerCase()===account.toLowerCase()){currentUser.avatarUrl='';currentUser.avatarCrop=null;updateUserBadge();renderMyProfile();}
                     ntpcAvatarCache.delete(account);ntpcAvatarCache.delete(account.toLowerCase());
                     ntpcAvatarApply(account,'');
                 }
@@ -17933,6 +18348,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             finally{buttons.forEach(b=>b.disabled=false);}
         }
         async function ntpcV2ShowProfile(account){
+            if(currentUser)void ntpcV21LoadFramePolicy();
             const id=String(account||'').trim();if(!id||!fm||!db){showToast('目前無法查詢個人檔案','warning');return;}
             const modal=document.getElementById('ntpc-v2-profile-modal');
             modal.classList.remove('hidden');ntpcV21ProfileResetAccess(id);document.getElementById('ntpc-v2-modal-name').textContent='讀取個人檔案中…';
@@ -17969,7 +18385,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 document.getElementById('ntpc-v2-modal-bio').textContent=ntpcV2Bio(p?.bio)||'尚未填寫自我介紹';
                 ntpcV22RenderPublicNote(p);
                 ntpcV2SetCover(document.getElementById('ntpc-v2-public-cover'),p?.backgroundUrl);
-                ntpcSetProfileAvatar('ntpc-v2-modal-avatar',ntpcAvatarValue(p));
+                ntpcSetProfileAvatarElement(document.getElementById('ntpc-v2-modal-avatar'),ntpcAvatarValue(p),p?.avatarCrop);
                 ntpcV21PaintAvatar(document.getElementById('ntpc-v2-modal-avatar'),p?.account||id,p);
                 if(p?.profileUnavailable){document.getElementById('ntpc-v2-modal-note').textContent='找不到公開個人檔案（無法確認是否為舊版已移除帳號）';}
                 const socials=p?.socials||{},safe=[];
@@ -17993,8 +18409,10 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
         document.getElementById('ntpc-v2-profile-modal')?.addEventListener('click',e=>{if(e.target.id==='ntpc-v2-profile-modal')ntpcV2CloseProfile();});
         document.addEventListener('keydown',e=>{if(e.key==='Escape')ntpcV2CloseProfile();});
         document.getElementById('ntpc-v2-bio')?.addEventListener('input',()=>{
-            const n=Array.from(document.getElementById('ntpc-v2-bio').value).length;
-            document.getElementById('ntpc-v2-bio-counter').textContent=`${Math.min(n,50)} / 50${n>50?'（超出上限，請刪減）':''}`;
+            const field=document.getElementById('ntpc-v2-bio');
+            const characters=Array.from(field.value);
+            if(characters.length>100)field.value=characters.slice(0,100).join('');
+            document.getElementById('ntpc-v2-bio-counter').textContent=`${Array.from(field.value).length} / 100`;
         });
         async function ntpcV2LoadMyPublicProfile(){
             if(!currentUser||!fm||!db)return;
@@ -18005,7 +18423,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
                 document.getElementById('ntpc-v2-bio').value=ntpcV2Bio(d.bio||'');
                 document.getElementById('ntpc-v2-background').value=String(d.backgroundUrl||'');
                 for(const k of ['ig','discord','roblox'])document.getElementById('ntpc-v2-'+k).value=String(d.socials?.[k]||'');
-                document.getElementById('ntpc-v2-bio-counter').textContent=Array.from(ntpcV2Bio(d.bio)).length+' / 50';
+                document.getElementById('ntpc-v2-bio-counter').textContent=Array.from(ntpcV2Bio(d.bio)).length+' / 100';
                 document.getElementById('ntpc-v22-note-enabled').checked=d.profileNote?.enabled===true;
                 document.getElementById('ntpc-v22-note-icon').value=ntpcV22NoteIcon(d.profileNote?.icon);
                 document.getElementById('ntpc-v22-note-text').value=ntpcV22NoteText(d.profileNote?.text);
@@ -18017,7 +18435,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
         async function ntpcV2SaveMyProfile(){
             if(!currentUser||!fm||!db){showToast('請先登入網站','warning');return;}
             const val=document.getElementById('ntpc-v2-bio').value;
-            if(Array.from(val.trim()).length>50){showToast('自我介紹不可超過 50 字','warning');return;}
+            if(Array.from(val.trim()).length>100){showToast('自我介紹不可超過 100 字','warning');return;}
             const noteText=ntpcV22NoteText(document.getElementById('ntpc-v22-note-text')?.value);
             const noteEnabled=!!document.getElementById('ntpc-v22-note-enabled')?.checked;
             if(noteEnabled&&!noteText.trim()){showToast('啟用便利貼前，請先輸入訊息','warning');return;}
@@ -19856,7 +20274,7 @@ function init(){
     // Reuse the original navigation permissions and bound handlers, not a new authorization system.
     const original=el('nav-'+tab)||el('mobile-nav-'+tab)||document.querySelector(`.mobile-nav-btn[data-tab="${tab}"]`);
     if(original&&!original.classList.contains('hidden'))original.click();
-    else if(tab==='home'||tab==='faq'||tab==='update-log'||tab==='academy'||tab==='notifications'||tab==='profile'||tab==='dashboard')switchTab(tab);
+    else if(tab==='home'||tab==='faq'||tab==='update-log'||tab==='academy'||tab==='notifications'||tab==='profile'||tab==='dashboard'||tab==='developer')switchTab(tab);
     renderHome();
   });
   el('ntpc-v127-query-personal')?.addEventListener('click',queryPersonalReports);
@@ -19924,9 +20342,13 @@ function init(){
    moreStart.before(more);
    const container=more.querySelector('.ntpc-v128-more-inner');
    rest.forEach(t=>{const btn=nav.querySelector('[data-v127-tab="'+t+'"]');if(btn)container.append(btn)});
+   const dev=make('button',{id:'ntpc-v21-developer-nav',type:'button',class:'ntpc-v127-nav-item hidden','data-v127-tab':'developer'},'<i class="fa-solid fa-code"></i><span>開發者專區</span>');
+   container.append(dev);
+   // Session-aware visibility; account names are never sufficient backend authorization.
+   if(typeof ntpcV21RefreshDevNav==='function')ntpcV21RefreshDevNav();
    // Open automatically when the current tab is inside the more group.
    const faq=nav.querySelector('[data-v127-tab="faq"]');if(faq)more.before(faq);
-   const refreshMore=()=>{if(rest.some(t=>get('tab-'+t)&&!get('tab-'+t).classList.contains('hidden')))more.open=true};
+   const refreshMore=()=>{if([...rest,'developer'].some(t=>get('tab-'+t)&&!get('tab-'+t).classList.contains('hidden')))more.open=true};
    new MutationObserver(refreshMore).observe(get('tab-home'),{attributes:true,attributeFilter:['class']});
   }
   nav.querySelectorAll('[data-v127-tab]').forEach(btn=>btn.setAttribute('type','button'));
