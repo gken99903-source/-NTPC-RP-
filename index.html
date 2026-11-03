@@ -7,7 +7,7 @@
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; media-src 'self' https://raw.githubusercontent.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://placehold.co; connect-src 'self' https://*.workers.dev https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com https://www.youtube-nocookie.com https://www.youtube.com; upgrade-insecure-requests">
     <title>新北市 RP 3.0 公職服務系統 V2.0｜ER:LC 智慧派遣</title>
-    <!-- V152 最新：市民身份搜尋預設存活並在 Firestore 查詢前套用生死狀態；切換至死亡人設才查已死亡紀錄；保留市民案件連動與新舊身份隔離。 -->
+    <!-- V160 本次修正：登入帳號改為精確單筆查詢，支援最高管理帳號大小寫差異；移除整批讀取 users 的登入備援，並清楚顯示 Firestore 權限拒絕原因。 -->
     <!-- 網站圖標與連結分享資訊 -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
     <link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
@@ -9588,7 +9588,73 @@ async function republishAnnouncement(id) {
 
         const SECURITY_ACTION_COOLDOWN=new Map();
         function securityActionAllowed(key,cooldownMs=700){const now=Date.now(),last=SECURITY_ACTION_COOLDOWN.get(key)||0;if(now-last<cooldownMs)return false;SECURITY_ACTION_COOLDOWN.set(key,now);return true;}
-        async function handleLogin(){if(!securityActionAllowed('login',900))return;await cloudDataReadyPromise;const device=getDeviceInfo();const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}try{const fingerprint=getDeviceFingerprint(device),deviceKey=getDeviceKey(device);const [blockedByFingerprint,blockedByKey]=await Promise.all([fm.getDoc(fm.doc(db,'blockedDevices',fingerprint)),fm.getDocs(fm.query(fm.collection(db,'blockedDevices'),fm.where('deviceKey','==',deviceKey)))]);const matches=[];if(blockedByFingerprint.exists())matches.push({docId:blockedByFingerprint.id,...blockedByFingerprint.data()});blockedByKey.docs.forEach(d=>{if(!matches.some(x=>String(x.docId)===String(d.id)))matches.push({docId:d.id,...d.data()});});appData.blockedDevices=matches;/* 登入失敗紀錄只在失敗時依裝置 ID 單筆讀取，不下載整個集合。 */}catch(e){console.warn('登入安全資料讀取失敗：',e);}if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}let found=null;try{const userSnap=await fm.getDoc(fm.doc(db,'users',acc));if(userSnap.exists()){const data=userSnap.data();found={docId:userSnap.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}if(!found&&isSuperAdminAccount(acc)){const all=await fm.getDocs(fm.collection(db,'users'));const d=all.docs.find(x=>isSuperAdminAccount(x.id)||isSuperAdminAccount(x.data().account));if(d){const data=d.data();found={docId:d.id,...data,units:data.units||(data.unit?[data.unit]:['admin']),permissions:Array.isArray(data.permissions)&&data.permissions.length?data.permissions:(data.role?[data.role]:[])};}}}catch(e){showToast('帳號驗證失敗，請稍後重試：'+e.message,'error','登入失敗');return;}if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));if(!(await requireSiteAgreement(found)))return;currentUser=found;appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);try{await ntpcRememberThisDevice(currentUser);}catch(e){console.warn('裝置 15 天登入設定失敗',e);showToast('本次已登入，但裝置記住 15 天失敗：'+(e?.message||e),'warning','記住登入未啟用');}resetManualReadFlags();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();switchTab('home');}
+        async function handleLogin(){if(!securityActionAllowed('login',900))return;await cloudDataReadyPromise;const device=getDeviceInfo();const acc=document.getElementById('login-username').value.trim(),pass=document.getElementById('login-password').value.trim();if(!acc||!pass){showToast('請完整輸入帳號與密碼！','error','資料不完整');return;}try{const fingerprint=getDeviceFingerprint(device),deviceKey=getDeviceKey(device);const [blockedByFingerprint,blockedByKey]=await Promise.all([fm.getDoc(fm.doc(db,'blockedDevices',fingerprint)),fm.getDocs(fm.query(fm.collection(db,'blockedDevices'),fm.where('deviceKey','==',deviceKey)))]);const matches=[];if(blockedByFingerprint.exists())matches.push({docId:blockedByFingerprint.id,...blockedByFingerprint.data()});blockedByKey.docs.forEach(d=>{if(!matches.some(x=>String(x.docId)===String(d.id)))matches.push({docId:d.id,...d.data()});});appData.blockedDevices=matches;/* 登入失敗紀錄只在失敗時依裝置 ID 單筆讀取，不下載整個集合。 */}catch(e){console.warn('登入安全資料讀取失敗：',e);}if(isCurrentDeviceBlocked()){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');return;}let found=null;
+        try {
+            // V160: Firestore document IDs are case-sensitive. Prefer precise document reads;
+            // do not fetch all users as a fallback for the protected admin account.
+            const candidates = isSuperAdminAccount(acc)
+                ? [...new Set([acc, 'Dsuensx', 'dsuensx'])]
+                : [acc];
+            let denied = null;
+            const acceptLoginDocument = snap => {
+                if (!snap.exists()) return null;
+                const data = snap.data();
+                // A different account must never be accepted just because a document ID matched.
+                if (String(data.account || snap.id).trim().toLowerCase() !== acc.toLowerCase()) return null;
+                return {
+                    docId: snap.id, ...data,
+                    units: data.units || (data.unit ? [data.unit] : ['admin']),
+                    permissions: Array.isArray(data.permissions) && data.permissions.length
+                        ? data.permissions : (data.role ? [data.role] : [])
+                };
+            };
+            for (const id of candidates) {
+                try {
+                    const snap = await fm.getDoc(fm.doc(db, 'users', id));
+                    found = acceptLoginDocument(snap);
+                    if (found) break;
+                } catch (e) {
+                    if (String(e?.code || '').includes('permission-denied')) {
+                        denied = e;
+                        continue;
+                    }
+                    throw e;
+                }
+            }
+            // Legacy installations might use a different Firestore document ID for the
+            // protected account. As a last resort, issue a bounded field query instead
+            // of downloading the entire collection. This still obeys Firestore Rules.
+            if (!found && isSuperAdminAccount(acc)) {
+                for (const accountName of ['Dsuensx', 'dsuensx']) {
+                    try {
+                        const q = fm.query(fm.collection(db, 'users'),
+                            fm.where('account', '==', accountName), fm.limit(1));
+                        const result = await fm.getDocs(q);
+                        for (const d of result.docs) {
+                            found = acceptLoginDocument(d);
+                            if (found) break;
+                        }
+                        if (found) break;
+                    } catch (e) {
+                        if (String(e?.code || '').includes('permission-denied')) {
+                            denied = e;
+                            continue;
+                        }
+                        throw e;
+                    }
+                }
+            }
+            if (!found && denied) throw denied;
+        } catch (e) {
+            console.error('登入 Firestore users 查詢失敗：', e);
+            if (String(e?.code || '').includes('permission-denied')) {
+                showToast('Firestore 拒絕讀取登入帳號（permission-denied）。請管理員檢查 Firebase → Firestore Database → Rules；這不是密碼輸入錯誤。', 'error', '資料庫權限不足');
+            } else {
+                showToast('帳號驗證暫時失敗，請稍後重試：' + (e?.message || '未知錯誤'), 'error', '登入失敗');
+            }
+            return;
+        }
+        if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));if(!(await requireSiteAgreement(found)))return;currentUser=found;appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);try{await ntpcRememberThisDevice(currentUser);}catch(e){console.warn('裝置 15 天登入設定失敗',e);showToast('本次已登入，但裝置記住 15 天失敗：'+(e?.message||e),'warning','記住登入未啟用');}resetManualReadFlags();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();switchTab('home');}
         async function logout(){const remembered=ntpcGetRememberedLogin();ntpcLocalRemove(NTPC_REMEMBER_KEY);safeSessionRemove('ntpcrp_session');if(remembered)void ntpcRevokeRememberedLogin(remembered).catch(e=>console.warn('雲端登入憑證撤銷稍後再試',e));ntpcBotAdminLogout();ntpcMapDisconnectAll();ntpcDispatchStop(true);resetManualReadFlags();stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','jiaxiaoClocks','jiaxiaoMedicalReports','jiaxiaoMedicalPendingReports','jiaxiaoFuneralReports','jiaxiaoFuneralPendingReports','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
