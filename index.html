@@ -1,14 +1,12 @@
-<!-- V161：單位／權限分級（新增專科學校、助教及教官）、教官中心登入帳號權限、報告署名、管理中心命名及整合設定分權。既有歷史更新紀錄不刪除。 -->
+<!-- V163：帳號頭像改由管理員或帳號本人貼入 HTTPS 圖片連結；移除 Discord BOT 頭像同步請求；首頁、我的資料、帳號管理與案件繼續顯示頭像。其他功能與歷史更新紀錄保留。 -->
 <!DOCTYPE html>
-<!-- V158｜全站手機版橫向分類與資料表排版：修正管理中心、嘉蕭、警察、消防分類列及六組長表格的文字擠壓；僅介面，不改資料庫與權限。 -->
 <html lang="zh-TW" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; media-src 'self' https://raw.githubusercontent.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://placehold.co; connect-src 'self' https://*.workers.dev https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com https://www.youtube-nocookie.com https://www.youtube.com; upgrade-insecure-requests">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; media-src 'self' https://raw.githubusercontent.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.workers.dev https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com https://www.youtube-nocookie.com https://www.youtube.com; upgrade-insecure-requests">
     <title>新北市 RP 3.0 公職服務系統 V2.0｜ER:LC 智慧派遣</title>
-    <!-- V162 本次修正：管理中心新增 Discord ID 綁定與同步請求；首頁、個人資料及案件填寫／審核顯示優先使用新北 RP 伺服器專屬頭像；其他功能與完整歷史更新紀錄保留。 -->
     <!-- 網站圖標與連結分享資訊 -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
     <link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
@@ -2390,7 +2388,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
 
 <style>
 
-    /* V162 Discord avatar: fallback icon never blocks labels on narrow screens. */
+    /* V163：使用者自訂圖片連結，手機版預設頭像不遮蔽文字。 */
     .ntpc-avatar-chip{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:#1e293b;color:#94a3b8;overflow:hidden;border:1px solid #475569;vertical-align:middle}
     .ntpc-avatar-chip img{width:100%;height:100%;object-fit:cover;border-radius:50%}
     .ntpc-avatar-chip img[hidden],.ntpc-avatar-chip i[hidden]{display:none!important}
@@ -2483,7 +2481,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
             <div class="flex items-center space-x-3">
                 <div id="user-badge" class="hidden items-center space-x-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 text-xs">
                     <span id="user-badge-role" class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span class="ntpc-avatar-chip" id="ntpc-header-avatar" aria-label="Discord 頭像"><img id="ntpc-header-avatar-img" alt="" hidden><i class="fa-solid fa-user" aria-hidden="true"></i></span>
+                    <span class="ntpc-avatar-chip" id="ntpc-header-avatar" aria-label="個人頭像"><img id="ntpc-header-avatar-img" alt="" hidden><i class="fa-solid fa-user" aria-hidden="true"></i></span>
                     <span id="user-badge-name" class="font-semibold text-slate-200"></span>
                     <button id="logout-btn" class="text-slate-400 hover:text-red-400 ml-2" title="登出"><i class="fa-solid fa-right-from-bracket"></i></button>
                 </div>
@@ -3602,7 +3600,13 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 <div id="profile-content" class="hidden mt-6 space-y-5">
                     <div class="flex items-center gap-4 p-4 rounded-2xl bg-slate-950 border border-slate-800">
                         <span id="ntpc-profile-avatar" class="ntpc-avatar-chip ntpc-avatar-lg"><img id="ntpc-profile-avatar-img" alt="" hidden><i class="fa-solid fa-user" aria-hidden="true"></i></span>
-                        <div><div class="text-sm font-bold text-slate-100">Discord 同步頭像</div><div id="ntpc-profile-avatar-status" class="text-xs text-slate-400 mt-1">尚未綁定 Discord ID</div></div>
+                        <div class="min-w-0 flex-1"><div class="text-sm font-bold text-slate-100">我的個人頭像</div><div id="ntpc-profile-avatar-status" class="text-xs text-slate-400 mt-1">尚未設定頭像，使用預設圖示</div></div>
+                    </div>
+                    <div class="rounded-xl border border-blue-500/20 bg-slate-950 p-4 space-y-2">
+                        <label for="ntpc-my-avatar-input" class="block text-sm font-semibold text-slate-200">自行設定頭像圖片網址</label>
+                        <input type="url" id="ntpc-my-avatar-input" maxlength="2048" placeholder="https://i.postimg.cc/.../avatar.png" autocomplete="url" spellcheck="false" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-3 text-sm text-white" oninput="ntpcPreviewPhotoInput('ntpc-my-avatar-input','ntpc-profile-avatar')">
+                        <p class="text-xs text-slate-400">請貼入可公開存取的 HTTPS 圖片直連（如 Postimages 的「圖片直接連結」），不需要 Discord ID 或 BOT。清空後儲存即可移除頭像。</p>
+                        <button type="button" id="ntpc-my-avatar-save" onclick="ntpcSaveOwnPhotoLink()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm"><i class="fa-solid fa-floppy-disk mr-1"></i>儲存我的頭像</button>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5">
@@ -4005,7 +4009,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                                     <th class="p-4">登入帳號</th>
                                     <th class="p-4">管理編號</th>
                                     <th class="p-4">RP名稱</th>
-                                    <th class="p-4">Discord 頭像</th>
+                                    <th class="p-4">個人頭像</th>
                                     <th class="p-4">所屬單位</th>
                                     <th class="p-4">權限身份</th>
                                     <th class="p-4 text-right">操作</th>
@@ -5416,10 +5420,9 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 </div>
                 </div>
                 <div class="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 space-y-2">
-                    <label for="edit-user-discord-id" class="block text-xs font-semibold text-indigo-200">Discord 使用者 ID（選填）</label>
-                    <input type="text" id="edit-user-discord-id" inputmode="numeric" maxlength="20" placeholder="例如：123456789012345678" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white font-mono" autocomplete="off">
-                    <p class="text-[11px] text-slate-400">由 BOT 自動同步新北 RP 伺服器專屬頭像，無專屬頭像時使用全域頭像。僅供顯示，不視為 Discord 身分驗證。</p>
-                    <button type="button" id="ntpc-avatar-manual-sync-btn" onclick="ntpcManualDiscordAvatarSync()" class="text-xs px-3 py-2 rounded-lg border border-indigo-400/30 text-indigo-200 hover:bg-indigo-500/10"><i class="fa-solid fa-rotate mr-1"></i>重新同步此帳號頭像</button>
+                    <label for="edit-user-avatar-url" class="block text-xs font-semibold text-indigo-200">個人頭像圖片網址（選填）</label>
+                    <div class="flex items-center gap-3"><span id="ntpc-edit-avatar-preview" class="ntpc-avatar-chip ntpc-avatar-lg"><img alt="頭像預覽" hidden><i class="fa-solid fa-user"></i></span><input type="url" id="edit-user-avatar-url" maxlength="2048" placeholder="https://i.postimg.cc/.../avatar.png" class="min-w-0 flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white" autocomplete="off" spellcheck="false" oninput="ntpcPreviewPhotoInput('edit-user-avatar-url','ntpc-edit-avatar-preview')"></div>
+                    <p class="text-[11px] text-slate-400">可由管理員代填，帳號本人也能在「我的資料」修改。須為 HTTPS 公開圖片直連；清空即可移除。</p>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位（可依實際兼職勾選多個）</label>
@@ -5562,9 +5565,9 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 </div>
                 </div>
                 <div class="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 space-y-2">
-                    <label for="new-user-discord-id" class="block text-xs font-semibold text-indigo-200">Discord 使用者 ID（選填）</label>
-                    <input type="text" id="new-user-discord-id" inputmode="numeric" maxlength="20" placeholder="例如：123456789012345678" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white font-mono" autocomplete="off">
-                    <p class="text-[11px] text-slate-400">由 BOT 自動同步新北 RP 伺服器專屬頭像，無專屬頭像時使用全域頭像。僅供顯示，不視為 Discord 身分驗證。</p>
+                    <label for="new-user-avatar-url" class="block text-xs font-semibold text-indigo-200">個人頭像圖片網址（選填）</label>
+                    <div class="flex items-center gap-3"><span id="ntpc-new-avatar-preview" class="ntpc-avatar-chip ntpc-avatar-lg"><img alt="頭像預覽" hidden><i class="fa-solid fa-user"></i></span><input type="url" id="new-user-avatar-url" maxlength="2048" placeholder="https://i.postimg.cc/.../avatar.png" class="min-w-0 flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white" autocomplete="off" spellcheck="false" oninput="ntpcPreviewPhotoInput('new-user-avatar-url','ntpc-new-avatar-preview')"></div>
+                    <p class="text-[11px] text-slate-400">可建立後由本人前往「我的資料」自行貼上圖片網址。不使用 Discord 自動同步。</p>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位（可依實際兼職勾選多個）</label>
@@ -5630,22 +5633,43 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
     <script>
         let currentUser = null;
 
-        // V162｜Discord 成員頭像：僅 BOT 讀 Discord API，網站只使用受限的 CDN 網址。
-        const ntpcAvatarCache=new Map();
-        const ntpcAvatarPending=new Map();
-        let ntpcOwnAvatarUnsubscribe=null,ntpcOwnAvatarAccount='';
-        function ntpcSafeDiscordAvatarUrl(value){
-            try{const u=new URL(String(value||''));return u.protocol==='https:'&&['cdn.discordapp.com','media.discordapp.net'].includes(u.hostname)?u.href:'';}catch(_){return '';}
+        // V163｜個人頭像採用使用者自行填寫的 HTTPS 圖片連結；無 Discord BOT 同步。
+        // staffPhotoLinks/{account} 僅存放圖片網址，供案件顯示按需讀取，避免下載 users 全資料。
+        const ntpcAvatarCache = new Map();
+        const ntpcAvatarPending = new Map();
+        function ntpcSafeAvatarUrl(value) {
+            const text=String(value||'').trim();
+            if(!text||text.length>2048)return '';
+            try{
+                const u=new URL(text);
+                if(u.protocol!=='https:'||u.username||u.password||!u.hostname.includes('.'))return '';
+                if(/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/i.test(u.hostname))return '';
+                return u.href;
+            }catch(_){return '';}
         }
-        function ntpcValidateDiscordId(id){
-            if(!id||/^\d{17,20}$/.test(id))return true;
-            showToast('Discord ID 必須是 17～20 位純數字，可留空。','warning','Discord ID 格式錯誤');return false;
+        function ntpcAvatarValue(user){
+            if(!user)return '';
+            // V162 儲存過的圖片網址只作一次性相容：一旦手動設定 avatarUrl（包含空字串），即以手動值為準。
+            return ntpcSafeAvatarUrl(Object.prototype.hasOwnProperty.call(user,'avatarUrl')?user.avatarUrl:user.discordAvatarUrl);
         }
-        function ntpcSetProfileAvatar(hostId,value){
-            const host=document.getElementById(hostId);if(!host)return;
-            const img=host.querySelector('img'),fallback=host.querySelector('i'),safe=ntpcSafeDiscordAvatarUrl(value);
-            if(img){img.hidden=!safe;if(safe&&img.src!==safe)img.src=safe;else if(!safe)img.removeAttribute('src');}
-            if(fallback)fallback.hidden=!!safe;
+        function ntpcAvatarValidateForm(raw){
+            const t=String(raw||'').trim(),safe=ntpcSafeAvatarUrl(t);
+            if(t&&!safe){showToast('請填寫公開 HTTPS 圖片直連，長度不可超過 2048 字元；或留空清除頭像。','warning','圖片網址格式不正確');return null;}
+            return safe;
+        }
+        function ntpcSetProfileAvatarElement(host,value){
+            if(!host)return;
+            const img=host.querySelector('img'),icon=host.querySelector('i'),safe=ntpcSafeAvatarUrl(value);
+            if(!img)return;
+            img.referrerPolicy='no-referrer';img.loading='lazy';
+            img.onerror=()=>{img.hidden=true;if(icon)icon.hidden=false;};
+            if(safe){img.hidden=false;if(img.getAttribute('src')!==safe)img.src=safe;if(icon)icon.hidden=true;}
+            else{img.hidden=true;img.removeAttribute('src');if(icon)icon.hidden=false;}
+        }
+        function ntpcSetProfileAvatar(hostId,value){ntpcSetProfileAvatarElement(document.getElementById(hostId),value);}
+        function ntpcPreviewPhotoInput(inputId,previewId){
+            const input=document.getElementById(inputId),value=String(input?.value||'').trim();
+            ntpcSetProfileAvatar(previewId,ntpcSafeAvatarUrl(value));
         }
         function ntpcAvatarUserByAccount(account){
             const needle=String(account||'').trim().toLowerCase();
@@ -5656,20 +5680,15 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
             return ntpcAvatarUserByAccount(account)?.account||String(account||'');
         }
         function ntpcAvatarMarkup(account,cssClass=''){
-            const id=String(account||'').trim();const record=ntpcAvatarUserByAccount(id);const safe=ntpcSafeDiscordAvatarUrl(record?.discordAvatarUrl||ntpcAvatarCache.get(id)?.url||'');
-            return `<span class="ntpc-avatar-chip ${cssClass}" data-ntpc-avatar-account="${escapeHtml(id)}"><img alt="" ${safe?`src="${escapeHtml(safe)}"`:'hidden'}><i class="fa-solid fa-user" aria-hidden="true" ${safe?'hidden':''}></i></span>`;
+            const id=String(account||'').trim(),u=ntpcAvatarUserByAccount(id);
+            const safe=u?ntpcAvatarValue(u):ntpcSafeAvatarUrl(ntpcAvatarCache.get(id)?.url);
+            return `<span class="ntpc-avatar-chip ${cssClass}" data-ntpc-avatar-account="${escapeHtml(id)}"><img alt="" referrerpolicy="no-referrer" loading="lazy" ${safe?`src="${escapeHtml(safe)}"`:'hidden'}><i class="fa-solid fa-user" aria-hidden="true" ${safe?'hidden':''}></i></span>`;
         }
         function ntpcAvatarApply(account,url){
-            const safe=ntpcSafeDiscordAvatarUrl(url);
+            const safe=ntpcSafeAvatarUrl(url);
             for(const el of document.querySelectorAll('[data-ntpc-avatar-account]')){
-                if(el.dataset.ntpcAvatarAccount!==account)continue;
-                ntpcSetProfileAvatarElement(el,safe);
+                if(el.dataset.ntpcAvatarAccount===account)ntpcSetProfileAvatarElement(el,safe);
             }
-        }
-        function ntpcSetProfileAvatarElement(el,url){
-            const img=el?.querySelector('img'),icon=el?.querySelector('i');if(!img)return;
-            img.hidden=!url;if(url&&img.src!==url)img.src=url;else if(!url)img.removeAttribute('src');
-            if(icon)icon.hidden=!!url;
         }
         async function ntpcGetRemoteAvatar(account){
             const id=String(account||'').trim();
@@ -5678,9 +5697,8 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
             if(ntpcAvatarPending.has(id))return ntpcAvatarPending.get(id);
             const p=(async()=>{
                 try{
-                    const snap=await fm.getDoc(fm.doc(db,'staffAvatars',id));
-                    const data=snap.exists()?snap.data():{};
-                    const url=ntpcSafeDiscordAvatarUrl(data.avatarUrl);
+                    const snap=await fm.getDoc(fm.doc(db,'staffPhotoLinks',id));
+                    const url=ntpcSafeAvatarUrl(snap.exists()?snap.data().avatarUrl:'');
                     ntpcAvatarCache.set(id,{url,at:Date.now()});ntpcAvatarApply(id,url);
                     return url;
                 }catch(_){return '';}
@@ -5688,13 +5706,12 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
             })();ntpcAvatarPending.set(id,p);return p;
         }
         function ntpcHydrateAvatarNodes(){
-            const elements=document.querySelectorAll('[data-ntpc-avatar-account]');
-            for(const el of elements){
+            for(const el of document.querySelectorAll('[data-ntpc-avatar-account]')){
                 const id=String(el.dataset.ntpcAvatarAccount||'');if(!id)continue;
                 const u=ntpcAvatarUserByAccount(id),cached=ntpcAvatarCache.get(id);
-                if(u){ntpcSetProfileAvatarElement(el,ntpcSafeDiscordAvatarUrl(u.discordAvatarUrl));}
-                else if(cached){ntpcSetProfileAvatarElement(el,cached.url);}
-                else if(!ntpcAvatarPending.has(id)){void ntpcGetRemoteAvatar(id);}
+                if(u)ntpcSetProfileAvatarElement(el,ntpcAvatarValue(u));
+                else if(cached)ntpcSetProfileAvatarElement(el,cached.url);
+                else if(!ntpcAvatarPending.has(id))void ntpcGetRemoteAvatar(id);
             }
         }
         function ntpcSetReportDetailAvatar(record){
@@ -5703,51 +5720,41 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
             host.insertAdjacentHTML('afterbegin',ntpcAvatarMarkup(account,'ntpc-avatar-sm'));
             ntpcHydrateAvatarNodes();
         }
-        async function ntpcRequestDiscordAvatarSync(accountDocId,discordId){
-            if(!fm||!db)return;
+        async function ntpcSavePublicAvatar(account,url){
+            const id=String(account||'').trim();if(!id||id.includes('/'))throw new Error('帳號識別格式錯誤');
+            await fm.setDoc(fm.doc(db,'staffPhotoLinks',id),{avatarUrl:ntpcSafeAvatarUrl(url),updatedAt:Date.now()});
+            ntpcAvatarCache.set(id,{url:ntpcSafeAvatarUrl(url),at:Date.now()});
+            ntpcAvatarApply(id,url);
+        }
+        function ntpcAvatarStatusText(user){return ntpcAvatarValue(user)?'已設定自訂圖片連結':'尚未設定頭像，使用預設圖示';}
+        async function ntpcSaveOwnPhotoLink(){
+            if(!currentUser||!fm||!db){showToast('請先登入網站後再修改頭像。','warning');return;}
+            const input=document.getElementById('ntpc-my-avatar-input'),url=ntpcAvatarValidateForm(input?.value||'');
+            if(url===null)return;
+            const account=String(currentUser.account||''),docId=String(currentUser.docId||account),button=document.getElementById('ntpc-my-avatar-save');
+            if(button)button.disabled=true;
             try{
-                await fm.setDoc(fm.doc(db,'discordAvatarSyncRequests',accountDocId),{
-                    accountDocId,discordId:String(discordId||''),status:'pending',requestedAt:Date.now(),requestedBy:currentUser?.account||''
-                });
-                if(discordId)showToast('Discord 頭像同步已排程，BOT 會定期處理。','success','同步請求已送出');
-            }catch(e){showToast('帳號已儲存，但頭像同步請求失敗：'+e.message,'warning','同步待重試');}
+                await fm.updateDoc(fm.doc(db,'users',docId),{avatarUrl:url,avatarUpdatedAt:Date.now()});
+                currentUser.avatarUrl=url;
+                const inList=ntpcAvatarUserByAccount(account);if(inList)inList.avatarUrl=url;
+                let publicError=null;
+                try{await ntpcSavePublicAvatar(account,url);}catch(e){publicError=e;}
+                updateUserBadge();renderMyProfile();ntpcAvatarApply(account,url);
+                if(publicError)showToast('頭像已儲存到個人資料，但案件列表頭像同步失敗：'+publicError.message,'warning','部分儲存成功');
+                else showToast(url?'頭像網址已儲存。':'已移除個人頭像。','success','更新成功');
+            }catch(e){showToast('修改頭像失敗：'+e.message,'error','儲存失敗');renderMyProfile();}
+            finally{if(button)button.disabled=false;}
         }
-        async function ntpcManualDiscordAvatarSync(){
-            if(!currentUser||currentUser.role!=='admin')return showToast('只有最高管理員可以提出頭像同步請求','warning');
-            const account=document.getElementById('edit-user-original-account')?.value||'';
-            const id=String(document.getElementById('edit-user-discord-id')?.value||'').trim();
-            const saved=(appData.users||[]).find(u=>u.account===account);
-            if(!saved||id!==String(saved.discordId||''))return showToast('請先儲存 Discord ID 變更，再執行同步。','warning');
-            if(!ntpcValidateDiscordId(id))return;
-            if(!id)return showToast('此帳號尚未綁定 Discord ID','warning');
-            ntpcAvatarCache.delete(account);await ntpcRequestDiscordAvatarSync(saved.docId||account,id);
-        }
-        function ntpcWatchOwnAvatar(){
-            const id=String(currentUser?.docId||currentUser?.account||'');
-            if(id===ntpcOwnAvatarAccount&&ntpcOwnAvatarUnsubscribe)return;
-            if(ntpcOwnAvatarUnsubscribe){try{ntpcOwnAvatarUnsubscribe();}catch(_){}}
-            ntpcOwnAvatarUnsubscribe=null;ntpcOwnAvatarAccount=id;
-            if(!id||!fm||!db)return;
-            try{ntpcOwnAvatarUnsubscribe=fm.onSnapshot(fm.doc(db,'users',id),snap=>{
-                if(!snap.exists()||!currentUser||String(currentUser.docId||currentUser.account)!==id)return;
-                const data=snap.data(); const url=ntpcSafeDiscordAvatarUrl(data.discordAvatarUrl);
-                const previous=String(currentUser.discordAvatarUrl||'');
-                currentUser.discordId=String(data.discordId||'');
-                currentUser.discordAvatarUrl=url;currentUser.discordAvatarSource=String(data.discordAvatarSource||'');
-                if(previous!==url){ntpcSetProfileAvatar('ntpc-header-avatar',url);ntpcSetProfileAvatar('ntpc-profile-avatar',url);ntpcSetProfileAvatar('ntpc-report-author-avatar',url);}
-                const status=document.getElementById('ntpc-profile-avatar-status');if(status)status.textContent=currentUser.discordId?('綁定 ID：'+currentUser.discordId+'｜'+(currentUser.discordAvatarSource==='guild'?'伺服器頭像':currentUser.discordAvatarSource==='global'?'Discord 全域頭像':url?'Discord 預設頭像':'等待 BOT 同步')):'尚未綁定 Discord ID';
-            },()=>{});}catch(_){}
-        }
+        // 頭像直接由登入資料或按需查詢取得，不建立 Firebase 即時監聽，不需 BOT。
+        function ntpcWatchOwnAvatar(){}
         document.addEventListener('DOMContentLoaded',()=>{
             const observer=new MutationObserver(records=>{
-                // Only hydrate when new report/avatar nodes are actually inserted; other UI updates are ignored.
-                const addedAvatars=records.some(rec=>Array.from(rec.addedNodes).some(n=>n.nodeType===1 && (n.matches?.('[data-ntpc-avatar-account]')||n.querySelector?.('[data-ntpc-avatar-account]'))));
-                if(!addedAvatars || window.__ntpcAvatarHydrateScheduled)return;
+                const added=records.some(rec=>Array.from(rec.addedNodes).some(n=>n.nodeType===1&&(n.matches?.('[data-ntpc-avatar-account]')||n.querySelector?.('[data-ntpc-avatar-account]'))));
+                if(!added||window.__ntpcAvatarHydrateScheduled)return;
                 window.__ntpcAvatarHydrateScheduled=true;
                 requestAnimationFrame(()=>{window.__ntpcAvatarHydrateScheduled=false;ntpcHydrateAvatarNodes();});
             });
-            observer.observe(document.body,{childList:true,subtree:true});
-            ntpcHydrateAvatarNodes();
+            observer.observe(document.body,{childList:true,subtree:true});ntpcHydrateAvatarNodes();
         });
 
         // 登入協議資料存放在各自 Firestore users 文件；版本更新可要求所有帳號重新確認。
@@ -9179,8 +9186,9 @@ async function republishAnnouncement(id) {
             document.getElementById('profile-account').textContent = currentUser.account || '--';
             document.getElementById('profile-staff-number').textContent = currentUser.staffNumber || currentUser.account || '--';
             document.getElementById('profile-units').textContent = getUnitDisplayNames(currentUser);
-            ntpcSetProfileAvatar('ntpc-profile-avatar', currentUser.discordAvatarUrl);
-            document.getElementById('ntpc-profile-avatar-status').textContent = currentUser.discordId ? ('綁定 ID：'+currentUser.discordId+'｜'+(currentUser.discordAvatarSource==='guild'?'伺服器頭像':currentUser.discordAvatarSource==='global'?'Discord 全域頭像':currentUser.discordAvatarUrl?'Discord 預設頭像':'等待 BOT 同步')) : '尚未綁定 Discord ID';
+            ntpcSetProfileAvatar('ntpc-profile-avatar',ntpcAvatarValue(currentUser));
+            document.getElementById('ntpc-profile-avatar-status').textContent=ntpcAvatarStatusText(currentUser);
+            const ownPhotoInput=document.getElementById('ntpc-my-avatar-input');if(ownPhotoInput)ownPhotoInput.value=ntpcAvatarValue(currentUser);
             document.getElementById('profile-total-hours').textContent = `${calculateUserTotalDutyHours(currentUser.account)} 小時`;
             document.getElementById('profile-total-reports').textContent = getUserReportCount(currentUser.account);
             renderPersonalNotifications();
@@ -9849,8 +9857,8 @@ async function republishAnnouncement(id) {
                 badge.classList.remove('hidden');
                 badge.classList.add('flex');
                 document.getElementById('user-badge-name').textContent = `${currentUser.name} (${currentUser.account})`;
-                ntpcSetProfileAvatar('ntpc-header-avatar',currentUser.discordAvatarUrl);
-                ntpcSetProfileAvatar('ntpc-report-author-avatar',currentUser.discordAvatarUrl);
+                ntpcSetProfileAvatar('ntpc-header-avatar',ntpcAvatarValue(currentUser));
+                ntpcSetProfileAvatar('ntpc-report-author-avatar',ntpcAvatarValue(currentUser));
                 ntpcWatchOwnAvatar();
                 const dot = document.getElementById('user-badge-role');
                 if (currentUser.role === 'admin') dot.className = "w-2 h-2 rounded-full bg-purple-500";
@@ -14224,7 +14232,7 @@ async function republishAnnouncement(id) {
                     <td class="p-4 font-mono font-bold text-white">${u.account}</td>
                     <td class="p-4 font-mono text-cyan-400">${u.staffNumber||'--'}</td>
                     <td class="p-4 text-slate-200">${escapeHtml(u.name||'')}</td>
-                    <td class="p-4"><div class="flex items-center gap-2">${ntpcAvatarMarkup(u.account,'ntpc-avatar-sm')}<span class="text-[10px] text-slate-400 font-mono">${escapeHtml(u.discordId||'未綁定')}</span></div></td>
+                    <td class="p-4"><div class="flex items-center gap-2">${ntpcAvatarMarkup(u.account,'ntpc-avatar-sm')}<span class="text-[10px] text-slate-400">${ntpcAvatarValue(u)?'已設定':'未設定'}</span></div></td>
                     <td class="p-4 text-slate-300">${unitNames}</td>
                     <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${getEffectiveRole(u) === 'admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : getEffectiveRole(u) === 'high' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : getEffectiveRole(u) === 'senior' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${roleText}</span></td>
                     <td class="p-4 text-right space-x-2">
@@ -14243,13 +14251,13 @@ async function republishAnnouncement(id) {
             }
             document.getElementById('new-user-account').value = '';
             document.getElementById('new-user-name').value = '';
-            document.getElementById('new-user-password').value = ''; document.getElementById('new-user-staff-number').value = ''; document.getElementById('new-user-roblox-id').value = ''; document.getElementById('new-user-discord-id').value='';
+            document.getElementById('new-user-password').value = ''; document.getElementById('new-user-staff-number').value = ''; document.getElementById('new-user-roblox-id').value = ''; document.getElementById('new-user-avatar-url').value='';ntpcSetProfileAvatar('ntpc-new-avatar-preview','');
             document.querySelectorAll('input[name="new-user-units"]').forEach(cb => cb.checked = false); document.querySelectorAll('input[name="new-user-permissions"]').forEach(cb => cb.checked = cb.value==='normal'); document.getElementById('new-user-police-division').value=''; document.getElementById('new-user-fire-division').value=''; document.getElementById('new-user-police-role').value='normal'; document.getElementById('new-user-fire-role').value='normal'; syncUnitDivisionVisibility('new'); document.getElementById('modal-create-user').classList.remove('hidden');
         }
 
             async function submitNewUser() {
             if (!currentUser || currentUser.role !== 'admin') { showToast('只有最高管理員可以建立帳號。','warning','權限不足'); return; }
-            const account=document.getElementById('new-user-account').value.trim(), name=document.getElementById('new-user-name').value.trim(), pass=document.getElementById('new-user-password').value.trim(), staffNumber=document.getElementById('new-user-staff-number')?.value.trim()||''; const robloxId=String(document.getElementById('new-user-roblox-id')?.value||'').trim(); const discordId=String(document.getElementById('new-user-discord-id')?.value||'').trim();
+            const account=document.getElementById('new-user-account').value.trim(), name=document.getElementById('new-user-name').value.trim(), pass=document.getElementById('new-user-password').value.trim(), staffNumber=document.getElementById('new-user-staff-number')?.value.trim()||''; const robloxId=String(document.getElementById('new-user-roblox-id')?.value||'').trim(); const avatarRaw=String(document.getElementById('new-user-avatar-url')?.value||'').trim();const avatarUrl=ntpcAvatarValidateForm(avatarRaw);if(avatarUrl===null)return;
             const permissions=[...new Set(Array.from(document.querySelectorAll('input[name="new-user-permissions"]:checked')).map(x=>x.value))];
             const role=USER_ROLE_PRIORITY.find(x=>permissions.includes(x))||'normal';
             const units=Array.from(document.querySelectorAll('input[name="new-user-units"]:checked')).map(x=>x.value);
@@ -14257,14 +14265,12 @@ async function republishAnnouncement(id) {
             const unitRoles=ntpcReadUnitRoles('new',units);
             if (!account || !name || !pass || !units.length || !permissions.length) { showToast('請完整填寫帳號、名稱、密碼並至少勾選一個單位。','error','資料不完整'); return; }
             if (!ntpcValidateUnitPermissionSelection(units,permissions))return;
-            if (!ntpcValidateDiscordId(discordId))return;
-            if (discordId && appData.users.some(u=>String(u.discordId||'')===discordId)) { showToast('此 Discord ID 已綁定另一個網站帳號。','warning','Discord ID 重複'); return; }
             if (isSuperAdminAccount(account)) { showToast('Dsuensx 為系統最高權限保護帳號。','warning','操作受限'); return; }
             if (!validateUnitSelections(units,policeDivision,fireDivision)) return;
             if (appData.users.some(u=>String(u.account).toLowerCase()===account.toLowerCase())) { showToast('此帳號／編號已存在。','warning','帳號重複'); return; }
             if (robloxId && appData.users.some(u=>String(u.robloxId||'').trim()===robloxId)) { showToast('此 ROBLOX ID 已綁定其他帳號。','warning','ROBLOX ID 重複'); return; }
-            const u={account,name,pass,role,permissions,units,unitRoles,staffNumber,robloxId,discordId,discordAvatarUrl:'',discordAvatarSource:'',discordAvatarSyncedAt:0,policeDivision:units.includes('police')?policeDivision:'',fireDivision:units.includes('fire')?fireDivision:''};
-            try { await fm.setDoc(fm.doc(db,'users',account),u); appData.users.push(u); closeModal('modal-create-user'); renderAdminUsers(); populateMemberSelects(); showToast('新公職帳號建立成功。','success','建立成功'); if(discordId) await ntpcRequestDiscordAvatarSync(account,discordId); }
+            const u={account,name,pass,role,permissions,units,unitRoles,staffNumber,robloxId,avatarUrl,avatarUpdatedAt:Date.now(),policeDivision:units.includes('police')?policeDivision:'',fireDivision:units.includes('fire')?fireDivision:''};
+            try { await fm.setDoc(fm.doc(db,'users',account),u); appData.users.push(u); closeModal('modal-create-user'); renderAdminUsers(); populateMemberSelects(); showToast('新公職帳號建立成功。','success','建立成功'); if(avatarUrl){try{await ntpcSavePublicAvatar(account,avatarUrl);}catch(e){showToast('帳號建立成功，但公開頭像儲存失敗：'+e.message,'warning');}} }
             catch(e){ showToast('建立失敗：'+e.message,'error','操作失敗'); }
         }
 
@@ -14281,7 +14287,7 @@ async function republishAnnouncement(id) {
             if (!u) return;
 
             document.getElementById('edit-user-original-account').value = u.account;
-            document.getElementById('edit-user-discord-id').value=String(u.discordId||'');
+            document.getElementById('edit-user-avatar-url').value=ntpcAvatarValue(u);ntpcSetProfileAvatar('ntpc-edit-avatar-preview',ntpcAvatarValue(u));
             document.getElementById('edit-user-account-input').value = u.account;
             document.getElementById('edit-user-name-input').value = u.name;
             const editPermissions=getUserPermissions(u); document.querySelectorAll('input[name="edit-user-permissions"]').forEach(cb=>cb.checked=editPermissions.includes(cb.value));
@@ -14300,7 +14306,7 @@ async function republishAnnouncement(id) {
             let account=document.getElementById('edit-user-account-input').value.trim(), name=document.getElementById('edit-user-name-input').value.trim();
             let permissions=[...new Set(Array.from(document.querySelectorAll('input[name="edit-user-permissions"]:checked')).map(x=>x.value))];
             let role=USER_ROLE_PRIORITY.find(x=>permissions.includes(x))||'normal';
-            const pass=document.getElementById('edit-user-password-input').value.trim(); const staffNumber=document.getElementById('edit-user-staff-number-input')?.value.trim()||''; const robloxId=String(document.getElementById('edit-user-roblox-id-input')?.value||'').trim(); const discordId=String(document.getElementById('edit-user-discord-id')?.value||'').trim();
+            const pass=document.getElementById('edit-user-password-input').value.trim(); const staffNumber=document.getElementById('edit-user-staff-number-input')?.value.trim()||''; const robloxId=String(document.getElementById('edit-user-roblox-id-input')?.value||'').trim(); const avatarRaw=String(document.getElementById('edit-user-avatar-url')?.value||'').trim();const avatarUrl=ntpcAvatarValidateForm(avatarRaw);if(avatarUrl===null)return;
             let units=Array.from(document.querySelectorAll('input[name="edit-user-units"]:checked')).map(x=>x.value);
             const policeDivision=document.getElementById('edit-user-police-division').value || '新莊分局', fireDivision=document.getElementById('edit-user-fire-division').value;
             if (superTarget) { account='Dsuensx'; role='admin'; permissions=['admin']; units=[...new Set([...getUserUnits(appData.users.find(x=>x.account===origAccount)), 'admin'])]; }
@@ -14309,9 +14315,7 @@ async function republishAnnouncement(id) {
             if (!ntpcValidateUnitPermissionSelection(units,permissions))return;
             if (!validateUnitSelections(units,policeDivision,fireDivision)) return;
             const u=appData.users.find(x=>x.account===origAccount); if(!u) return;
-            if (!ntpcValidateDiscordId(discordId))return;
-            if(discordId && appData.users.some(x=>x.account!==origAccount&&String(x.discordId||'')===discordId)){showToast('此 Discord ID 已綁定其他網站帳號','warning');return;}
-            const discordBindingChanged=String(u.discordId||'')!==discordId;
+            const avatarChanged=ntpcAvatarValue(u)!==avatarUrl;
             if (robloxId && appData.users.some(x=>x.account!==origAccount && String(x.robloxId||'').trim()===robloxId)) { showToast('此 ROBLOX ID 已綁定其他帳號。','warning','ROBLOX ID 重複'); return; }
             // 修改前先記錄需要稽核的欄位；密碼只記錄「已變更」，絕不寫入舊／新密碼。
             const oldAccount=String(u.account||origAccount);
@@ -14319,29 +14323,18 @@ async function republishAnnouncement(id) {
             const oldRobloxId=String(u.robloxId||'');
             const oldPass=String(u.pass||'');
             const changedFields=[];
-            if(discordBindingChanged) changedFields.push(`Discord ID：${String(u.discordId||'未綁定')} → ${discordId||'未綁定'}`);
+            if(avatarChanged) changedFields.push('個人頭像連結：已變更');
             if(oldAccount!==String(account)) changedFields.push(`帳號：${oldAccount} → ${account}`);
             if(oldStaffNumber!==String(staffNumber)) changedFields.push(`編號：${oldStaffNumber||'未設定'} → ${staffNumber||'未設定'}`);
             if(oldRobloxId!==String(robloxId)) changedFields.push(`ROBLOX ID：${oldRobloxId||'未設定'} → ${robloxId||'未設定'}`);
             if(pass && pass!==oldPass) changedFields.push('密碼：已變更（不顯示密碼內容）');
             // 先建立待儲存物件；Firestore 失敗時保留原先畫面與快取。
             const unitRoles=ntpcReadUnitRoles('edit',units,u);
-            const updatedUser={...u,account,name,role,permissions,units,unitRoles,staffNumber,robloxId,discordId,...(discordBindingChanged?{discordAvatarUrl:'',discordAvatarSource:'',discordAvatarSyncedAt:0}:{}),policeDivision:units.includes('police')?policeDivision:'',fireDivision:units.includes('fire')?fireDivision:'',...(pass?{pass}:{})};
+            const updatedUser={...u,account,name,role,permissions,units,unitRoles,staffNumber,robloxId,avatarUrl,avatarUpdatedAt:avatarChanged?Date.now():(u.avatarUpdatedAt||0),policeDivision:units.includes('police')?policeDivision:'',fireDivision:units.includes('fire')?fireDivision:'',...(pass?{pass}:{})};
             if(superTarget) updatedUser.protected=true;
             const docId=u.docId||origAccount, targetDocId=superTarget?docId:account;
-            const userPayload={account:updatedUser.account,name:updatedUser.name,pass:updatedUser.pass,role:updatedUser.role,permissions:updatedUser.permissions,units:updatedUser.units,unitRoles:updatedUser.unitRoles,staffNumber:updatedUser.staffNumber||'',policeDivision:updatedUser.policeDivision||'',fireDivision:updatedUser.fireDivision||'',robloxId:updatedUser.robloxId||'',discordId:discordId,discordAvatarUrl:updatedUser.discordAvatarUrl||'',discordAvatarSource:updatedUser.discordAvatarSource||'',discordAvatarSyncedAt:updatedUser.discordAvatarSyncedAt||0,online:false,lastSeen:0,lastLoginAt:updatedUser.lastLoginAt||0,lastDevice:updatedUser.lastDevice||null,...(updatedUser.siteAgreement?{siteAgreement:updatedUser.siteAgreement}:{}),...(superTarget?{protected:true}:{})};
+            const userPayload={account:updatedUser.account,name:updatedUser.name,pass:updatedUser.pass,role:updatedUser.role,permissions:updatedUser.permissions,units:updatedUser.units,unitRoles:updatedUser.unitRoles,staffNumber:updatedUser.staffNumber||'',policeDivision:updatedUser.policeDivision||'',fireDivision:updatedUser.fireDivision||'',robloxId:updatedUser.robloxId||'',avatarUrl:updatedUser.avatarUrl||'',avatarUpdatedAt:updatedUser.avatarUpdatedAt||0,online:false,lastSeen:0,lastLoginAt:updatedUser.lastLoginAt||0,lastDevice:updatedUser.lastDevice||null,...(updatedUser.siteAgreement?{siteAgreement:updatedUser.siteAgreement}:{}),...(superTarget?{protected:true}:{})};
             try {
-                if(!discordBindingChanged){
-                    const latest=await fm.getDoc(fm.doc(db,'users',docId));
-                    if(latest.exists() && String(latest.data().discordId||'')===discordId){
-                        userPayload.discordAvatarUrl=latest.data().discordAvatarUrl||'';
-                        userPayload.discordAvatarSource=latest.data().discordAvatarSource||'';
-                        userPayload.discordAvatarSyncedAt=latest.data().discordAvatarSyncedAt||0;
-                        updatedUser.discordAvatarUrl=userPayload.discordAvatarUrl;
-                        updatedUser.discordAvatarSource=userPayload.discordAvatarSource;
-                        updatedUser.discordAvatarSyncedAt=userPayload.discordAvatarSyncedAt;
-                    }
-                }
                 if(!superTarget && docId!==targetDocId){
                     await fm.runTransaction(db, async transaction => {
                         const targetRef=fm.doc(db,'users',targetDocId),sourceRef=fm.doc(db,'users',docId);
@@ -14359,11 +14352,14 @@ async function republishAnnouncement(id) {
                     await logAdminAction('編輯帳號資訊',logTarget,`管理員帳號：${currentUser?.account||'未知'}；${changedFields.join('；')}`);
                 }
                 closeModal('modal-edit-user'); renderAdminUsers(); populateMemberSelects(); updateUserBadge(); updateAccessLocks(); showToast('帳號資料更新成功。','success','操作成功');
-                if(discordBindingChanged || docId!==targetDocId){
-                    if(docId!==targetDocId){try{await fm.deleteDoc(fm.doc(db,'staffAvatars',oldAccount));}catch(_){} }
-                    if(!discordId){try{await fm.deleteDoc(fm.doc(db,'staffAvatars',targetDocId));}catch(_){} }
-                    await ntpcRequestDiscordAvatarSync(targetDocId,discordId);
+                if(avatarChanged||oldAccount!==account){
+                    if(oldAccount!==account){
+                        ntpcAvatarCache.delete(oldAccount);
+                        try{await fm.deleteDoc(fm.doc(db,'staffPhotoLinks',oldAccount));}catch(_){}
+                    }
+                    try{await ntpcSavePublicAvatar(account,avatarUrl);}catch(e){showToast('帳號已更新，但案件列表頭像儲存失敗：'+e.message,'warning');}
                 }
+                if(currentUser?.account===account){currentUser.avatarUrl=avatarUrl;updateUserBadge();}
             }
             catch(e){ showToast('更新失敗：'+e.message,'error','操作失敗'); }
         }
@@ -14381,6 +14377,8 @@ async function republishAnnouncement(id) {
             try {
                 const targetUser = appData.users.find(x => x.account === account);
                 await fm.deleteDoc(fm.doc(db, 'users', account));
+                try{await fm.deleteDoc(fm.doc(db,'staffPhotoLinks',account));}catch(e){console.warn('清除頭像輕量資料失敗',e);}
+                ntpcAvatarCache.delete(account);
                 appData.users = appData.users.filter(x => x.account !== account);
                 await logAdminAction('刪除帳號', account, `刪除帳號：${account}；RP名稱：${targetUser?.name || '--'}。`);
                 renderAdminUsers();
