@@ -1,4 +1,4 @@
-<!-- V163：帳號頭像改由管理員或帳號本人貼入 HTTPS 圖片連結；移除 Discord BOT 頭像同步請求；首頁、我的資料、帳號管理與案件繼續顯示頭像。其他功能與歷史更新紀錄保留。 -->
+<!-- V164：修正最高管理員單位／兼任身分被重設、保留帳號編輯時的15天登入憑證；登入視窗加入保持登入選項；更新紀錄補列V163頭像系統。保留完整既有功能與所有公開歷史紀錄。 -->
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
 <head>
@@ -2397,6 +2397,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
     @media(max-width:640px){#user-badge-name{max-width:115px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
 
 </style>
+<style id="ntpc-v164-account-role-lock-style">.ntpc-mandatory-admin{opacity:0.85!important;cursor:not-allowed}.ntpc-mandatory-admin input{accent-color:#8b5cf6}</style>
 </head>
 <body class="ntpc-premium-ui bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
     <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
@@ -3107,7 +3108,30 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
 
                 <div id="dynamic-update-log" class="space-y-4"></div>
                 <div class="space-y-4">
-                    <article id="ntpc-update-summary-latest" class="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+                    <article class="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                            <div><h3 class="text-lg font-bold text-white">V164｜帳號權限與保持登入修復</h3><p class="text-xs text-emerald-300 mt-1">修正最高管理員兼任單位與 15 天登入功能</p></div>
+                            <span class="text-xs font-semibold text-emerald-300">內建最新版本</span>
+                        </div>
+                        <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
+                            <li>最高管理員帳號保留「管理中心」單位及「最高管理員」權限，可自由新增／移除警察、消防、專科學校、嘉蕭等其他兼任單位與身分。</li>
+                            <li>帳號編輯不再覆蓋有效的 15 天保持登入憑證；登入畫面加入「保持登入 15 天」勾選項目。</li>
+                            <li>更新紀錄新增 V163 個人頭像系統說明，所有歷史與雲端版本記錄繼續保留。</li>
+                        </ul>
+                    </article>
+                    <article class="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                            <div><h3 class="text-lg font-bold text-white">V163｜個人頭像圖片連結系統</h3><p class="text-xs text-slate-400 mt-1">使用者自行設定 HTTPS 圖片連結，取代 Discord BOT 頭像自動同步</p></div>
+                            <span class="text-xs font-semibold text-slate-500">歷史版本</span>
+                        </div>
+                        <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
+                            <li>管理中心可新增、編輯帳號的頭像連結；公職帳號可於「我的資料」自行設定、預覽或清除圖片網址。</li>
+                            <li>首頁登入帳號、案件填寫人與審核列表、管理中心帳號清單顯示使用者頭像，無圖片時採預設圖示。</li>
+                            <li>採用 HTTPS 直接圖片連結，免用 Discord ID、BOT Token 或額外頭像同步 API。</li>
+                        </ul>
+                    </article>
+                    <div id="dynamic-archived-update-log" class="space-y-4"></div>
+                    <article id="ntpc-update-summary-latest" class="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                             <div>
                                 <h3 class="text-lg font-bold text-white">V2.0</h3>
@@ -3163,7 +3187,6 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                             <li>派遣查詢與發送需另外部署並設定具權限保護的 Cloudflare Worker；僅更新 HTML 不會直接啟用 API 派遣。</li>
                         </ul>
                     </article>
-                    <div id="dynamic-archived-update-log" class="space-y-4"></div>
                     <article class="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                             <div>
@@ -4495,8 +4518,11 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">密碼</label>
                     <div class="relative"><input type="password" id="login-password" autocomplete="current-password" placeholder="請輸入密碼..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-blue-500"><button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-2" aria-label="顯示密碼"><i class="fa-solid fa-eye"></i></button></div>
                 </div>
+                <label class="flex items-start gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 px-3 py-3 cursor-pointer">
+                    <input type="checkbox" id="login-remember-device" checked class="mt-0.5 h-4 w-4 accent-blue-500 shrink-0" />
+                    <span class="text-sm text-slate-200"><span class="font-semibold">保持登入 15 天</span><span class="block text-xs leading-5 text-slate-400 mt-1">僅記住此瀏覽器，重新整理或關閉後再開啟仍可恢復登入；公用裝置請取消勾選，使用完畢請登出。</span></span>
+                </label>
                 <button id="handle-login-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition">立即登入</button>
-                <p class="text-xs leading-5 text-slate-400"><i class="fa-solid fa-shield-halved mr-1 text-blue-300"></i>登入後此瀏覽器會記住登入狀態最多 15 天；公用裝置使用後請按「登出」。</p>
                 <button type="button" id="login-forgot-password-btn" class="w-full text-sm text-slate-400 hover:text-blue-400 transition underline underline-offset-4">忘記密碼？前往常見問題</button>
                 <button type="button" id="login-view-agreement-btn" class="w-full text-sm text-slate-400 hover:text-blue-400 transition underline underline-offset-4"><i class="fa-solid fa-file-contract mr-2"></i>查看網站相關協議</button>
             </div>
@@ -6580,10 +6606,10 @@ function compareSiteVersion(a, b){
                 return Number(b?.publishedAt||b?.updatedAt||b?.createdAt||0)-Number(a?.publishedAt||a?.updatedAt||a?.createdAt||0);
             });
         }
-        // 本 HTML 固定內建 V2.0。雲端舊版發布紀錄不可覆蓋較新的已部署版本。
+        // 本 HTML 內建 V164，舊有雲端版本及歷史紀錄持續公開顯示。
         const NTPC_BUNDLED_SITE_VERSION={
-            version:'V2.0',title:'警務文件分類、交通事故現場圖與系統功能整合',
-            summary:'警務新增案件、筆錄、交通事件及刑事鑑定文件；交通現場圖先選道路類型才顯示，當事人預設 2 位，可新增至 6 位。延續嘉蕭醫院、消防獎懲及 Bot 系統優化。'
+            version:'V164',title:'帳號權限與15天登入修復｜個人頭像系統',
+            summary:'修正最高管理員兼任單位／身分無法增減與編輯帳號造成保持登入失效；提供15天保持登入選項，並於更新紀錄補列V163個人頭像圖片連結功能。'
         };
         function getCurrentSiteVersion(){
             const rows=sortSiteVersions((appData.siteVersions||[]).filter(v=>v&&v.active!==false));
@@ -6622,7 +6648,7 @@ function compareSiteVersion(a, b){
             const archivedHost=document.getElementById('dynamic-archived-update-log');
             if(archivedHost)archivedHost.innerHTML=renderCards(archived,false);
             const badge=document.getElementById('ntpc-bundled-update-badge');
-            if(badge)badge.textContent=newer.length?'內建版本紀錄':'目前版本';
+            if(badge)badge.textContent='歷史內建版本';
         }
         function resetSiteVersionForm(){
             ['site-version-edit-id','site-version-number','site-version-title','site-version-summary','site-version-details'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
@@ -9844,7 +9870,15 @@ async function republishAnnouncement(id) {
             }
             return;
         }
-        if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));if(!(await requireSiteAgreement(found)))return;currentUser=found;appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);try{await ntpcRememberThisDevice(currentUser);}catch(e){console.warn('裝置 15 天登入設定失敗',e);showToast('本次已登入，但裝置記住 15 天失敗：'+(e?.message||e),'warning','記住登入未啟用');}resetManualReadFlags();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();switchTab('home');}
+        if(!found||String(found.pass)!==pass){const autoBlocked=await registerLoginFailure(device);if(autoBlocked){showToast('因異常行為 預防性封鎖 請洽政府信箱','error','裝置已被封鎖');}else{showToast('帳號或密碼錯誤，請重新確認後再試。','error','登入失敗');}return;}await clearLoginFailureRecord(getDeviceKey(device));if(!(await requireSiteAgreement(found)))return;currentUser=found;appData.users=[...(appData.users||[]).filter(u=>String(u.account).toLowerCase()!==String(found.account).toLowerCase()),found];await loadAllDataFromCloud();saveBrowserSession();closeModal('modal-login');updateUserBadge();updateAccessLocks();renderMyProfile();await recordLoginSession(currentUser);try{
+            if(document.getElementById('login-remember-device')?.checked!==false){
+                await ntpcRememberThisDevice(currentUser);
+            }else{
+                const saved=ntpcGetRememberedLogin();
+                ntpcLocalRemove(NTPC_REMEMBER_KEY);
+                if(saved)void ntpcRevokeRememberedLogin(saved).catch(e=>console.warn('清除舊登入憑證失敗',e));
+            }
+        }catch(e){console.warn('裝置 15 天登入設定失敗',e);showToast('本次已登入，但裝置記住 15 天失敗：'+(e?.message||e),'warning','記住登入未啟用');}resetManualReadFlags();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();switchTab('home');}
         async function logout(){const remembered=ntpcGetRememberedLogin();ntpcLocalRemove(NTPC_REMEMBER_KEY);safeSessionRemove('ntpcrp_session');if(remembered)void ntpcRevokeRememberedLogin(remembered).catch(e=>console.warn('雲端登入憑證撤銷稍後再試',e));ntpcBotAdminLogout();ntpcMapDisconnectAll();ntpcDispatchStop(true);resetManualReadFlags();stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','jiaxiaoClocks','jiaxiaoMedicalReports','jiaxiaoMedicalPendingReports','jiaxiaoFuneralReports','jiaxiaoFuneralPendingReports','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
@@ -13716,6 +13750,14 @@ async function republishAnnouncement(id) {
             if (units.includes('academy')) names.push('專科學校');
             return names.join('、') || '未指定';
         }
+        function ntpcProtectSuperAdminSelections(prefix) {
+            if(prefix!=='edit')return;
+            const lock=isSuperAdminAccount(document.getElementById('edit-user-original-account')?.value);
+            const unit=document.querySelector('input[name="edit-user-units"][value="admin"]');
+            const permission=document.querySelector('input[name="edit-user-permissions"][value="admin"]');
+            if(unit){if(lock)unit.checked=true;unit.disabled=lock;unit.closest('label')?.classList.toggle('ntpc-mandatory-admin',lock);}
+            if(permission){if(lock)permission.checked=true;permission.disabled=lock||!unit?.checked;permission.closest('label')?.classList.toggle('ntpc-mandatory-admin',lock);}
+        }
         function syncUnitDivisionVisibility(prefix) {
             const p=document.querySelector(`input[name="${prefix}-user-units"][value="police"]`), f=document.querySelector(`input[name="${prefix}-user-units"][value="fire"]`);
             const ps=document.getElementById(`${prefix}-user-police-division`), fs=document.getElementById(`${prefix}-user-fire-division`);
@@ -13723,6 +13765,7 @@ async function republishAnnouncement(id) {
             if (fs) { const enabled=!!f?.checked; fs.disabled=!enabled; fs.classList.toggle('opacity-50', !enabled); }
             ntpcSyncPermissionChoices(prefix);
             ntpcSyncDepartmentRoleControls(prefix);
+            ntpcProtectSuperAdminSelections(prefix);
         }
         function validateUnitSelections(units, policeDivision, fireDivision) {
             if (units.includes('police') && !policeDivision) { showToast('選擇警察身分時，必須指定警察所屬單位。','warning','資料不完整'); return false; }
@@ -14309,7 +14352,7 @@ async function republishAnnouncement(id) {
             const pass=document.getElementById('edit-user-password-input').value.trim(); const staffNumber=document.getElementById('edit-user-staff-number-input')?.value.trim()||''; const robloxId=String(document.getElementById('edit-user-roblox-id-input')?.value||'').trim(); const avatarRaw=String(document.getElementById('edit-user-avatar-url')?.value||'').trim();const avatarUrl=ntpcAvatarValidateForm(avatarRaw);if(avatarUrl===null)return;
             let units=Array.from(document.querySelectorAll('input[name="edit-user-units"]:checked')).map(x=>x.value);
             const policeDivision=document.getElementById('edit-user-police-division').value || '新莊分局', fireDivision=document.getElementById('edit-user-fire-division').value;
-            if (superTarget) { account='Dsuensx'; role='admin'; permissions=['admin']; units=[...new Set([...getUserUnits(appData.users.find(x=>x.account===origAccount)), 'admin'])]; }
+            if (superTarget) { account=origAccount; role='admin'; permissions=[...new Set([...permissions, 'admin'])]; units=[...new Set([...units, 'admin'])]; }
             if (appData.users.find(x=>x.account===origAccount)?.role==='admin' || role==='admin') account=origAccount;
             if (!account || !name || !units.length || !permissions.length) { showToast('請完整填寫帳號、名稱並至少勾選一個單位。','error','資料不完整'); return; }
             if (!ntpcValidateUnitPermissionSelection(units,permissions))return;
@@ -14344,7 +14387,7 @@ async function republishAnnouncement(id) {
                         transaction.set(targetRef,userPayload);
                         transaction.delete(sourceRef);
                     });
-                }else{await fm.setDoc(fm.doc(db,'users',targetDocId),userPayload);}
+                }else{await fm.setDoc(fm.doc(db,'users',targetDocId),userPayload,{merge:true});} // V164：保留 rememberedDevicesV149、既有工作階段與未編輯欄位
                 Object.assign(u,updatedUser,{docId:targetDocId});
                 if(superOperator&&superTarget)currentUser={...u};
                 if(changedFields.length){
