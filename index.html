@@ -1,4 +1,4 @@
-<!-- V2：統整近期網站更新紀錄，將 V163～V165 頭像及帳號修正併入 V2 內建版本；統一首頁、更新紀錄及管理中心版本標示，保留原有歷史與雲端發布紀錄。 -->
+<!-- V2.1：個人中心雙分頁、創作者專屬靜態檔案外框與流動標籤；保留個人名片、註銷帳號、動態頭像框及完整歷史。 -->
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
 <head>
@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; media-src 'self' https://raw.githubusercontent.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.workers.dev https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com https://www.youtube-nocookie.com https://www.youtube.com; upgrade-insecure-requests">
-    <title>新北市 RP 3.0 公職服務系統 V2｜ER:LC 智慧派遣</title>
+    <title>新北市 RP 3.0 公職服務系統 V2.1｜ER:LC 智慧派遣</title>
     <!-- 網站圖標與連結分享資訊 -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
     <link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
@@ -2405,6 +2405,119 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
 
 </style>
 <style id="ntpc-v164-account-role-lock-style">.ntpc-mandatory-admin{opacity:0.85!important;cursor:not-allowed}.ntpc-mandatory-admin input{accent-color:#8b5cf6}</style>
+<style id="ntpc-v2-public-profile-style">
+/* V2.1｜可點擊公開個人檔案：維持原站深色靛藍／青藍色系 */
+.ntpc-public-profile-modal{z-index:210!important}
+.ntpc-profile-trigger{cursor:pointer;transition:color .16s ease;}
+.ntpc-profile-trigger:hover .ntpc-avatar-person-label,.ntpc-profile-trigger:focus-visible .ntpc-avatar-person-label{color:#67e8f9;text-decoration:underline;text-underline-offset:3px;}
+.ntpc-profile-trigger:focus-visible{outline:2px solid #67e8f9;outline-offset:3px;border-radius:7px}
+.ntpc-public-cover{background:linear-gradient(125deg,#0b1937,#102743 45%,#1c234e);background-position:center;background-size:cover;position:relative;min-height:164px;}
+.ntpc-public-cover:before{content:'';position:absolute;inset:0;background:linear-gradient(0deg,rgba(9,16,33,.93),rgba(9,16,33,.12));pointer-events:none}
+.ntpc-public-cover>*{position:relative;z-index:1}
+.ntpc-social-link{display:inline-flex;align-items:center;gap:.5rem;padding:.57rem .8rem;border-radius:.8rem;border:1px solid #334155;background:#18243d;color:#dbeafe;text-decoration:none;font-size:13px;white-space:nowrap}
+.ntpc-social-link:hover{background:#243957;border-color:#22d3ee;color:white}
+.ntpc-request-row{border:1px solid #293850;background:#081223;border-radius:1rem;padding:1rem;overflow-wrap:anywhere}
+.ntpc-v2-input{width:100%;background:#060d1d;border:1px solid #334155;border-radius:12px;padding:11px 12px;color:#f8fafc;font-size:14px}
+.ntpc-v2-input:focus{outline:2px solid #0e7490;outline-offset:1px}
+@media(max-width:450px){.ntpc-public-cover{min-height:140px}.ntpc-public-profile-modal>div{padding:0}}
+</style>
+
+<style id="ntpc-v21-animated-avatar-style">
+/* V2.1 四款微光動態頭像框。只在真實頭像宿主的 span 上渲染，不修改照片本身。 */
+.ntpc-avatar-chip[data-ntpc-frame]:not([data-ntpc-frame="none"]){
+  position:relative;isolation:isolate;overflow:visible!important;
+  --ntpc-ring-a:#38bdf8;--ntpc-ring-b:#7dd3fc;--ntpc-ring-c:#1e40af;
+  box-shadow:0 0 0 1px rgba(148,163,184,.12),0 0 12px -4px var(--ntpc-ring-a);
+}
+.ntpc-avatar-chip[data-ntpc-frame]:not([data-ntpc-frame="none"])>img,
+.ntpc-avatar-chip[data-ntpc-frame]:not([data-ntpc-frame="none"])>i{
+  z-index:1;position:relative;border-radius:50%;
+}
+.ntpc-avatar-chip[data-ntpc-frame]:not([data-ntpc-frame="none"])::before{
+  content:"";pointer-events:none;position:absolute;z-index:3;inset:-4px;border-radius:50%;
+  background:conic-gradient(from 0deg,var(--ntpc-ring-a),transparent 15%,var(--ntpc-ring-b) 27%,transparent 44%,var(--ntpc-ring-c) 64%,transparent 77%,var(--ntpc-ring-a));
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.4px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.4px));
+  animation:ntpc-v21-orbit 9s linear infinite;
+}
+.ntpc-avatar-chip[data-ntpc-frame="glacier"]:not([data-ntpc-frame="none"]){--ntpc-ring-a:#39ccf6;--ntpc-ring-b:#c1edff;--ntpc-ring-c:#2563eb}
+.ntpc-avatar-chip[data-ntpc-frame="jade"]:not([data-ntpc-frame="none"]){--ntpc-ring-a:#5eead4;--ntpc-ring-b:#a7f3d0;--ntpc-ring-c:#047857}
+.ntpc-avatar-chip[data-ntpc-frame="violet"]:not([data-ntpc-frame="none"]){--ntpc-ring-a:#b4a8ff;--ntpc-ring-b:#e0d9ff;--ntpc-ring-c:#6366f1}
+.ntpc-avatar-chip[data-ntpc-frame="aurora"]:not([data-ntpc-frame="none"]){--ntpc-ring-a:#60e9ff;--ntpc-ring-b:#a5f3fc;--ntpc-ring-c:#537efb;box-shadow:0 0 0 1px #7deaff55,0 0 13px -2px #67e8f9!important}
+.ntpc-avatar-chip[data-ntpc-frame="jade"]::before{animation-duration:11s}
+.ntpc-avatar-chip[data-ntpc-frame="violet"]::before{animation-duration:12s;animation-direction:reverse}
+.ntpc-avatar-chip[data-ntpc-frame="aurora"]::before{animation-duration:6.5s;inset:-5px}
+.ntpc-avatar-chip[data-ntpc-frame="aurora"]::after{
+  content:"✦";pointer-events:none;position:absolute;z-index:5;
+  font-family:system-ui,sans-serif;font-weight:700;font-size:clamp(7px,1.1em,12px);
+  line-height:1;color:#e0faff;text-shadow:0 0 6px #38bdf8,0 0 10px #e0f2fe;
+  top:-.42em;right:-.34em;animation:ntpc-v21-starlight 3.6s ease-in-out infinite;
+}
+/* 星月裝飾貼在圓形頭像框左上緣（約 10 點鐘方向），不佔用姓名欄位。 */
+.ntpc-avatar-chip.ntpc-avatar-lg[data-ntpc-frame="aurora"]::after{
+  content:"☾";
+  top:0;left:0;right:auto;
+  width:18px;height:18px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;letter-spacing:0;white-space:nowrap;
+  color:#edfcff;
+  text-shadow:0 0 5px #06b6d4,0 0 11px #38bdf8;
+}
+@keyframes ntpc-v21-orbit{to{transform:rotate(360deg)}}
+@keyframes ntpc-v21-starlight{0%,100%{opacity:.55;transform:translateY(1px) scale(.9)}50%{opacity:1;transform:translateY(-2px) scale(1.12)}}
+.ntpc-v21-frame-card{border:1px solid #334155;border-radius:13px;padding:10px 12px;background:#080f20}
+.ntpc-v21-frame-card:focus-within{border-color:#38bdf8}
+.ntpc-v21-profile-revoked{border:1px solid rgba(244,114,182,.22);background:rgba(30,14,39,.75);padding:17px;border-radius:16px;text-align:center;color:#fda4af}
+@media(prefers-reduced-motion:reduce){.ntpc-avatar-chip[data-ntpc-frame]::before,.ntpc-avatar-chip[data-ntpc-frame]::after{animation:none!important}}
+</style>
+
+<style id="ntpc-v21-profile-layout-and-borders">
+/* V2.1: 我的資料雙分頁，介面沿用深藍／青藍色系 */
+.ntpc-v21-profile-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ntpc-v21-profile-tab{min-width:0;text-align:left;background:#091225;color:#96a9c6;border:1px solid #334155;border-radius:16px;padding:15px 17px;display:grid;grid-template-columns:25px 1fr;column-gap:10px;row-gap:4px;align-items:center;transition:background .16s,border-color .16s,transform .16s}
+.ntpc-v21-profile-tab i{font-size:20px;grid-row:1 / span 2;color:#7d94b7}
+.ntpc-v21-profile-tab span{font-weight:750;font-size:15px;color:#e2e8f0}
+.ntpc-v21-profile-tab small{font-size:11px;line-height:1.4;color:#91a3bc}
+.ntpc-v21-profile-tab:hover,.ntpc-v21-profile-tab:focus-visible{background:#13223b;border-color:#609ed5}
+.ntpc-v21-profile-tab.is-active{background:linear-gradient(115deg,#102e51,#111f3b);border-color:#3e94d3;box-shadow:inset 0 0 0 1px #38bdf81a}
+.ntpc-v21-profile-tab.is-active i{color:#6dd3f5}
+.ntpc-v21-account-intro{border-radius:13px;padding:12px 14px;border:1px solid #233b60;background:#081a30;color:#a5bdd9;display:flex;align-items:center;gap:10px;font-size:12px}
+@media(max-width:430px){.ntpc-v21-profile-tabs{gap:8px}.ntpc-v21-profile-tab{padding:12px 10px;column-gap:7px}.ntpc-v21-profile-tab span{font-size:13px}.ntpc-v21-profile-tab small{font-size:10px}}
+/* 外框款式選擇卡片 */
+.ntpc-v21-border-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:9px}
+.ntpc-v21-border-choice{cursor:pointer;border:1px solid #2d405e;background:#09172c;border-radius:12px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;color:#dae6f6;font-weight:650;font-size:12px;min-height:94px}
+.ntpc-v21-border-choice:has(input:checked){border-color:#65c9ed;background:#102942;box-shadow:inset 0 0 0 1px #6dd3fc35}
+.ntpc-v21-border-choice:has(input:disabled){cursor:not-allowed;opacity:.53}
+.ntpc-v21-border-choice input{position:absolute;opacity:0;width:1px;height:1px}
+.ntpc-v21-border-choice:focus-within{outline:2px solid #5bc5eb;outline-offset:2px}
+.ntpc-v21-border-swatch{height:30px;width:62px;border:3px solid #374151;border-radius:9px;background:#0c1a2f}
+.ntpc-border-none{border-color:#435064;background:#0c1727}
+.ntpc-border-silver{border-image:linear-gradient(110deg,#5475ae,#83c3ef,#cadbf4) 1}
+.ntpc-border-emerald{border-image:linear-gradient(110deg,#116968,#56b6aa,#a3e0cc) 1}
+.ntpc-border-amethyst{border-image:linear-gradient(110deg,#58599d,#b0a4e0,#7175aa) 1}
+.ntpc-border-creator{border-image:linear-gradient(110deg,#ef882d,#ffe8a0 36%,#428cda 65%,#96deff) 1}
+.ntpc-v21-locked-note{display:block;margin-top:3px;color:#a7b6cc;font-weight:450;font-size:10px}
+.ntpc-v21-border-preview-btn,.ntpc-v21-border-save-btn{border-radius:10px;padding:10px 15px;font-size:12px;font-weight:700;transition:background .15s}
+.ntpc-v21-border-preview-btn{background:#192b46;border:1px solid #405b7e;color:#d9e8ff}
+.ntpc-v21-border-preview-btn:hover{background:#234467}
+.ntpc-v21-border-save-btn{background:#116b93;border:1px solid #278ab0;color:white}
+.ntpc-v21-border-save-btn:hover{background:#1686aa}
+/* 公開檔案外框：靜態光澤而非大範圍旋轉光效 */
+.ntpc-v21-profile-card{isolation:isolate;border-width:2px;--ntpc-pb1:#293f58;--ntpc-pb2:#496681;--ntpc-pb3:#1c263f}
+.ntpc-v21-profile-card[data-ntpc-profile-border="silver"]{border-color:#729cbf;box-shadow:0 0 0 2px #364b68,0 16px 50px #000a,0 0 24px #378dc328}
+.ntpc-v21-profile-card[data-ntpc-profile-border="emerald"]{border-color:#53aa9e;box-shadow:0 0 0 2px #184b51,0 16px 50px #000a,0 0 24px #22998824}
+.ntpc-v21-profile-card[data-ntpc-profile-border="amethyst"]{border-color:#9297ce;box-shadow:0 0 0 2px #3b3566,0 16px 50px #000a,0 0 24px #9088c828}
+.ntpc-v21-profile-card[data-ntpc-profile-border="silver"]::before,.ntpc-v21-profile-card[data-ntpc-profile-border="emerald"]::before,.ntpc-v21-profile-card[data-ntpc-profile-border="amethyst"]::before{content:"";position:absolute;inset:0;z-index:4;border-radius:inherit;pointer-events:none;opacity:.55;background:linear-gradient(130deg,#d9eeff40,transparent 28%,transparent 73%,#c0d2fc1b);box-shadow:inset 0 0 0 3px #ffffff0b}
+/* 創作者專屬：雙色火焰／冰晶外緣，保留清楚內容 */
+.ntpc-v21-profile-card[data-ntpc-profile-border="creator"]{border:4px solid transparent;background:linear-gradient(#091429,#091429) padding-box,conic-gradient(from -35deg,#ffb35b 0%,#ff633f 18%,#ffdc8b 30%,#2c465e 48%,#409ae2 65%,#b1ebff 84%,#ffb35b 100%) border-box;box-shadow:0 0 0 2px #192941,0 0 19px #ff7e352b,-10px 0 27px #f9731622,11px 0 29px #3b82f629,0 20px 65px #000b}
+.ntpc-v21-profile-card[data-ntpc-profile-border="creator"]::before{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;border-radius:inherit;background:radial-gradient(ellipse 110px 55px at 7% 0%,#fb923c6b,transparent 90%),radial-gradient(ellipse 160px 70px at 90% 0%,#60a5fa6a,transparent 94%),radial-gradient(ellipse 115px 55px at 8% 100%,#fb923c5c,transparent 90%),radial-gradient(ellipse 150px 68px at 93% 100%,#67e8f962,transparent 95%);box-shadow:inset 0 0 0 1px #ffffff45}
+.ntpc-v21-profile-card[data-ntpc-profile-border="creator"]::after{content:"";position:absolute;top:0;left:0;right:0;height:29px;z-index:5;pointer-events:none;background:linear-gradient(105deg,#f9731626 0%,#fb923cad 12%,#facc157f 31%,transparent 49%,#60a5fa73 67%,#38bdf8a8 88%,#60a5fa29 100%);clip-path:polygon(0 68%,5% 27%,10% 54%,15% 6%,20% 51%,26% 14%,34% 58%,43% 31%,50% 69%,58% 30%,65% 52%,72% 10%,79% 45%,87% 15%,93% 55%,100% 18%,100% 0,0 0);filter:drop-shadow(0 1px 3px #0ea5e988)}
+/* 只有創作者標籤會輕緩流動漸層 */
+.ntpc-v21-creator-badge{display:inline-flex;align-items:center;gap:5px;width:max-content;margin-top:6px;border-radius:999px;border:1px solid #8baced85;padding:4px 12px;font-size:12px;font-weight:800;letter-spacing:.12em;color:#f8fcff;background:linear-gradient(110deg,#b05c25,#d19945,#426ca8,#6954af,#b05c25);background-size:270% 100%;box-shadow:0 3px 12px #0b2145a8;animation:ntpc-creator-badge-flow 7s linear infinite}
+.ntpc-v21-creator-badge.hidden{display:none}
+@keyframes ntpc-creator-badge-flow{to{background-position:270% 0}}
+@media(prefers-reduced-motion:reduce){.ntpc-v21-creator-badge{animation:none}}
+</style>
 </head>
 <body class="ntpc-premium-ui bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
     <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
@@ -3110,20 +3223,33 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                             </div>
                         </div>
                     </div>
-                    <span id="update-log-current-version" class="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V2</span>
+                    <span id="update-log-current-version" class="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V2.1</span>
                 </div>
 
                 <div id="dynamic-update-log" class="space-y-4"></div>
                 <div class="space-y-4">
-                    <article id="ntpc-update-summary-latest" class="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
+                    <article id="ntpc-update-summary-latest" class="rounded-2xl border border-cyan-500/25 bg-slate-900/70 p-5">
+                      <div class="flex items-center justify-between gap-3 mb-3"><div><h3 class="text-lg font-bold text-white">V2.1｜個人檔案分頁與創作者專屬外框</h3>
+                      <p class="text-xs text-cyan-300 mt-1">整合公開個人檔案、個人中心雙分頁、動態頭像框及靜態檔案外框</p></div>
+                      <span id="ntpc-bundled-update-badge" class="text-xs font-semibold text-emerald-300">目前版本</span></div>
+                      <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
+                        <li>「我的資料」分成「個人檔案／帳號資訊」雙分頁，分別管理頭像、光環、靜態檔案外框、公開背景與社群資訊，以及帳密審核申請、所屬單位、編號和勤務統計。</li>
+                        <li>全站帳號署名及頭像可點擊展開公開個人檔案；創作者 Dsuensx 與 tttwk4671 額外顯示流動漸層「創作者」標籤，並可選用烈焰・冰晶專屬靜態檔案外框。其他管理中心成員可選用三款低調外框，創作者款顯示上鎖；皆可先預覽、選擇關閉。</li>
+                        <li>管理中心成員可自選「冰藍巡光、青綠微光、靛紫光環」三款動態頭像框，DSUENSX 另有專屬星月極光款，所有頭像顯示位置同步套用，減少動畫偏好時會自動停用動態。</li>
+                        <li>帳號刪除時會留下註銷標記；之後開啟舊案件署名可顯示「該帳號已被註銷」，不再公開原個人內容。</li>
+                        <li>管理中心帳號編輯可查看並移除使用者自介、個人背景及 IG／Discord／Roblox 連結，操作保留管理 LOG 並使用既有 Discord 通知管道。</li>
+                      </ul>
+                    </article>
+                    <article id="ntpc-update-summary-v2" class="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                             <div>
                                 <h3 class="text-lg font-bold text-white">V2｜功能整合與全站服務優化</h3>
                                 <p class="text-xs text-emerald-300 mt-1">整合個人頭像、帳號權限、15 天登入、報告與手機版介面等近期更新</p>
                             </div>
-                            <span id="ntpc-bundled-update-badge" class="text-xs font-semibold text-emerald-300">目前版本</span>
+                            <span  class="text-xs font-semibold text-emerald-300">歷史版本</span>
                         </div>
                                                 <ul class="space-y-2 text-sm text-slate-300 list-disc pl-5">
+                            <li><strong>帳密變更審核：</strong>個人中心可提出帳號或密碼變更申請，管理中心審核後才實際變更，密碼不出現在申請或操作 LOG。</li>
                             <li><strong>個人頭像系統：</strong>管理中心可為公職帳號設定 HTTPS 圖片連結，使用者可在「我的資料」自行預覽、修改與清除；無照片時顯示預設圖示，無須 Discord BOT 同步。</li>
                             <li><strong>全站人員署名頭像：</strong>警務、消防、嘉蕭報告的填寫者與審核者，以及警消獎懲、打卡值勤、通緝、車輛、市民紀錄、專生系統、勤務交接、管理中心帳號與 LOG 等可識別帳號的位置，皆顯示對應頭像；舊紀錄找不到帳號時不強行配對。</li>
                             <li><strong>單位與權限分級：</strong>帳號可兼任多個單位，警察與消防職級分開設定；「總管理處」顯示名稱統一為「管理中心」，新增「專科學校」及助教、教官權限，教官專區改以登入帳號判斷，不再要求共用密碼。</li>
@@ -3603,7 +3729,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <span class="text-xs uppercase font-bold tracking-wider text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">Personal Information</span>
-                        <h2 class="text-2xl font-bold text-white mt-3"><i class="fa-solid fa-id-card mr-2 text-cyan-400"></i>我的資訊</h2>
+                        <h2 class="text-2xl font-bold text-white mt-3"><i class="fa-solid fa-id-card mr-2 text-cyan-400"></i>我的資料</h2>
                         <p class="text-slate-400 text-sm mt-1">僅顯示目前登入帳號的基本資料與勤務／案件統計。</p>
                     </div>
                     <button id="profile-refresh-btn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs text-slate-300"><i class="fa-solid fa-rotate mr-1"></i>重新整理</button>
@@ -3614,6 +3740,11 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                     <button type="button" onclick="document.getElementById('modal-login').classList.remove('hidden')" class="mt-4 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm">登入系統</button>
                 </div>
                 <div id="profile-content" class="hidden mt-6 space-y-5">
+                    <nav id="ntpc-v21-my-profile-tabs" class="ntpc-v21-profile-tabs" role="tablist" aria-label="我的資料分類">
+                      <button type="button" id="ntpc-v21-my-tab-personal" role="tab" aria-controls="ntpc-v21-personal-panel" aria-selected="true" class="ntpc-v21-profile-tab is-active" onclick="ntpcV21SetMyTab('personal')"><i class="fa-solid fa-address-card" aria-hidden="true"></i><span>個人檔案</span><small>頭像、外框、背景、社群</small></button>
+                      <button type="button" id="ntpc-v21-my-tab-account" role="tab" aria-controls="ntpc-v21-account-panel" aria-selected="false" class="ntpc-v21-profile-tab" onclick="ntpcV21SetMyTab('account')"><i class="fa-solid fa-user-shield" aria-hidden="true"></i><span>帳號資訊</span><small>帳密申請、單位、勤務</small></button>
+                    </nav>
+                    <div id="ntpc-v21-personal-panel" role="tabpanel" aria-labelledby="ntpc-v21-my-tab-personal" class="space-y-5">
                     <div class="flex items-center gap-4 p-4 rounded-2xl bg-slate-950 border border-slate-800">
                         <span id="ntpc-profile-avatar" class="ntpc-avatar-chip ntpc-avatar-lg"><img id="ntpc-profile-avatar-img" alt="" hidden><i class="fa-solid fa-user" aria-hidden="true"></i></span>
                         <div class="min-w-0 flex-1"><div class="text-sm font-bold text-slate-100">我的個人頭像</div><div id="ntpc-profile-avatar-status" class="text-xs text-slate-400 mt-1">尚未設定頭像，使用預設圖示</div></div>
@@ -3623,6 +3754,59 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                         <input type="url" id="ntpc-my-avatar-input" maxlength="2048" placeholder="https://i.postimg.cc/.../avatar.png" autocomplete="url" spellcheck="false" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-3 text-sm text-white" oninput="ntpcPreviewPhotoInput('ntpc-my-avatar-input','ntpc-profile-avatar')">
                         <p class="text-xs text-slate-400">請貼入可公開存取的 HTTPS 圖片直連（如 Postimages 的「圖片直接連結」），不需要 Discord ID 或 BOT。清空後儲存即可移除頭像。</p>
                         <button type="button" id="ntpc-my-avatar-save" onclick="ntpcSaveOwnPhotoLink()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm"><i class="fa-solid fa-floppy-disk mr-1"></i>儲存我的頭像</button>
+                    </div>
+
+
+                    <section id="ntpc-v21-my-frame-panel" class="ntpc-v21-frame-card hidden space-y-3">
+                      <div class="font-semibold text-cyan-200"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>管理中心｜動態頭像框</div>
+                      <div class="flex gap-3 items-center"><span id="ntpc-v21-my-frame-preview" class="ntpc-avatar-chip ntpc-avatar-lg"><img alt="頭像框預覽" hidden><i class="fa-solid fa-user"></i></span>
+                      <div class="flex-1 min-w-0"><label class="block text-xs text-slate-400 mb-1" for="ntpc-v21-my-frame">選擇頭像框</label><select id="ntpc-v21-my-frame" class="ntpc-v2-input" onchange="ntpcV21PreviewFrame()"><option value="none">不使用頭像框</option><option value="glacier">冰藍巡光</option><option value="jade">青綠微光</option><option value="violet">靛紫光環</option><option value="aurora">星月極光（DSUENSX 專屬）</option></select></div></div>
+                      <p class="text-xs text-slate-400">所有顯示你頭像的位置都會同步使用同款光環。只開放具有「管理中心」單位的帳號；專屬款限 DSUENSX。</p>
+                      <button type="button" onclick="ntpcV21SaveMyFrame()" class="bg-indigo-700 hover:bg-indigo-600 px-4 py-2.5 rounded-xl text-sm font-semibold">儲存頭像框</button>
+                    </section>
+
+                    <section id="ntpc-v21-my-border-panel" class="ntpc-v21-frame-card hidden space-y-4" aria-label="個人檔案外框">
+                      <div><h3 class="font-bold text-cyan-200"><i class="fa-solid fa-wand-magic-sparkles mr-2" aria-hidden="true"></i>個人檔案外框</h3>
+                      <p class="text-xs text-slate-400 mt-1">和頭像周圍的動態光環不同，這是別人點開你公開個人檔案時顯示的靜態外框；可自由選擇不使用。</p></div>
+                      <div class="ntpc-v21-border-options" id="ntpc-v21-border-options" role="radiogroup" aria-label="選擇檔案外框">
+                        <label class="ntpc-v21-border-choice"><input name="ntpc-v21-border-choice" type="radio" value="none" checked onchange="ntpcV21BorderChoiceChanged()"><span class="ntpc-v21-border-swatch ntpc-border-none"></span><span>不使用</span></label>
+                        <label class="ntpc-v21-border-choice"><input name="ntpc-v21-border-choice" type="radio" value="silver" onchange="ntpcV21BorderChoiceChanged()"><span class="ntpc-v21-border-swatch ntpc-border-silver"></span><span>星際銀藍</span></label>
+                        <label class="ntpc-v21-border-choice"><input name="ntpc-v21-border-choice" type="radio" value="emerald" onchange="ntpcV21BorderChoiceChanged()"><span class="ntpc-v21-border-swatch ntpc-border-emerald"></span><span>翡翠守護</span></label>
+                        <label class="ntpc-v21-border-choice"><input name="ntpc-v21-border-choice" type="radio" value="amethyst" onchange="ntpcV21BorderChoiceChanged()"><span class="ntpc-v21-border-swatch ntpc-border-amethyst"></span><span>暮光紫晶</span></label>
+                        <label class="ntpc-v21-border-choice" id="ntpc-v21-creator-border-option"><input name="ntpc-v21-border-choice" type="radio" value="creator" onchange="ntpcV21BorderChoiceChanged()"><span class="ntpc-v21-border-swatch ntpc-border-creator"></span><span>烈焰・冰晶 <small id="ntpc-v21-creator-border-lock" class="ntpc-v21-locked-note"><i class="fa-solid fa-lock"></i> 創作者專屬</small></span></label>
+                      </div>
+                      <div id="ntpc-v21-border-status" class="text-xs text-slate-400" aria-live="polite">選擇款式後可先預覽，確認再儲存。</div>
+                      <div class="flex flex-wrap gap-2"><button type="button" onclick="ntpcV21PreviewProfileBorder()" class="ntpc-v21-border-preview-btn"><i class="fa-solid fa-eye mr-1"></i>預覽檔案外框</button><button id="ntpc-v21-border-save" type="button" onclick="ntpcV21SaveProfileBorder()" class="ntpc-v21-border-save-btn"><i class="fa-solid fa-floppy-disk mr-1"></i>儲存外框設定</button></div>
+                    </section>
+                    <div class="rounded-2xl border border-cyan-500/20 bg-slate-950 p-4 sm:p-5 space-y-4" id="ntpc-v2-public-editor">
+                      <div><h3 class="font-bold text-cyan-200"><i class="fa-solid fa-id-badge mr-2"></i>公開個人檔案</h3><p class="text-xs text-slate-400 mt-1">其他成員點擊你的帳號或頭像即可查看；背景與社群連結皆為選填。</p></div>
+                      <div><label for="ntpc-v2-bio" class="block text-sm mb-1 text-slate-300">自我介紹（最多 50 字）</label><textarea id="ntpc-v2-bio" class="ntpc-v2-input" rows="3" maxlength="100" placeholder="介紹一下自己…"></textarea><div id="ntpc-v2-bio-counter" class="text-xs text-right text-slate-400">0 / 50</div></div>
+                      <div><label for="ntpc-v2-background" class="block text-sm mb-1 text-slate-300">個人檔案背景圖片直連</label><input id="ntpc-v2-background" type="url" maxlength="2048" class="ntpc-v2-input" placeholder="https://i.postimg.cc/.../background.jpg"><p class="text-xs mt-1 text-slate-500">使用可公開存取的 HTTPS 圖片連結。清空後儲存可恢復預設背景。</p></div>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div><label for="ntpc-v2-ig" class="block text-sm mb-1 text-slate-300"><i class="fa-brands fa-instagram mr-1"></i> Instagram 個人頁面</label><input id="ntpc-v2-ig" type="url" maxlength="350" class="ntpc-v2-input" placeholder="https://www.instagram.com/..."></div>
+                        <div><label for="ntpc-v2-discord" class="block text-sm mb-1 text-slate-300"><i class="fa-brands fa-discord mr-1"></i> Discord 使用者頁面</label><input id="ntpc-v2-discord" type="url" maxlength="350" class="ntpc-v2-input" placeholder="https://discord.com/users/..."></div>
+                        <div class="sm:col-span-2"><label for="ntpc-v2-roblox" class="block text-sm mb-1 text-slate-300">Roblox 個人頁面</label><input id="ntpc-v2-roblox" type="url" maxlength="350" class="ntpc-v2-input" placeholder="https://www.roblox.com/users/.../profile"></div>
+                      </div>
+                      <div class="flex flex-wrap gap-2"><button type="button" onclick="ntpcV2SaveMyProfile()" id="ntpc-v2-save-profile" class="bg-cyan-700 hover:bg-cyan-600 rounded-xl px-4 py-2.5 text-sm font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i>儲存公開檔案</button><button type="button" onclick="ntpcV2ShowProfile(currentUser?.account)" class="bg-slate-800 hover:bg-slate-700 rounded-xl px-4 py-2.5 text-sm">預覽我的檔案</button></div>
+                    </div>
+                    </div><!-- /ntpc-v21-personal-panel -->
+                    <div id="ntpc-v21-account-panel" role="tabpanel" aria-labelledby="ntpc-v21-my-tab-account" class="hidden space-y-5">
+                      <div class="ntpc-v21-account-intro"><i class="fa-solid fa-lock text-blue-300" aria-hidden="true"></i><span>此區僅顯示登入帳號資料。更改帳號或密碼須經管理中心審核。</span></div>
+                    <div class="rounded-2xl border border-indigo-500/20 bg-slate-950 p-4 sm:p-5 space-y-4" id="ntpc-v2-account-change">
+                      <div><h3 class="font-bold text-indigo-200"><i class="fa-solid fa-user-pen mr-2"></i>申請更換登入帳號或密碼</h3><p class="text-xs text-slate-400 mt-1">提交後由管理中心審核。密碼申請<b>不會要求你提供新密碼</b>，核准後才由本人設定。</p></div>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                       <div><label class="block text-sm mb-1 text-slate-300" for="ntpc-v2-request-type">申請項目</label><select id="ntpc-v2-request-type" class="ntpc-v2-input" onchange="ntpcV2CredentialTypeChanged()"><option value="account">更換登入帳號</option><option value="password">更換登入密碼</option></select></div>
+                       <div id="ntpc-v2-target-account-box"><label class="block text-sm mb-1 text-slate-300" for="ntpc-v2-target-account">希望更換的登入帳號</label><input id="ntpc-v2-target-account" type="text" maxlength="32" autocomplete="off" class="ntpc-v2-input" placeholder="英數字、底線或連字號"></div>
+                      </div>
+                      <div><label class="block text-sm mb-1 text-slate-300" for="ntpc-v2-request-reason">申請原因（選填）</label><textarea id="ntpc-v2-request-reason" maxlength="200" rows="2" class="ntpc-v2-input" placeholder="供審核人員參考，不要填寫密碼"></textarea></div>
+                      <button id="ntpc-v2-request-submit" type="button" onclick="ntpcV2SubmitCredentialRequest()" class="rounded-xl px-4 py-2.5 text-sm font-bold bg-indigo-600 hover:bg-indigo-500">送出審核申請</button>
+                      <div id="ntpc-v2-request-status" class="space-y-2 text-sm text-slate-400">尚未載入申請紀錄。</div>
+                      <div id="ntpc-v2-approved-password" class="hidden p-3 rounded-xl border border-cyan-500/20 bg-slate-900 space-y-3">
+                        <p class="text-sm text-cyan-200 font-bold">你的密碼變更申請已核准，請在此設定新密碼</p>
+                        <input type="password" autocomplete="new-password" id="ntpc-v2-new-password" maxlength="128" class="ntpc-v2-input" placeholder="新密碼（至少 8 字）">
+                        <input type="password" autocomplete="new-password" id="ntpc-v2-confirm-password" maxlength="128" class="ntpc-v2-input" placeholder="再次輸入新密碼">
+                        <button type="button" onclick="ntpcV2ApplyApprovedPassword()" class="bg-cyan-700 hover:bg-cyan-600 px-4 py-2.5 rounded-xl text-sm font-semibold">確定更換密碼</button>
+                      </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5">
@@ -3636,6 +3820,14 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                         <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 sm:col-span-2">
                             <span class="text-xs text-slate-500">所屬單位</span>
                             <div id="profile-units" class="mt-2 font-semibold text-slate-200">--</div>
+                        </div>
+                        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 sm:col-span-2">
+                            <span class="text-xs text-slate-500">部門／單位分區</span>
+                            <div id="profile-department" class="mt-2 font-semibold text-slate-200">--</div>
+                        </div>
+                        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 sm:col-span-2">
+                            <span class="text-xs text-slate-500">所屬身分及官階</span>
+                            <div id="profile-rank" class="mt-2 font-semibold text-slate-200">--</div>
                         </div>
                     </div>
                     <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5" id="ntpc-profile-awards-box">
@@ -3652,9 +3844,10 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                             <div id="profile-total-reports" class="mt-2 text-3xl font-extrabold text-emerald-400">0</div>
                         </div>
                     </div>
+                    </div><!-- /ntpc-v21-account-panel -->
                 </div>
             </div>
-            <div id="profile-notification-center" class="bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl">
+            <div id="profile-notification-center" class="hidden bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl">
                 <div class="flex items-center justify-between gap-3 mb-5">
                     <div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-bell text-cyan-400 mr-2"></i>個人通知中心</h3><p class="text-xs text-slate-500 mt-1">案件審核、退件與重新送件狀態會在這裡通知你。</p></div>
                     <span id="profile-notification-count" class="px-3 py-1.5 rounded-full bg-slate-950 border border-slate-800 text-xs text-slate-400">0 則</span>
@@ -3987,6 +4180,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 <p class="ntpc-v158-mobile-hint" aria-hidden="true">左右滑動，查看更多管理中心功能 <span>↔</span></p>
                 <div id="ntpc-admin-subnav" class="ntpc-v158-responsive-subnav flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto" aria-label="管理中心功能分類（可左右滑動）">
                     <button id="btn-admin-users" data-sub="users" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition bg-purple-600 text-white whitespace-nowrap"><i class="fa-solid fa-users mr-2"></i>帳號與人員管理</button>
+                    <button id="btn-admin-credential-requests" data-sub="credential-requests" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-user-lock mr-2"></i>帳密變更審核</button>
                     <button id="btn-admin-dispatch" data-sub="dispatch" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-tower-broadcast mr-2"></i>智慧派遣中心</button>
                     <button id="btn-admin-bot-console" data-sub="bot-console" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-robot mr-2"></i>Discord Bot 控制台</button>
                     <button id="btn-admin-announcements" data-sub="announcements" class="admin-sub-btn px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900 whitespace-nowrap"><i class="fa-solid fa-bullhorn mr-2"></i>發布公告</button>
@@ -4015,8 +4209,14 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                     <p id="admin-permission-denied-message" class="text-sm text-slate-400">目前帳號沒有使用此管理中心分頁的權限。</p>
                 </div>
 
+                <div id="admin-sub-credential-requests" class="hidden space-y-4">
+                    <div class="rounded-2xl border border-indigo-500/25 bg-slate-900 p-5">
+                        <div class="flex flex-wrap justify-between items-center gap-3"><div><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-user-lock mr-2 text-cyan-400"></i>登入帳號與密碼變更申請</h3><p class="text-xs text-slate-400 mt-2">管理中心核准或駁回，操作會寫入管理 LOG 並嘗試傳送 Discord。更換帳號後需使用新帳號重新登入，舊案件保留原始署名。</p></div><button type="button" onclick="ntpcV2LoadAdminRequests(true)" class="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2.5 text-sm">重新載入申請</button></div>
+                    </div>
+                    <div id="ntpc-v2-admin-requests" class="space-y-3 text-slate-400 text-sm">按「重新載入申請」查詢。</div>
+                </div>
                 <div id="admin-sub-users" class="space-y-4">
-                    <h3 class="text-lg font-bold text-slate-200">系統所有公職人員與高層帳號</h3>
+                    <div class="flex flex-wrap items-center justify-between gap-2"><h3 class="text-lg font-bold text-slate-200">系統所有公職人員與高層帳號</h3><button type="button" onclick="ntpcV2SyncAllPublicProfiles()" class="px-3 py-2 bg-cyan-700/20 border border-cyan-500/30 rounded-xl text-xs text-cyan-200 hover:bg-cyan-700/40">同步全部公開個人檔案（部門／官階）</button></div>
                     <p class="ntpc-v158-mobile-hint ntpc-v158-table-hint" aria-hidden="true">此資料表可左右滑動，查看更多欄位 <span>↔</span></p>
                     <div class="ntpc-v158-table-scroll overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800 shadow-xl" role="region" tabindex="0" aria-label="詳細資料表，可橫向滑動">
                         <table class="w-full text-left border-collapse text-sm">
@@ -4062,7 +4262,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                                 <h3 class="text-xl font-bold text-white mt-1"><i class="fa-solid fa-code-branch text-emerald-400 mr-2"></i>網站版本更新管理</h3>
                                 <p class="text-xs text-slate-500 mt-1">發布新版本後，首頁版本標籤、最新更新資訊、更新紀錄目前版本與瀏覽器標題會自動同步。</p>
                             </div>
-                            <span id="admin-current-site-version" class="inline-flex items-center justify-center px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V2</span>
+                            <span id="admin-current-site-version" class="inline-flex items-center justify-center px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">目前版本 V2.1</span>
                         </div>
                     </div>
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
@@ -5588,6 +5788,23 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                     <div class="flex items-center gap-3"><span id="ntpc-new-avatar-preview" class="ntpc-avatar-chip ntpc-avatar-lg"><img alt="頭像預覽" hidden><i class="fa-solid fa-user"></i></span><input type="url" id="new-user-avatar-url" maxlength="2048" placeholder="https://i.postimg.cc/.../avatar.png" class="min-w-0 flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white" autocomplete="off" spellcheck="false" oninput="ntpcPreviewPhotoInput('new-user-avatar-url','ntpc-new-avatar-preview')"></div>
                     <p class="text-[11px] text-slate-400">可建立後由本人前往「我的資料」自行貼上圖片網址。不使用 Discord 自動同步。</p>
                 </div>
+
+                <div class="ntpc-v21-frame-card space-y-2"><label class="block text-xs font-semibold text-indigo-200" for="ntpc-v21-edit-frame">動態頭像框（限管理中心單位）</label>
+                  <select id="ntpc-v21-edit-frame" class="ntpc-v2-input"><option value="none">不使用</option><option value="glacier">冰藍巡光</option><option value="jade">青綠微光</option><option value="violet">靛紫光環</option><option value="aurora">星月極光（DSUENSX 專屬）</option></select>
+                </div>
+                <section class="ntpc-v21-frame-card space-y-3" id="ntpc-v21-moderate-public">
+                  <div><h4 class="text-sm font-bold text-cyan-200"><i class="fa-solid fa-shield-heart mr-1"></i>公開檔案內容管理</h4>
+                    <p class="text-[11px] text-slate-400 mt-1">可查看並清除違規自我介紹、社群連結或背景。刪除會記錄操作者及清除項目，不包含密碼。</p></div>
+                  <div id="ntpc-v21-moderate-preview" class="text-xs text-slate-400 break-words whitespace-pre-wrap">開啟帳號後載入公開資料…</div>
+                  <div class="grid grid-cols-2 gap-2 text-xs text-slate-300">
+                    <label class="flex gap-2 items-center"><input type="checkbox" name="ntpc-v21-moderate" value="bio">清除自我介紹</label>
+                    <label class="flex gap-2 items-center"><input type="checkbox" name="ntpc-v21-moderate" value="background">清除檔案背景</label>
+                    <label class="flex gap-2 items-center"><input type="checkbox" name="ntpc-v21-moderate" value="ig">清除 Instagram</label>
+                    <label class="flex gap-2 items-center"><input type="checkbox" name="ntpc-v21-moderate" value="discord">清除 Discord 連結</label>
+                    <label class="flex gap-2 items-center"><input type="checkbox" name="ntpc-v21-moderate" value="roblox">清除 Roblox 連結</label>
+                  </div>
+                  <button type="button" id="ntpc-v21-moderate-button" onclick="ntpcV21ModerateProfile()" class="rounded-xl border border-rose-500/35 bg-rose-950/30 hover:bg-rose-900/40 text-rose-200 px-3 py-2.5 text-xs font-semibold">移除選取的公開內容</button>
+                </section>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">所屬單位（可依實際兼職勾選多個）</label>
                     <div class="grid grid-cols-3 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
@@ -5649,6 +5866,25 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
         </div>
     </div>
 
+
+    <!-- V2.1｜點擊帳號展開公開個人名片，已註銷帳號只顯示註銷訊息 -->
+    <div id="ntpc-v2-profile-modal" class="ntpc-public-profile-modal hidden fixed inset-0 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5" role="dialog" aria-modal="true" aria-label="使用者公開個人檔案">
+      <div id="ntpc-v21-public-profile-card" class="ntpc-v21-profile-card w-full max-w-lg max-h-[92dvh] overflow-y-auto rounded-3xl bg-[#0b1529] border border-slate-700 shadow-2xl relative" data-ntpc-profile-border="none">
+        <button type="button" onclick="ntpcV2CloseProfile()" class="absolute top-3 right-3 z-20 rounded-full bg-slate-950/80 border border-slate-500/30 w-10 h-10 text-slate-200 hover:bg-slate-700" aria-label="關閉個人檔案"><i class="fa-solid fa-xmark"></i></button>
+        <div id="ntpc-v2-public-cover" class="ntpc-public-cover rounded-t-3xl flex items-end px-6 pt-12 pb-5 gap-4">
+          <span id="ntpc-v2-modal-avatar" class="ntpc-avatar-chip ntpc-avatar-lg shrink-0"><img alt="" hidden><i class="fa-solid fa-user"></i></span>
+          <div class="min-w-0"><h3 id="ntpc-v2-modal-name" class="text-xl sm:text-2xl font-bold text-white break-words">載入中…</h3><p id="ntpc-v2-modal-account" class="text-sm text-slate-200 break-words"></p><span id="ntpc-v21-creator-badge" class="ntpc-v21-creator-badge hidden"><i class="fa-solid fa-sparkles" aria-hidden="true"></i> 創作者</span></div>
+        </div>
+        <div class="px-6 py-5 space-y-4">
+           <div id="ntpc-v21-revoked-notice" class="ntpc-v21-profile-revoked hidden"><i class="fa-solid fa-user-slash mr-2"></i><strong>該帳號已被註銷</strong><p class="text-xs mt-2 text-rose-200/70">此帳號已由管理中心移除，個人公開資料不再顯示。</p></div>
+           <div id="ntpc-v21-active-profile"><div><div class="text-[11px] font-bold text-cyan-300 mb-1">所屬單位與官階</div><div id="ntpc-v2-modal-rank" class="text-sm text-slate-200 break-words">—</div></div>
+           <div><div class="text-[11px] font-bold text-cyan-300 mb-1">自我介紹</div><p id="ntpc-v2-modal-bio" class="text-sm text-slate-300 whitespace-pre-wrap break-words" style="line-height:1.75">尚未填寫</p></div>
+           <div id="ntpc-v2-modal-socials" class="flex flex-wrap gap-2" style="margin-top:20px"></div>
+           <p id="ntpc-v2-modal-note" class="text-[11px] text-slate-500" style="margin-top:14px">檔案資訊由本人於網站設定。</p>
+           </div>
+         </div>
+      </div>
+    </div>
     <script>
         let currentUser = null;
 
@@ -5656,6 +5892,190 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
         // staffPhotoLinks/{account} 僅存放圖片網址，供案件顯示按需讀取，避免下載 users 全資料。
         const ntpcAvatarCache = new Map();
         const ntpcAvatarPending = new Map();
+
+
+        // V2.1｜個人資料分頁 + 靜態公開檔案外框。此設定不影響原有動態頭像光環。
+        const NTPC_V21_CREATORS=new Set(['dsuensx','tttwk4671']);
+        const NTPC_V21_PROFILE_BORDER_CHOICES=['none','silver','emerald','amethyst','creator'];
+        let ntpcV21MyActiveTab='personal';
+        function ntpcV21IsCreator(account){return NTPC_V21_CREATORS.has(String(account||'').trim().toLowerCase());}
+        function ntpcV21CanUseProfileBorder(account,data){
+            return ntpcV21IsCreator(account)||ntpcV21Eligible(account,data);
+        }
+        function ntpcV21AllowedProfileBorder(account,data,choice){
+            const id=String(account||'').trim().toLowerCase();
+            const value=String(choice||'none');
+            if(!NTPC_V21_PROFILE_BORDER_CHOICES.includes(value))return 'none';
+            if(value==='creator')return ntpcV21IsCreator(id)?value:'none';
+            if(value!=='none'&&!ntpcV21CanUseProfileBorder(id,data))return 'none';
+            return value;
+        }
+        function ntpcV21SetMyTab(tab){
+            ntpcV21MyActiveTab=tab==='account'?'account':'personal';
+            const profile=document.getElementById('ntpc-v21-personal-panel');
+            const account=document.getElementById('ntpc-v21-account-panel');
+            profile?.classList.toggle('hidden',ntpcV21MyActiveTab!=='personal');
+            account?.classList.toggle('hidden',ntpcV21MyActiveTab!=='account');
+            const notify=document.getElementById('profile-notification-center');
+            notify?.classList.toggle('hidden',!currentUser||ntpcV21MyActiveTab!=='account');
+            for(const mode of ['personal','account']){
+                const btn=document.getElementById('ntpc-v21-my-tab-'+mode);
+                btn?.classList.toggle('is-active',mode===ntpcV21MyActiveTab);
+                btn?.setAttribute('aria-selected',String(mode===ntpcV21MyActiveTab));
+                if(btn)btn.tabIndex=mode===ntpcV21MyActiveTab?0:-1;
+            }
+        }
+        function ntpcV21CurrentBorderChoice(){
+            return document.querySelector('input[name="ntpc-v21-border-choice"]:checked')?.value||'none';
+        }
+        function ntpcV21SetBorderChoice(choice){
+            const radio=document.querySelector(`input[name="ntpc-v21-border-choice"][value="${choice}"]`);
+            if(radio&&!radio.disabled)radio.checked=true;
+            ntpcV21BorderChoiceChanged();
+        }
+        function ntpcV21BorderChoiceChanged(){
+            if(!currentUser)return;
+            const choice=ntpcV21CurrentBorderChoice(),save=document.getElementById('ntpc-v21-border-save');
+            const allowed=ntpcV21AllowedProfileBorder(currentUser.account,currentUser,choice);
+            if(save)save.disabled=(allowed!==choice);
+            const status=document.getElementById('ntpc-v21-border-status');
+            if(status)status.textContent=allowed!==choice?'此款不適用目前的帳號。':'已選擇「'+({none:'不使用',silver:'星際銀藍',emerald:'翡翠守護',amethyst:'暮光紫晶',creator:'烈焰・冰晶'}[choice]||choice)+'」；可以先預覽，儲存後才會公開顯示。';
+        }
+        function ntpcV21InitProfileBorderSettings(data){
+            if(!currentUser)return;
+            const id=String(currentUser.account||''),eligible=ntpcV21CanUseProfileBorder(id,currentUser);
+            document.getElementById('ntpc-v21-my-border-panel')?.classList.toggle('hidden',!eligible);
+            if(!eligible)return;
+            const creator=ntpcV21IsCreator(id);
+            const opt=document.getElementById('ntpc-v21-creator-border-option');
+            const radio=opt?.querySelector('input');
+            if(radio)radio.disabled=!creator;
+            if(opt)opt.setAttribute('aria-label',creator?'烈焰冰晶創作者專屬外框':'烈焰冰晶外框已上鎖，限創作者');
+            const lock=document.getElementById('ntpc-v21-creator-border-lock');
+            if(lock)lock.textContent=creator?'✦ 創作者限定已解鎖':'🔒 創作者限定・未解鎖';
+            const selected=ntpcV21AllowedProfileBorder(id,currentUser,data?.profileBorderStyle||'none');
+            ntpcV21SetBorderChoice(selected);
+        }
+        function ntpcV21DecoratePublicProfile(account,data){
+            const card=document.getElementById('ntpc-v21-public-profile-card');
+            const badge=document.getElementById('ntpc-v21-creator-badge');
+            if(!card)return;
+            card.dataset.ntpcProfileBorder=ntpcV21AllowedProfileBorder(account,data,data?.profileBorderStyle||'none');
+            badge?.classList.toggle('hidden',!ntpcV21IsCreator(account)||Boolean(data?.revoked));
+        }
+        async function ntpcV21PreviewProfileBorder(){
+            if(!currentUser)return;
+            const account=String(currentUser.account||''),choice=ntpcV21CurrentBorderChoice();
+            if(ntpcV21AllowedProfileBorder(account,currentUser,choice)!==choice){showToast('此款外框尚未解鎖','warning');return;}
+            await ntpcV2ShowProfile(account);
+            if(!document.getElementById('ntpc-v2-profile-modal')?.classList.contains('hidden')){
+                const card=document.getElementById('ntpc-v21-public-profile-card');
+                if(card)card.dataset.ntpcProfileBorder=choice;
+                const status=document.getElementById('ntpc-v21-border-status');
+                if(status)status.textContent='目前正在預覽，尚未儲存；按「儲存外框設定」才會讓其他成員看見。';
+            }
+        }
+        async function ntpcV21SaveProfileBorder(){
+            if(!currentUser||!fm||!db){showToast('請先登入網站','warning');return;}
+            const account=String(currentUser.account||''),value=ntpcV21CurrentBorderChoice();
+            if(!ntpcV21CanUseProfileBorder(account,currentUser)||ntpcV21AllowedProfileBorder(account,currentUser,value)!==value){showToast('無法使用此檔案外框','warning');return;}
+            const btn=document.getElementById('ntpc-v21-border-save');if(btn)btn.disabled=true;
+            try{
+                // 只更新公開個人資料，不包含密碼或登入憑證。
+                await fm.setDoc(ntpcV2ProfileDoc(account),{profileBorderStyle:value,metadataUpdatedAt:Date.now()},{merge:true});
+                currentUser.profileBorderStyle=value;
+                ntpcV2ProfileCache.delete(account.toLowerCase());
+                ntpcV21DecoratePublicProfile(account,currentUser);
+                showToast('個人檔案外框已儲存','success');
+            }catch(e){showToast('檔案外框儲存失敗：'+e.message,'error');}
+            finally{if(btn)btn.disabled=false;}
+        }
+        // V2.1｜管理中心動態頭像框；不下載任何外部動畫素材，僅使用 CSS 光環。
+        const NTPC_V21_FRAME_CHOICES=['none','glacier','jade','violet','aurora'];
+        function ntpcV21Eligible(account,data){
+            const key=String(account||'').trim().toLowerCase();
+            const units=Array.isArray(data?.units)?data.units:(data?.unit?[data.unit]:[]);
+            return key==='dsuensx'||units.includes('admin')||data?.adminUnit===true;
+        }
+        function ntpcV21FrameStyle(account,data){
+            const key=String(account||'').trim().toLowerCase();
+            const value=String(data?.frameStyle||'none');
+            if(!NTPC_V21_FRAME_CHOICES.includes(value)||!ntpcV21Eligible(account,data))return 'none';
+            if(value==='aurora'&&key!=='dsuensx')return 'none';
+            return value;
+        }
+        function ntpcV21PaintAvatar(host,account,data){
+            if(!host)return;
+            const style=ntpcV21FrameStyle(account,data);
+            if(style==='none')host.removeAttribute('data-ntpc-frame');
+            else host.dataset.ntpcFrame=style;
+        }
+        function ntpcV21FrameUser(account){
+            const id=String(account||'').trim();
+            return (currentUser&&String(currentUser.account||'').toLowerCase()===id.toLowerCase())?currentUser:
+                ntpcAvatarUserByAccount(id)||ntpcAvatarCache.get(id)||{};
+        }
+        function ntpcV21PaintAllAvatarFrames(account){
+            const id=String(account||'').trim();
+            for(const host of document.querySelectorAll('[data-ntpc-avatar-account]')){
+                if(String(host.dataset.ntpcAvatarAccount||'').toLowerCase()===id.toLowerCase())
+                    ntpcV21PaintAvatar(host,id,ntpcV21FrameUser(id));
+            }
+            if(currentUser&&id.toLowerCase()===String(currentUser.account).toLowerCase()){
+                for(const selector of ['ntpc-header-avatar','ntpc-report-author-avatar','ntpc-profile-avatar','ntpc-v21-my-frame-preview'])
+                    ntpcV21PaintAvatar(document.getElementById(selector),id,currentUser);
+            }
+        }
+        function ntpcV21RenderFrameOptions(select,account,units){
+            if(!select)return;
+            const eligible=ntpcV21Eligible(account,{units});
+            select.closest('#ntpc-v21-my-frame-panel')?.classList.toggle('hidden',!eligible);
+            select.disabled=!eligible;
+            for(const opt of select.options){
+                if(opt.value==='aurora')opt.hidden=String(account||'').trim().toLowerCase()!=='dsuensx';
+            }
+        }
+        function ntpcV21InitMyFrame(){
+            if(!currentUser)return;
+            const account=String(currentUser.account||''),u=currentUser;
+            const select=document.getElementById('ntpc-v21-my-frame');if(!select)return;
+            ntpcV21RenderFrameOptions(select,account,getUserUnits(u));
+            select.value=ntpcV21FrameStyle(account,u);
+            ntpcV21PreviewFrame();
+        }
+        function ntpcV21PreviewFrame(){
+            if(!currentUser)return;
+            const select=document.getElementById('ntpc-v21-my-frame'),host=document.getElementById('ntpc-v21-my-frame-preview');
+            if(!select||!host)return;
+            ntpcSetProfileAvatarElement(host,ntpcAvatarValue(currentUser));
+            ntpcV21PaintAvatar(host,currentUser.account,{...currentUser,frameStyle:select.value});
+        }
+        async function ntpcV21SaveMyFrame(){
+            if(!currentUser||!db||!fm)return;
+            const id=String(currentUser.account||''),selected=document.getElementById('ntpc-v21-my-frame')?.value||'none';
+            if(!ntpcV21Eligible(id,currentUser)){showToast('僅管理中心成員可設定動態頭像框','warning');return;}
+            if(!NTPC_V21_FRAME_CHOICES.includes(selected)||selected==='aurora'&&id.toLowerCase()!=='dsuensx'){
+                showToast('這款頭像框不適用目前帳號','warning');return;
+            }
+            try{
+                const ref=fm.doc(db,'users',String(currentUser.docId||id));
+                await fm.updateDoc(ref,{frameStyle:selected});
+                currentUser.frameStyle=selected;
+                const local=ntpcAvatarUserByAccount(id);if(local)local.frameStyle=selected;
+                await ntpcV21SavePublicFrame(currentUser);
+                ntpcV21PaintAllAvatarFrames(id);ntpcV21PreviewFrame();
+                showToast('動態頭像框已更新','success');
+            }catch(e){showToast('頭像框儲存失敗：'+e.message,'error');}
+        }
+        async function ntpcV21SavePublicFrame(u){
+            const id=String(u?.account||'');if(!id)return;
+            const frameStyle=ntpcV21FrameStyle(id,u),adminUnit=ntpcV21Eligible(id,u);
+            await fm.setDoc(fm.doc(db,'staffPhotoLinks',id),{frameStyle,adminUnit,updatedAt:Date.now()},{merge:true});
+            ntpcAvatarCache.set(id,{...(ntpcAvatarCache.get(id)||{}),url:ntpcAvatarValue(u),frameStyle,adminUnit,at:Date.now()});
+            ntpcV21PaintAllAvatarFrames(id);
+            try{await fm.setDoc(ntpcV2ProfileDoc(id),{frameStyle,metadataUpdatedAt:Date.now()},{merge:true});ntpcV2ProfileCache.delete(id.toLowerCase());}
+            catch(e){console.warn('公開名片頭像框同步失敗',e);}
+        }
         function ntpcSafeAvatarUrl(value) {
             const text=String(value||'').trim();
             if(!text||text.length>2048)return '';
@@ -5701,14 +6121,15 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
         function ntpcAvatarMarkup(account,cssClass=''){
             const id=String(account||'').trim(),u=ntpcAvatarUserByAccount(id);
             const safe=u?ntpcAvatarValue(u):ntpcSafeAvatarUrl(ntpcAvatarCache.get(id)?.url);
-            return `<span class="ntpc-avatar-chip ${cssClass}" data-ntpc-avatar-account="${escapeHtml(id)}"><img alt="" referrerpolicy="no-referrer" loading="lazy" ${safe?`src="${escapeHtml(safe)}"`:'hidden'}><i class="fa-solid fa-user" aria-hidden="true" ${safe?'hidden':''}></i></span>`;
+            const frame=ntpcV21FrameStyle(id,u||ntpcAvatarCache.get(id));
+            return `<span class="ntpc-avatar-chip ${cssClass}" data-ntpc-avatar-account="${escapeHtml(id)}" ${frame==='none'?'':`data-ntpc-frame="${frame}"`}><img alt="" referrerpolicy="no-referrer" loading="lazy" ${safe?`src="${escapeHtml(safe)}"`:'hidden'}><i class="fa-solid fa-user" aria-hidden="true" ${safe?'hidden':''}></i></span>`;
         }
         // V165：所有帳號署名統一使用此 HTML／DOM 輔助元件，不額外讀取 users 全集合。
         function ntpcAvatarIdentityHtml(account,label,extraClass=''){
             const key=String(account||'').trim(),display=String(label??account??'--');
             const safeLabel=escapeHtml(display);
             if(!key||['--','舊資料','未記錄','系統','警專專生'].includes(key)||key.startsWith('ACADEMY:'))return `<span class="ntpc-avatar-person-label">${safeLabel}</span>`;
-            return `<span class="ntpc-avatar-person ${extraClass==='inline'?'ntpc-avatar-inline':''}">${ntpcAvatarMarkup(key,'ntpc-avatar-sm')}<span class="ntpc-avatar-person-label">${safeLabel}</span></span>`;
+            return `<span class="ntpc-avatar-person ntpc-profile-trigger ${extraClass==='inline'?'ntpc-avatar-inline':''}" data-ntpc-profile-account="${escapeHtml(key)}" role="button" tabindex="0" title="查看 ${escapeHtml(display)} 的公開檔案">${ntpcAvatarMarkup(key,'ntpc-avatar-sm')}<span class="ntpc-avatar-person-label">${safeLabel}</span></span>`;
         }
         function ntpcAvatarPrependToElement(host,account){
             if(!host)return;
@@ -5718,7 +6139,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
             if(host.firstElementChild?.hasAttribute('data-ntpc-avatar-account'))return;
             const temp=document.createElement('span');temp.innerHTML=ntpcAvatarMarkup(key,'ntpc-avatar-sm');
             const avatar=temp.firstElementChild;
-            if(avatar){host.classList.add('ntpc-avatar-person');host.insertBefore(avatar,host.firstChild);}
+            if(avatar){host.classList.add('ntpc-avatar-person','ntpc-profile-trigger');host.dataset.ntpcProfileAccount=key;host.setAttribute('tabindex','0');host.setAttribute('role','button');host.setAttribute('title','查看使用者公開檔案');host.insertBefore(avatar,host.firstChild);}
         }
         function ntpcAvatarAccountFrom(record,keys){
             for(const k of keys){const v=String(record?.[k]||'').trim();if(v&&v!=='--'&&v!=='舊資料')return v;}
@@ -5743,8 +6164,10 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
             const p=(async()=>{
                 try{
                     const snap=await fm.getDoc(fm.doc(db,'staffPhotoLinks',id));
-                    const url=ntpcSafeAvatarUrl(snap.exists()?snap.data().avatarUrl:'');
-                    ntpcAvatarCache.set(id,{url,at:Date.now()});ntpcAvatarApply(id,url);
+                    const data=snap.exists()?snap.data()||{}:{};
+                    const url=ntpcSafeAvatarUrl(data.avatarUrl);
+                    ntpcAvatarCache.set(id,{url,frameStyle:data.frameStyle||'none',adminUnit:data.adminUnit===true,at:Date.now()});
+                    ntpcAvatarApply(id,url);ntpcV21PaintAllAvatarFrames(id);
                     return url;
                 }catch(_){ntpcAvatarCache.set(id,{url:'',at:Date.now(),unavailable:true});return '';}
                 finally{ntpcAvatarPending.delete(id);}
@@ -5766,8 +6189,8 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
             for(const el of document.querySelectorAll('[data-ntpc-avatar-account]')){
                 const id=String(el.dataset.ntpcAvatarAccount||'');if(!id)continue;
                 const u=ntpcAvatarUserByAccount(id),cached=ntpcAvatarCache.get(id);
-                if(u)ntpcSetProfileAvatarElement(el,ntpcAvatarValue(u));
-                else if(cached)ntpcSetProfileAvatarElement(el,cached.url);
+                if(u){ntpcSetProfileAvatarElement(el,ntpcAvatarValue(u));ntpcV21PaintAvatar(el,id,u);}
+                else if(cached){ntpcSetProfileAvatarElement(el,cached.url);ntpcV21PaintAvatar(el,id,cached);}
                 else if(ntpcAvatarVisibilityObserver && !el.dataset.ntpcAvatarObserved){
                     el.dataset.ntpcAvatarObserved='1';ntpcAvatarVisibilityObserver.observe(el);
                 }else if(!ntpcAvatarVisibilityObserver&&!ntpcAvatarPending.has(id))void ntpcGetRemoteAvatar(id);
@@ -5782,7 +6205,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
         async function ntpcSavePublicAvatar(account,url){
             const id=String(account||'').trim();if(!id||id.includes('/'))throw new Error('帳號識別格式錯誤');
             await fm.setDoc(fm.doc(db,'staffPhotoLinks',id),{avatarUrl:ntpcSafeAvatarUrl(url),updatedAt:Date.now()});
-            ntpcAvatarCache.set(id,{url:ntpcSafeAvatarUrl(url),at:Date.now()});
+            ntpcAvatarCache.set(id,{...(ntpcAvatarCache.get(id)||{}),url:ntpcSafeAvatarUrl(url),at:Date.now()});
             ntpcAvatarApply(id,url);
         }
         function ntpcAvatarStatusText(user){return ntpcAvatarValue(user)?'已設定自訂圖片連結':'尚未設定頭像，使用預設圖示';}
@@ -5798,7 +6221,7 @@ body.ntpc-v128-sidebar-collapsed .ntpc-v127-aside{display:none!important}
                 const inList=ntpcAvatarUserByAccount(account);if(inList)inList.avatarUrl=url;
                 let publicError=null;
                 try{await ntpcSavePublicAvatar(account,url);}catch(e){publicError=e;}
-                updateUserBadge();renderMyProfile();ntpcAvatarApply(account,url);
+                updateUserBadge();renderMyProfile();ntpcAvatarApply(account,url);ntpcV21PaintAllAvatarFrames(account);
                 if(publicError)showToast('頭像已儲存到個人資料，但案件列表頭像同步失敗：'+publicError.message,'warning','部分儲存成功');
                 else showToast(url?'頭像網址已儲存。':'已移除個人頭像。','success','更新成功');
             }catch(e){showToast('修改頭像失敗：'+e.message,'error','儲存失敗');renderMyProfile();}
@@ -6639,10 +7062,10 @@ function compareSiteVersion(a, b){
                 return Number(b?.publishedAt||b?.updatedAt||b?.createdAt||0)-Number(a?.publishedAt||a?.updatedAt||a?.createdAt||0);
             });
         }
-        // 當前版本統整為 V2；舊 V100～V165 等歷史版本仍可在更新紀錄查閱。
+        // V2.1：公開檔案與動態頭像框，V2 與 V1.x 原發布內容保留。
         const NTPC_BUNDLED_SITE_VERSION={
-            version:'V2',title:'功能整合與全站服務優化',
-            summary:'整合個人頭像、帳號與部門權限、15 天保持登入、案件審核、手機版排版、教官專區及 ER:LC 智慧派遣；保留歷史更新紀錄。'
+            version:'V2.1',title:'公開檔案與動態頭像框',
+            summary:'V2.1 新增可點擊公開個人檔案、註銷帳號提示、管理中心動態頭像框及公開檔案內容管理；保留原有 V2 功能及歷史紀錄。'
         };
         // 相容新版本發布功能，但不把舊 V100+ 研發版誤判為較新的正式 V2 版本。
         function ntpcIsNewerPublishedVersion(version){
@@ -6657,9 +7080,9 @@ function compareSiteVersion(a, b){
         }
         function renderSiteVersionUI(){
             const v=getCurrentSiteVersion();
-            const version=String(v?.version||'V2').trim()||'V2';
+            const version=String(v?.version||'V2.1').trim()||'V2.1';
             const title=String(v?.title||'系統穩定性與功能更新').trim();
-            const summary=String(v?.summary||'V2 整合警務、消防、管理中心、專生系統及個人頭像。').trim();
+            const summary=String(v?.summary||'V2.1 整合公開檔案、動態頭像框及個人資料管理。').trim();
             const set=(id,val)=>{const e=document.getElementById(id);if(e)e.textContent=val;};
             set('home-site-version-badge','網站版本 '+version);
             set('home-latest-update-label',version+' 最新更新');
@@ -8783,7 +9206,7 @@ async function republishAnnouncement(id) {
         }
 
         function switchAdminSubTab(sub){
-            const tabs=['users','announcements','site-versions','clock','logs','storage','duty-alerts','notification-alerts','sync-health','memo','overview','online','devices','feedback','issues','academy','jail-rules','erlc','dispatch','bot-console','discord-webhooks'];
+            const tabs=['users','credential-requests','announcements','site-versions','clock','logs','storage','duty-alerts','notification-alerts','sync-health','memo','overview','online','devices','feedback','issues','academy','jail-rules','erlc','dispatch','bot-console','discord-webhooks'];
             const fullAdmin=ntpcCanConfigureIntegrations(currentUser);
             const dispatchAllowed=canUseManagementDispatch(currentUser);
             const academyAllowed=false; // V137: 教官不再持有管理中心授權
@@ -8818,6 +9241,7 @@ async function republishAnnouncement(id) {
             if(sub==='notification-alerts' && getEffectiveRole(currentUser)==='admin') renderAdminNotificationAlerts();
             if(sub==='sync-health' && getEffectiveRole(currentUser)==='admin') renderAdminSyncHealth();
             if(sub==='users' && getEffectiveRole(currentUser)==='admin') renderAdminUsers();
+            if(sub==='credential-requests' && fullAdmin) ntpcV2LoadAdminRequests();
             if(sub==='logs' && getEffectiveRole(currentUser)==='admin') renderAdminLogs();
             
             if(sub==='jail-rules' && getEffectiveRole(currentUser)==='admin') renderAdminJailRules();
@@ -9245,16 +9669,22 @@ async function republishAnnouncement(id) {
             if (!currentUser) {
                 lock.classList.remove('hidden');
                 content.classList.add('hidden');
+                document.getElementById('profile-notification-center')?.classList.add('hidden');
                 return;
             }
             lock.classList.add('hidden');
             content.classList.remove('hidden');
+            ntpcV21SetMyTab(ntpcV21MyActiveTab);
+            ntpcV21InitProfileBorderSettings(currentUser);
             document.getElementById('profile-account').textContent = currentUser.account || '--';ntpcAvatarPrependToElement(document.getElementById('profile-account'),currentUser.account);
             document.getElementById('profile-staff-number').textContent = currentUser.staffNumber || currentUser.account || '--';
             document.getElementById('profile-units').textContent = getUnitDisplayNames(currentUser);
-            ntpcSetProfileAvatar('ntpc-profile-avatar',ntpcAvatarValue(currentUser));
+            document.getElementById('profile-department').textContent = [getUserUnits(currentUser).includes('police')?'警察／'+(currentUser.policeDivision||'未指定分隊'):'',getUserUnits(currentUser).includes('fire')?'消防／'+(currentUser.fireDivision||'未指定單位'):''].filter(Boolean).join('、')||'無警消分區';
+            document.getElementById('profile-rank').textContent = ntpcV2RankText(ntpcV2MinimalProfile(currentUser));
+            ntpcSetProfileAvatar('ntpc-profile-avatar',ntpcAvatarValue(currentUser));ntpcV21InitMyFrame();ntpcV21PaintAllAvatarFrames(String(currentUser.account||''));
             document.getElementById('ntpc-profile-avatar-status').textContent=ntpcAvatarStatusText(currentUser);
             const ownPhotoInput=document.getElementById('ntpc-my-avatar-input');if(ownPhotoInput)ownPhotoInput.value=ntpcAvatarValue(currentUser);
+            ntpcV2MaybeRefreshPersonalPanel();
             document.getElementById('profile-total-hours').textContent = `${calculateUserTotalDutyHours(currentUser.account)} 小時`;
             document.getElementById('profile-total-reports').textContent = getUserReportCount(currentUser.account);
             renderPersonalNotifications();
@@ -9931,8 +10361,9 @@ async function republishAnnouncement(id) {
                 badge.classList.remove('hidden');
                 badge.classList.add('flex');
                 document.getElementById('user-badge-name').textContent = `${currentUser.name} (${currentUser.account})`;
+                const nameEl=document.getElementById('user-badge-name');nameEl.dataset.ntpcProfileAccount=String(currentUser.account||'');nameEl.classList.add('ntpc-profile-trigger');nameEl.setAttribute('role','button');nameEl.setAttribute('tabindex','0');
                 ntpcSetProfileAvatar('ntpc-header-avatar',ntpcAvatarValue(currentUser));
-                ntpcSetProfileAvatar('ntpc-report-author-avatar',ntpcAvatarValue(currentUser));
+                ntpcSetProfileAvatar('ntpc-report-author-avatar',ntpcAvatarValue(currentUser));ntpcV21PaintAllAvatarFrames(String(currentUser.account||''));
                 ntpcWatchOwnAvatar();
                 const dot = document.getElementById('user-badge-role');
                 if (currentUser.role === 'admin') dot.className = "w-2 h-2 rounded-full bg-purple-500";
@@ -14353,7 +14784,8 @@ async function republishAnnouncement(id) {
             if (appData.users.some(u=>String(u.account).toLowerCase()===account.toLowerCase())) { showToast('此帳號／編號已存在。','warning','帳號重複'); return; }
             if (robloxId && appData.users.some(u=>String(u.robloxId||'').trim()===robloxId)) { showToast('此 ROBLOX ID 已綁定其他帳號。','warning','ROBLOX ID 重複'); return; }
             const u={account,name,pass,role,permissions,units,unitRoles,staffNumber,robloxId,avatarUrl,avatarUpdatedAt:Date.now(),policeDivision:units.includes('police')?policeDivision:'',fireDivision:units.includes('fire')?fireDivision:''};
-            try { await fm.setDoc(fm.doc(db,'users',account),u); appData.users.push(u); closeModal('modal-create-user'); renderAdminUsers(); populateMemberSelects(); showToast('新公職帳號建立成功。','success','建立成功'); if(avatarUrl){try{await ntpcSavePublicAvatar(account,avatarUrl);}catch(e){showToast('帳號建立成功，但公開頭像儲存失敗：'+e.message,'warning');}} }
+            try { await fm.setDoc(fm.doc(db,'users',account),u); appData.users.push(u); closeModal('modal-create-user'); renderAdminUsers(); populateMemberSelects(); showToast('新公職帳號建立成功。','success','建立成功'); if(avatarUrl){try{await ntpcSavePublicAvatar(account,avatarUrl);}catch(e){showToast('帳號建立成功，但公開頭像儲存失敗：'+e.message,'warning');}}
+              ntpcV2SyncPublicMetadata(u).catch(e=>console.warn('公開檔案初始化失敗',e)); }
             catch(e){ showToast('建立失敗：'+e.message,'error','操作失敗'); }
         }
 
@@ -14371,6 +14803,8 @@ async function republishAnnouncement(id) {
 
             document.getElementById('edit-user-original-account').value = u.account;
             document.getElementById('edit-user-avatar-url').value=ntpcAvatarValue(u);ntpcSetProfileAvatar('ntpc-edit-avatar-preview',ntpcAvatarValue(u));
+            const frameSelect=document.getElementById('ntpc-v21-edit-frame');ntpcV21RenderFrameOptions(frameSelect,u.account,getUserUnits(u));if(frameSelect)frameSelect.value=ntpcV21FrameStyle(u.account,u);
+            document.querySelectorAll('input[name="ntpc-v21-moderate"]').forEach(c=>c.checked=false);void ntpcV21LoadModerationPreview(u.account);
             document.getElementById('edit-user-account-input').value = u.account;
             document.getElementById('edit-user-name-input').value = u.name;
             const editPermissions=getUserPermissions(u); document.querySelectorAll('input[name="edit-user-permissions"]').forEach(cb=>cb.checked=editPermissions.includes(cb.value));
@@ -14413,10 +14847,13 @@ async function republishAnnouncement(id) {
             if(pass && pass!==oldPass) changedFields.push('密碼：已變更（不顯示密碼內容）');
             // 先建立待儲存物件；Firestore 失敗時保留原先畫面與快取。
             const unitRoles=ntpcReadUnitRoles('edit',units,u);
-            const updatedUser={...u,account,name,role,permissions,units,unitRoles,staffNumber,robloxId,avatarUrl,avatarUpdatedAt:avatarChanged?Date.now():(u.avatarUpdatedAt||0),policeDivision:units.includes('police')?policeDivision:'',fireDivision:units.includes('fire')?fireDivision:'',...(pass?{pass}:{})};
+            const frameSelection=document.getElementById('ntpc-v21-edit-frame')?.value||'none';
+            if(frameSelection==='aurora'&&!isSuperAdminAccount(account)){showToast('星月極光頭像框僅供 DSUENSX 使用','warning');return;}
+            const frameStyle=ntpcV21FrameStyle(account,{...u,units,frameStyle:frameSelection});
+            const updatedUser={...u,account,name,role,permissions,units,unitRoles,staffNumber,robloxId,avatarUrl,frameStyle,avatarUpdatedAt:avatarChanged?Date.now():(u.avatarUpdatedAt||0),policeDivision:units.includes('police')?policeDivision:'',fireDivision:units.includes('fire')?fireDivision:'',...(pass?{pass}:{})};
             if(superTarget) updatedUser.protected=true;
             const docId=u.docId||origAccount, targetDocId=superTarget?docId:account;
-            const userPayload={account:updatedUser.account,name:updatedUser.name,pass:updatedUser.pass,role:updatedUser.role,permissions:updatedUser.permissions,units:updatedUser.units,unitRoles:updatedUser.unitRoles,staffNumber:updatedUser.staffNumber||'',policeDivision:updatedUser.policeDivision||'',fireDivision:updatedUser.fireDivision||'',robloxId:updatedUser.robloxId||'',avatarUrl:updatedUser.avatarUrl||'',avatarUpdatedAt:updatedUser.avatarUpdatedAt||0,online:false,lastSeen:0,lastLoginAt:updatedUser.lastLoginAt||0,lastDevice:updatedUser.lastDevice||null,...(updatedUser.siteAgreement?{siteAgreement:updatedUser.siteAgreement}:{}),...(superTarget?{protected:true}:{})};
+            const userPayload={account:updatedUser.account,name:updatedUser.name,pass:updatedUser.pass,role:updatedUser.role,permissions:updatedUser.permissions,units:updatedUser.units,unitRoles:updatedUser.unitRoles,staffNumber:updatedUser.staffNumber||'',policeDivision:updatedUser.policeDivision||'',fireDivision:updatedUser.fireDivision||'',robloxId:updatedUser.robloxId||'',avatarUrl:updatedUser.avatarUrl||'',frameStyle:updatedUser.frameStyle||'none',avatarUpdatedAt:updatedUser.avatarUpdatedAt||0,online:false,lastSeen:0,lastLoginAt:updatedUser.lastLoginAt||0,lastDevice:updatedUser.lastDevice||null,...(updatedUser.siteAgreement?{siteAgreement:updatedUser.siteAgreement}:{}),...(superTarget?{protected:true}:{})};
             try {
                 if(!superTarget && docId!==targetDocId){
                     await fm.runTransaction(db, async transaction => {
@@ -14443,6 +14880,8 @@ async function republishAnnouncement(id) {
                     try{await ntpcSavePublicAvatar(account,avatarUrl);}catch(e){showToast('帳號已更新，但案件列表頭像儲存失敗：'+e.message,'warning');}
                 }
                 if(currentUser?.account===account){currentUser.avatarUrl=avatarUrl;updateUserBadge();}
+                ntpcV2SyncPublicMetadata(u).catch(e=>console.warn('公開人員資料同步失敗',e));
+                ntpcV21SavePublicFrame(u).catch(e=>console.warn('頭像框同步失敗',e));
             }
             catch(e){ showToast('更新失敗：'+e.message,'error','操作失敗'); }
         }
@@ -14459,7 +14898,16 @@ async function republishAnnouncement(id) {
             if (!(await showConfirm(`確定要刪除帳號 ${account} 嗎？`, '刪除使用者帳號', '確定刪除'))) return;
             try {
                 const targetUser = appData.users.find(x => x.account === account);
-                await fm.deleteDoc(fm.doc(db, 'users', account));
+                const userRef=fm.doc(db,'users',String(targetUser?.docId||account)),profileRef=ntpcV2ProfileDoc(account);
+                const now=Date.now();
+                await fm.runTransaction(db,async tx=>{
+                    const snap=await tx.get(userRef);
+                    if(!snap.exists())throw new Error('帳號已不存在，請重新載入');
+                    tx.set(profileRef,{account,name:String(targetUser?.name||account).slice(0,80),revoked:true,status:'revoked',deletedAt:now,
+                        bio:'',backgroundUrl:'',socials:{ig:'',discord:'',roblox:''},avatarUrl:'',frameStyle:'',units:[],permissions:[],unitRoles:{},redirectTo:''},{merge:true});
+                    tx.delete(userRef);
+                });
+                ntpcV2ProfileCache.set(String(account).toLowerCase(),{data:{account,revoked:true},at:Date.now()});
                 try{await fm.deleteDoc(fm.doc(db,'staffPhotoLinks',account));}catch(e){console.warn('清除頭像輕量資料失敗',e);}
                 ntpcAvatarCache.delete(account);
                 appData.users = appData.users.filter(x => x.account !== account);
@@ -17138,6 +17586,363 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             }finally{ntpcAcademyDiscordBusy=false;}
         }
 
+
+        // V2｜公開檔案：獨立的安全欄位集合，不將 users 中的密碼、登入裝置資訊提供給個人名片。
+        const ntpcV2ProfileCache = new Map();
+        let ntpcV2LastPanelRefresh=0,ntpcV2LastPanelAccount='',ntpcV2PanelLoading=false,ntpcV2ApprovedPasswordRequest='';
+        function ntpcV2ProfileDoc(account){return fm.doc(db,'staffPublicProfiles',String(account||'').trim());}
+        function ntpcV2Url(raw,kind='image'){
+            const text=String(raw||'').trim();if(!text)return '';
+            if(text.length>(kind==='image'?2048:350))throw new Error('網址過長');
+            let u;try{u=new URL(text);}catch(_){throw new Error('網址格式不正確');}
+            if(u.protocol!=='https:'||u.username||u.password)throw new Error('只允許 HTTPS 網址');
+            const h=u.hostname.toLowerCase();
+            if(kind==='image'){
+                if(!ntpcSafeAvatarUrl(text))throw new Error('圖片必須使用可公開存取的 HTTPS 直連');
+            }else{
+                const hosts=kind==='ig'?['instagram.com','www.instagram.com']:kind==='discord'?['discord.com','www.discord.com','discordapp.com']:['roblox.com','www.roblox.com'];
+                if(!hosts.includes(h))throw new Error(`請貼上正確的 ${kind==='ig'?'Instagram':kind==='discord'?'Discord':'Roblox'} 個人頁面連結`);
+                if(kind==='discord'&&!/^\/users\/\d+\/?$/.test(u.pathname))throw new Error('Discord 個人頁面格式應為 discord.com/users/使用者ID');
+                if(kind==='roblox'&&!/^\/users\/\d+\/profile\/?$/i.test(u.pathname))throw new Error('Roblox 個人頁面格式應為 roblox.com/users/使用者ID/profile');
+            }
+            return u.href;
+        }
+        function ntpcV2Bio(v){return Array.from(String(v||'').trim()).slice(0,50).join('');}
+        function ntpcV2MinimalProfile(u){
+            return {account:String(u?.account||''),name:String(u?.name||u?.account||'').slice(0,80),
+                units:getUserUnits(u),unitRoles:u?.unitRoles||{},permissions:getUserPermissions(u),
+                policeDivision:String(u?.policeDivision||'').slice(0,80),fireDivision:String(u?.fireDivision||'').slice(0,80),
+                avatarUrl:ntpcAvatarValue(u),frameStyle:ntpcV21FrameStyle(u?.account,u),staffNumber:String(u?.staffNumber||'').slice(0,60)};
+        }
+        async function ntpcV2SyncPublicMetadata(u){
+            if(!fm||!db||!u?.account)return;
+            const d=ntpcV2MinimalProfile(u),ref=ntpcV2ProfileDoc(d.account);
+            await fm.setDoc(ref,{...d,revoked:false,metadataUpdatedAt:Date.now()},{merge:true});
+            ntpcV2ProfileCache.delete(d.account.toLowerCase());
+        }
+        function ntpcV2RankText(p){
+            const parts=[],units=Array.isArray(p.units)?p.units:[];
+            const r=key=>({normal:'一般人員',senior:'高階成員',high:'高層長官',admin:'最高管理員'})[key]||'一般人員';
+            if(units.includes('police'))parts.push('警察'+(p.policeDivision?'／'+p.policeDivision:'')+'｜'+r(p.unitRoles?.police || ((p.permissions||[]).includes('high')?'high':(p.permissions||[]).includes('senior')?'senior':'normal')));
+            if(units.includes('fire'))parts.push('消防'+(p.fireDivision?'／'+p.fireDivision:'')+'｜'+r(p.unitRoles?.fire));
+            if(units.includes('admin'))parts.push('管理中心｜'+((p.permissions||[]).includes('admin')?'最高管理員':'成員'));
+            if(units.includes('academy'))parts.push('專科學校｜'+((p.permissions||[]).includes('academyInstructor')?'教官':(p.permissions||[]).includes('academyAssistant')?'助教':'成員'));
+            if(units.includes('jiaxiao'))parts.push('嘉蕭集團｜'+((p.permissions||[]).includes('civilianHigh')?'民間高層':'一般成員'));
+            return parts.join('、')||'尚無單位資料';
+        }
+        async function ntpcV2GetProfile(account,followAlias=true){
+            const id=String(account||'').trim(),key=id.toLowerCase();
+            if(!ntpcAvatarRemoteAccountKey(id))return null;
+            const cached=ntpcV2ProfileCache.get(key);if(cached&&Date.now()-cached.at<600000)return cached.data;
+            const snap=await fm.getDoc(ntpcV2ProfileDoc(id));
+            let d=snap.exists()?(snap.data()||{}):null;
+            if(d?.redirectTo&&followAlias&&d.redirectTo!==id)return await ntpcV2GetProfile(d.redirectTo,false);
+            const local=(String(currentUser?.account||'').toLowerCase()===key?currentUser:ntpcAvatarUserByAccount(id));
+            if(local)d={...ntpcV2MinimalProfile(local),...(d||{})};
+            if(!d){const url=await ntpcGetRemoteAvatar(id);d={account:id,name:id,avatarUrl:url,profileUnavailable:true};}
+            ntpcV2ProfileCache.set(key,{data:d,at:Date.now()});return d;
+        }
+        function ntpcV2SetCover(host,url){
+            if(!host)return;const safe=ntpcSafeAvatarUrl(url);
+            host.style.backgroundImage=safe?`linear-gradient(0deg,rgba(8,15,34,.94),rgba(12,22,45,.13)),url(${JSON.stringify(safe)})`:'linear-gradient(125deg,#0b1937,#102743 45%,#1c234e)';
+        }
+        function ntpcV2SocialButton(kind,url){
+            if(!url)return '';
+            const icon=kind==='ig'?'<i class="fa-brands fa-instagram" aria-hidden="true"></i>':kind==='discord'?'<i class="fa-brands fa-discord" aria-hidden="true"></i>':
+                '<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="currentColor"><path fill-rule="evenodd" d="M5.2 1.6 22.4 5.2 18.8 22.4 1.6 18.8zm5.7 8-1.1 5.1 5.1 1.1 1.1-5.1z"/></svg>';
+            const text=kind==='ig'?'Instagram':kind==='discord'?'Discord':'Roblox';
+            return `<a class="ntpc-social-link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer nofollow">${icon}${text}<i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-50"></i></a>`;
+        }
+        async function ntpcV2ShowProfile(account){
+            const id=String(account||'').trim();if(!id||!fm||!db){showToast('目前無法查詢個人檔案','warning');return;}
+            const modal=document.getElementById('ntpc-v2-profile-modal');
+            modal.classList.remove('hidden');document.getElementById('ntpc-v2-modal-name').textContent='讀取個人檔案中…';
+            document.getElementById('ntpc-v2-modal-account').textContent=id;
+            document.getElementById('ntpc-v2-modal-rank').textContent='載入中…';
+            document.getElementById('ntpc-v2-modal-bio').textContent='';
+            document.getElementById('ntpc-v2-modal-socials').replaceChildren();
+            document.getElementById('ntpc-v21-revoked-notice').classList.add('hidden');
+            document.getElementById('ntpc-v21-active-profile').classList.remove('hidden');
+            ntpcV2SetCover(document.getElementById('ntpc-v2-public-cover'),'');
+            ntpcSetProfileAvatar('ntpc-v2-modal-avatar','');
+            ntpcV21DecoratePublicProfile(id,{});
+            const token=String(Date.now())+id;modal.dataset.openToken=token;
+            try{
+                const p=await ntpcV2GetProfile(id);if(modal.dataset.openToken!==token)return;
+                document.getElementById('ntpc-v2-modal-name').textContent=p?.revoked?'已註銷帳號':String(p?.name||id);
+                document.getElementById('ntpc-v2-modal-account').textContent=String(p?.account||id);
+                ntpcV21DecoratePublicProfile(p?.account||id,p||{});
+                if(p?.revoked){
+                    ntpcV21DecoratePublicProfile(id,{revoked:true});
+                    document.getElementById('ntpc-v21-revoked-notice').classList.remove('hidden');
+                    document.getElementById('ntpc-v21-active-profile').classList.add('hidden');
+                    ntpcV2SetCover(document.getElementById('ntpc-v2-public-cover'),'');
+                    ntpcSetProfileAvatar('ntpc-v2-modal-avatar','');
+                    ntpcV21PaintAvatar(document.getElementById('ntpc-v2-modal-avatar'),id,{});
+                    return;
+                }
+                document.getElementById('ntpc-v2-modal-rank').textContent=ntpcV2RankText(p||{});
+                document.getElementById('ntpc-v2-modal-bio').textContent=ntpcV2Bio(p?.bio)||'尚未填寫自我介紹';
+                ntpcV2SetCover(document.getElementById('ntpc-v2-public-cover'),p?.backgroundUrl);
+                ntpcSetProfileAvatar('ntpc-v2-modal-avatar',ntpcAvatarValue(p));
+                ntpcV21PaintAvatar(document.getElementById('ntpc-v2-modal-avatar'),p?.account||id,p);
+                if(p?.profileUnavailable){document.getElementById('ntpc-v2-modal-note').textContent='找不到公開個人檔案（無法確認是否為舊版已移除帳號）';}
+                const socials=p?.socials||{},safe=[];
+                for(const kind of ['ig','discord','roblox']){try{const url=ntpcV2Url(socials[kind],kind);if(url)safe.push(ntpcV2SocialButton(kind,url));}catch(_){}}
+                document.getElementById('ntpc-v2-modal-socials').innerHTML=safe.join('');
+                if(!p?.profileUnavailable)document.getElementById('ntpc-v2-modal-note').textContent='公開資訊僅供新北市 RP 網站使用；社群網址由帳號本人提供。';
+            }catch(e){document.getElementById('ntpc-v2-modal-rank').textContent='暫時無法載入公開檔案';console.warn(e);}
+        }
+        function ntpcV2CloseProfile(){const m=document.getElementById('ntpc-v2-profile-modal');m?.classList.add('hidden');if(m)m.dataset.openToken='';}
+        function ntpcV2ProfileTrigger(event){
+            const item=event.target.closest('[data-ntpc-profile-account], .ntpc-avatar-person.ntpc-profile-trigger, .ntpc-avatar-chip[data-ntpc-avatar-account]');
+            if(!item||item.closest('#ntpc-v2-profile-modal'))return;
+            const account=item.dataset.ntpcProfileAccount||item.dataset.ntpcAvatarAccount||item.querySelector('[data-ntpc-avatar-account]')?.dataset.ntpcAvatarAccount;
+            if(!account)return;
+            if(event.type==='keydown'&&!['Enter',' '].includes(event.key))return;
+            if(event.type==='click'){const interactive=event.target.closest('a,button,input,select,textarea');if(interactive&&!interactive.contains(item))return;}
+            event.preventDefault();event.stopPropagation();void ntpcV2ShowProfile(account);
+        }
+        document.addEventListener('click',ntpcV2ProfileTrigger);
+        document.addEventListener('keydown',ntpcV2ProfileTrigger);
+        document.getElementById('ntpc-v2-profile-modal')?.addEventListener('click',e=>{if(e.target.id==='ntpc-v2-profile-modal')ntpcV2CloseProfile();});
+        document.addEventListener('keydown',e=>{if(e.key==='Escape')ntpcV2CloseProfile();});
+        document.getElementById('ntpc-v2-bio')?.addEventListener('input',()=>{
+            const n=Array.from(document.getElementById('ntpc-v2-bio').value).length;
+            document.getElementById('ntpc-v2-bio-counter').textContent=`${Math.min(n,50)} / 50${n>50?'（超出上限，請刪減）':''}`;
+        });
+        async function ntpcV2LoadMyPublicProfile(){
+            if(!currentUser||!fm||!db)return;
+            const account=String(currentUser.account);
+            try{
+                const ref=ntpcV2ProfileDoc(account),snap=await fm.getDoc(ref),d=snap.exists()?snap.data():{};
+                if(String(currentUser?.account||'')!==account)return;
+                document.getElementById('ntpc-v2-bio').value=ntpcV2Bio(d.bio||'');
+                document.getElementById('ntpc-v2-background').value=String(d.backgroundUrl||'');
+                for(const k of ['ig','discord','roblox'])document.getElementById('ntpc-v2-'+k).value=String(d.socials?.[k]||'');
+                document.getElementById('ntpc-v2-bio-counter').textContent=Array.from(d.bio||'').length+' / 50';
+                ntpcV21InitProfileBorderSettings(d);
+                if(!snap.exists())await ntpcV2SyncPublicMetadata(currentUser);
+            }catch(e){console.warn('公開檔案讀取失敗',e);}
+        }
+        async function ntpcV2SaveMyProfile(){
+            if(!currentUser||!fm||!db){showToast('請先登入網站','warning');return;}
+            const val=document.getElementById('ntpc-v2-bio').value;
+            if(Array.from(val.trim()).length>50){showToast('自我介紹不可超過 50 字','warning');return;}
+            let backgroundUrl='',socials={};
+            try{
+                backgroundUrl=ntpcV2Url(document.getElementById('ntpc-v2-background').value,'image');
+                for(const k of ['ig','discord','roblox'])socials[k]=ntpcV2Url(document.getElementById('ntpc-v2-'+k).value,k);
+            }catch(e){showToast(e.message,'warning','連結格式不正確');return;}
+            const btn=document.getElementById('ntpc-v2-save-profile');btn.disabled=true;
+            try{
+                const account=String(currentUser.account);
+                const payload={...ntpcV2MinimalProfile(currentUser),bio:ntpcV2Bio(val),backgroundUrl,socials,updatedAt:Date.now()};
+                await fm.setDoc(ntpcV2ProfileDoc(account),payload,{merge:true});
+                ntpcV2ProfileCache.delete(account.toLowerCase());
+                showToast('公開個人檔案已更新','success');
+            }catch(e){showToast('公開檔案儲存失敗：'+e.message,'error');}
+            finally{btn.disabled=false;}
+        }
+        function ntpcV2CredentialTypeChanged(){
+            const isAccount=document.getElementById('ntpc-v2-request-type')?.value==='account';
+            document.getElementById('ntpc-v2-target-account-box')?.classList.toggle('hidden',!isAccount);
+        }
+        function ntpcV2RequestDoc(id){return fm.doc(db,'credentialChangeRequests',String(id));}
+        function ntpcV2SafeAccount(raw){
+            const v=String(raw||'').trim();
+            if(!/^[A-Za-z0-9_\-]{3,32}$/.test(v))throw new Error('新帳號只能是 3～32 字元的英文、數字、底線或連字號');
+            return v;
+        }
+        async function ntpcV2QueryMyRequests(){
+            if(!currentUser||!fm||!db)return [];
+            const snap=await fm.getDocs(fm.query(fm.collection(db,'credentialChangeRequests'),fm.where('account','==',String(currentUser.account)),fm.limit(60)));
+            return snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+        }
+        function ntpcV2RequestLabel(item){return item.type==='password'?'密碼變更':'帳號變更';}
+        function ntpcV2StatusLabel(item){return ({pending:'待審核',approved:'已核准／待本人設定',rejected:'已駁回',applied:'已完成',failed:'處理失敗'})[item.status]||item.status||'未知';}
+        async function ntpcV2LoadMyRequests(){
+            if(!currentUser)return;
+            const activeAccount=String(currentUser.account||'');
+            const el=document.getElementById('ntpc-v2-request-status');if(!el)return;
+            try{
+                const items=await ntpcV2QueryMyRequests();
+                if(String(currentUser?.account||'')!==activeAccount)return;
+                el.innerHTML=items.length?items.slice(0,8).map(r=>`<div class="ntpc-request-row"><b>${ntpcV2RequestLabel(r)}</b> <span class="text-cyan-300">${escapeHtml(ntpcV2StatusLabel(r))}</span>${r.type==='account'?`<div class="text-xs mt-1">新帳號：${escapeHtml(r.requestedAccount||'')}</div>`:''}<div class="text-xs text-slate-500 mt-1">${escapeHtml(formatDateTime(r.createdAt||0))}${r.processedBy?`｜審核：${escapeHtml(r.processedBy)}`:''}</div>${r.status==='rejected'&&r.reviewNote?`<div class="text-xs text-rose-300 mt-1">原因：${escapeHtml(r.reviewNote)}</div>`:''}</div>`).join(''):'尚無申請紀錄。';
+                const approved=items.find(r=>r.type==='password'&&r.status==='approved');
+                ntpcV2ApprovedPasswordRequest=approved?.id||'';
+                document.getElementById('ntpc-v2-approved-password')?.classList.toggle('hidden',!approved);
+            }catch(e){el.textContent='申請紀錄讀取失敗：'+String(e.message||e);}
+        }
+        async function ntpcV2SubmitCredentialRequest(){
+            if(!currentUser||!fm||!db){showToast('請先登入','warning');return;}
+            const type=document.getElementById('ntpc-v2-request-type').value;
+            let target='';
+            try{if(type==='account')target=ntpcV2SafeAccount(document.getElementById('ntpc-v2-target-account').value);}catch(e){showToast(e.message,'warning');return;}
+            if(type==='account'&&(isSuperAdminAccount(currentUser.account)||isSuperAdminAccount(target))){showToast('最高管理員保護帳號不可由一般流程更名或取用','warning');return;}
+            if(type==='account'&&target.toLowerCase()===String(currentUser.account).toLowerCase()){showToast('新帳號與目前帳號相同','warning');return;}
+            const reason=String(document.getElementById('ntpc-v2-request-reason').value||'').trim().slice(0,200);
+            if(/密碼\s*[:：]|password\s*[:：]/i.test(reason)){showToast('申請原因不得包含密碼，請移除後再送出','warning');return;}
+            const button=document.getElementById('ntpc-v2-request-submit');button.disabled=true;
+            try{
+                const old=await ntpcV2QueryMyRequests();
+                if(old.some(r=>r.type===type&&['pending','approved'].includes(r.status)))throw new Error('這個項目已有待審核或待完成的申請');
+                if(type==='account'){
+                    const result=await fm.getDoc(fm.doc(db,'users',target));if(result.exists())throw new Error('新帳號已被使用');
+                    if((appData.users||[]).some(u=>String(u.account||'').toLowerCase()===target.toLowerCase()))throw new Error('新帳號已被使用（包含大小寫差異）');
+                }
+                const ref=fm.doc(fm.collection(db,'credentialChangeRequests'));
+                await fm.setDoc(ref,{account:String(currentUser.account),userDocId:String(currentUser.docId||currentUser.account),type,requestedAccount:target,reason,createdAt:Date.now(),status:'pending',updatedAt:Date.now()});
+                await logAdminAction('申請更換'+(type==='account'?'登入帳號':'登入密碼'),String(currentUser.account),type==='account'?`申請目標帳號：${target}`:'已提出密碼變更申請（不包含密碼）');
+                document.getElementById('ntpc-v2-request-reason').value='';
+                showToast('申請已送出，請等待管理中心審核','success');
+                await ntpcV2LoadMyRequests();
+            }catch(e){showToast('申請失敗：'+e.message,'error');}
+            finally{button.disabled=false;}
+        }
+        async function ntpcV2LoadAdminRequests(force=false){
+            if(!ntpcCanConfigureIntegrations(currentUser)){showToast('需最高管理員權限','warning');return;}
+            const host=document.getElementById('ntpc-v2-admin-requests');if(!host)return;
+            host.textContent='讀取申請紀錄中…';
+            try{
+                const snap=await fm.getDocs(fm.query(fm.collection(db,'credentialChangeRequests'),fm.limit(180)));
+                const list=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>({pending:0,approved:1,rejected:2,applied:3}[a.status]??4)-({pending:0,approved:1,rejected:2,applied:3}[b.status]??4)||(b.createdAt||0)-(a.createdAt||0));
+                host.innerHTML=list.length?list.map(r=>{
+                    const pending=r.status==='pending';
+                    return `<div class="ntpc-request-row space-y-2"><div class="flex flex-wrap justify-between gap-2"><b class="text-white">${escapeHtml(r.account||'未知')} · ${ntpcV2RequestLabel(r)}</b><span class="text-xs ${pending?'text-amber-300':'text-cyan-300'}">${escapeHtml(ntpcV2StatusLabel(r))}</span></div><div class="text-xs text-slate-300">${r.type==='account'?`希望新帳號：${escapeHtml(r.requestedAccount||'--')}<span class="mx-2">｜</span>`:''}申請時間：${escapeHtml(formatDateTime(r.createdAt||0))}</div>${r.reason?`<div class="text-sm text-slate-400 whitespace-pre-wrap">原因：${escapeHtml(r.reason)}</div>`:''}${r.processedBy?`<div class="text-xs text-slate-500">審核者：${escapeHtml(r.processedBy)}${r.reviewNote?'｜備註：'+escapeHtml(r.reviewNote):''}</div>`:''}${pending?`<div class="space-y-2"><input class="ntpc-v2-input" maxlength="160" id="ntpc-v2-review-note-${escapeHtml(r.id)}" placeholder="審核備註（拒絕時建議填寫）"><div class="flex flex-wrap gap-2"><button type="button" class="bg-cyan-700 hover:bg-cyan-600 px-3 py-2 rounded-lg text-xs font-semibold" onclick="ntpcV2ReviewCredentialRequest('${escapeHtml(r.id)}','approve')">核准</button><button type="button" class="bg-rose-800 hover:bg-rose-700 px-3 py-2 rounded-lg text-xs font-semibold" onclick="ntpcV2ReviewCredentialRequest('${escapeHtml(r.id)}','reject')">駁回</button></div></div>`:''}</div>`;
+                }).join(''):'尚無變更申請。';
+            }catch(e){host.textContent='無法取得審核列表：'+e.message;}
+        }
+        async function ntpcV2ReviewCredentialRequest(id,action){
+            if(!ntpcCanConfigureIntegrations(currentUser)){showToast('沒有審核權限','warning');return;}
+            const note=String(document.getElementById('ntpc-v2-review-note-'+id)?.value||'').trim().slice(0,160);
+            if(!(await showConfirm(`確定${action==='approve'?'核准':'駁回'}這筆帳密變更申請？`,'帳密變更審核',action==='approve'?'確認核准':'確認駁回')))return;
+            try{
+                const reqRef=ntpcV2RequestDoc(id),reqSnap=await fm.getDoc(reqRef);
+                if(!reqSnap.exists()||reqSnap.data().status!=='pending')throw new Error('申請已被處理，請重新載入');
+                const req=reqSnap.data();let afterStatus=action==='approve'?(req.type==='account'?'applied':'approved'):'rejected';
+                if(action==='approve'&&req.type==='account'){
+                    if(isSuperAdminAccount(req.account))throw new Error('最高管理員帳號不可由此流程更名');
+                    const dest=ntpcV2SafeAccount(req.requestedAccount);
+                    if(isSuperAdminAccount(dest))throw new Error('新帳號名稱屬於保護帳號');
+                    if((appData.users||[]).some(u=>String(u.account||'').toLowerCase()===dest.toLowerCase()))throw new Error('新帳號已被其他使用者使用');
+                    const sourceDoc=String(req.userDocId||req.account);
+                    if(sourceDoc===dest)throw new Error('新帳號與舊文件相同');
+                    await fm.runTransaction(db,async tx=>{
+                        const sourceRef=fm.doc(db,'users',sourceDoc),destRef=fm.doc(db,'users',dest);
+                        const [oldSnap,newSnap,latestReq]=await Promise.all([tx.get(sourceRef),tx.get(destRef),tx.get(reqRef)]);
+                        if(!oldSnap.exists())throw new Error('原帳號已不存在');
+                        if(newSnap.exists())throw new Error('新帳號已被使用');
+                        if(!latestReq.exists()||latestReq.data().status!=='pending')throw new Error('此申請已被處理');
+                        if(String(oldSnap.data().account||'').toLowerCase()!==String(req.account||'').toLowerCase())throw new Error('帳號所有者已改變');
+                        const oldUser=oldSnap.data();
+                        tx.set(destRef,{...oldUser,account:dest,online:false,lastSeen:0});
+                        tx.delete(sourceRef);
+                        tx.update(reqRef,{status:'applied',originalAccount:String(req.account),account:dest,processedBy:String(currentUser.account),processedAt:Date.now(),appliedAt:Date.now(),reviewNote:note,updatedAt:Date.now()});
+                    });
+                    // 舊案件仍以舊帳號署名；舊公開名片保留轉址，新名片沿用頭像及自介。
+                    try{
+                        const oldPublic=await fm.getDoc(ntpcV2ProfileDoc(req.account));
+                        const oldData=oldPublic.exists()?oldPublic.data():{};
+                        await fm.setDoc(ntpcV2ProfileDoc(dest),{...oldData,account:dest,name:oldData.name||dest,redirectTo:'',metadataUpdatedAt:Date.now()},{merge:true});
+                        await fm.setDoc(ntpcV2ProfileDoc(req.account),{redirectTo:dest,aliasUpdatedAt:Date.now()},{merge:true});
+                        const av=await fm.getDoc(fm.doc(db,'staffPhotoLinks',req.account));
+                        if(av.exists())await fm.setDoc(fm.doc(db,'staffPhotoLinks',dest),{...av.data(),updatedAt:Date.now()});
+                    }catch(err){console.warn('更名後公開檔案移轉需補救',err);}
+                    const cached=appData.users.find(u=>String(u.account).toLowerCase()===String(req.account).toLowerCase());
+                    if(cached){cached.account=dest;cached.docId=dest;}
+                    ntpcV2ProfileCache.delete(String(req.account).toLowerCase());ntpcV2ProfileCache.delete(dest.toLowerCase());
+                    renderAdminUsers();
+                }else{
+                    await fm.updateDoc(reqRef,{status:afterStatus,processedBy:String(currentUser.account),processedAt:Date.now(),reviewNote:note,updatedAt:Date.now()});
+                }
+                await logAdminAction(action==='approve'?'核准帳密變更申請':'駁回帳密變更申請',String(req.account),`類型：${req.type==='account'?'帳號':'密碼'}；結果：${afterStatus}；${req.type==='account'?'新帳號：'+req.requestedAccount+'；':''}審核：${currentUser.account}；備註：${note||'無'}（不包含密碼）`);
+                showToast(action==='approve'?'申請已核准':'申請已駁回','success');
+                await ntpcV2LoadAdminRequests(true);
+            }catch(e){showToast('審核失敗：'+e.message,'error');await ntpcV2LoadAdminRequests(true);}
+        }
+        async function ntpcV2ApplyApprovedPassword(){
+            if(!currentUser||!ntpcV2ApprovedPasswordRequest){showToast('沒有已核准的密碼申請','warning');return;}
+            const pass=String(document.getElementById('ntpc-v2-new-password').value||''),confirm=String(document.getElementById('ntpc-v2-confirm-password').value||'');
+            if(pass.length<8||pass.length>128){showToast('新密碼須為 8～128 字元','warning');return;}
+            if(pass!==confirm){showToast('兩次新密碼不同','warning');return;}
+            if(!(await showConfirm('確定將此帳號的登入密碼變更為新密碼？','核准後更換密碼','確認更改')))return;
+            try{
+                const id=ntpcV2ApprovedPasswordRequest,ref=ntpcV2RequestDoc(id),snap=await fm.getDoc(ref);
+                if(!snap.exists()||snap.data().status!=='approved'||snap.data().type!=='password'||String(snap.data().account).toLowerCase()!==String(currentUser.account).toLowerCase())throw new Error('核准狀態已失效');
+                // 相容舊有登入欄位；不把新密碼放進申請文件、管理 LOG、通知佇列或公開檔案。
+                const userRef=fm.doc(db,'users',String(currentUser.docId||currentUser.account));
+                await fm.updateDoc(userRef,{pass});
+                currentUser.pass=pass;
+                await fm.updateDoc(ref,{status:'applied',appliedAt:Date.now(),updatedAt:Date.now()});
+                document.getElementById('ntpc-v2-new-password').value='';document.getElementById('ntpc-v2-confirm-password').value='';
+                await logAdminAction('完成核准密碼變更',String(currentUser.account),'本人於核准後更換登入密碼，未傳送密碼內容');
+                showToast('密碼已變更，下次登入請使用新密碼','success');ntpcV2ApprovedPasswordRequest='';await ntpcV2LoadMyRequests();
+            }catch(e){showToast('變更密碼失敗：'+e.message,'error');}
+        }
+        function ntpcV2MaybeRefreshPersonalPanel(){
+            if(!currentUser)return;
+            const activeAccount=String(currentUser.account||'');
+            if(ntpcV2LastPanelAccount!==activeAccount){
+                ntpcV2LastPanelAccount=activeAccount;ntpcV2LastPanelRefresh=0;ntpcV2ApprovedPasswordRequest='';
+                for(const id of ['ntpc-v2-bio','ntpc-v2-background','ntpc-v2-ig','ntpc-v2-discord','ntpc-v2-roblox']){const el=document.getElementById(id);if(el)el.value='';}
+                const status=document.getElementById('ntpc-v2-request-status');if(status)status.textContent='查詢目前帳號的申請紀錄中…';
+                document.getElementById('ntpc-v2-approved-password')?.classList.add('hidden');
+            }
+            if(ntpcV2PanelLoading||Date.now()-ntpcV2LastPanelRefresh<60000)return;
+            ntpcV2LastPanelRefresh=Date.now();ntpcV2PanelLoading=true;
+            Promise.allSettled([ntpcV2LoadMyPublicProfile(),ntpcV2LoadMyRequests()]).finally(()=>{ntpcV2PanelLoading=false;});
+        }
+        // 管理員可用此功能一次為舊帳號建立不含密碼的公開名片基礎欄位，只有使用者自行編輯的背景、自介、社群資料會保留。
+        async function ntpcV2SyncAllPublicProfiles(){
+            if(!ntpcCanConfigureIntegrations(currentUser))return;
+            const list=appData.users||[];let ok=0,failed=0;
+            if(!(await showConfirm(`將替 ${list.length} 個已載入帳號建立／更新公開部門與官階資訊。繼續？`,'同步公開個人檔案','開始同步')))return;
+            for(const user of list){try{await ntpcV2SyncPublicMetadata(user);ok++;}catch(e){failed++;console.warn('公開檔案同步失敗',user.account,e);}}
+            showToast(`已同步 ${ok} 筆公開檔案${failed?'；失敗 '+failed+' 筆':''}`,'success');
+        }
+
+        // V2.1｜管理中心帳號管理：移除公開檔案中的不適當自介／連結／背景。
+        async function ntpcV21LoadModerationPreview(account){
+            const label=document.getElementById('ntpc-v21-moderate-preview');if(!label)return;
+            const token=String(account||'');label.dataset.account=token;label.textContent='讀取公開檔案中…';
+            try{
+                const snap=await fm.getDoc(ntpcV2ProfileDoc(token));
+                if(label.dataset.account!==token)return;
+                const d=snap.exists()?snap.data()||{}:{};
+                if(d.revoked){label.textContent='此帳號已註銷';return;}
+                const items=[['自介',d.bio],['背景',d.backgroundUrl],['Instagram',d.socials?.ig],['Discord',d.socials?.discord],['Roblox',d.socials?.roblox]];
+                label.textContent=items.map(([a,b])=>a+'：'+String(b||'未設定').slice(0,180)).join('\n');
+            }catch(e){if(label.dataset.account===token)label.textContent='無法讀取公開資料：'+String(e.message||e);}
+        }
+        async function ntpcV21ModerateProfile(){
+            if(!currentUser||currentUser.role!=='admin'){showToast('只有帳號管理員可以移除公開檔案內容','warning');return;}
+            const account=String(document.getElementById('edit-user-original-account')?.value||'').trim();
+            const selected=Array.from(document.querySelectorAll('input[name="ntpc-v21-moderate"]:checked')).map(i=>i.value);
+            if(!account||!selected.length){showToast('請先勾選要移除的項目','warning');return;}
+            if(!(appData.users||[]).some(u=>String(u.account).toLowerCase()===account.toLowerCase())){showToast('帳號已不存在','warning');return;}
+            if(!(await showConfirm(`確認移除 ${account} 的以下公開內容？\n${selected.join('、')}\n此動作會留下管理及 Discord LOG。`,'移除公開檔案內容','確認移除')))return;
+            const btn=document.getElementById('ntpc-v21-moderate-button');if(btn)btn.disabled=true;
+            try{
+                const ref=ntpcV2ProfileDoc(account),snap=await fm.getDoc(ref),d=snap.exists()?snap.data()||{}:{};
+                if(d.revoked)throw new Error('帳號已註銷');
+                const patch={},socials={...(d.socials||{})};
+                for(const field of selected){
+                    if(field==='bio')patch.bio='';
+                    else if(field==='background')patch.backgroundUrl='';
+                    else if(['ig','discord','roblox'].includes(field))socials[field]='';
+                }
+                if(selected.some(x=>['ig','discord','roblox'].includes(x)))patch.socials=socials;
+                patch.moderatedAt=Date.now();patch.moderatedBy=String(currentUser.account||'');
+                await fm.setDoc(ref,patch,{merge:true});
+                ntpcV2ProfileCache.delete(account.toLowerCase());
+                await logAdminAction('移除公開檔案內容',account,'清除項目：'+selected.join('、')+'；操作帳號：'+currentUser.account+'（不紀錄原始連結與內容）');
+                document.querySelectorAll('input[name="ntpc-v21-moderate"]').forEach(i=>i.checked=false);
+                await ntpcV21LoadModerationPreview(account);
+                showToast('已移除選取的公開個人檔案內容','success');
+            }catch(e){showToast('移除失敗：'+String(e.message||e),'error');}
+            finally{if(btn)btn.disabled=false;}
+        }
         document.addEventListener('DOMContentLoaded',()=>{
         });
 
