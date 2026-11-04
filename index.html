@@ -1,3 +1,4 @@
+<!-- V2.1｜本次修正：獎懲發布名單按需讀取公開警務名冊、手動指定與最高管理員舊帳號名冊補建；獎懲編號採單欄文件 ID 游標及交易，無需複合索引。原有功能與歷史版本保留。 -->
 <!-- V2.1 本次：統一首頁版本徽章、首頁介紹、最新更新標題及統整紀錄顯示為 V2.1；保留既有歷史版本紀錄與所有功能。 -->
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
@@ -5351,6 +5352,23 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
                         <input type="text" id="punish-member-id" placeholder="例如：32375" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 font-mono">
                     </div>
                 </div>
+                <div class="rounded-xl border border-slate-700/70 bg-slate-950/50 px-3 py-3 space-y-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <p id="ntpc-punish-roster-status" role="status" class="text-xs text-slate-400">開啟發布視窗時才查詢公開員警名單，不會在登入時整批讀取。</p>
+                        <button type="button" id="ntpc-punish-refresh-roster" onclick="ntpcLoadPolicePublicRoster(true)" class="rounded-lg border border-cyan-700/60 bg-cyan-900/30 px-3 py-2 text-xs text-cyan-200 hover:bg-cyan-900/50"><i class="fa-solid fa-arrows-rotate mr-1"></i>重新載入員警</button>
+                        <button type="button" id="ntpc-punish-backfill-roster" onclick="ntpcPunishBackfillPoliceRoster()" class="hidden rounded-lg border border-amber-700/60 bg-amber-900/30 px-3 py-2 text-xs text-amber-200 hover:bg-amber-900/50"><i class="fa-solid fa-users-gear mr-1"></i>補建舊員警名冊（最高管理員）</button>
+                    </div>
+                    <details class="text-sm text-slate-300">
+                        <summary class="cursor-pointer text-cyan-300 select-none">名單缺少員警？手動指定帳號與管理編號</summary>
+                        <p class="mt-2 text-xs text-amber-200/90">供舊帳號尚未建立公開名冊時使用。發布前請核對帳號、RP 姓名及管理編號，避免獎懲記錄到錯誤成員。</p>
+                        <div class="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <input type="text" id="ntpc-punish-manual-account" maxlength="80" placeholder="網站帳號" autocomplete="off" class="min-w-0 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                            <input type="text" id="ntpc-punish-manual-name" maxlength="80" placeholder="RP 姓名" autocomplete="off" class="min-w-0 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                            <input type="text" id="ntpc-punish-manual-number" maxlength="20" placeholder="管理編號" inputmode="numeric" autocomplete="off" class="min-w-0 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                        </div>
+                        <button type="button" onclick="ntpcPunishUseManualOfficer()" class="mt-2 rounded-lg bg-slate-700 hover:bg-slate-600 px-3 py-2 text-xs text-white">加入並選擇這位員警</button>
+                    </details>
+                </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">獎懲類型</label>
@@ -8796,60 +8814,175 @@ async function republishAnnouncement(id) {
                 `統計區間：${startInput} 至 ${endInput}｜區間內 ${insideCount} 筆打卡；跨日班次計入重疊時數${started !== null ? '；未下班班次截至目前時間' : ''}`;
         }
 
-        // 警務獎懲安全名單：一般帳號只會讀取自己的 users 文件，因此不能再用
-        // appData.users 當作所有警員名冊。整合「已獲授權讀取」的警務打卡與既有獎懲資料，
-        // 只抽取 RP 姓名、網站帳號和勤務編號，不讀取其他人的密碼／裝置資料。
+        // V2.1 警用獎懲：只在打開發布表單時查詢公開的警務名單。
+        // 登入後 appData.users 通常只有自己，不能再以它作為完整警員名冊。
+        // 公開檔案只提取 account/name/staffNumber，不讀取 users 中的密碼或裝置資料。
+        const ntpcPunishPublicRoster=new Map();
+        const ntpcPunishManualRoster=new Map();
+        let ntpcPunishPublicRosterFetched=0;
+        let ntpcPunishPublicRosterOwner='';
+        let ntpcPunishRosterRequest=null;
+        function ntpcPunishRosterStatus(message){
+            const el=document.getElementById('ntpc-punish-roster-status');if(el)el.textContent=String(message||'');
+        }
+        function ntpcPunishAddOfficer(store,officer){
+            const account=String(officer?.account||'').trim();
+            if(!account)return;
+            store.set(account.toLowerCase(),{
+                account,name:String(officer?.name||account).trim().slice(0,80),
+                staffNumber:String(officer?.staffNumber||'').trim().slice(0,20),
+                time:Number(officer?.time)||0,priority:Number(officer?.priority)||0,
+                manual:!!officer?.manual
+            });
+        }
         function getPolicePunishmentMemberRoster() {
             const roster = new Map();
-            const normalize = value => String(value ?? '').trim();
-            const add = (account, name, number, time = 0, priority = 0) => {
-                const acc = normalize(account);
-                if (!acc) return;
-                const key = acc.toLowerCase();
-                const previous = roster.get(key);
-                // 最新打卡優先於舊打卡；有權讀取的 users 正式資料優先於打卡及舊獎懲。
-                if (!previous || priority > previous.priority || (priority === previous.priority && time >= previous.time)) {
-                    roster.set(key, {
-                        account: acc,
-                        name: normalize(name) || previous?.name || acc,
-                        staffNumber: normalize(number) || previous?.staffNumber || '',
-                        time: Number(time) || 0,
-                        priority
-                    });
-                } else if (!previous.staffNumber && normalize(number)) {
-                    previous.staffNumber = normalize(number);
-                }
+            const add=(officer)=>{
+                const account=String(officer?.account||'').trim();if(!account)return;
+                const key=account.toLowerCase(),prev=roster.get(key);
+                const incoming={account,name:String(officer?.name||prev?.name||account).trim(),
+                    staffNumber:String(officer?.staffNumber||prev?.staffNumber||'').trim(),
+                    time:Number(officer?.time)||0,priority:Number(officer?.priority)||0,manual:!!officer?.manual};
+                if(!prev||incoming.priority>prev.priority||(incoming.priority===prev.priority&&incoming.time>=prev.time)){
+                    roster.set(key,{...prev,...incoming,staffNumber:incoming.staffNumber||prev?.staffNumber||''});
+                }else if(!prev.staffNumber&&incoming.staffNumber)prev.staffNumber=incoming.staffNumber;
             };
-            (appData.policePunishments || []).forEach(p => {
-                if (p.memberAccount) add(p.memberAccount, p.memberName, p.memberId, Number(p.timestamp) || 0, 1);
+            // 本機舊獎懲／打卡作為補充，不需重新讀取雲端歷史資料。
+            (appData.policePunishments||[]).forEach(p=>{
+                if(p.memberAccount)add({account:p.memberAccount,name:p.memberName,staffNumber:p.memberId,time:p.timestamp,priority:1});
             });
-            (appData.policeClocks || []).forEach(c => {
-                if (c.account) add(c.account, c.name, c.staffNumber || c.memberNumber || c.number, Number(c.timestamp) || 0, 2);
+            (appData.policeClocks||[]).forEach(c=>{
+                if(c.account)add({account:c.account,name:c.name,staffNumber:c.staffNumber||c.memberNumber||c.number,time:c.timestamp,priority:2});
             });
-            (appData.users || []).forEach(u => {
-                const units = Array.isArray(u.units) ? u.units : [u.unit];
-                if (units.includes('police') || getEffectiveRole(u) === 'admin') add(u.account, u.name, u.staffNumber, 0, 3);
+            // 公開安全資料來自 staffPublicProfiles，非 users 的完整敏感文件。
+            ntpcPunishPublicRoster.forEach(add);
+            (appData.users||[]).forEach(u=>{
+                const units=Array.isArray(u.units)?u.units:[u.unit];
+                if(units.includes('police')||getEffectiveRole(u)==='admin')
+                    add({account:u.account,name:u.name,staffNumber:u.staffNumber,time:0,priority:4});
             });
-            return [...roster.values()].sort((a, b) => a.name.localeCompare(b.name, 'zh-TW') || a.account.localeCompare(b.account));
+            ntpcPunishManualRoster.forEach(add);
+            return [...roster.values()].sort((a,b)=>a.name.localeCompare(b.name,'zh-TW')||a.account.localeCompare(b.account));
         }
-
         function populateMemberSelects() {
-            const punishMemberSelect = document.getElementById('punish-member-select');
-            // 消防名單沿用原本打卡紀錄來源。
             populateFireHoursMemberSelect();
-            if (!punishMemberSelect) return;
-            const previousValue = String(punishMemberSelect.value || '');
-            const roster = getPolicePunishmentMemberRoster();
-            punishMemberSelect.replaceChildren(new Option('-- 請選擇被獎懲員警 --', ''));
-            for (const officer of roster) {
-                punishMemberSelect.add(new Option(`${officer.name} (${officer.staffNumber || officer.account})`, officer.account));
+            const select=document.getElementById('punish-member-select');if(!select)return;
+            const old=String(select.value||'').toLowerCase(),roster=getPolicePunishmentMemberRoster();
+            select.replaceChildren(new Option('-- 請選擇被獎懲員警 --',''));
+            for(const officer of roster){
+                select.add(new Option(`${officer.name} (${officer.staffNumber||officer.account})`,officer.account));
             }
-            if (roster.some(u => u.account === previousValue)) punishMemberSelect.value = previousValue;
-            punishMemberSelect.onchange = () => {
-                const officer = roster.find(u => u.account === punishMemberSelect.value);
-                const input = document.getElementById('punish-member-id');
-                if (input) input.value = officer?.staffNumber || '';
+            const same=roster.find(u=>u.account.toLowerCase()===old);
+            if(same)select.value=same.account;
+            select.onchange=()=>{
+                const member=roster.find(u=>u.account.toLowerCase()===String(select.value||'').toLowerCase());
+                const input=document.getElementById('punish-member-id');
+                if(input)input.value=member?.staffNumber||'';
             };
+        }
+        async function ntpcLoadPolicePublicRoster(force=false){
+            if(!currentUser||!canUsePolicePunishment()||!db||!fm)return;
+            const account=String(currentUser.account||'').toLowerCase();
+            if(ntpcPunishRosterRequest)return ntpcPunishRosterRequest;
+            if(ntpcPunishPublicRosterOwner!==account){ntpcPunishPublicRoster.clear();ntpcPunishManualRoster.clear();ntpcPunishPublicRosterFetched=0;ntpcPunishPublicRosterOwner=account;}
+            if(!force&&ntpcPunishPublicRosterFetched&&Date.now()-ntpcPunishPublicRosterFetched<10*60*1000){
+                populateMemberSelects();ntpcPunishRosterStatus(`公開員警名單 ${ntpcPunishPublicRoster.size} 人（已快取，可重新載入）`);return;
+            }
+            ntpcPunishRosterStatus('正在查詢公開員警名單…');
+            const btn=document.getElementById('ntpc-punish-refresh-roster');if(btn)btn.disabled=true;
+            ntpcPunishRosterRequest=(async()=>{
+                const fetched=new Map();let pages=0,cursor=null,hasMore=false;
+                try{
+                    // 單一 array-contains 查詢使用 Firestore 自動單欄索引，不需要複合索引。
+                    // 一次最多 150 筆；超過 750 人時避免在此功能無限制讀取。
+                    do{
+                        const terms=[fm.where('units','array-contains','police'),fm.limit(150)];
+                        if(cursor)terms.push(fm.startAfter(cursor));
+                        const snap=await fm.getDocs(fm.query(fm.collection(db,'staffPublicProfiles'),...terms));
+                        if(!currentUser||String(currentUser.account||'').toLowerCase()!==account)return;
+                        for(const item of snap.docs){
+                            const d=item.data()||{};
+                            if(d.revoked===true||d.redirectTo)continue;
+                            const key=String(d.account||item.id).trim();if(!key)continue;
+                            ntpcPunishAddOfficer(fetched,{account:key,name:d.name||key,staffNumber:d.staffNumber,priority:3});
+                        }
+                        cursor=snap.docs.at(-1)||null;pages++;
+                        hasMore=snap.size===150;
+                    }while(hasMore&&pages<5);
+                    ntpcPunishPublicRoster.clear();fetched.forEach((v,k)=>ntpcPunishPublicRoster.set(k,v));
+                    ntpcPunishPublicRosterFetched=Date.now();
+                    populateMemberSelects();
+                    const hint=hasMore?'；名冊較大，如未列出請使用下方手動指定':'';
+                    ntpcPunishRosterStatus(`已載入 ${ntpcPunishPublicRoster.size} 位公開警務人員${hint}。`);
+                }catch(e){
+                    console.warn('警用獎懲公開員警名冊讀取失敗',e);
+                    populateMemberSelects();
+                    ntpcPunishRosterStatus('公開名冊暫時無法讀取；可使用已載入員警或下方「手動指定」。必要時由管理員同步公開個人檔案。');
+                }
+            })().finally(()=>{ntpcPunishRosterRequest=null;if(btn)btn.disabled=false;});
+            return ntpcPunishRosterRequest;
+        }
+        // 一次性維護：舊帳號可能沒有 staffPublicProfiles。只有最高管理員主動
+        // 按下按鈕才分批讀取 users，並只向公開檔案寫入安全欄位。
+        // 不會把密碼、登入裝置或完整 users 文件寫進公開名單，亦不在登入時自動執行。
+        let ntpcPunishBackfillBusy=false;
+        async function ntpcPunishBackfillPoliceRoster(){
+            if(!currentUser||getEffectiveRole(currentUser)!=='admin'||ntpcPunishBackfillBusy)return;
+            if(!(await showConfirm('將分批檢查舊公職帳號，只補建警務人員的公開姓名、帳號與管理編號。這是一次性維護，可能依帳號數產生額外 Firestore 讀寫，是否執行？','補建警務公開名冊','開始同步')))return;
+            ntpcPunishBackfillBusy=true;
+            const button=document.getElementById('ntpc-punish-backfill-roster');if(button)button.disabled=true;
+            let cursor=null,visited=0,written=0,failed=0;
+            const operator=String(currentUser.account||'');
+            try{
+                for(let page=0;page<20;page++){
+                    const terms=[fm.orderBy(fm.documentId()),fm.limit(100)];
+                    if(cursor)terms.push(fm.startAfter(cursor));
+                    const snap=await fm.getDocs(fm.query(fm.collection(db,'users'),...terms));
+                    if(!currentUser||String(currentUser.account||'')!==operator)throw new Error('登入帳號已切換，已停止同步。');
+                    const batch=fm.writeBatch(db);let batchCount=0;
+                    for(const item of snap.docs){
+                        const u={docId:item.id,...item.data()};
+                        if(!getUserUnits(u).includes('police'))continue;
+                        const account=String(u.account||item.id||'').trim();
+                        if(!account||account.includes('/')){failed++;continue;}
+                        const safe=ntpcV2MinimalProfile({...u,account});
+                        // merge:true 避免覆蓋既有自介、頭像框、社群連結及隱私設定。
+                        batch.set(ntpcV2ProfileDoc(account),{...safe,metadataUpdatedAt:Date.now()},{merge:true});
+                        batchCount++;
+                    }
+                    if(batchCount){await batch.commit();written+=batchCount;}
+                    visited+=snap.size;
+                    ntpcPunishRosterStatus(`正在同步舊名冊：已檢查 ${visited} 個帳號，完成 ${written} 位警務人員…`);
+                    if(snap.size<100)break;
+                    cursor=snap.docs.at(-1)||null;
+                }
+                try{await logAdminAction('補建警務公開員警名冊',`檢查 ${visited} 個帳號；更新 ${written} 位警務人員；略過 ${failed} 筆`);}catch(e){console.warn('公開員警名冊 LOG 失敗',e);}
+                ntpcPunishPublicRosterFetched=0;
+                await ntpcLoadPolicePublicRoster(true);
+                showToast(`公開員警名冊同步完成：已檢查 ${visited} 個帳號，處理 ${written} 位員警。`,'success','名冊已更新');
+            }catch(e){
+                console.warn('警務名冊補建失敗',e);
+                ntpcPunishRosterStatus('補建未完成：'+String(e?.message||e));
+                showToast('補建名冊失敗：'+String(e?.message||e),'error','同步失敗');
+            }finally{ntpcPunishBackfillBusy=false;if(button)button.disabled=false;}
+        }
+        function ntpcPunishUseManualOfficer(){
+            if(!canUsePolicePunishment())return;
+            const account=String(document.getElementById('ntpc-punish-manual-account')?.value||'').trim();
+            const name=String(document.getElementById('ntpc-punish-manual-name')?.value||'').trim();
+            const staffNumber=String(document.getElementById('ntpc-punish-manual-number')?.value||'').trim();
+            if(!/^[\p{L}\p{N}_.-]{1,80}$/u.test(account)||!name||name.length>80||!/^[0-9]{1,20}$/.test(staffNumber)){
+                showToast('請填寫有效的網站帳號、RP 姓名及數字管理編號。','warning','員警資料不完整');return;
+            }
+            const known=getPolicePunishmentMemberRoster().find(u=>u.account.toLowerCase()===account.toLowerCase());
+            if(known?.staffNumber&&known.staffNumber!==staffNumber){
+                showToast(`名冊中的管理編號為 ${known.staffNumber}，與手動輸入不同，請先核對。`,'warning','管理編號不符');return;
+            }
+            ntpcPunishAddOfficer(ntpcPunishManualRoster,{account,name,staffNumber,priority:5,manual:true});
+            populateMemberSelects();
+            const sel=document.getElementById('punish-member-select');if(sel)sel.value=account;
+            const number=document.getElementById('punish-member-id');if(number)number.value=staffNumber;
+            ntpcPunishRosterStatus(`已選用手動資料：${name}（${staffNumber}）。送出前會再次確認。`);
         }
 
         function switchFAQCategory(category, focusId = '') {
@@ -11425,7 +11558,7 @@ async function republishAnnouncement(id) {
                 if(saved)void ntpcRevokeRememberedLogin(saved).catch(e=>console.warn('清除舊登入憑證失敗',e));
             }
         }catch(e){console.warn('裝置 15 天登入設定失敗',e);showToast('本次已登入，但裝置記住 15 天失敗：'+(e?.message||e),'warning','記住登入未啟用');}resetManualReadFlags();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();switchTab('home');}
-        async function logout(){if(typeof ntpcCacheClearOwn==='function')await ntpcCacheClearOwn(false);const remembered=ntpcGetRememberedLogin();ntpcLocalRemove(NTPC_REMEMBER_KEY);safeSessionRemove('ntpcrp_session');if(remembered)void ntpcRevokeRememberedLogin(remembered).catch(e=>console.warn('雲端登入憑證撤銷稍後再試',e));ntpcBotAdminLogout();ntpcV21FramePolicy=ntpcV21DefaultFramePolicy();ntpcV21FramePolicyLoaded=false;ntpcV21FramePolicyFetchedAt=0;ntpcMapDisconnectAll();ntpcDispatchStop(true);resetManualReadFlags();ntpcV21AdminSectionsLoaded.clear();ntpcV21LazySections.clear();ntpcV21StatsCache.clear();ntpcV21OnlineRows=null;ntpcV21UsersCursor=null;ntpcV21UsersNoMore=false;stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;if(typeof ntpcSettingsResetDevice==='function')ntpcSettingsResetDevice();stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','jiaxiaoClocks','jiaxiaoMedicalReports','jiaxiaoMedicalPendingReports','jiaxiaoFuneralReports','jiaxiaoFuneralPendingReports','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
+        async function logout(){if(typeof ntpcCacheClearOwn==='function')await ntpcCacheClearOwn(false);const remembered=ntpcGetRememberedLogin();ntpcLocalRemove(NTPC_REMEMBER_KEY);safeSessionRemove('ntpcrp_session');if(remembered)void ntpcRevokeRememberedLogin(remembered).catch(e=>console.warn('雲端登入憑證撤銷稍後再試',e));ntpcBotAdminLogout();ntpcV21FramePolicy=ntpcV21DefaultFramePolicy();ntpcV21FramePolicyLoaded=false;ntpcV21FramePolicyFetchedAt=0;ntpcMapDisconnectAll();ntpcDispatchStop(true);resetManualReadFlags();ntpcV21AdminSectionsLoaded.clear();ntpcV21LazySections.clear();ntpcV21StatsCache.clear();ntpcV21OnlineRows=null;ntpcV21UsersCursor=null;ntpcV21UsersNoMore=false;ntpcPunishPublicRoster.clear();ntpcPunishManualRoster.clear();ntpcPunishPublicRosterFetched=0;ntpcPunishPublicRosterOwner='';stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;if(typeof ntpcSettingsResetDevice==='function')ntpcSettingsResetDevice();stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','jiaxiaoClocks','jiaxiaoMedicalReports','jiaxiaoMedicalPendingReports','jiaxiaoFuneralReports','jiaxiaoFuneralPendingReports','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
             const badge = document.getElementById('user-badge');
@@ -12395,6 +12528,8 @@ async function republishAnnouncement(id) {
                 return;
             }
             populateMemberSelects();
+            document.getElementById('ntpc-punish-backfill-roster')?.classList.toggle('hidden',getEffectiveRole(currentUser)!=='admin');
+            void ntpcLoadPolicePublicRoster();
             document.getElementById('punish-author-name').value = currentUser.name;
             document.getElementById('punish-author-position').value = getEffectiveRole(currentUser) === 'admin' ? '系統管理員 / 長官' : getEffectiveRole(currentUser) === 'senior' ? '警務高階成員' : '分局長 / 督察組長';
             const punishDepartmentEl = document.getElementById('punish-department');
@@ -12425,35 +12560,45 @@ async function republishAnnouncement(id) {
 
         async function ntpcSaveUniquePunishment(payload){
             const date=ntpcTodayTaipei().date.replaceAll('-',''),prefix='PUN-'+date;
-            // 單筆查詢當日最大的文件編號，不能再用已分頁下載的清單計算。
-            for(let attempt=0;attempt<10;attempt++){
+            // 單欄文件 ID 排序 + 游標：不再對同一 __name__ 使用雙向 where 與 orderBy，
+            // 因此不依賴畫面截圖所缺少的複合索引，也不新增任何 Firestore 集合。
+            // 只有發布時讀取當日最新的一筆，再用 transaction 檢查待寫入 ID 不存在。
+            for(let attempt=0;attempt<12;attempt++){
                 const q=fm.query(fm.collection(db,'policePunishments'),
-                    fm.where(fm.documentId(),'>=',prefix+'001'),fm.where(fm.documentId(),'<',prefix+'~'),
-                    fm.orderBy(fm.documentId(),'desc'),fm.limit(1));
+                    fm.orderBy(fm.documentId(),'desc'),fm.startAfter(prefix+'~'),fm.limit(1));
                 const snapshot=await fm.getDocs(q);
-                const found=snapshot.docs[0]?.id||'';
-                const serial=found.startsWith(prefix)?Number(found.slice(prefix.length)):0;
-                const id=prefix+String((Number.isFinite(serial)?serial:0)+1).padStart(3,'0');
-                const ref=fm.doc(db,'policePunishments',id);
+                const latest=String(snapshot.docs[0]?.id||'');
+                const suffix=latest.startsWith(prefix)?latest.slice(prefix.length):'';
+                const serial=/^\d+$/.test(suffix)?Number(suffix):0;
+                if(!Number.isSafeInteger(serial)||serial>=999999999)throw new Error('獎懲流水號已達上限，請洽管理員。');
+                const id=prefix+String(serial+1).padStart(3,'0'),ref=fm.doc(db,'policePunishments',id);
                 try{
                     await fm.runTransaction(db,async tx=>{
-                        const exists=await tx.get(ref);
-                        if(exists.exists())throw new Error('PUN_ID_COLLISION');
+                        const existing=await tx.get(ref);
+                        if(existing.exists())throw new Error('PUN_ID_COLLISION');
                         tx.set(ref,{...payload,id});
                     });
                     return id;
-                }catch(error){if(String(error?.message||'')==='PUN_ID_COLLISION')continue;throw error;}
+                }catch(error){
+                    if(String(error?.message||'').includes('PUN_ID_COLLISION'))continue;
+                    throw error;
+                }
             }
-            throw new Error('獎懲編號正在被其他使用者使用，請稍後重新提交。');
+            throw new Error('同時發布的獎懲較多，請重新按一次發布。');
         }
         async function submitPunishment() {
             if(!canUsePolicePunishment()){showToast('權限不足：僅警務高層、高階成員與管理中心可發布獎懲。','warning','權限不足');return;}
             const memberId=document.getElementById('punish-member-id').value.trim(),memberAcc=document.getElementById('punish-member-select').value,type=document.getElementById('punish-type').value,items=getSelectedPunishmentItems('punish-item'),department=(document.getElementById('punish-department').value.trim() || getPolicePunishmentDepartment(currentUser)),authorName=document.getElementById('punish-author-name').value.trim(),authorPos=document.getElementById('punish-author-position').value.trim(),reason=document.getElementById('punish-reason').value.trim();
             if(!['reward','punishment'].includes(type)||!items.length){showToast('請先選擇獎懲類型，並至少勾選一個獎懲項目。','warning','資料不完整');return;}
             const roster=getPolicePunishmentMemberRoster();
-            if(!memberAcc||!roster.some(u=>u.account===memberAcc)){showToast('請先從名單選擇被獎懲員警。','warning','未選擇員警');return;}
+            const foundU=roster.find(u=>u.account.toLowerCase()===memberAcc.toLowerCase());
+            if(!memberAcc||!foundU){showToast('請先從名單選擇被獎懲員警。','warning','未選擇員警');return;}
             if(!memberId||!reason||!authorName){showToast('請填寫完整獎懲資訊。','error','資料不完整');return;}
-            const now=Date.now(),foundU=roster.find(u=>u.account===memberAcc),newPunish={memberId:memberId||(foundU?.staffNumber||''),memberAccount:memberAcc,memberName:foundU?.name||'未知員警',type,items,item:items.join('、'),department,authorName,authorPos,authorAccount:currentUser.account,authorRole:currentUser.role,reason,time:formatDateTime(now),timestamp:now};
+            if(foundU.manual){
+                const approved=await showConfirm(`你手動指定的獎懲對象為：${foundU.name}｜帳號 ${foundU.account}｜管理編號 ${memberId}。請確認沒有填錯，是否發布？`,'確認被獎懲員警','確認發布');
+                if(!approved)return;
+            }
+            const now=Date.now(),newPunish={memberId:memberId||(foundU?.staffNumber||''),memberAccount:memberAcc,memberName:foundU?.name||'未知員警',type,items,item:items.join('、'),department,authorName,authorPos,authorAccount:currentUser.account,authorRole:currentUser.role,reason,time:formatDateTime(now),timestamp:now};
             const submitButton=document.getElementById('submit-punishment-btn');if(submitButton?.disabled)return;
             if(submitButton)submitButton.disabled=true;
             try{
