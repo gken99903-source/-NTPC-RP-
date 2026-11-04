@@ -2785,6 +2785,34 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
   #ntpc-v2-profile-modal { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 }
 </style>
+
+<!-- V2.1｜個人檔案身分標籤對齊、非作用中分頁暫停裝飾動畫；不更動專屬頭像框本體 -->
+<style id="ntpc-v21-badge-and-focus-performance">
+  /* 兩種標籤共用同一列的固定高度／基線；長名稱時自然換行。 */
+  #ntpc-v21-public-profile-card .ntpc-v21-profile-role-badges {
+    display:flex; flex-wrap:wrap; align-items:center; align-content:center;
+    gap:7px 8px; margin-top:8px; min-width:0;
+  }
+  #ntpc-v21-public-profile-card .ntpc-v21-profile-role-badges > :is(.ntpc-v21-admin-badge,.ntpc-v21-creator-badge) {
+    display:inline-flex; align-items:center; justify-content:center;
+    box-sizing:border-box; height:29px; min-height:29px;
+    margin:0!important; padding:0 11px; line-height:1.1;
+    font-size:12px; white-space:nowrap; vertical-align:middle;
+    gap:6px;
+  }
+  #ntpc-v21-public-profile-card .ntpc-v21-profile-role-badges > .hidden { display:none!important; }
+  #ntpc-v21-public-profile-card .ntpc-v21-profile-role-badges:not(:has(> :not(.hidden))) { display:none; }
+  #ntpc-v21-public-profile-card .ntpc-v21-profile-role-badges i {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:13px; height:13px; flex:0 0 13px; line-height:1; font-size:12px;
+  }
+  /* 不在作用中時，暫停現有 CSS 動畫而不移除原動畫／頭像框樣式。 */
+  html.ntpc-page-inactive *,
+  html.ntpc-page-inactive *::before,
+  html.ntpc-page-inactive *::after { animation-play-state:paused!important; }
+  /* 高效能下的徽章漸層連續運動；不修改專屬頭像框的星月動畫規則。 */
+  html.ntpc-perf-high .ntpc-v21-creator-badge {animation-timing-function:linear!important;}
+</style>
 </head>
 <body class="ntpc-premium-ui bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
     <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
@@ -3151,17 +3179,27 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
                 <div id="police-sub-punishments" class="hidden space-y-4">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <h3 class="text-lg font-bold text-slate-200"><i class="fa-solid fa-gavel text-amber-500 mr-2"></i>警用獎懲公告專區</h3>
-                        <div class="w-full sm:w-80">
-                            <input type="text" id="search-police-punishment" placeholder="輸入被獎懲人管理編號搜尋 (例如 32375)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                        <div class="w-full sm:w-[440px] space-y-2">
+                            <label for="search-police-punishment" class="text-xs text-amber-200">跨日期直接查詢受獎／受懲人管理編號</label>
+                            <div class="flex flex-wrap gap-2">
+                                <input type="search" inputmode="numeric" maxlength="40" autocomplete="off" id="search-police-punishment" placeholder="輸入完整管理編號，例如 72366" class="min-w-0 flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                                <button type="button" id="ntpc-punish-direct-btn" onclick="ntpcPunishmentDirectSearch()" class="rounded-xl bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 text-sm font-semibold">直接搜尋</button>
+                                <button type="button" id="ntpc-punish-direct-back" onclick="ntpcPunishmentDirectBack()" class="hidden rounded-xl border border-slate-600 bg-slate-800 text-white px-3 py-2 text-sm">返回日期列表</button>
+                            </div>
+                            <p id="ntpc-punish-direct-status" aria-live="polite" class="text-xs text-slate-400">直接搜尋會跨所有日期精準查詢，不需要設定日期。</p>
                         </div>
                     </div>
                     <div class="rounded-xl border border-cyan-500/25 bg-slate-950/50 p-3 space-y-2" id="ntpc-police-punish-filter">
                         <div class="flex flex-wrap items-end gap-3"><label class="text-xs text-cyan-200">顯示範圍<select id="ntpc-police-punish-mode" onchange="ntpcPunishmentFilterToggle('police')" class="block mt-1 rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white"><option value="today" selected>今天（預設）</option><option value="dates">指定日期區間</option></select></label>
                         <div id="ntpc-police-punish-dates" class="hidden flex flex-wrap gap-2"><label class="text-xs text-slate-300">開始<input type="date" id="ntpc-police-punish-from" class="block bg-slate-900 border border-slate-700 rounded-lg p-2 text-white"></label><label class="text-xs text-slate-300">結束<input type="date" id="ntpc-police-punish-to" class="block bg-slate-900 border border-slate-700 rounded-lg p-2 text-white"></label></div>
                         <button type="button" onclick="ntpcLoadPolicePunishments(false,true)" class="rounded-lg bg-blue-700 px-3 py-2 text-sm text-white">查詢／重新整理</button></div>
-                        <p id="ntpc-police-punish-status" class="text-xs text-slate-400">開啟此頁只讀當日獎懲（每批最多25筆），其他日期需手動篩選。</p>
+                        <p id="ntpc-police-punish-status" class="text-xs text-slate-400">日期列表依選擇範圍手動載入（每批最多25筆）；右上角可跨日期直接查詢管理編號。</p>
                     </div>
-                    <div id="police-punishments-list" class="grid grid-cols-1 gap-4"></div><button type="button" id="ntpc-police-punish-next" onclick="ntpcLoadPolicePunishments(true)" class="hidden rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-3 py-2 text-sm text-cyan-200">載入下一批（最多25筆）</button>
+                    <div id="police-punishments-list" class="grid grid-cols-1 gap-4"></div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" id="ntpc-police-punish-next" onclick="ntpcLoadPolicePunishments(true)" class="hidden rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-3 py-2 text-sm text-cyan-200">載入下一批（最多25筆）</button>
+                        <button type="button" id="ntpc-punish-direct-next" onclick="ntpcPunishmentDirectSearch(true)" class="hidden rounded-lg border border-amber-500/30 bg-amber-950/30 px-3 py-2 text-sm text-amber-200">載入更多此編號獎懲（最多25筆）</button>
+                    </div>
                     <div id="police-punishment-summary" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
                         <div class="flex items-center justify-between gap-3 mb-4"><h4 class="text-sm font-bold text-slate-200"><i class="fa-solid fa-chart-simple text-amber-400 mr-2"></i>目前總累積</h4><span class="text-[11px] text-slate-500">依目前查詢結果統計</span></div>
                         <div id="police-punishment-summary-content" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3"></div>
@@ -6294,7 +6332,7 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
         <button type="button" onclick="ntpcV2CloseProfile()" class="absolute top-3 right-3 z-20 rounded-full bg-slate-950/80 border border-slate-500/30 w-10 h-10 text-slate-200 hover:bg-slate-700" aria-label="關閉個人檔案"><i class="fa-solid fa-xmark"></i></button>
         <div id="ntpc-v2-public-cover" class="ntpc-public-cover rounded-t-3xl flex items-end px-6 pt-12 pb-5 gap-4">
           <span id="ntpc-v2-modal-avatar" class="ntpc-avatar-chip ntpc-avatar-lg shrink-0"><img alt="" hidden><i class="fa-solid fa-user"></i></span>
-          <div class="min-w-0 flex-1"><h3 id="ntpc-v2-modal-name" class="text-xl sm:text-2xl font-bold text-white break-words">載入中…</h3><p id="ntpc-v2-modal-account" class="text-sm text-slate-200 break-words"></p><span id="ntpc-v21-admin-badge" class="ntpc-v21-admin-badge hidden"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> 管理員</span><span id="ntpc-v21-creator-badge" class="ntpc-v21-creator-badge hidden"><i class="fa-solid fa-sparkles" aria-hidden="true"></i> 創作者</span><div id="ntpc-v22-public-note" class="ntpc-v22-note-bubble ntpc-v22-public-note hidden" aria-label="個人便利貼"><span id="ntpc-v22-public-note-icon" class="ntpc-v22-note-icon" aria-hidden="true">❤️</span><span id="ntpc-v22-public-note-text" class="ntpc-v22-note-text"></span></div></div>
+          <div class="min-w-0 flex-1"><h3 id="ntpc-v2-modal-name" class="text-xl sm:text-2xl font-bold text-white break-words">載入中…</h3><p id="ntpc-v2-modal-account" class="text-sm text-slate-200 break-words"></p><div class="ntpc-v21-profile-role-badges" aria-label="個人身分標籤"><span id="ntpc-v21-admin-badge" class="ntpc-v21-admin-badge hidden"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span>管理員</span></span><span id="ntpc-v21-creator-badge" class="ntpc-v21-creator-badge hidden"><i class="fa-solid fa-wrench" aria-hidden="true"></i><span>創作者</span></span></div><div id="ntpc-v22-public-note" class="ntpc-v22-note-bubble ntpc-v22-public-note hidden" aria-label="個人便利貼"><span id="ntpc-v22-public-note-icon" class="ntpc-v22-note-icon" aria-hidden="true">❤️</span><span id="ntpc-v22-public-note-text" class="ntpc-v22-note-text"></span></div></div>
         </div>
         <div class="px-6 py-5 space-y-4">
            <div id="ntpc-v21-revoked-notice" class="ntpc-v21-profile-revoked hidden"><i class="fa-solid fa-user-slash mr-2"></i><strong>該帳號已被註銷</strong><p class="text-xs mt-2 text-rose-200/70">此帳號已由管理中心移除，個人公開資料不再顯示。</p></div>
@@ -7597,7 +7635,17 @@ const loginOpenBtn = document.getElementById('login-modal-open-btn');
             }
 
             const searchPunishInput = document.getElementById('search-police-punishment');
-            if (searchPunishInput) searchPunishInput.addEventListener('input', renderPolicePunishments);
+            if (searchPunishInput) {
+                searchPunishInput.addEventListener('keydown', event => {
+                    if (event.key === 'Enter') { event.preventDefault(); void ntpcPunishmentDirectSearch(); }
+                });
+                searchPunishInput.addEventListener('input', () => {
+                    if (!ntpcPunishDirectState.active) {
+                        const status = document.getElementById('ntpc-punish-direct-status');
+                        if (status) status.textContent = '按「直接搜尋」即可跨日期查詢；不需要先選日期。';
+                    }
+                });
+            }
 
             const searchFireInput = document.getElementById('search-fire-report');
             if (searchFireInput) searchFireInput.addEventListener('input', renderFireReports);
@@ -9093,7 +9141,72 @@ async function republishAnnouncement(id) {
                 showToast('獎懲查詢失敗：'+(error?.message||error),'error','讀取失敗');return false;
             }finally{manualReadState.busy.delete(busyKey);if(next)next.disabled=false;}
         }
-        function ntpcLoadPolicePunishments(more=false,force=false){return ntpcLoadPunishments('police',more,force);}
+        // V2.1：警用獎懲「管理編號」跨日期獨立查詢；只讀符合 memberId 的文件，不掃描歷史集合。
+        const ntpcPunishDirectState={active:false,busy:false,keyword:'',rows:[],last:null,hasMore:false,savedRows:null,requestId:0};
+        function ntpcPunishmentDirectStatus(message){
+            const el=document.getElementById('ntpc-punish-direct-status');if(el)el.textContent=message;
+        }
+        function ntpcPunishmentDirectUI(){
+            const state=ntpcPunishDirectState;
+            document.getElementById('ntpc-punish-direct-back')?.classList.toggle('hidden',!state.active);
+            const next=document.getElementById('ntpc-punish-direct-next');
+            if(next){next.classList.toggle('hidden',!state.active||!state.hasMore);next.disabled=state.busy;}
+            const regularNext=document.getElementById('ntpc-police-punish-next');
+            if(regularNext)regularNext.classList.toggle('hidden',state.active||!ntpcPunishPages.police?.hasMore);
+            const button=document.getElementById('ntpc-punish-direct-btn');if(button)button.disabled=state.busy;
+        }
+        async function ntpcPunishmentDirectSearch(more=false){
+            if(!currentUser||!fm||!db)return;
+            if(getEffectiveRole(currentUser)!=='admin'&&!userHasUnit('police')){
+                showToast('無警用獎懲查詢權限。','warning');return;
+            }
+            const state=ntpcPunishDirectState;
+            if(state.busy)return;
+            const keyword=String(document.getElementById('search-police-punishment')?.value||'').trim();
+            if(!keyword){showToast('請輸入完整的受獎／受懲人管理編號。','warning');return;}
+            if(keyword.length>40){showToast('管理編號長度不正確。','warning');return;}
+            const validMore=more&&state.active&&state.keyword===keyword&&state.hasMore&&state.last;
+            if(more&&!validMore)return;
+            if(!more&&!state.active)state.savedRows=[...(appData.policePunishments||[])];
+            state.active=true;state.busy=true;state.keyword=keyword;
+            const requestId=++state.requestId;
+            const accountAtRequest=String(currentUser.account||'');
+            ntpcPunishmentDirectUI();
+            ntpcPunishmentDirectStatus(`正在查詢管理編號「${keyword}」的跨日期獎懲…`);
+            try{
+                const clauses=[fm.where('memberId','==',keyword)];
+                if(validMore)clauses.push(fm.startAfter(state.last));
+                clauses.push(fm.limit(ntpcPunishPageSize));
+                const snap=await fm.getDocs(fm.query(fm.collection(db,'policePunishments'),...clauses));
+                if(!currentUser||String(currentUser.account||'')!==accountAtRequest||requestId!==state.requestId)return;
+                const incoming=snap.docs.map(d=>({docId:d.id,...d.data()}));
+                const byId=new Map((validMore?state.rows:[]).concat(incoming).map(row=>[String(row.docId||row.id),row]));
+                state.rows=[...byId.values()].sort((a,b)=>Number(b.timestamp||0)-Number(a.timestamp||0));
+                state.last=snap.docs.at(-1)||null;
+                state.hasMore=snap.size===ntpcPunishPageSize;
+                appData.policePunishments=[...state.rows];
+                renderPolicePunishments();ntpcPunishmentDirectUI();
+                ntpcPunishmentDirectStatus(`管理編號 ${keyword}｜已找到 ${state.rows.length} 筆${state.hasMore?'；可繼續載入下一批':''}｜不受日期限制`);
+                ntpcMarkSyncSuccess('警用獎懲（管理編號精準查詢）',snap.size);
+            }catch(error){
+                ntpcPunishmentDirectStatus('查詢失敗：'+(error?.message||error));
+                showToast('跨日期獎懲查詢失敗：'+(error?.message||error),'error');
+                if(!more){ntpcPunishmentDirectBack(false);}
+            }finally{state.busy=false;ntpcPunishmentDirectUI();}
+        }
+        function ntpcPunishmentDirectBack(clearInput=true){
+            const state=ntpcPunishDirectState;
+            ++state.requestId;
+            state.active=false;state.keyword='';state.rows=[];state.last=null;state.hasMore=false;
+            if(state.savedRows!==null){appData.policePunishments=state.savedRows;state.savedRows=null;}
+            if(clearInput){const input=document.getElementById('search-police-punishment');if(input)input.value='';}
+            renderPolicePunishments();ntpcPunishmentDirectUI();
+            ntpcPunishmentDirectStatus('已返回日期列表；輸入完整管理編號可再次跨日期搜尋。');
+        }
+        function ntpcLoadPolicePunishments(more=false,force=false){
+            if(ntpcPunishDirectState.active)ntpcPunishmentDirectBack();
+            return ntpcLoadPunishments('police',more,force);
+        }
         // 本人過往停職不受今日獎懲列表分頁影響；只精確查本人，避免讀取所有員警。
         async function ntpcLoadOwnSuspensionRecords(){
             ntpcSuspensionRecords=[];
@@ -13790,16 +13903,10 @@ async function republishAnnouncement(id) {
 
         function renderPolicePunishments() {
             const container=document.getElementById('police-punishments-list'),summary=document.getElementById('police-punishment-summary-content'),q=(document.getElementById('search-police-punishment')?.value||'').trim().toLowerCase();if(!container)return;
-            const filtered=(appData.policePunishments||[]).filter(p=>{
-                if(!q) return true;
-                const memberId=String(p.memberId||'').toLowerCase();
-                const memberAccount=String(p.memberAccount||'').toLowerCase();
-                const member=String(p.memberName||'').toLowerCase();
-                return memberId.includes(q)||memberAccount.includes(q)||member.includes(q);
-            });container.innerHTML='';
+            const filtered=[...(appData.policePunishments||[])];container.innerHTML='';
             const totals={嘉獎:0,小功:0,大功:0,申誡:0,小過:0,大過:0,停職調查:0};filtered.forEach(p=>getPunishmentItems(p).forEach(item=>{const m=String(item).match(/^(嘉獎|小功|大功|申誡|小過|大過)x(\d+)$/);if(m)totals[m[1]]+=Number(m[2]);else if(item==='停職調查')totals.停職調查++;}));
             if(summary)summary.innerHTML=Object.entries(totals).map(([k,v])=>`<div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="text-[11px] text-slate-500 block">${k}</span><span class="text-xl font-bold ${['申誡','小過','大過','停職調查'].includes(k)?'text-rose-400':'text-emerald-400'}">${v}</span><span class="text-[10px] text-slate-500">次</span></div>`).join('');
-            if(!filtered.length){container.innerHTML='<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">沒有找到符合管理編號的獎懲紀錄。</div>';return;}
+            if(!filtered.length){container.innerHTML='<div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-500">目前沒有符合查詢條件的獎懲紀錄。</div>';return;}
             filtered.forEach(p=>{const key=p.docId||p.id,items=getPunishmentItems(p),reward=String(p.type||'punishment')==='reward',edit=canModifyPunishment(p),card=document.createElement('div');card.className='bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4';card.innerHTML=`<div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2"><span class="px-3 py-1 rounded-full text-xs font-semibold ${reward?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20':'bg-rose-500/10 text-rose-400 border border-rose-500/20'} font-mono">${p.id||key}</span><span class="px-3 py-1 rounded-full text-xs font-bold ${reward?'bg-emerald-500/20 text-emerald-400':'bg-red-500/20 text-red-400'}">${reward?'獎勵':'懲處'}｜${items.join('、')||'未填寫'}</span></div><span class="text-xs text-slate-400">${p.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs bg-slate-950 p-3 rounded-xl"><div><span class="text-slate-500 block">被獎懲員警</span><b>${ntpcAvatarIdentityHtml(p.memberAccount||p.memberId,p.memberName||'未知')}（管理編號：${escapeHtml(p.memberId||'--')}）</b></div><div><span class="text-slate-500 block">發布部門</span>${p.department||'--'}</div><div><span class="text-slate-500 block">登記帳號</span><span class="font-mono text-cyan-400">${ntpcAvatarIdentityHtml(p.authorAccount,p.authorAccount||'舊資料')}</span></div></div><div class="text-sm text-slate-300 line-clamp-3">${p.reason||'未提供事由。'}</div><div class="flex flex-wrap justify-between gap-2 border-t border-slate-800 pt-2"><button onclick="viewPunishmentDetail('${key}')" class="px-3 py-2 text-xs text-amber-400 rounded-lg hover:bg-amber-500/10"><i class="fa-solid fa-expand mr-1"></i>點擊放大檢視</button><div class="flex gap-2">${edit?`<button onclick="openEditPunishmentModal('${key}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs">修改</button>`:''}${canDeletePunishment()?`<button onclick="deletePunishment('${key}')" class="px-3 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs">移除</button>`:''}</div></div>`;container.appendChild(card);});
         }
 
@@ -21502,6 +21609,25 @@ async function ntpcCacheClearOwn(feedback=true){
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
   else init();
+})();
+</script>
+
+<!-- V2.1｜頁面隱藏／視窗失焦時暫停裝飾動畫；個人通知、案件審核即時監聽維持不變 -->
+<script id="ntpc-v21-focus-animation-controller">
+(function(){
+  'use strict';
+  var root=document.documentElement;
+  function refreshAnimationState(){
+    var active=document.visibilityState==='visible' && document.hasFocus();
+    root.classList.toggle('ntpc-page-inactive',!active);
+  }
+  document.addEventListener('visibilitychange',refreshAnimationState,{passive:true});
+  window.addEventListener('focus',refreshAnimationState,{passive:true});
+  window.addEventListener('blur',refreshAnimationState,{passive:true});
+  window.addEventListener('pageshow',refreshAnimationState,{passive:true});
+  window.addEventListener('pagehide',function(){root.classList.add('ntpc-page-inactive');},{passive:true});
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',refreshAnimationState,{once:true});
+  refreshAnimationState();
 })();
 </script>
 </body>
