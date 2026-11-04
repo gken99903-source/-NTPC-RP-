@@ -21819,8 +21819,29 @@ async function ntpcCacheClearOwn(feedback=true){
     var v=url();if(!v)return;
     try{localStorage.setItem(key,v);}catch(_){}
     var frame=byId('ntpc-v22-radio-frame');var wrap=byId('ntpc-v22-radio-embed-wrap');
-    if(frame&&wrap){if(frame.src!==v)frame.src=v;wrap.classList.remove('hidden');loaded=true;message('無線電已開啟，請在嵌入視窗內使用測試通行碼登入。');}
+    if(frame&&wrap){if(frame.src!==v)frame.src=v;wrap.classList.remove('hidden');loaded=true;message('已連線無線電介面。第一次使用此裝置需驗證通行碼，之後 15 天內可自動恢復。');frame.addEventListener('load',sendIdentity,{once:true});setTimeout(sendIdentity,600);}
   }
+  function activeIdentity(){
+    try{
+      if(!currentUser||!String(currentUser.account||'').trim())return null;
+      var units=typeof getUserUnits==='function'?getUserUnits(currentUser):currentUser.units||[currentUser.unit];
+      if(!Array.isArray(units))units=[];
+      if(!units.includes('police'))return null;
+      var url=typeof ntpcAvatarValue==='function'?ntpcAvatarValue(currentUser):String(currentUser.avatarUrl||'');
+      var frame=typeof ntpcV21FrameStyle==='function'?ntpcV21FrameStyle(currentUser.account,currentUser):currentUser.frameStyle;
+      return {account:String(currentUser.account),name:String(currentUser.name||currentUser.account),memberId:String(currentUser.staffNumber||currentUser.memberId||''),avatarUrl:String(url||'').slice(0,500),frameStyle:String(frame||'none'),avatarCrop:currentUser.avatarCrop||null};
+    }catch(e){return null;}
+  }
+  function sendIdentity(){
+    var frame=byId('ntpc-v22-radio-frame'),v=url(),data=activeIdentity();
+    if(!frame?.contentWindow||!v||!data)return;
+    try{frame.contentWindow.postMessage({type:'ntpc-radio-profile-v1',profile:data},new URL(v).origin);}catch(e){}
+  }
+  window.addEventListener('message',function(ev){
+    var v=normalizedURL(byId('ntpc-v22-radio-url')?.value);
+    if(!v||ev.origin!==new URL(v).origin||ev.source!==byId('ntpc-v22-radio-frame')?.contentWindow)return;
+    if(ev.data?.type==='ntpc-radio-request-profile-v1')sendIdentity();
+  });
   function closeEmbedded(){var frame=byId('ntpc-v22-radio-frame');if(frame)frame.removeAttribute('src');byId('ntpc-v22-radio-embed-wrap')?.classList.add('hidden');loaded=false;message('已關閉無線電連線。');}
   window.ntpcV22RadioOnTab=function(){
     var field=byId('ntpc-v22-radio-url');if(!field)return;
