@@ -3334,18 +3334,16 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
                 <section id="police-sub-radio" class="hidden space-y-4" aria-label="警務無線電通訊">
                   <div class="rounded-2xl border border-cyan-500/30 bg-slate-900/90 p-5 shadow-xl space-y-4">
                     <div class="flex flex-wrap justify-between items-start gap-3">
-                      <div><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-tower-broadcast text-cyan-300 mr-2"></i>V2.2｜警務無線電</h3><p class="text-sm text-slate-400 mt-1">CH-1 主頻道｜CH-2 副頻道｜CH-3～CH-5 小頻道；支援電腦／手機語音；內建 10-99 緊急警報與 PTT 發話音效。</p></div>
+                      <div><h3 class="text-xl font-bold text-white"><i class="fa-solid fa-tower-broadcast text-cyan-300 mr-2"></i>V2.2｜警務無線電</h3><p class="text-sm text-slate-400 mt-1">CH-1 主頻道｜CH-2 副頻道｜CH-3～CH-5 小頻道；使用外部網站支援電腦／手機語音及置頂對講機；內建 10-99 與 PTT 音效。</p></div>
                       <span class="text-xs text-amber-200 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-lg">獨立後端測試模式</span>
                     </div>
-                    <div class="rounded-xl border border-slate-700 bg-slate-950/70 p-3 space-y-3" id="ntpc-v22-radio-connect-box">
-                      <label class="block text-sm font-medium text-cyan-100" for="ntpc-v22-radio-url">Cloudflare 無線電 Worker 網址</label>
-                      <div class="flex flex-wrap gap-2"><input id="ntpc-v22-radio-url" type="url" spellcheck="false" autocomplete="off" placeholder="https://ntpc-rp-v22-radio-test.gken99903.workers.dev" class="flex-1 min-w-0 rounded-lg border border-slate-600 bg-slate-950 text-slate-100 px-3 py-2.5 text-sm"><button type="button" id="ntpc-v22-radio-open" class="rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2.5">開啟無線電</button><button type="button" id="ntpc-v22-radio-external" class="rounded-lg bg-slate-700 hover:bg-slate-600 px-4 py-2.5 text-white">新視窗</button></div>
-                      <p class="text-xs text-slate-400">首次使用請先部署 ZIP 中的 Worker，將 Wrangler 顯示的網址貼在這裡。網址只存入此裝置，不存入 Firestore。若內嵌麥克風／置頂面板受到瀏覽器限制，請使用「新視窗」。</p>
+                    <div class="rounded-xl border border-cyan-500/25 bg-slate-950/70 p-5 space-y-4" id="ntpc-v22-radio-connect-box">
+                      <div class="flex items-center gap-3 text-cyan-100"><i class="fa-solid fa-arrow-up-right-from-square text-2xl text-cyan-300"></i><div><div class="font-bold">獨立無線電網站</div><div class="text-xs text-slate-400 mt-1">為正常使用置頂對講機，無線電不再內嵌勤務網站；點擊後開啟獨立 HTTPS 網站。</div></div></div>
+                      <label class="block text-xs font-medium text-slate-300" for="ntpc-v22-radio-url">無線電伺服器網址</label>
+                      <input id="ntpc-v22-radio-url" type="url" spellcheck="false" autocomplete="off" placeholder="https://ntpc-rp-v22-radio-test.gken99903.workers.dev" class="w-full rounded-lg border border-slate-600 bg-slate-950 text-slate-100 px-3 py-2.5 text-sm">
+                      <button type="button" id="ntpc-v22-radio-open" class="w-full rounded-xl bg-cyan-700 hover:bg-cyan-600 text-white font-bold px-5 py-3.5"><i class="fa-solid fa-tower-broadcast mr-2"></i>前往獨立無線電網站 <i class="fa-solid fa-arrow-up-right-from-square ml-2"></i></button>
                       <p id="ntpc-v22-radio-message" role="status" class="text-xs text-amber-300"></p>
-                    </div>
-                    <div id="ntpc-v22-radio-embed-wrap" class="hidden rounded-xl overflow-hidden border border-cyan-500/25 bg-[#071326]">
-                      <div class="flex justify-between gap-3 items-center px-3 py-2 border-b border-slate-700"><span class="text-xs text-slate-300">無線電控制台｜關閉此分頁可釋放內嵌連線</span><button type="button" id="ntpc-v22-radio-disconnect" class="px-3 py-1.5 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-200">中斷並關閉</button></div>
-                      <iframe id="ntpc-v22-radio-frame" title="新北市 RP V2.2 警務無線電" class="block w-full border-0" style="min-height:780px;height:min(86vh,1080px)" allow="microphone; autoplay; picture-in-picture" referrerpolicy="no-referrer" loading="lazy"></iframe>
+                      <p class="text-xs text-slate-400">主網站不會預載語音、麥克風或 WebRTC。獨立頁面可以開啟可置頂的自製對講機小視窗。首次使用仍須完成無線電測試身分驗證。</p>
                     </div>
                     <p class="text-xs text-slate-500">測試版仍使用獨立通行碼；主網站登入不會自動取得語音權限。管理中心搶麥與 10-99 在 Worker 驗證；正式營運前必須改為驗證主網站警務及管理中心帳號。</p>
                   </div>
@@ -21800,104 +21798,53 @@ async function ntpcCacheClearOwn(feedback=true){
 })();
 </script>
 <script id="ntpc-v22-radio-integration">
-(function () {
+(function(){
   'use strict';
-  var key='ntpc-v22-radio-worker-url';
-  var loaded=false;
-  function byId(id){return document.getElementById(id);}
-  function normalizedURL(value){
-    try {
-      var u=new URL(String(value||'').trim());
-      if(u.protocol!=='https:'||u.username||u.password||u.search||u.hash)return '';
-      if(!u.hostname.endsWith('.workers.dev')&&!u.hostname.endsWith('.pages.dev')&&u.hostname!==location.hostname)return '';
+  const KEY='ntpc-v22-radio-worker-url';
+  const DEFAULT='https://ntpc-rp-v22-radio-test.gken99903.workers.dev/';
+  let radioWindow=null;
+  const byId=id=>document.getElementById(id);
+  function normalizedURL(v){
+    try{const u=new URL(String(v||'').trim());if(u.protocol!=='https:'||u.username||u.password||u.search||u.hash)return '';
+      if(u.hostname!=='ntpc-rp-v22-radio-test.gken99903.workers.dev' && !u.hostname.endsWith('.workers.dev'))return '';
       return u.origin+'/';
-    }catch(_){return '';}
+    }catch{return '';}
   }
-  function message(s){var e=byId('ntpc-v22-radio-message');if(e)e.textContent=s;}
-  function url(){var v=normalizedURL(byId('ntpc-v22-radio-url')?.value);if(!v)message('請貼上 Cloudflare Worker 的 HTTPS 網址（workers.dev）。');return v;}
-  function openEmbedded(){
-    var v=url();if(!v)return;
-    try{localStorage.setItem(key,v);}catch(_){}
-    var frame=byId('ntpc-v22-radio-frame');var wrap=byId('ntpc-v22-radio-embed-wrap');
-    if(frame&&wrap){if(frame.src!==v)frame.src=v;wrap.classList.remove('hidden');loaded=true;message('已連線無線電介面。第一次使用此裝置需驗證通行碼，之後 15 天內可自動恢復。');frame.addEventListener('load',sendIdentity,{once:true});setTimeout(sendIdentity,600);}
-  }
-  function activeIdentity(){
+  function tell(v){const e=byId('ntpc-v22-radio-message');if(e)e.textContent=v;}
+  function radioURL(){return normalizedURL(byId('ntpc-v22-radio-url')?.value||DEFAULT);}
+  function identity(){
     try{
-      if(!currentUser||!String(currentUser.account||'').trim())return null;
-      var units=typeof getUserUnits==='function'?getUserUnits(currentUser):currentUser.units||[currentUser.unit];
+      if(!currentUser?.account)return null;
+      let units=typeof getUserUnits==='function'?getUserUnits(currentUser):currentUser.units||[currentUser.unit];
       if(!Array.isArray(units))units=[];
       if(!units.includes('police'))return null;
-      var avatar=typeof ntpcAvatarValue==='function'?ntpcAvatarValue(currentUser):String(currentUser.avatarUrl||'');
-      var frame=typeof ntpcV21FrameStyle==='function'?ntpcV21FrameStyle(currentUser.account,currentUser):currentUser.frameStyle;
+      const avatar=typeof ntpcAvatarValue==='function'?ntpcAvatarValue(currentUser):currentUser.avatarUrl||'';
+      const frame=typeof ntpcV21FrameStyle==='function'?ntpcV21FrameStyle(currentUser.account,currentUser):currentUser.frameStyle||'none';
       return {account:String(currentUser.account),name:String(currentUser.name||currentUser.account),memberId:String(currentUser.staffNumber||currentUser.memberId||''),avatarUrl:String(avatar||'').slice(0,2048),frameStyle:String(frame||'none'),avatarCrop:currentUser.avatarCrop||null};
-    }catch(e){return null;}
+    }catch{return null;}
   }
-  var avatarVerifyCache=new Map();
-  function imageWorks(url){
-    if(!url||!/^https:\/\//i.test(url))return Promise.resolve(false);
-    if(avatarVerifyCache.has(url))return avatarVerifyCache.get(url);
-    var pending=new Promise(function(resolve){
-      var img=new Image(),done=false;
-      var timer=setTimeout(function(){if(!done){done=true;img.onload=img.onerror=null;resolve(false);}},3500);
-      img.referrerPolicy='no-referrer';
-      img.onload=function(){if(done)return;done=true;clearTimeout(timer);resolve(img.naturalWidth>0);};
-      img.onerror=function(){if(done)return;done=true;clearTimeout(timer);resolve(false);};
-      img.src=url;
-    });
-    avatarVerifyCache.set(url,pending);return pending;
+  function sendPublicProfile(win,origin){
+    const data=identity();if(!data||!win||win.closed)return;
+    try{win.postMessage({type:'ntpc-radio-profile-v1',profile:data},origin)}catch{}
   }
-  var identityEpoch=0;
-  async function sendIdentity(){
-    var frame=byId('ntpc-v22-radio-frame'),v=url(),data=activeIdentity();
-    if(!frame?.contentWindow||!v||!data)return;
-    var origin=new URL(v).origin,epoch=++identityEpoch;
-    function deliver(payload){if(epoch!==identityEpoch||!frame?.contentWindow)return;try{frame.contentWindow.postMessage({type:'ntpc-radio-profile-v1',profile:payload},origin);}catch(e){}}
-    deliver(data);
-    // Only query public-avatar records if the current account's image is missing or broken.
-    // This is an on-demand check when opening radio, not a persistent Firestore listener.
-    if(await imageWorks(data.avatarUrl))return;
-    var fallback=[];
-    try{
-      var cached=typeof ntpcV2ProfileCache!=='undefined'?ntpcV2ProfileCache.get(data.account.toLowerCase())?.data:null;
-      if(cached?.avatarUrl)fallback.push({url:cached.avatarUrl,crop:cached.avatarCrop,frame:cached.frameStyle});
-      var img=byId('ntpc-profile-avatar')?.querySelector('img')||byId('ntpc-header-avatar')?.querySelector('img');
-      if(img?.currentSrc||img?.src)fallback.push({url:img.currentSrc||img.src});
-      if(typeof ntpcGetRemoteAvatar==='function'){
-        var url=await ntpcGetRemoteAvatar(data.account);
-        var cache=typeof ntpcAvatarCache!=='undefined'?ntpcAvatarCache.get(data.account):null;
-        if(url)fallback.push({url:url,crop:cache?.avatarCrop,frame:cache?.frameStyle});
-      }
-      if(typeof ntpcV2GetProfile==='function'){
-        var profile=await ntpcV2GetProfile(data.account);
-        if(profile?.avatarUrl)fallback.push({url:profile.avatarUrl,crop:profile.avatarCrop,frame:profile.frameStyle});
-      }
-    }catch(e){console.debug('無線電公開頭像備援查詢失敗',e);}
-    for(var item of fallback){
-      if(epoch!==identityEpoch)return;
-      if(item.url===data.avatarUrl)continue;
-      if(await imageWorks(item.url)){
-        deliver({...data,avatarUrl:item.url,avatarCrop:item.crop||data.avatarCrop,frameStyle:item.frame||data.frameStyle});
-        return;
-      }
-    }
-    deliver({...data,avatarUrl:''});
+  function openExternal(){
+    const v=radioURL();if(!v){tell('請輸入有效的 workers.dev HTTPS 網址。');return;}
+    if(!identity()){tell('此功能限已登入且有警務所屬單位的成員開啟。');return;}
+    try{localStorage.setItem(KEY,v)}catch{}
+    radioWindow=window.open(v,'ntpc-v22-radio');
+    if(!radioWindow){tell('瀏覽器封鎖了彈出視窗，請允許這個網站開啟新分頁。');return;}
+    tell('已開啟獨立無線電網站。請在該頁點選「置頂科技對講機」。');
+    // Public display data only, not a trusted login token or privilege grant.
+    setTimeout(()=>sendPublicProfile(radioWindow,new URL(v).origin),850);
   }
-  window.addEventListener('message',function(ev){
-    var v=normalizedURL(byId('ntpc-v22-radio-url')?.value);
-    if(!v||ev.origin!==new URL(v).origin||ev.source!==byId('ntpc-v22-radio-frame')?.contentWindow)return;
-    if(ev.data?.type==='ntpc-radio-request-profile-v1')sendIdentity();
+  window.addEventListener('message',ev=>{
+    const v=radioURL();if(!v||ev.origin!==new URL(v).origin||ev.source!==radioWindow)return;
+    if(ev.data?.type==='ntpc-radio-request-profile-v1')sendPublicProfile(radioWindow,ev.origin);
   });
-  function closeEmbedded(){var frame=byId('ntpc-v22-radio-frame');if(frame)frame.removeAttribute('src');byId('ntpc-v22-radio-embed-wrap')?.classList.add('hidden');loaded=false;message('已關閉無線電連線。');}
-  window.ntpcV22RadioOnTab=function(){
-    var field=byId('ntpc-v22-radio-url');if(!field)return;
-    if(!field.value){try{field.value=localStorage.getItem(key)||'https://ntpc-rp-v22-radio-test.gken99903.workers.dev';}catch(_){field.value='https://ntpc-rp-v22-radio-test.gken99903.workers.dev';}}
+  window.ntpcV22RadioOnTab=()=>{const f=byId('ntpc-v22-radio-url');if(!f)return;
+    if(!f.value){try{f.value=localStorage.getItem(KEY)||DEFAULT}catch{f.value=DEFAULT;}}
   };
-  document.addEventListener('DOMContentLoaded',function(){
-    window.ntpcV22RadioOnTab();
-    byId('ntpc-v22-radio-open')?.addEventListener('click',openEmbedded);
-    byId('ntpc-v22-radio-disconnect')?.addEventListener('click',closeEmbedded);
-    byId('ntpc-v22-radio-external')?.addEventListener('click',function(){var v=url();if(v){try{localStorage.setItem(key,v);}catch(_){} window.open(v,'_blank','noopener,noreferrer');}});
-  });
+  document.addEventListener('DOMContentLoaded',()=>{window.ntpcV22RadioOnTab();byId('ntpc-v22-radio-open')?.addEventListener('click',openExternal);});
 })();
 </script>
 </body>
