@@ -1,4 +1,4 @@
-<!-- V2.2｜本次修正：可靠多人入頻協商、訊號按成員排序排隊、協商超時自動重建、避免過時連線破壞新連線。保留原網站與權限。 -->
+<!-- V2.2｜本次修正：公開個人檔案獎懲統計改按登記項目的實際支數（xN）加總，非貼文數；其餘功能與歷史版本保持不變。 -->
 <!-- V2.2｜本次修正：警員無線電登入錯誤提示、WebRTC ICE 候選排序及音訊協商、可選 TURN 設定；保留歷史更新紀錄。 -->
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
@@ -19357,6 +19357,35 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             const q=fm.query(fm.collection(db,collectionName),fm.where(field,'==',value));
             return (await fm.getCountFromServer(q)).data().count||0;
         }
+        function ntpcV21AwardItemUnits(item){
+            const raw=String(item??'').trim().replace(/^警告(?=\s*[xX×＊*]\s*\d+$)/,'申誡');
+            if(!raw)return 0;
+            // 單項如「嘉獎x3」「申誡×2」，未標示數量的單項記為 1 支。
+            const match=raw.match(/(?:[xX×＊*]\s*(\d+))\s*$/);
+            const amount=match?Number(match[1]):1;
+            return Number.isSafeInteger(amount)&&amount>0?amount:0;
+        }
+        function ntpcV21AwardPostUnits(post){
+            const items=Array.isArray(post.items)&&post.items.length?post.items:
+                Array.isArray(post.item)?post.item:String(post.item||'').split(/[、,，]/);
+            return items.reduce((total,item)=>total+ntpcV21AwardItemUnits(item),0);
+        }
+        async function ntpcV21CountAwardUnits(collectionName,account){
+            const total={reward:0,punishment:0};
+            let last=null;
+            for(;;){
+                const parts=[fm.collection(db,collectionName),fm.where('memberAccount','==',account),fm.limit(200)];
+                if(last)parts.push(fm.startAfter(last));
+                const snap=await fm.getDocs(fm.query(...parts));
+                for(const doc of snap.docs){
+                    const post=doc.data(),kind=String(post.type||'punishment');
+                    if(kind==='reward'||kind==='punishment')total[kind]+=ntpcV21AwardPostUnits(post);
+                }
+                if(snap.size<200)break;
+                last=snap.docs[snap.docs.length-1];
+            }
+            return total;
+        }
         async function ntpcV21LoadProfileStats(force=false){
             const modal=document.getElementById('ntpc-v2-profile-modal'),account=ntpcV21StatsActiveAccount;
             if(!account||modal?.classList.contains('hidden')||!currentUser)return;
@@ -19368,16 +19397,18 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             // 採用逐種來源獨立容錯；有來源拒絕存取時不顯示失真的零筆總數。
             const reportSources=[['policeReports','registeredByAccount'],['fireReports','registeredByAccount'],['emsReports','registeredByAccount'],['jiaxiaoMedicalReports','authorAccount'],['jiaxiaoFuneralReports','authorAccount']];
             const reportResults=await Promise.allSettled(reportSources.map(([name,field])=>ntpcV21CountBy(name,field,uid)));
-            const awardSources=[['policePunishments','reward'],['policePunishments','punishment'],['firePunishments','reward'],['firePunishments','punishment']];
-            const awardResults=await Promise.allSettled(awardSources.map(([name,type])=>fm.getCountFromServer(fm.query(fm.collection(db,name),fm.where('memberAccount','==',uid),fm.where('type','==',type))).then(s=>s.data().count||0)));
+            // 獎懲以實際登記「支數」加總，不能用 count() 計算貼文數。
+            // Firestore count 聚合無法看見 items 中的 xN，因此僅對該成員查詢獎懲文件，分批讀取以免漏掉歷史紀錄。
+            const awardSources=['policePunishments','firePunishments'];
+            const awardResults=await Promise.allSettled(awardSources.map(name=>ntpcV21CountAwardUnits(name,uid)));
             if(!modal||modal.dataset.openToken!==token||ntpcV21StatsActiveAccount!==uid)return;
             const sum=rows=>rows.reduce((v,r)=>v+Number(r.value||0),0);
             const reportsOk=reportResults.every(r=>r.status==='fulfilled'),awardsOk=awardResults.every(r=>r.status==='fulfilled');
             const reports=reportsOk?sum(reportResults):'部分無權限';
-            const awards=awardsOk?`獎勵 ${Number(awardResults[0].value||0)+Number(awardResults[2].value||0)} ／ 懲處 ${Number(awardResults[1].value||0)+Number(awardResults[3].value||0)}`:'部分無權限';
+            const awards=awardsOk?`獎勵 ${awardResults.reduce((n,r)=>n+r.value.reward,0)} 支 ／ 懲處 ${awardResults.reduce((n,r)=>n+r.value.punishment,0)} 支`:'部分無權限';
             ntpcV21StatsText('ntpc-v21-stat-cases',reports);ntpcV21StatsText('ntpc-v21-stat-punishments',awards);
             if(reportsOk&&awardsOk)ntpcV21StatsCache.set(uid.toLowerCase(),{cases:reports,punishments:awards,at:Date.now()});
-            const st=document.getElementById('ntpc-v21-stat-status');if(st)st.textContent=(!reportsOk||!awardsOk)?'部分統計缺少 Firestore 查詢權限或索引；不會將查不到的資料誤列為 0。':'已更新案件與獎懲統計。';
+            const st=document.getElementById('ntpc-v21-stat-status');if(st)st.textContent=(!reportsOk||!awardsOk)?'部分統計缺少 Firestore 查詢權限或索引；不會將查不到的資料誤列為 0。':'已更新案件與獎懲統計（獎懲按實際登記支數累計）。';
         }
         async function ntpcV2ShowProfile(account){
             if(currentUser)void ntpcV21LoadFramePolicy();
