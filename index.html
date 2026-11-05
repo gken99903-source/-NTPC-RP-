@@ -1,4 +1,4 @@
-<!-- V2.2｜本次修正：無線電 Worker 的 wss:// WebSocket 納入 CSP connect-src；移除無效的 meta frame-ancestors（如需禁止嵌入，請透過 Cloudflare Pages HTTP 回應標頭設定）。保留原有功能與歷史更新紀錄。 -->
+<!-- V2.2｜本次修正：無線電管理員盾牌換成內嵌 SVG；成員頭像與實際選用的動態框同步、只在發話時播放框動畫；優化手機背景收聽及回前景音訊恢復。其他功能與歷史更新紀錄保持不變。 -->
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
 <head>
@@ -2845,6 +2845,35 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
 #police-sub-radio .ntpc-v22-r-footer{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px;align-items:center}#police-sub-radio .ntpc-v22-r-footer p{width:100%;font-size:11px;color:#91a7c4}
 @media(max-width:740px){#police-sub-radio .ntpc-v22-r-columns{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){#police-sub-radio .ntpc-v22-active-speaker .ntpc-v22-radio-avatar{animation:none}}
+
+/* V2.2 無線電：共用主站的真實頭像框；待命時維持選擇樣式但停止裝飾動畫。 */
+#police-sub-radio .ntpc-v22-radio-avatar.ntpc-avatar-chip{isolation:isolate;overflow:visible;flex-shrink:0}
+#police-sub-radio .ntpc-v22-radio-avatar .ntpc-v22-avatar-fallback{position:relative;z-index:1;display:grid;place-items:center;width:100%;height:100%;border-radius:50%;font-weight:800}
+#police-sub-radio .ntpc-v22-radio-avatar .ntpc-v22-avatar-fallback[hidden]{display:none!important}
+#police-sub-radio .ntpc-v22-radio-avatar .ntpc-avatar-image-window{inset:0;z-index:2}
+#police-sub-radio .ntpc-v22-radio-avatar.ntpc-avatar-chip[data-ntpc-frame]:not([data-ntpc-frame="none"]){border-color:var(--ntpc-ring-a)}
+#police-sub-radio .ntpc-v22-radio-avatar:not(.ntpc-v22-active-speaker),
+#police-sub-radio .ntpc-v22-radio-avatar:not(.ntpc-v22-active-speaker)::before,
+#police-sub-radio .ntpc-v22-radio-avatar:not(.ntpc-v22-active-speaker)::after,
+#police-sub-radio .ntpc-v22-radio-avatar:not(.ntpc-v22-active-speaker) .ntpc-v23-aurora-celestial,
+#police-sub-radio .ntpc-v22-radio-avatar:not(.ntpc-v22-active-speaker) .ntpc-v23-aurora-celestial::before,
+#police-sub-radio .ntpc-v22-radio-avatar:not(.ntpc-v22-active-speaker) .ntpc-v23-aurora-celestial::after{animation-play-state:paused!important}
+#police-sub-radio .ntpc-v22-radio-avatar.ntpc-v22-active-speaker,
+#police-sub-radio .ntpc-v22-radio-avatar.ntpc-v22-active-speaker::before,
+#police-sub-radio .ntpc-v22-radio-avatar.ntpc-v22-active-speaker::after,
+#police-sub-radio .ntpc-v22-radio-avatar.ntpc-v22-active-speaker .ntpc-v23-aurora-celestial,
+#police-sub-radio .ntpc-v22-radio-avatar.ntpc-v22-active-speaker .ntpc-v23-aurora-celestial::before,
+#police-sub-radio .ntpc-v22-radio-avatar.ntpc-v22-active-speaker .ntpc-v23-aurora-celestial::after{animation-play-state:running!important}
+/* 主站 aurora 擁有專屬彩環與星月，無線電不再用通用綠色脈衝蓋過原效果。 */
+#police-sub-radio .ntpc-v22-radio-avatar.ntpc-v22-active-speaker{animation:ntpcRadioPulse 1.3s ease-in-out infinite}
+#police-sub-radio .ntpc-v22-radio-avatar.ntpc-v22-active-speaker[data-ntpc-frame="aurora"]{animation:ntpc-v23-aurora-breathe 3.6s ease-in-out infinite}
+#police-sub-radio .ntpc-v22-admin-glyph{display:inline-flex;vertical-align:-3px;margin-left:5px;flex:none;width:16px;height:18px;color:#a9e3ff;filter:drop-shadow(0 0 3px #2eb7ec80)}
+#police-sub-radio .ntpc-v22-admin-glyph svg{display:block;width:100%;height:100%}
+#police-sub-radio .ntpc-v22-r-mobile-hint{font-size:11px;line-height:1.6;color:#a5bed8;flex-basis:100%}
+@media(prefers-reduced-motion:reduce){#police-sub-radio .ntpc-v22-radio-avatar.ntpc-v22-active-speaker,
+#police-sub-radio .ntpc-v22-radio-avatar.ntpc-v22-active-speaker::before,
+#police-sub-radio .ntpc-v22-radio-avatar.ntpc-v22-active-speaker::after,
+#police-sub-radio .ntpc-v22-radio-avatar.ntpc-v22-active-speaker .ntpc-v23-aurora-celestial{animation:none!important}}
 </style>
 </head>
 <body class="ntpc-premium-ui bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
@@ -3378,7 +3407,7 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
                       <section class="ntpc-v22-r-box"><h4>當前發話</h4><div id="ntpc-v22-r-speaker" class="ntpc-v22-r-speaker">目前無人發話</div>
                       <button id="ntpc-v22-r-ptt" class="ntpc-v22-r-ptt" type="button" disabled>🎙 按住發話</button>
                       <div class="ntpc-v22-r-actions"><button id="ntpc-v22-r-panic" class="ntpc-v22-r-panic" type="button">🚨 10-99（20 秒）</button><button id="ntpc-v22-r-stop-emergency" type="button" hidden>提前結束 10-99</button><button id="ntpc-v22-r-force" type="button" hidden>強制結束一般發話</button></div>
-                      <div class="ntpc-v22-r-audio"><button id="ntpc-v22-r-volminus" type="button" aria-label="音量減少">－</button><span id="ntpc-v22-r-volume-text">80%</span><button id="ntpc-v22-r-volplus" type="button" aria-label="音量增加">＋</button><button id="ntpc-v22-r-sound" type="button">🔊 音效開啟</button></div>
+                      <div class="ntpc-v22-r-audio"><button id="ntpc-v22-r-volminus" type="button" aria-label="音量減少">－</button><span id="ntpc-v22-r-volume-text">80%</span><button id="ntpc-v22-r-volplus" type="button" aria-label="音量增加">＋</button><button id="ntpc-v22-r-sound" type="button">🔊 音效開啟</button><button id="ntpc-v22-r-background" type="button" title="嘗試啟用瀏覽器允許的背景收聽音訊工作階段">啟用背景收聽</button><span class="ntpc-v22-r-mobile-hint" id="ntpc-v22-r-background-hint">手機背景收聽視瀏覽器及系統限制而定。iPhone 建議使用 Safari；鎖屏或切換 App 仍可能中斷。</span></div>
                       </section>
                     </div>
                     <div class="ntpc-v22-r-footer"><button id="ntpc-v22-r-rejoin" type="button">重新連線</button><button id="ntpc-v22-r-leave" type="button">手動離開無線電</button><p>僅在進入無線電分頁時建立工作階段；個人通知與案件審核仍使用原本的即時功能。首次啟用麥克風時瀏覽器會詢問權限。</p></div>
@@ -6782,6 +6811,7 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
                 currentUser.frameStyle=selected;
                 const local=ntpcAvatarUserByAccount(id);if(local)local.frameStyle=selected;
                 await ntpcV21SavePublicFrame(currentUser);
+                window.ntpcV22RadioPushProfile?.();
                 ntpcV21PaintAllAvatarFrames(id);
                 if(String(document.getElementById('ntpc-v2-modal-avatar')?.dataset.ntpcAvatarAccount||'').toLowerCase()===id.toLowerCase())ntpcV21PaintAvatar(document.getElementById('ntpc-v2-modal-avatar'),id,currentUser);
                 ntpcV21PreviewFrame();
@@ -6794,6 +6824,7 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
             await fm.setDoc(fm.doc(db,'staffPhotoLinks',id),{frameStyle,adminUnit,updatedAt:Date.now()},{merge:true});
             ntpcAvatarCache.set(id,{...(ntpcAvatarCache.get(id)||{}),url:ntpcAvatarValue(u),frameStyle,adminUnit,at:Date.now()});
             ntpcV21PaintAllAvatarFrames(id);
+            if(String(currentUser?.account||'').toLowerCase()===id.toLowerCase())window.ntpcV22RadioPushProfile?.();
             try{await fm.setDoc(ntpcV2ProfileDoc(id),{frameStyle,metadataUpdatedAt:Date.now()},{merge:true});ntpcV2ProfileCache.delete(id.toLowerCase());}
             catch(e){console.warn('公開名片頭像框同步失敗',e);}
         }
@@ -19172,6 +19203,7 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             const d=ntpcV2MinimalProfile(u),ref=ntpcV2ProfileDoc(d.account);
             await fm.setDoc(ref,{...d,revoked:false,metadataUpdatedAt:Date.now()},{merge:true});
             ntpcV2ProfileCache.delete(d.account.toLowerCase());
+            if(String(currentUser?.account||'').toLowerCase()===d.account.toLowerCase())window.ntpcV22RadioPushProfile?.();
         }
         function ntpcV2RankText(p){
             const parts=[],units=Array.isArray(p.units)?p.units:[];
@@ -21843,6 +21875,9 @@ const CHANNELS=['','CH-1 主頻道','CH-2 副頻道','CH-3 小頻道','CH-4 小�
 const el=id=>document.getElementById(id);
 let access='',myId='',myName='',admin=false,ws=null,stream=null,channel=1,roster=[],speaker=null,emergency=null,peers=new Map(),hold=false,miniHold=false,miniWindow=null,connecting=false,closedByUser=false,radioProof=null,lastSpeaker=null,lastEmergency=null,serverTime=Date.now(),clientTime=Date.now();
 let volume=Math.max(0,Math.min(100,Number(localStorage.getItem('ntpc-v22-radio-volume')||80)));
+let radioEverConnected=false;
+const radioProfiles=new Map(); // one bounded read of saved public appearance per roster account
+const radioMemberNodes=new Map(); // stable nodes keep CSS frame animation running while a member speaks
 const playURL={start:'https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/Video%20Project%201.m4a',end:'https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/ScreenRecording_11-05-2026%2002-20-28_1.mov',emergency:'https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/10-99.mp3'};
 const audio={};let soundEnabled=localStorage.getItem('ntpc-v22-radio-sound')!=='off';
 const status=msg=>{const e=el('ntpc-v22-r-status');if(e)e.textContent=msg;};
@@ -21859,7 +21894,27 @@ function pushProfile(){
  const u=currentIdentity();if(!u||ws?.readyState!==1)return;
  const avatar=typeof ntpcAvatarValue==='function'?ntpcAvatarValue(u):(u.avatarUrl||'');
  const frame=typeof ntpcV21FrameStyle==='function'?ntpcV21FrameStyle(u.account,u):(u.frameStyle||'none');
+ // Broadcast the *saved selection*; never overwrite a user's frame with a radio default.
  send({type:'profile',avatarUrl:String(avatar||'').slice(0,2048),frameStyle:String(frame||'none'),avatarCrop:u.avatarCrop||null});
+}
+function configureReceivingSession(){
+ // Safari supports the experimental AudioSession type. Other browsers ignore it safely.
+ try{if(navigator.audioSession)navigator.audioSession.type='play-and-record';}catch(e){console.debug('AudioSession unavailable',e);}
+}
+async function resumeIncomingAudio(){
+ configureReceivingSession();
+ let failed=false;
+ for(const p of peers.values()){
+  if(!p.audio.srcObject)continue;
+  try{await p.audio.play();}catch(e){failed=true;console.debug('Incoming radio playback requires activation',e);}
+ }
+ return !failed;
+}
+async function enableBackgroundListening(){
+ configureReceivingSession();
+ const ok=await resumeIncomingAudio();
+ const hint=el('ntpc-v22-r-background-hint');
+ if(hint)hint.textContent=ok?'已要求使用通話音訊工作階段。手機切到背景時會盡量繼續收聽，但 iOS 可能暫停網頁及 WebSocket；返回後會自動嘗試恢復。':'部分音訊未獲准播放，請先與頻道成員連線並再次點擊「啟用背景收聽」。';
 }
 async function credential(){
  const u=currentIdentity();if(!u)throw Error('只有已登入警務單位的成員可以使用無線電');
@@ -21894,12 +21949,13 @@ async function authenticate(){
  access=result.token;myName=result.name;admin=result.admin;return result;
 }
 async function mic(){
+ configureReceivingSession();
  if(!navigator.mediaDevices?.getUserMedia)throw Error('此瀏覽器無法使用麥克風（必須以 HTTPS 開啟）');
  if(!stream||stream.getAudioTracks().every(t=>t.readyState==='ended'))stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});
  for(const track of stream.getAudioTracks())track.enabled=false;
  return stream;
 }
-function closePeers(){for(const peer of peers.values()){try{peer.pc.close()}catch{}try{peer.audio.remove()}catch{}}peers.clear();}
+function closePeers(){for(const peer of peers.values()){try{peer.pc.close()}catch{}try{peer.audio.pause();peer.audio.srcObject=null;peer.audio.remove()}catch{}}peers.clear();}
 function updateTracks(){for(const t of stream?.getAudioTracks()||[])t.enabled=!!(speaker&&speaker.id===myId);}
 function disconnect(clear=false){
  if(ws){const old=ws;ws=null;old.onclose=null;try{old.close(1000,'Leaving channel')}catch{}}
@@ -21934,16 +21990,16 @@ function idKey(v){return String(v||'');}
 async function makePeer(id,offerer){
  if(peers.has(id))return peers.get(id);
  const pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
- const a=document.createElement('audio');a.autoplay=true;a.playsInline=true;a.volume=volume/100;a.hidden=true;document.body.appendChild(a);
+ const a=document.createElement('audio');a.autoplay=true;a.playsInline=true;a.setAttribute('playsinline','');a.preload='auto';a.volume=volume/100;a.hidden=true;document.body.appendChild(a);
  const p={pc,audio:a};peers.set(id,p);
  for(const t of stream?.getTracks()||[])pc.addTrack(t,stream);
- pc.ontrack=e=>{a.srcObject=e.streams[0];a.play().catch(()=>{});};
+ pc.ontrack=e=>{a.srcObject=e.streams[0]||new MediaStream([e.track]);configureReceivingSession();a.play().catch(err=>{console.debug('Radio audio activation required',err);});};
  pc.onicecandidate=e=>{if(e.candidate)send({type:'signal',to:id,data:{type:'candidate',candidate:e.candidate}});};
  pc.onconnectionstatechange=()=>{if(['closed','failed'].includes(pc.connectionState))dropPeer(id);};
  if(offerer){const offer=await pc.createOffer();await pc.setLocalDescription(offer);send({type:'signal',to:id,data:{type:'offer',sdp:pc.localDescription}});}
  return p;
 }
-function dropPeer(id){const p=peers.get(id);if(!p)return;try{p.pc.close()}catch{}p.audio.remove();peers.delete(id);}
+function dropPeer(id){const p=peers.get(id);if(!p)return;try{p.pc.close()}catch{}try{p.audio.pause();p.audio.srcObject=null;p.audio.remove()}catch{}peers.delete(id);}
 async function signal(from,data){
  let p=peers.get(from);
  if(data.type==='offer'){
@@ -21952,25 +22008,121 @@ async function signal(from,data){
  }else if(data.type==='answer'){if(p?.pc.signalingState==='have-local-offer')await p.pc.setRemoteDescription(data.sdp);}
  else if(data.type==='candidate'){if(p){try{await p.pc.addIceCandidate(data.candidate)}catch{}}}
 }
-function renderRoster(){
- const host=el('ntpc-v22-r-list');if(!host)return;host.replaceChildren();
- const counter=el('ntpc-v22-r-count');if(counter)counter.textContent=roster.length+' 人';
- for(const m of roster){
-  const row=document.createElement('button');row.type='button';row.className='ntpc-v22-radio-member ntpc-profile-trigger';row.dataset.ntpcProfileAccount=m.account||m.memberId||'';
-  const avatar=document.createElement('span');avatar.className='ntpc-v22-radio-avatar';
-  if(m.frameStyle&&m.frameStyle!=='none')avatar.dataset.ntpcFrame=m.frameStyle;
-  if(m.avatarUrl&&/^https:\/\//i.test(m.avatarUrl)){
-   const img=document.createElement('img');img.src=m.avatarUrl;img.alt='';img.referrerPolicy='no-referrer';img.onerror=()=>{img.remove();avatar.textContent=String(m.name||'?').slice(0,1);};avatar.append(img);
-  }else avatar.textContent=String(m.name||'?').slice(0,1);
-  if(m.id===speaker?.id){avatar.classList.add('ntpc-v22-active-speaker');row.classList.add('ntpc-v22-active-speaker');}
-  const info=document.createElement('span');info.className='ntpc-v22-radio-member-info';
-  const strong=document.createElement('strong');strong.textContent=m.name+(m.admin?' 🛡️':'');
-  const small=document.createElement('small');small.textContent=m.memberId+' · '+(m.id===speaker?.id?'正在發話':'在線');
-  info.append(strong,small);row.append(avatar,info);
-  // Existing site's delegated profile-click handler reads data-ntpc-profile-account.
-  host.append(row);
+function maybeLoadRadioProfile(m){
+ const account=String(m.account||'').trim(),key=account.toLowerCase();
+ if(!account||!(/^[\p{L}\p{N}_.-]{1,80}$/u.test(account))||typeof ntpcV2GetProfile!=='function')return;
+ // The current user's profile comes from currentUser; other known user records are already loaded.
+ if(String(currentUser?.account||'').toLowerCase()===key)return;
+ if(typeof ntpcAvatarUserByAccount==='function'&&ntpcAvatarUserByAccount(account))return;
+ let entry=radioProfiles.get(key);
+ if(entry){
+  // A new live Worker profile event is fresher than the snapshot fetched at join.
+  if(entry.data&&typeof m.frameStyle==='string'&&entry.wireFrame!==m.frameStyle){
+   entry.data={...entry.data,frameStyle:m.frameStyle};
+  }
+  if(entry.data&&typeof m.avatarUrl==='string'&&entry.wireAvatar!==m.avatarUrl){
+   entry.data={...entry.data,avatarUrl:m.avatarUrl};
+  }
+  entry.wireFrame=m.frameStyle;entry.wireAvatar=m.avatarUrl;
+  return;
  }
+ if(radioProfiles.size>=30)return; // do not query an unbounded number of profiles
+ entry={data:null,pending:true,wireFrame:m.frameStyle,wireAvatar:m.avatarUrl};radioProfiles.set(key,entry);
+ Promise.resolve().then(()=>ntpcV2GetProfile(account)).then(profile=>{
+  if(radioProfiles.get(key)!==entry)return;
+  entry.pending=false;
+  if(profile&&!profile.profileUnavailable){
+   entry.data={...profile};
+   // Preserve any radio profile updates arriving while the public profile was loading.
+   if(entry.wireFrame!==m.frameStyle&&typeof entry.wireFrame==='string')entry.data.frameStyle=entry.wireFrame;
+   if(entry.wireAvatar!==m.avatarUrl&&typeof entry.wireAvatar==='string')entry.data.avatarUrl=entry.wireAvatar;
+  }
+  if(roster.some(person=>String(person.account||'').toLowerCase()===key))renderRoster();
+ }).catch(error=>{entry.pending=false;console.debug('公開頭像設定讀取失敗，改用頻道同步資料',error);});
 }
+function memberProfile(m){
+ const account=String(m.account||'').trim(),key=account.toLowerCase();
+ const own=account&&String(currentUser?.account||'').toLowerCase()===key?currentIdentity():null;
+ const local=own||(account&&typeof ntpcAvatarUserByAccount==='function'?ntpcAvatarUserByAccount(account):null);
+ const saved=radioProfiles.get(key)?.data;
+ const cached=account&&typeof ntpcAvatarCache!=='undefined'?(ntpcAvatarCache.get(account)||ntpcAvatarCache.get(key)):null;
+ const publicCard=account&&typeof ntpcV2ProfileCache!=='undefined'?ntpcV2ProfileCache.get(key)?.data:null;
+ // True saved choice, never a hardcoded radio frame: users -> saved public profile -> Worker live selection -> cache.
+ const selected=local&&Object.prototype.hasOwnProperty.call(local,'frameStyle')?local.frameStyle:
+  typeof saved?.frameStyle==='string'?saved.frameStyle:
+  typeof m.frameStyle==='string'?m.frameStyle:
+  typeof publicCard?.frameStyle==='string'?publicCard.frameStyle:cached?.frameStyle;
+ const known=['glacier','jade','violet','aurora'];
+ let frame=known.includes(selected)?selected:'none';
+ if(local&&typeof ntpcV21FrameStyle==='function')frame=ntpcV21FrameStyle(account,local);
+ const rawAvatar=local&&typeof ntpcAvatarValue==='function'?ntpcAvatarValue(local):
+  (saved?.avatarUrl??m.avatarUrl??publicCard?.avatarUrl??cached?.url??'');
+ const url=typeof ntpcSafeAvatarUrl==='function'?ntpcSafeAvatarUrl(rawAvatar):(/^https:\/\//i.test(rawAvatar)?rawAvatar:'');
+ const crop=local?.avatarCrop??saved?.avatarCrop??m.avatarCrop??publicCard?.avatarCrop??cached?.avatarCrop??null;
+ return {account,frame,url,crop};
+}
+function makeAdminMark(){
+ // Built-in vector icon. No external font asset or emoji glyph is needed on desktop.
+ const badge=document.createElement('span');badge.className='ntpc-v22-admin-glyph';badge.title='頻道管理員';badge.setAttribute('aria-label','頻道管理員');
+ badge.innerHTML='<svg viewBox="0 0 24 26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M12 1.5 21.2 5v8.1c0 5.4-4.3 9.4-9.2 11.5C7.1 22.5 2.8 18.5 2.8 13.1V5z" fill="#093154" stroke="currentColor" stroke-width="1.8"/><path d="m7.1 12.7 3.5 3.3 6.4-6.7" fill="none" stroke="#9afbea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="4.7" r="1" fill="#c5f7ff"/></svg>';
+ return badge;
+}
+function paintRadioMemberAvatar(row,m,p){
+ const old=row.querySelector('.ntpc-v22-radio-avatar');
+ const avatar=document.createElement('span');avatar.className='ntpc-v22-radio-avatar ntpc-avatar-chip ntpc-avatar-lg';
+ avatar.dataset.ntpcAvatarAccount=p.account;
+ if(p.frame!=='none')avatar.dataset.ntpcFrame=p.frame;
+ const fallback=document.createElement('span');fallback.className='ntpc-v22-avatar-fallback';fallback.textContent=String(m.name||'?').slice(0,1);avatar.append(fallback);
+ if(p.url){
+  const img=document.createElement('img');img.alt='';img.referrerPolicy='no-referrer';img.loading='eager';
+  img.onload=()=>{fallback.hidden=true;};
+  img.onerror=()=>{fallback.hidden=false;img.remove();};
+  avatar.append(img);
+  if(typeof ntpcAvatarCropApplyHost==='function')ntpcAvatarCropApplyHost(avatar,p.crop);
+  img.src=p.url;
+ }
+ if(p.frame==='aurora'){
+  const ornament=document.createElement('span');ornament.className='ntpc-v23-aurora-celestial';ornament.setAttribute('aria-hidden','true');avatar.append(ornament);
+ }
+ old.replaceWith(avatar);
+ return avatar;
+}
+function renderRoster(){
+ const host=el('ntpc-v22-r-list');if(!host)return;
+ const counter=el('ntpc-v22-r-count');if(counter)counter.textContent=roster.length+' 人';
+ const keep=new Set();
+ for(let i=0;i<roster.length;i++){
+  const m=roster[i],id=String(m.id||m.account||m.memberId||i);keep.add(id);
+  maybeLoadRadioProfile(m);
+  let row=radioMemberNodes.get(id);
+  if(!row){
+   row=document.createElement('button');row.type='button';row.className='ntpc-v22-radio-member ntpc-profile-trigger';
+   const avatar=document.createElement('span');avatar.className='ntpc-v22-radio-avatar';
+   const info=document.createElement('span');info.className='ntpc-v22-radio-member-info';
+   const title=document.createElement('span');title.className='ntpc-v22-member-name';title.style.cssText='display:flex;align-items:center;gap:3px;min-width:0';
+   const strong=document.createElement('strong');title.append(strong);
+   const small=document.createElement('small');info.append(title,small);row.append(avatar,info);
+   radioMemberNodes.set(id,row);
+  }
+  row.dataset.ntpcProfileAccount=m.account||m.memberId||'';
+  const p=memberProfile(m),signature=JSON.stringify([p.account,p.frame,p.url,p.crop]);
+  let avatar=row.querySelector('.ntpc-v22-radio-avatar');
+  if(row.dataset.avatarSignature!==signature){avatar=paintRadioMemberAvatar(row,m,p);row.dataset.avatarSignature=signature;}
+  const talking=m.id===speaker?.id;
+  avatar.classList.toggle('ntpc-v22-active-speaker',talking);
+  row.classList.toggle('ntpc-v22-active-speaker',talking);
+  const title=row.querySelector('.ntpc-v22-member-name');
+  const strong=title.querySelector('strong');if(strong.textContent!==String(m.name||''))strong.textContent=String(m.name||'');
+  const mark=title.querySelector('.ntpc-v22-admin-glyph');
+  if(m.admin&&!mark)title.append(makeAdminMark());else if(!m.admin&&mark)mark.remove();
+  const small=row.querySelector('.ntpc-v22-radio-member-info small');
+  const desc=m.memberId+' · '+(talking?'正在發話':'在線');if(small.textContent!==desc)small.textContent=desc;
+  // Do not reappend unchanged nodes: moving nodes on every server state restarts CSS animations.
+  if(host.children[i]!==row)host.insertBefore(row,host.children[i]||null);
+ }
+ for(const [id,row] of radioMemberNodes)if(!keep.has(id)){row.remove();radioMemberNodes.delete(id);}
+}
+
 function update(){
  const connected=ws?.readyState===1;
  const st=el('ntpc-v22-r-status');if(st&&!connecting){st.textContent=connected?'● 已連線':'● 尚未連線';st.dataset.connected=String(connected);}
@@ -21985,7 +22137,7 @@ function join(ch){
  if(!access||!stream)return;
  const existing=ws;if(existing){existing.onclose=null;try{existing.close()}catch{}}closePeers();roster=[];speaker=null;emergency=null;lastSpeaker=null;lastEmergency=null;channel=ch;hold=false;miniHold=false;
  const url=new URL(API);const sock='wss://'+url.host+'/ws?ch='+channel+'&token='+encodeURIComponent(access);
- ws=new WebSocket(sock);ws.onopen=()=>{connecting=false;status('● 已連線 · '+CHANNELS[ch]);send({type:'profile',avatarUrl:String((typeof ntpcAvatarValue==='function'?ntpcAvatarValue(currentIdentity()):(currentIdentity()?.avatarUrl||''))||'').slice(0,2048),frameStyle:String(typeof ntpcV21FrameStyle==='function'?ntpcV21FrameStyle(currentUser.account,currentUser):currentUser?.frameStyle||'none'),avatarCrop:currentUser?.avatarCrop||null});update();};
+ ws=new WebSocket(sock);ws.onopen=()=>{connecting=false;radioEverConnected=true;configureReceivingSession();status('● 已連線 · '+CHANNELS[ch]);pushProfile();void resumeIncomingAudio();update();};
  ws.onerror=()=>status('連線發生錯誤，請按重新連線');
  ws.onclose=()=>{connecting=false;stopTransmitting();update();status('連線已中斷，請按重新連線');};
  ws.onmessage=async event=>{
@@ -22065,6 +22217,7 @@ function init(){
  el('ntpc-v22-r-volminus').onclick=()=>setVolume(volume-5);
  el('ntpc-v22-r-volplus').onclick=()=>setVolume(volume+5);
  el('ntpc-v22-r-sound').onclick=e=>{soundEnabled=!soundEnabled;localStorage.setItem('ntpc-v22-radio-sound',soundEnabled?'on':'off');e.currentTarget.textContent=soundEnabled?'🔊 音效開啟':'🔇 音效關閉';};
+ el('ntpc-v22-r-background').onclick=()=>{void enableBackgroundListening();};
  setVolume(volume);update();
 }
 // User-configured PTT hotkey works while the radio tab has focus (not as an OS-global key).
@@ -22075,6 +22228,18 @@ document.addEventListener('keydown',e=>{
 });
 document.addEventListener('keyup',e=>{if(e.code===(localStorage.getItem('radioHotkey')||'Space'))stopTransmitting();});
 window.addEventListener('blur',()=>{if(hold)stopTransmitting();});
+// Background reception is best effort; some iOS browsers suspend WebSockets/WebRTC under lock.
+// On returning to foreground, resume existing receiver elements and rejoin only if the session actually dropped.
+async function radioForegroundRecovery(){
+ if(document.visibilityState!=='visible'||closedByUser||!radioEverConnected||!currentIdentity())return;
+ configureReceivingSession();
+ if(ws?.readyState===1){await resumeIncomingAudio();pushProfile();return;}
+ if(!connecting)void activate();
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void radioForegroundRecovery();});
+window.addEventListener('pageshow',()=>{void radioForegroundRecovery();});
+window.addEventListener('focus',()=>{void radioForegroundRecovery();});
+window.ntpcV22RadioPushProfile=pushProfile;
 window.ntpcV22RadioEnableAutoJoin=()=>{closedByUser=false;radioProof=null;};
 window.ntpcV22RadioOnTab=()=>{if(closedByUser)return;void activate();};
 window.ntpcV22RadioLeave=leave;
