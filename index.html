@@ -1,4 +1,4 @@
-<!-- V2.2｜本次修正：無線電接收端播放復原、音訊輸出裝置選擇、接收封包診斷及測試音；Worker、發話權限與舊功能不更動。 -->
+<!-- V2.2｜本次修正：修復多人加入時的 WebRTC 訊號先於名單抵達、未完成協商的卡死連線、自動重新建立及雙向音訊診斷。原有網站功能保留。 -->
 <!-- V2.2｜本次修正：警員無線電登入錯誤提示、WebRTC ICE 候選排序及音訊協商、可選 TURN 設定；保留歷史更新紀錄。 -->
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
@@ -3408,7 +3408,7 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
                       <section class="ntpc-v22-r-box"><h4>當前發話</h4><div id="ntpc-v22-r-speaker" class="ntpc-v22-r-speaker">目前無人發話</div>
                       <button id="ntpc-v22-r-ptt" class="ntpc-v22-r-ptt" type="button" disabled>🎙 按住發話</button>
                       <div class="ntpc-v22-r-actions"><button id="ntpc-v22-r-panic" class="ntpc-v22-r-panic" type="button">🚨 10-99（20 秒）</button><button id="ntpc-v22-r-stop-emergency" type="button" hidden>提前結束 10-99</button><button id="ntpc-v22-r-force" type="button" hidden>強制結束一般發話</button></div>
-                      <div class="ntpc-v22-r-audio"><button id="ntpc-v22-r-volminus" type="button" aria-label="音量減少">－</button><span id="ntpc-v22-r-volume-text">80%</span><button id="ntpc-v22-r-volplus" type="button" aria-label="音量增加">＋</button><button id="ntpc-v22-r-sound" type="button">🔊 音效開啟</button><button id="ntpc-v22-r-test-audio" type="button" title="播放本機測試音，確認揚聲器是否正常">🔈 測試接收音效</button><button id="ntpc-v22-r-diagnose" type="button" title="檢查遠端音軌與接收封包">檢查收音狀態</button><select id="ntpc-v22-r-output" aria-label="音訊輸出裝置" title="選擇聲音播放裝置" style="max-width:230px;background:#08213c;color:#d9f5ff;border:1px solid #3275a1;border-radius:9px;padding:8px;min-height:40px"><option value="">系統預設輸出裝置</option></select><button id="ntpc-v22-r-background" type="button" title="嘗試啟用瀏覽器允許的背景收聽音訊工作階段">啟用背景收聽</button><span class="ntpc-v22-r-mobile-hint" id="ntpc-v22-r-background-hint">手機背景收聽視瀏覽器及系統限制而定。iPhone 建議使用 Safari；鎖屏或切換 App 仍可能中斷。</span></div>
+                      <div class="ntpc-v22-r-audio"><button id="ntpc-v22-r-volminus" type="button" aria-label="音量減少">－</button><span id="ntpc-v22-r-volume-text">80%</span><button id="ntpc-v22-r-volplus" type="button" aria-label="音量增加">＋</button><button id="ntpc-v22-r-sound" type="button">🔊 音效開啟</button><button id="ntpc-v22-r-test-audio" type="button" title="播放本機測試音，確認揚聲器是否正常">🔈 測試接收音效</button><button id="ntpc-v22-r-diagnose" type="button" title="檢查遠端音軌與接收封包">檢查雙向音訊</button><select id="ntpc-v22-r-output" aria-label="音訊輸出裝置" title="選擇聲音播放裝置" style="max-width:230px;background:#08213c;color:#d9f5ff;border:1px solid #3275a1;border-radius:9px;padding:8px;min-height:40px"><option value="">系統預設輸出裝置</option></select><button id="ntpc-v22-r-background" type="button" title="嘗試啟用瀏覽器允許的背景收聽音訊工作階段">啟用背景收聽</button><span class="ntpc-v22-r-mobile-hint" id="ntpc-v22-r-background-hint">手機背景收聽視瀏覽器及系統限制而定。iPhone 建議使用 Safari；鎖屏或切換 App 仍可能中斷。</span></div>
                       </section>
                     </div>
                     <div class="ntpc-v22-r-footer"><button id="ntpc-v22-r-rejoin" type="button">重新連線</button><button id="ntpc-v22-r-leave" type="button">手動離開無線電</button><p>僅在進入無線電分頁時建立工作階段；個人通知與案件審核仍使用原本的即時功能。首次啟用麥克風時瀏覽器會詢問權限。</p></div>
@@ -21881,6 +21881,31 @@ let radioIceServers=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.g
 const radioPendingIce=new Map();
 const radioNegotiating=new Set();
 let radioPeerFailureCount=0;
+let radioMicRecovery=null;
+// Early signal messages must survive roster/welcome ordering races.
+const radioEarlySignals=new Map();
+const radioSignalQueues=new Map();
+let radioEpoch=0;
+function queueRadioSignal(from,data){
+ const list=radioEarlySignals.get(from)||[];
+ if(list.length>=96)list.shift();
+ list.push({data,at:Date.now()});
+ radioEarlySignals.set(from,list);
+}
+function serialRadioSignal(from,data){
+ const prior=radioSignalQueues.get(from)||Promise.resolve();
+ const work=prior.catch(()=>{}).then(()=>signal(from,data));
+ radioSignalQueues.set(from,work);
+ work.catch(e=>{console.warn('WebRTC signaling failed',from,e);status('音訊協商失敗：'+(e?.message||e));}).finally(()=>{if(radioSignalQueues.get(from)===work)radioSignalQueues.delete(from);});
+}
+function flushEarlyRadioSignals(){
+ for(const [id,list] of radioEarlySignals){
+  if(!roster.some(m=>m.id===id))continue;
+  radioEarlySignals.delete(id);
+  for(const x of list)if(Date.now()-x.at<25000)serialRadioSignal(id,x.data);
+ }
+}
+
 // All authenticated users in the same channel share one bidirectional WebRTC connection per peer.
 // Department is not consulted when making, receiving, or repairing an audio connection.
 let radioMeshWatchdog=null;
@@ -21888,18 +21913,25 @@ const radioLastRestart=new Map();
 async function requestRadioRepair(id, reason=''){
  if(!id||!myId||ws?.readyState!==1||!roster.some(m=>m.id===id))return;
  const now=Date.now();
- if(now-(radioLastRestart.get(id)||0)<9000)return;
+ if(now-(radioLastRestart.get(id)||0)<11000)return;
  radioLastRestart.set(id,now);
  const p=peers.get(id);
- if(myId.localeCompare(id)>0){
-  // The lower-ID peer owns negotiation, avoiding offer glare.
-  send({type:'signal',to:id,data:{type:'restart'}});return;
+ // The lower ID consistently initiates offer / replacement to avoid glare.
+ if(myId.localeCompare(id)>0){send({type:'signal',to:id,data:{type:'restart'}});return;}
+ if(!p){try{await makePeer(id,true);}catch(e){console.warn('建立音訊連線失敗',id,e);}return;}
+ if(p.pc.connectionState==='connected')return;
+ const age=now-(p.createdAt||now);
+ const negotiating=p.pc.signalingState!=='stable';
+ // An unanswered offer cannot be fixed with restartIce: it must be replaced.
+ if((negotiating&&age>13000)||p.pc.connectionState==='closed'||(age>35000&&p.repairCount>=2)){
+  dropPeer(id);
+  try{await makePeer(id,true);}catch(e){console.warn('重建失效 WebRTC 連線失敗',id,e);}
+  return;
  }
- if(!p){try{await makePeer(id,true);}catch(e){console.warn('重建音訊連線失敗',id,e);}return;}
- if(p.pc.signalingState!=='stable'||p.pc.connectionState==='closed')return;
- if(radioNegotiating.has(id))return;
+ if(negotiating||radioNegotiating.has(id))return;
  radioNegotiating.add(id);
  try{
+  p.repairCount=(p.repairCount||0)+1;
   p.pc.restartIce();
   const offer=await p.pc.createOffer({iceRestart:true});
   await p.pc.setLocalDescription(offer);
@@ -21914,8 +21946,10 @@ function startRadioMeshWatchdog(){
   for(const m of roster){
    if(m.id===myId)continue;
    const p=peers.get(m.id);
-   if(!p){if(myId.localeCompare(m.id)<0)void requestRadioRepair(m.id,'missing');continue;}
-   if(['failed','disconnected'].includes(p.pc.iceConnectionState)||p.pc.connectionState==='failed')void requestRadioRepair(m.id,'unhealthy');
+   if(!p){void requestRadioRepair(m.id,'missing');continue;}
+   const age=Date.now()-(p.createdAt||Date.now());
+   if(p.pc.connectionState!=='connected'&&age>13000)void requestRadioRepair(m.id,'connection-timeout');
+   else if(['failed','disconnected'].includes(p.pc.iceConnectionState)||p.pc.connectionState==='failed')void requestRadioRepair(m.id,'unhealthy');
    if(p.audio?.srcObject&&p.audio.paused)void resumeIncomingAudio();
   }
  },7000);
@@ -22001,19 +22035,29 @@ async function radioTestAudio(){
 }
 async function diagnoseRadioReceive(){
  if(!peers.size){notify('尚未與其他成員建立音訊連線，請確認對方在線。');return;}
+ const txTrack=stream?.getAudioTracks()?.[0];
  const data=[];
  for(const [id,p] of peers){
   const a=p.audio,tracks=a.srcObject?.getAudioTracks()||[];
-  let packets=0,bytes=0;
-  try{const stats=await p.pc.getStats();stats.forEach(r=>{if(r.type==='inbound-rtp'&&(r.kind==='audio'||r.mediaType==='audio')){packets+=r.packetsReceived||0;bytes+=r.bytesReceived||0;}});}catch(e){console.warn('音訊統計讀取失敗',e);}
-  data.push({peer:id,connection:p.pc.connectionState,ice:p.pc.iceConnectionState,playing:!a.paused,volume:a.volume,muted:a.muted,tracks:tracks.map(t=>({enabled:t.enabled,muted:t.muted,state:t.readyState})),packets,bytes});
+  let recvPackets=0,recvBytes=0,sentPackets=0,sentBytes=0;
+  try{const stats=await p.pc.getStats();stats.forEach(r=>{
+   if(r.type==='inbound-rtp'&&(r.kind==='audio'||r.mediaType==='audio')){recvPackets+=r.packetsReceived||0;recvBytes+=r.bytesReceived||0;}
+   if(r.type==='outbound-rtp'&&(r.kind==='audio'||r.mediaType==='audio')){sentPackets+=r.packetsSent||0;sentBytes+=r.bytesSent||0;}
+  });}catch(e){console.warn('音訊統計讀取失敗',e);}
+  const name=roster.find(m=>m.id===id)?.name||id.slice(0,8);
+  data.push({peer:id,name,connection:p.pc.connectionState,ice:p.pc.iceConnectionState,playing:!a.paused,volume:a.volume,muted:a.muted,tracks:tracks.map(t=>({enabled:t.enabled,muted:t.muted,state:t.readyState})),recvPackets,recvBytes,sentPackets,sentBytes,senderTrack:p.pc.getSenders().find(x=>x.track?.kind==='audio')?.track?.readyState||'none'});
  }
- console.table(data.map(x=>({對象:x.peer,連線:x.connection,播放:x.playing,封包:x.packets,位元組:x.bytes,音軌:x.tracks.map(t=>t.state+(t.muted?'/muted':'')).join(',')})));
- const summary=data.map(x=>x.peer.slice(0,7)+'：'+x.connection+'／接收封包 '+x.packets+'／播放 '+(x.playing?'是':'否')).join('；');
- status('收音診斷：'+summary);
- if(data.every(x=>x.bytes===0))notify('音訊接收封包為 0：請讓對方持續按住發話，同時檢查 WebRTC 連線是否已建立；系統會自動重試。');
- else if(data.some(x=>x.bytes>0&&(!x.playing||x.muted||x.volume===0)))notify('已有收到音訊封包，但播放端被暫停或靜音；請點擊「測試接收音效」並檢查輸出裝置。');
- else notify('已收到遠端音訊資料；若還是沒有聲音，請切換「音訊輸出裝置」或檢查 Windows 音量混音器。');
+ console.table(data.map(x=>({對象:x.name,連線:x.connection,ICE:x.ice,接收封包:x.recvPackets,發送封包:x.sentPackets,播放中:x.playing,輸出靜音:x.muted,發送軌:x.senderTrack})));
+ const talking=speaker?.id===myId;
+ const micState=txTrack?(txTrack.readyState+(txTrack.enabled?'/啟用':'/未啟用')):'不存在';
+ const summary='麥克風 '+micState+'；'+data.map(x=>x.name+'：'+x.connection+'／送 '+x.sentPackets+'／收 '+x.recvPackets).join('；');
+ status('雙向音訊診斷：'+summary);
+ const badConnections=data.filter(x=>x.connection!=='connected');
+ if(badConnections.length){notify('與 '+badConnections.map(x=>x.name).join('、')+' 的音訊尚未建立完整連線；正在嘗試重建。');for(const x of badConnections)void requestRadioRepair(x.peer,'diagnostic');}
+ else if(talking&&(!txTrack||txTrack.readyState!=='live'||!txTrack.enabled))notify('你正在發話，但麥克風音軌沒有啟用；請放開後重新按住發話。');
+ else if(talking&&data.some(x=>x.sentPackets===0))notify('你的發話音訊尚未送出封包，請確認麥克風權限及 WebRTC 發送音軌。');
+ else if(data.some(x=>x.recvBytes>0&&(!x.playing||x.muted||x.volume===0)))notify('已接收音訊，但播放被暫停或靜音；請檢查輸出裝置。');
+ else notify('雙向診斷已顯示於下方；封包數是累計值。請在雙方按住發話時分別檢查兩次，確認數字是否增加。');
 }
 
 async function enableBackgroundListening(){
@@ -22067,7 +22111,28 @@ async function mic(){
  for(const track of stream.getAudioTracks())track.enabled=false;
  return stream;
 }
-function closePeers(){stopRadioMeshWatchdog();for(const peer of peers.values()){try{peer.pc.close()}catch{}try{peer.audio.pause();peer.audio.srcObject=null;peer.audio.remove()}catch{}}peers.clear();radioPendingIce.clear();radioNegotiating.clear();}
+async function ensureRadioMicReady(){
+ const old=stream?.getAudioTracks()?.[0];
+ if(old?.readyState==='live')return old;
+ if(radioMicRecovery)return radioMicRecovery;
+ radioMicRecovery=(async()=>{
+  const fresh=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});
+  const next=fresh.getAudioTracks()[0];
+  if(!next)throw Error('沒有可用的麥克風音軌');
+  next.enabled=!!(speaker?.id===myId);
+  for(const peer of peers.values()){
+   const sender=peer.pc.getSenders().find(x=>x.track?.kind==='audio');
+   if(sender)await sender.replaceTrack(next);
+   else peer.pc.addTrack(next,fresh);
+  }
+  const previous=stream;stream=fresh;
+  if(previous)for(const track of previous.getTracks())if(track!==next)try{track.stop()}catch{}
+  next.addEventListener('ended',()=>{if(ws?.readyState===1)status('麥克風已中斷：請檢查裝置後再次發話');},{once:true});
+  updateTracks();return next;
+ })().finally(()=>{radioMicRecovery=null;});
+ return radioMicRecovery;
+}
+function closePeers(){stopRadioMeshWatchdog();radioEpoch++;radioEarlySignals.clear();radioSignalQueues.clear();for(const peer of peers.values()){try{peer.pc.close()}catch{}try{peer.audio.pause();peer.audio.srcObject=null;peer.audio.remove()}catch{}}peers.clear();radioPendingIce.clear();radioNegotiating.clear();}
 function updateTracks(){for(const t of stream?.getAudioTracks()||[])t.enabled=!!(speaker&&speaker.id===myId);}
 function disconnect(clear=false){
  if(ws){const old=ws;ws=null;old.onclose=null;try{old.close(1000,'Leaving channel')}catch{}}
@@ -22081,6 +22146,11 @@ function startTransmitting(fromMini=false){
  if(ws?.readyState!==1||!stream)return;
  if(emergency&&emergency.id!==myId){notify('10-99 緊急通話優先中');return;}
  if(speaker&&speaker.id!==myId&&!admin){notify('目前有人正在發話');return;}
+ const track=stream.getAudioTracks()[0];
+ if(!track||track.readyState!=='live'){
+  void ensureRadioMicReady().then(()=>notify('麥克風已恢復，請重新按住發話')).catch(e=>notify('麥克風無法使用：'+(e?.message||e)));
+  return;
+ }
  if(fromMini){if(miniHold)return;miniHold=true;}else{if(hold)return;hold=true;}
  send({type:'claim'});updateMini();
 }
@@ -22109,7 +22179,7 @@ async function makePeer(id,offerer){
  if(peers.has(id))return peers.get(id);
  const pc=new RTCPeerConnection({iceServers:radioIceServers,iceCandidatePoolSize:2});
  const a=document.createElement('audio');a.autoplay=true;a.playsInline=true;a.setAttribute('playsinline','');a.preload='auto';a.muted=false;a.volume=volume/100;a.hidden=true;document.body.appendChild(a);void applyRadioOutput(a);
- const p={pc,audio:a,offerer};peers.set(id,p);
+ const p={pc,audio:a,offerer,createdAt:Date.now(),repairCount:0};peers.set(id,p);
  for(const t of stream?.getAudioTracks()||[])pc.addTrack(t,stream);
  pc.ontrack=e=>{
   if(e.track.kind!=='audio')return;
@@ -22121,7 +22191,7 @@ async function makePeer(id,offerer){
  pc.onicecandidate=e=>{if(e.candidate)send({type:'signal',to:id,data:{type:'candidate',candidate:e.candidate.toJSON?e.candidate.toJSON():e.candidate}});};
  pc.onconnectionstatechange=()=>{
   if(peers.get(id)!==p)return;
-  if(pc.connectionState==='connected'){radioPeerFailureCount=0;void resumeIncomingAudio();}
+  if(pc.connectionState==='connected'){radioPeerFailureCount=0;p.repairCount=0;void resumeIncomingAudio();}
   if(pc.connectionState==='failed'){
    radioPeerFailureCount++;
    status('與部分成員的語音連線中斷，正在嘗試重新連線；如多次失敗可能需要 TURN 中繼');
@@ -22138,7 +22208,7 @@ async function makePeer(id,offerer){
 function dropPeer(id){const p=peers.get(id);if(!p)return;try{p.pc.close()}catch{}try{p.audio.pause();p.audio.srcObject=null;p.audio.remove()}catch{}peers.delete(id);radioNegotiating.delete(id);}
 async function signal(from,data){
  if(!data||!['offer','answer','candidate','restart'].includes(data.type))return;
- if(!roster.some(m=>m.id===from))return; // same-channel participants only
+ if(!roster.some(m=>m.id===from)){queueRadioSignal(from,data);return;} // Wait for authoritative roster before handling same-channel signals
  if(data.type==='restart'){
   if(myId&&myId.localeCompare(from)<0)void requestRadioRepair(from,'remote-request');
   return;
@@ -22302,9 +22372,10 @@ function join(ch){
    if((hold||miniHold)&&speaker&&speaker.id!==myId){hold=false;miniHold=false;}
    for(const id of [...peers.keys()])if(!roster.some(u=>u.id===id))dropPeer(id);
    for(const u of roster)if(u.id!==myId&&!peers.has(u.id)&&myId&&myId.localeCompare(u.id)<0)makePeer(u.id,true).catch(console.warn);
+   flushEarlyRadioSignals();
    update();
   }
-  else if(m.type==='signal')signal(m.from,m.data).catch(e=>{console.warn('WebRTC signaling failed',e);status('音訊協商失敗：'+(e.message||e));});
+  else if(m.type==='signal')serialRadioSignal(m.from,m.data);
   else if(m.type==='revoked'&&m.id===myId){hold=false;miniHold=false;for(const t of stream?.getAudioTracks()||[])t.enabled=false;notify(m.reason||'發話權已被收回');update();}
   else if(m.type==='error'){hold=false;miniHold=false;notify(m.message||'操作失敗');update();}
  };
