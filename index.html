@@ -1,6 +1,4 @@
-<!-- V2.2｜無線電 SSO 連線修正：改走 Cloudflare Pages 同源 /api/radio-session 轉送，排除瀏覽器跨來源預檢限制；其餘功能保留。
- V2.2 圖示更新｜網站標籤、分享封面、主畫面圖示統一使用 GitHub icon-512.png；保留既有頭像及資料。
- V2.2｜本次修正：無線電管理員盾牌換成內嵌 SVG；成員頭像與實際選用的動態框同步、只在發話時播放框動畫；優化手機背景收聽及回前景音訊恢復。其他功能與歷史更新紀錄保持不變。 -->
+<!-- V2.2｜本次修正：無線電管理員盾牌換成內嵌 SVG；成員頭像與實際選用的動態框同步、只在發話時播放框動畫；優化手機背景收聽及回前景音訊恢復。其他功能與歷史更新紀錄保持不變。 -->
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
 <head>
@@ -12,10 +10,10 @@
     <!-- 網站圖標與連結分享資訊 -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/icon-512.png">
     <link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/icon-512.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/icon-512.png">
-    <meta name="description" content="新北市 RP 3.0 公職服務系統 V2.1｜管理中心人工派遣、勤務位置與報案通知；整合警務、消防、EMS 報告。">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icon-512.png?v=20261105-v22">
+    <meta name="description" content="新北市 RP 3.0 公職服務系統 V2.2｜管理中心人工派遣、勤務位置與報案通知；整合警務、消防、EMS 報告。">
     <!-- PWA：可安裝到 Windows、Android 與 iOS 主畫面；不啟用離線快取，避免 Firebase 資料過期。 -->
-    <link rel="manifest" href="/manifest.json?v=20261013-verified-logo">
+    <link rel="manifest" href="/manifest.json?v=20261105-v22">
     <meta name="theme-color" content="#020617">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -25,13 +23,13 @@
     <link rel="canonical" href="https://ntpc-rp.pages.dev/">
     <meta property="og:site_name" content="新北市 RP 3.0 公職服務系統">
     <meta property="og:locale" content="zh_TW">
-    <meta property="og:title" content="新北市 RP 3.0 公職服務系統 V2.1｜智慧派遣與勤務管理">
-    <meta property="og:description" content="新北市 RP 3.0 公職服務系統 V2.1，整合 ER:LC 智慧派遣及位置監看，整合警務、消防、EMS 勤務與案件管理。">
+    <meta property="og:title" content="新北市 RP 3.0 公職服務系統 V2.2｜智慧派遣與勤務管理">
+    <meta property="og:description" content="新北市 RP 3.0 公職服務系統 V2.2，整合 ER:LC 智慧派遣及位置監看，整合警務、消防、EMS 勤務與案件管理。">
     <meta property="og:image" content="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/icon-512.png">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://ntpc-rp.pages.dev/">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="新北市 RP 3.0 公職服務系統 V2.1｜智慧派遣與勤務管理">
+    <meta name="twitter:title" content="新北市 RP 3.0 公職服務系統 V2.2｜智慧派遣與勤務管理">
     <meta name="twitter:description" content="整合警務、消防、EMS 勤務、案件審核、個人通知、警專考核與管理中心的 RP 公職勤務服務系統。">
     <meta name="twitter:image" content="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/icon-512.png">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -21945,14 +21943,9 @@ async function credential(){
 }
 async function authenticate(){
  const cred=await credential();
- // Use the same-origin Pages Function to avoid browser-to-Worker CORS preflight failures.
- // The original Cloudflare Radio Worker still validates the one-time site proof.
- let rsp;
- try{
-  rsp=await fetch('/api/radio-session',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(cred),cache:'no-store'});
- }catch(error){throw Error('無法連線至本站無線電登入 API，請確認網路與 Cloudflare Pages Functions 是否正常');}
- let result;try{result=await rsp.json()}catch{throw Error('本站無線電登入 API 未回傳 JSON；請確認 functions/api/radio-session.js 和 _routes.json 均已部署');}
- if(!rsp.ok||!result?.token)throw Error(result?.error||`無線電登入驗證失敗 (HTTP ${rsp.status})`);
+ const rsp=await fetch(API+'/api/site-session',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(cred),cache:'no-store'});
+ let result;try{result=await rsp.json()}catch{throw Error('無線電伺服器未回傳登入驗證資料');}
+ if(!rsp.ok||!result?.token)throw Error(result?.error||`登入驗證失敗 (HTTP ${rsp.status})`);
  access=result.token;myName=result.name;admin=result.admin;return result;
 }
 async function mic(){
@@ -22170,7 +22163,7 @@ async function activate(){
  connecting=true;closedByUser=false;status('正在驗證勤務網站登入狀態…');
  try{
   await authenticate();status('正在啟用麥克風…');await mic();status('正在加入無線電頻道…');join(channel);
- }catch(e){connecting=false;status('無線電自動登入失敗：'+e.message+'。');}
+ }catch(e){connecting=false;status('無線電自動登入失敗：'+e.message+'。請檢查 Worker 的 SSO 金鑰設定。');}
 }
 function leave(){closedByUser=true;connecting=false;stopTransmitting();disconnect(true);if(miniWindow&&!miniWindow.closed)miniWindow.close();miniWindow=null;status('已手動離開無線電，不影響勤務網站登入。');}
 async function changeChannel(n){if(!Number.isInteger(n)||n<1||n>5||!access)return;
