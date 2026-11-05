@@ -1,4 +1,4 @@
-<!-- V2.2｜本次修正：無線電管理員盾牌換成內嵌 SVG；成員頭像與實際選用的動態框同步、只在發話時播放框動畫；優化手機背景收聽及回前景音訊恢復。其他功能與歷史更新紀錄保持不變。 -->
+<!-- V2.2｜本次修正：警員無線電登入錯誤提示、WebRTC ICE 候選排序及音訊協商、可選 TURN 設定；保留歷史更新紀錄。 -->
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
 <head>
@@ -21876,6 +21876,10 @@ const el=id=>document.getElementById(id);
 let access='',myId='',myName='',admin=false,ws=null,stream=null,channel=1,roster=[],speaker=null,emergency=null,peers=new Map(),hold=false,miniHold=false,miniWindow=null,connecting=false,closedByUser=false,radioProof=null,lastSpeaker=null,lastEmergency=null,serverTime=Date.now(),clientTime=Date.now();
 let volume=Math.max(0,Math.min(100,Number(localStorage.getItem('ntpc-v22-radio-volume')||80)));
 let radioEverConnected=false;
+let radioIceServers=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
+const radioPendingIce=new Map();
+const radioNegotiating=new Set();
+let radioPeerFailureCount=0;
 const radioProfiles=new Map(); // one bounded read of saved public appearance per roster account
 const radioMemberNodes=new Map(); // stable nodes keep CSS frame animation running while a member speaks
 const playURL={start:'https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/Video%20Project%201.m4a',end:'https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/ScreenRecording_11-05-2026%2002-20-28_1.mov',emergency:'https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/10-99.mp3'};
@@ -21886,7 +21890,7 @@ const send=data=>{if(ws?.readyState===1)ws.send(JSON.stringify(data));};
 function currentIdentity(){
  if(typeof currentUser==='undefined'||!currentUser)return null;
  const u=currentUser;
- const units=typeof getUserUnits==='function'?getUserUnits(u):(u.units||[u.unit]);
+ const units=typeof getUserUnits==='function'?getUserUnits(u):(Array.isArray(u.units)?u.units:[u.unit]);
  if(!Array.isArray(units)||!units.includes('police'))return null;
  return u;
 }
@@ -21931,13 +21935,13 @@ async function credential(){
  const expiresAt=now+30*60000;
  const hash=await ntpcSha256(secret),proof=await ntpcSha256(secret+':'+String(u.pass||''));
  const docId=String(u.docId||u.account);const ref=fm.doc(db,'users',docId);
- await fm.runTransaction(db,async tx=>{
+ try{await fm.runTransaction(db,async tx=>{
    const snap=await tx.get(ref);
    if(!snap.exists()||String(snap.data().account||docId).toLowerCase()!==String(u.account).toLowerCase())throw Error('帳號已異動');
    const list=ntpcRememberEntries(snap.data(),now);
    list.push({id,hash,proof,createdAt:now,expiresAt});
    tx.update(ref,{rememberedDevicesV149:list.slice(-10)});
- });
+ });}catch(e){throw Error('無法建立無線電登入憑證（帳號資料寫入被拒絕或網路異常）：'+(e?.code||e?.message||'未知錯誤'));}
  radioProof={account:u.account,docId,id,secret,expiresAt};
  return radioProof;
 }
@@ -21945,7 +21949,7 @@ async function authenticate(){
  const cred=await credential();
  const rsp=await fetch(API+'/api/site-session',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(cred),cache:'no-store'});
  let result;try{result=await rsp.json()}catch{throw Error('無線電伺服器未回傳登入驗證資料');}
- if(!rsp.ok||!result?.token)throw Error(result?.error||`登入驗證失敗 (HTTP ${rsp.status})`);
+ if(!rsp.ok||!result?.token)throw Error((result?.error||'登入驗證失敗')+` (HTTP ${rsp.status})`);
  access=result.token;myName=result.name;admin=result.admin;return result;
 }
 async function mic(){
@@ -21955,7 +21959,7 @@ async function mic(){
  for(const track of stream.getAudioTracks())track.enabled=false;
  return stream;
 }
-function closePeers(){for(const peer of peers.values()){try{peer.pc.close()}catch{}try{peer.audio.pause();peer.audio.srcObject=null;peer.audio.remove()}catch{}}peers.clear();}
+function closePeers(){for(const peer of peers.values()){try{peer.pc.close()}catch{}try{peer.audio.pause();peer.audio.srcObject=null;peer.audio.remove()}catch{}}peers.clear();radioPendingIce.clear();radioNegotiating.clear();}
 function updateTracks(){for(const t of stream?.getAudioTracks()||[])t.enabled=!!(speaker&&speaker.id===myId);}
 function disconnect(clear=false){
  if(ws){const old=ws;ws=null;old.onclose=null;try{old.close(1000,'Leaving channel')}catch{}}
@@ -21987,26 +21991,51 @@ function soundsFromState(nextSpeaker,nextEmergency){
  lastSpeaker=nextId;lastEmergency=nextEmergencyKey;
 }
 function idKey(v){return String(v||'');}
+// WebRTC signalling must tolerate candidates arriving before SDP and answers being processed.
+async function flushIce(id,p){
+ if(!p?.pc.remoteDescription)return;
+ const waiting=radioPendingIce.get(id)||[];radioPendingIce.delete(id);
+ for(const candidate of waiting){try{await p.pc.addIceCandidate(candidate)}catch(e){console.warn('Radio ICE candidate rejected',e);}}
+}
 async function makePeer(id,offerer){
  if(peers.has(id))return peers.get(id);
- const pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+ const pc=new RTCPeerConnection({iceServers:radioIceServers,iceCandidatePoolSize:2});
  const a=document.createElement('audio');a.autoplay=true;a.playsInline=true;a.setAttribute('playsinline','');a.preload='auto';a.volume=volume/100;a.hidden=true;document.body.appendChild(a);
  const p={pc,audio:a};peers.set(id,p);
- for(const t of stream?.getTracks()||[])pc.addTrack(t,stream);
- pc.ontrack=e=>{a.srcObject=e.streams[0]||new MediaStream([e.track]);configureReceivingSession();a.play().catch(err=>{console.debug('Radio audio activation required',err);});};
- pc.onicecandidate=e=>{if(e.candidate)send({type:'signal',to:id,data:{type:'candidate',candidate:e.candidate}});};
- pc.onconnectionstatechange=()=>{if(['closed','failed'].includes(pc.connectionState))dropPeer(id);};
+ for(const t of stream?.getAudioTracks()||[])pc.addTrack(t,stream);
+ pc.ontrack=e=>{a.srcObject=e.streams[0]||new MediaStream([e.track]);configureReceivingSession();a.play().catch(err=>{console.warn('無線電接收音訊被瀏覽器阻擋',err);status('已收到音訊，請點擊「啟用背景收聽」允許播放');});};
+ pc.onicecandidate=e=>{if(e.candidate)send({type:'signal',to:id,data:{type:'candidate',candidate:e.candidate.toJSON?e.candidate.toJSON():e.candidate}});};
+ pc.onconnectionstatechange=()=>{
+  if(pc.connectionState==='connected'){radioPeerFailureCount=0;void resumeIncomingAudio();}
+  if(pc.connectionState==='failed'){
+   radioPeerFailureCount++;status('音訊連線失敗：目前網路可能需要 TURN 中繼，請檢查 Worker 的 RADIO_ICE_SERVERS_JSON 設定');
+   if(peers.get(id)===p){dropPeer(id);if(myId&&myId.localeCompare(id)<0&&roster.some(x=>x.id===id))setTimeout(()=>{if(ws?.readyState===1&&!peers.has(id))void makePeer(id,true).catch(console.warn)},Math.min(15000,3000*radioPeerFailureCount));}
+  }
+ };
  if(offerer){const offer=await pc.createOffer();await pc.setLocalDescription(offer);send({type:'signal',to:id,data:{type:'offer',sdp:pc.localDescription}});}
  return p;
 }
-function dropPeer(id){const p=peers.get(id);if(!p)return;try{p.pc.close()}catch{}try{p.audio.pause();p.audio.srcObject=null;p.audio.remove()}catch{}peers.delete(id);}
+function dropPeer(id){const p=peers.get(id);if(!p)return;try{p.pc.close()}catch{}try{p.audio.pause();p.audio.srcObject=null;p.audio.remove()}catch{}peers.delete(id);radioNegotiating.delete(id);}
 async function signal(from,data){
+ if(!data||!['offer','answer','candidate'].includes(data.type))return;
+ if(data.type==='candidate'){
+  if(!data.candidate)return;
+  const p=peers.get(from);
+  if(p?.pc.remoteDescription){try{await p.pc.addIceCandidate(data.candidate)}catch(e){console.warn('Radio ICE',e)}}
+  else{const list=radioPendingIce.get(from)||[];if(list.length<64)list.push(data.candidate);radioPendingIce.set(from,list);}
+  return;
+ }
  let p=peers.get(from);
  if(data.type==='offer'){
-  if(p)dropPeer(from);p=await makePeer(from,false);await p.pc.setRemoteDescription(data.sdp);
-  const answer=await p.pc.createAnswer();await p.pc.setLocalDescription(answer);send({type:'signal',to:from,data:{type:'answer',sdp:p.pc.localDescription}});
- }else if(data.type==='answer'){if(p?.pc.signalingState==='have-local-offer')await p.pc.setRemoteDescription(data.sdp);}
- else if(data.type==='candidate'){if(p){try{await p.pc.addIceCandidate(data.candidate)}catch{}}}
+  // Never allow both endpoints to start a competing offer.
+  if(p&&p.pc.signalingState==='have-local-offer'){dropPeer(from);p=null;}
+  if(!p)p=await makePeer(from,false);
+  await p.pc.setRemoteDescription(data.sdp);await flushIce(from,p);
+  const answer=await p.pc.createAnswer();await p.pc.setLocalDescription(answer);
+  send({type:'signal',to:from,data:{type:'answer',sdp:p.pc.localDescription}});
+ }else if(data.type==='answer'&&p?.pc.signalingState==='have-local-offer'){
+  await p.pc.setRemoteDescription(data.sdp);await flushIce(from,p);
+ }
 }
 function maybeLoadRadioProfile(m){
  const account=String(m.account||'').trim(),key=account.toLowerCase();
@@ -22138,8 +22167,8 @@ function join(ch){
  const existing=ws;if(existing){existing.onclose=null;try{existing.close()}catch{}}closePeers();roster=[];speaker=null;emergency=null;lastSpeaker=null;lastEmergency=null;channel=ch;hold=false;miniHold=false;
  const url=new URL(API);const sock='wss://'+url.host+'/ws?ch='+channel+'&token='+encodeURIComponent(access);
  ws=new WebSocket(sock);ws.onopen=()=>{connecting=false;radioEverConnected=true;configureReceivingSession();status('● 已連線 · '+CHANNELS[ch]);pushProfile();void resumeIncomingAudio();update();};
- ws.onerror=()=>status('連線發生錯誤，請按重新連線');
- ws.onclose=()=>{connecting=false;stopTransmitting();update();status('連線已中斷，請按重新連線');};
+ ws.onerror=()=>status('WebSocket 連線失敗：請確認 Worker 已部署、SSO 驗證正確及網路允許 WebSocket');
+ ws.onclose=e=>{connecting=false;stopTransmitting();update();status('連線已中斷（'+(e?.code||'未知')+'），請按重新連線');};
  ws.onmessage=async event=>{
   let m;try{m=JSON.parse(event.data)}catch{return;}
   if(m.type==='welcome'){myId=m.id;admin=!!m.admin;update();}
@@ -22150,11 +22179,17 @@ function join(ch){
    for(const u of roster)if(u.id!==myId&&!peers.has(u.id)&&myId&&myId.localeCompare(u.id)<0)makePeer(u.id,true).catch(console.warn);
    update();
   }
-  else if(m.type==='signal')signal(m.from,m.data).catch(console.warn);
+  else if(m.type==='signal')signal(m.from,m.data).catch(e=>{console.warn('WebRTC signaling failed',e);status('音訊協商失敗：'+(e.message||e));});
   else if(m.type==='revoked'&&m.id===myId){hold=false;miniHold=false;for(const t of stream?.getAudioTracks()||[])t.enabled=false;notify(m.reason||'發話權已被收回');update();}
   else if(m.type==='error'){hold=false;miniHold=false;notify(m.message||'操作失敗');update();}
  };
  update();
+}
+async function loadIceConfig(){
+ try{
+  const rsp=await fetch(API+'/api/ice',{headers:{Authorization:'Bearer '+access},mode:'cors',cache:'no-store'});
+  if(rsp.ok){const data=await rsp.json();if(Array.isArray(data.iceServers)&&data.iceServers.length){radioIceServers=data.iceServers;}}
+ }catch(e){console.warn('Radio ICE config fetch failed',e);}
 }
 async function activate(){
  if(connecting||ws?.readyState===1)return;
@@ -22162,8 +22197,8 @@ async function activate(){
  if(location.protocol!=='https:'){status('需要從正式 HTTPS 網站開啟才能使用無線電');return;}
  connecting=true;closedByUser=false;status('正在驗證勤務網站登入狀態…');
  try{
-  await authenticate();status('正在啟用麥克風…');await mic();status('正在加入無線電頻道…');join(channel);
- }catch(e){connecting=false;status('無線電自動登入失敗：'+e.message+'。請檢查 Worker 的 SSO 金鑰設定。');}
+  await authenticate();await loadIceConfig();status('正在啟用麥克風…');await mic();status('正在加入無線電頻道…');join(channel);
+ }catch(e){connecting=false;status('無線電連線失敗：'+e.message);console.error('無線電連線失敗',e);}
 }
 function leave(){closedByUser=true;connecting=false;stopTransmitting();disconnect(true);if(miniWindow&&!miniWindow.closed)miniWindow.close();miniWindow=null;status('已手動離開無線電，不影響勤務網站登入。');}
 async function changeChannel(n){if(!Number.isInteger(n)||n<1||n>5||!access)return;
@@ -22218,6 +22253,8 @@ function init(){
  el('ntpc-v22-r-volplus').onclick=()=>setVolume(volume+5);
  el('ntpc-v22-r-sound').onclick=e=>{soundEnabled=!soundEnabled;localStorage.setItem('ntpc-v22-radio-sound',soundEnabled?'on':'off');e.currentTarget.textContent=soundEnabled?'🔊 音效開啟':'🔇 音效關閉';};
  el('ntpc-v22-r-background').onclick=()=>{void enableBackgroundListening();};
+ // User gesture also unlocks remote audio that browsers may block on join.
+ ptt.addEventListener('pointerdown',()=>{void resumeIncomingAudio();});
  setVolume(volume);update();
 }
 // User-configured PTT hotkey works while the radio tab has focus (not as an OS-global key).
