@@ -21881,6 +21881,47 @@ let radioIceServers=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.g
 const radioPendingIce=new Map();
 const radioNegotiating=new Set();
 let radioPeerFailureCount=0;
+// All authenticated users in the same channel share one bidirectional WebRTC connection per peer.
+// Department is not consulted when making, receiving, or repairing an audio connection.
+let radioMeshWatchdog=null;
+const radioLastRestart=new Map();
+async function requestRadioRepair(id, reason=''){
+ if(!id||!myId||ws?.readyState!==1||!roster.some(m=>m.id===id))return;
+ const now=Date.now();
+ if(now-(radioLastRestart.get(id)||0)<9000)return;
+ radioLastRestart.set(id,now);
+ const p=peers.get(id);
+ if(myId.localeCompare(id)>0){
+  // The lower-ID peer owns negotiation, avoiding offer glare.
+  send({type:'signal',to:id,data:{type:'restart'}});return;
+ }
+ if(!p){try{await makePeer(id,true);}catch(e){console.warn('重建音訊連線失敗',id,e);}return;}
+ if(p.pc.signalingState!=='stable'||p.pc.connectionState==='closed')return;
+ if(radioNegotiating.has(id))return;
+ radioNegotiating.add(id);
+ try{
+  p.pc.restartIce();
+  const offer=await p.pc.createOffer({iceRestart:true});
+  await p.pc.setLocalDescription(offer);
+  send({type:'signal',to:id,data:{type:'offer',sdp:p.pc.localDescription}});
+ }catch(e){console.warn('ICE restart failed',reason,e);}
+ finally{radioNegotiating.delete(id);}
+}
+function startRadioMeshWatchdog(){
+ if(radioMeshWatchdog!==null)return;
+ radioMeshWatchdog=setInterval(()=>{
+  if(ws?.readyState!==1||!myId)return;
+  for(const m of roster){
+   if(m.id===myId)continue;
+   const p=peers.get(m.id);
+   if(!p){if(myId.localeCompare(m.id)<0)void requestRadioRepair(m.id,'missing');continue;}
+   if(['failed','disconnected'].includes(p.pc.iceConnectionState)||p.pc.connectionState==='failed')void requestRadioRepair(m.id,'unhealthy');
+   if(p.audio?.srcObject&&p.audio.paused)void resumeIncomingAudio();
+  }
+ },7000);
+}
+function stopRadioMeshWatchdog(){if(radioMeshWatchdog!==null){clearInterval(radioMeshWatchdog);radioMeshWatchdog=null;}radioLastRestart.clear();}
+
 let radioOutputDevice=localStorage.getItem('ntpc-v22-radio-output-device')||'';
 let radioAudioWarningShown=false;
 const radioProfiles=new Map(); // one bounded read of saved public appearance per roster account
@@ -21970,7 +22011,7 @@ async function diagnoseRadioReceive(){
  console.table(data.map(x=>({對象:x.peer,連線:x.connection,播放:x.playing,封包:x.packets,位元組:x.bytes,音軌:x.tracks.map(t=>t.state+(t.muted?'/muted':'')).join(',')})));
  const summary=data.map(x=>x.peer.slice(0,7)+'：'+x.connection+'／接收封包 '+x.packets+'／播放 '+(x.playing?'是':'否')).join('；');
  status('收音診斷：'+summary);
- if(data.every(x=>x.bytes===0))notify('音訊接收封包為 0：可能是雙端 WebRTC 連線或遠端傳送問題，請讓對方持續按住發話再檢查。');
+ if(data.every(x=>x.bytes===0))notify('音訊接收封包為 0：請讓對方持續按住發話，同時檢查 WebRTC 連線是否已建立；系統會自動重試。');
  else if(data.some(x=>x.bytes>0&&(!x.playing||x.muted||x.volume===0)))notify('已有收到音訊封包，但播放端被暫停或靜音；請點擊「測試接收音效」並檢查輸出裝置。');
  else notify('已收到遠端音訊資料；若還是沒有聲音，請切換「音訊輸出裝置」或檢查 Windows 音量混音器。');
 }
@@ -22026,7 +22067,7 @@ async function mic(){
  for(const track of stream.getAudioTracks())track.enabled=false;
  return stream;
 }
-function closePeers(){for(const peer of peers.values()){try{peer.pc.close()}catch{}try{peer.audio.pause();peer.audio.srcObject=null;peer.audio.remove()}catch{}}peers.clear();radioPendingIce.clear();radioNegotiating.clear();}
+function closePeers(){stopRadioMeshWatchdog();for(const peer of peers.values()){try{peer.pc.close()}catch{}try{peer.audio.pause();peer.audio.srcObject=null;peer.audio.remove()}catch{}}peers.clear();radioPendingIce.clear();radioNegotiating.clear();}
 function updateTracks(){for(const t of stream?.getAudioTracks()||[])t.enabled=!!(speaker&&speaker.id===myId);}
 function disconnect(clear=false){
  if(ws){const old=ws;ws=null;old.onclose=null;try{old.close(1000,'Leaving channel')}catch{}}
@@ -22068,7 +22109,7 @@ async function makePeer(id,offerer){
  if(peers.has(id))return peers.get(id);
  const pc=new RTCPeerConnection({iceServers:radioIceServers,iceCandidatePoolSize:2});
  const a=document.createElement('audio');a.autoplay=true;a.playsInline=true;a.setAttribute('playsinline','');a.preload='auto';a.muted=false;a.volume=volume/100;a.hidden=true;document.body.appendChild(a);void applyRadioOutput(a);
- const p={pc,audio:a};peers.set(id,p);
+ const p={pc,audio:a,offerer};peers.set(id,p);
  for(const t of stream?.getAudioTracks()||[])pc.addTrack(t,stream);
  pc.ontrack=e=>{
   if(e.track.kind!=='audio')return;
@@ -22079,18 +22120,29 @@ async function makePeer(id,offerer){
  };
  pc.onicecandidate=e=>{if(e.candidate)send({type:'signal',to:id,data:{type:'candidate',candidate:e.candidate.toJSON?e.candidate.toJSON():e.candidate}});};
  pc.onconnectionstatechange=()=>{
+  if(peers.get(id)!==p)return;
   if(pc.connectionState==='connected'){radioPeerFailureCount=0;void resumeIncomingAudio();}
   if(pc.connectionState==='failed'){
-   radioPeerFailureCount++;status('音訊連線失敗：目前網路可能需要 TURN 中繼，請檢查 Worker 的 RADIO_ICE_SERVERS_JSON 設定');
-   if(peers.get(id)===p){dropPeer(id);if(myId&&myId.localeCompare(id)<0&&roster.some(x=>x.id===id))setTimeout(()=>{if(ws?.readyState===1&&!peers.has(id))void makePeer(id,true).catch(console.warn)},Math.min(15000,3000*radioPeerFailureCount));}
+   radioPeerFailureCount++;
+   status('與部分成員的語音連線中斷，正在嘗試重新連線；如多次失敗可能需要 TURN 中繼');
+   void requestRadioRepair(id,'connection-failed');
   }
+ };
+ pc.oniceconnectionstatechange=()=>{
+  if(peers.get(id)!==p)return;
+  if(pc.iceConnectionState==='failed')void requestRadioRepair(id,'ice-failed');
  };
  if(offerer){const offer=await pc.createOffer();await pc.setLocalDescription(offer);send({type:'signal',to:id,data:{type:'offer',sdp:pc.localDescription}});}
  return p;
 }
 function dropPeer(id){const p=peers.get(id);if(!p)return;try{p.pc.close()}catch{}try{p.audio.pause();p.audio.srcObject=null;p.audio.remove()}catch{}peers.delete(id);radioNegotiating.delete(id);}
 async function signal(from,data){
- if(!data||!['offer','answer','candidate'].includes(data.type))return;
+ if(!data||!['offer','answer','candidate','restart'].includes(data.type))return;
+ if(!roster.some(m=>m.id===from))return; // same-channel participants only
+ if(data.type==='restart'){
+  if(myId&&myId.localeCompare(from)<0)void requestRadioRepair(from,'remote-request');
+  return;
+ }
  if(data.type==='candidate'){
   if(!data.candidate)return;
   const p=peers.get(from);
@@ -22244,7 +22296,7 @@ function join(ch){
  ws.onclose=e=>{connecting=false;stopTransmitting();update();status('連線已中斷（'+(e?.code||'未知')+'），請按重新連線');};
  ws.onmessage=async event=>{
   let m;try{m=JSON.parse(event.data)}catch{return;}
-  if(m.type==='welcome'){myId=m.id;admin=!!m.admin;update();}
+  if(m.type==='welcome'){myId=m.id;admin=!!m.admin;startRadioMeshWatchdog();update();}
   else if(m.type==='state'){
    soundsFromState(m.speaker,m.emergency);roster=m.roster||[];speaker=m.speaker||null;emergency=m.emergency||null;serverTime=m.now||Date.now();clientTime=Date.now();
    if((hold||miniHold)&&speaker&&speaker.id!==myId){hold=false;miniHold=false;}
