@@ -1,4 +1,5 @@
-<!-- V2.2 圖示更新｜網站標籤、分享封面、主畫面圖示統一使用 GitHub icon-512.png；保留既有頭像及資料。
+<!-- V2.2｜無線電 SSO 連線修正：改走 Cloudflare Pages 同源 /api/radio-session 轉送，排除瀏覽器跨來源預檢限制；其餘功能保留。
+ V2.2 圖示更新｜網站標籤、分享封面、主畫面圖示統一使用 GitHub icon-512.png；保留既有頭像及資料。
  V2.2｜本次修正：無線電管理員盾牌換成內嵌 SVG；成員頭像與實際選用的動態框同步、只在發話時播放框動畫；優化手機背景收聽及回前景音訊恢復。其他功能與歷史更新紀錄保持不變。 -->
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
@@ -21944,9 +21945,14 @@ async function credential(){
 }
 async function authenticate(){
  const cred=await credential();
- const rsp=await fetch(API+'/api/site-session',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(cred),cache:'no-store'});
- let result;try{result=await rsp.json()}catch{throw Error('無線電伺服器未回傳登入驗證資料');}
- if(!rsp.ok||!result?.token)throw Error(result?.error||`登入驗證失敗 (HTTP ${rsp.status})`);
+ // Use the same-origin Pages Function to avoid browser-to-Worker CORS preflight failures.
+ // The original Cloudflare Radio Worker still validates the one-time site proof.
+ let rsp;
+ try{
+  rsp=await fetch('/api/radio-session',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(cred),cache:'no-store'});
+ }catch(error){throw Error('無法連線至本站無線電登入 API，請確認網路與 Cloudflare Pages Functions 是否正常');}
+ let result;try{result=await rsp.json()}catch{throw Error('本站無線電登入 API 未回傳 JSON；請確認 functions/api/radio-session.js 和 _routes.json 均已部署');}
+ if(!rsp.ok||!result?.token)throw Error(result?.error||`無線電登入驗證失敗 (HTTP ${rsp.status})`);
  access=result.token;myName=result.name;admin=result.admin;return result;
 }
 async function mic(){
@@ -22164,7 +22170,7 @@ async function activate(){
  connecting=true;closedByUser=false;status('正在驗證勤務網站登入狀態…');
  try{
   await authenticate();status('正在啟用麥克風…');await mic();status('正在加入無線電頻道…');join(channel);
- }catch(e){connecting=false;status('無線電自動登入失敗：'+e.message+'。請檢查 Worker 的 SSO 金鑰設定。');}
+ }catch(e){connecting=false;status('無線電自動登入失敗：'+e.message+'。');}
 }
 function leave(){closedByUser=true;connecting=false;stopTransmitting();disconnect(true);if(miniWindow&&!miniWindow.closed)miniWindow.close();miniWindow=null;status('已手動離開無線電，不影響勤務網站登入。');}
 async function changeChannel(n){if(!Number.isInteger(n)||n<1||n>5||!access)return;
