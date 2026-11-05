@@ -1,13 +1,11 @@
-<!-- V2.2 無線電整合測試：新增警務無線電分頁；Cloudflare Worker 另行部署，不修改原有 V2.1 功能 -->
-<!-- V2.1｜本次修正：獎懲發布名單按需讀取公開警務名冊、手動指定與最高管理員舊帳號名冊補建；獎懲編號採單欄文件 ID 游標及交易，無需複合索引。原有功能與歷史版本保留。 -->
-<!-- V2.1 本次：統一首頁版本徽章、首頁介紹、最新更新標題及統整紀錄顯示為 V2.1；保留既有歷史版本紀錄與所有功能。 -->
+<!-- V2.2｜本次修正：無線電 Worker 的 wss:// WebSocket 納入 CSP connect-src；移除無效的 meta frame-ancestors（如需禁止嵌入，請透過 Cloudflare Pages HTTP 回應標頭設定）。保留原有功能與歷史更新紀錄。 -->
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; media-src 'self' https://raw.githubusercontent.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.workers.dev https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.workers.dev https://*.pages.dev https://*.firebaseapp.com https://www.youtube-nocookie.com https://www.youtube.com; upgrade-insecure-requests">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; media-src 'self' https://raw.githubusercontent.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.workers.dev wss://ntpc-rp-v22-radio-test.gken99903.workers.dev https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com wss://*.firebaseio.com; frame-src 'self' https://*.workers.dev https://*.pages.dev https://*.firebaseapp.com https://www.youtube-nocookie.com https://www.youtube.com; upgrade-insecure-requests">
     <title>新北市 RP 3.0 公職服務系統 V2.2｜ER:LC 智慧派遣</title>
     <!-- 網站圖標與連結分享資訊 -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/CAF55276-EF43-4723-AF8F-40EA60BB1A50.png">
