@@ -1,4 +1,4 @@
-<!-- V2.2｜本次修正：修復多人加入時的 WebRTC 訊號先於名單抵達、未完成協商的卡死連線、自動重新建立及雙向音訊診斷。原有網站功能保留。 -->
+<!-- V2.2｜本次修正：可靠多人入頻協商、訊號按成員排序排隊、協商超時自動重建、避免過時連線破壞新連線。保留原網站與權限。 -->
 <!-- V2.2｜本次修正：警員無線電登入錯誤提示、WebRTC ICE 候選排序及音訊協商、可選 TURN 設定；保留歷史更新紀錄。 -->
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
@@ -21882,79 +21882,76 @@ const radioPendingIce=new Map();
 const radioNegotiating=new Set();
 let radioPeerFailureCount=0;
 let radioMicRecovery=null;
-// Early signal messages must survive roster/welcome ordering races.
+// A separate, deterministic negotiation for each participant. No department-based audio filtering.
 const radioEarlySignals=new Map();
 const radioSignalQueues=new Map();
+const radioRepairAt=new Map();
+const radioBuilds=new Map();
 let radioEpoch=0;
+let radioMeshWatchdog=null;
 function queueRadioSignal(from,data){
  const list=radioEarlySignals.get(from)||[];
- if(list.length>=96)list.shift();
- list.push({data,at:Date.now()});
+ if(list.length>=100)list.shift();
+ list.push({data,at:Date.now(),epoch:radioEpoch});
  radioEarlySignals.set(from,list);
 }
 function serialRadioSignal(from,data){
- const prior=radioSignalQueues.get(from)||Promise.resolve();
- const work=prior.catch(()=>{}).then(()=>signal(from,data));
- radioSignalQueues.set(from,work);
- work.catch(e=>{console.warn('WebRTC signaling failed',from,e);status('音訊協商失敗：'+(e?.message||e));}).finally(()=>{if(radioSignalQueues.get(from)===work)radioSignalQueues.delete(from);});
+ const epoch=radioEpoch;
+ const previous=radioSignalQueues.get(from)||Promise.resolve();
+ const task=previous.catch(()=>{}).then(()=>{if(epoch===radioEpoch)return signal(from,data);});
+ radioSignalQueues.set(from,task);
+ task.catch(e=>console.warn('音訊協商失敗',from,e)).finally(()=>{if(radioSignalQueues.get(from)===task)radioSignalQueues.delete(from);});
 }
 function flushEarlyRadioSignals(){
  for(const [id,list] of radioEarlySignals){
   if(!roster.some(m=>m.id===id))continue;
   radioEarlySignals.delete(id);
-  for(const x of list)if(Date.now()-x.at<25000)serialRadioSignal(id,x.data);
+  for(const item of list)if(item.epoch===radioEpoch&&Date.now()-item.at<30000)serialRadioSignal(id,item.data);
  }
 }
-
-// All authenticated users in the same channel share one bidirectional WebRTC connection per peer.
-// Department is not consulted when making, receiving, or repairing an audio connection.
-let radioMeshWatchdog=null;
-const radioLastRestart=new Map();
-async function requestRadioRepair(id, reason=''){
+function radioInitiator(id){return !!myId&&myId.localeCompare(id)<0;}
+async function requestRadioRepair(id,reason='watchdog'){
  if(!id||!myId||ws?.readyState!==1||!roster.some(m=>m.id===id))return;
- const now=Date.now();
- if(now-(radioLastRestart.get(id)||0)<11000)return;
- radioLastRestart.set(id,now);
- const p=peers.get(id);
- // The lower ID consistently initiates offer / replacement to avoid glare.
- if(myId.localeCompare(id)>0){send({type:'signal',to:id,data:{type:'restart'}});return;}
- if(!p){try{await makePeer(id,true);}catch(e){console.warn('建立音訊連線失敗',id,e);}return;}
- if(p.pc.connectionState==='connected')return;
- const age=now-(p.createdAt||now);
- const negotiating=p.pc.signalingState!=='stable';
- // An unanswered offer cannot be fixed with restartIce: it must be replaced.
- if((negotiating&&age>13000)||p.pc.connectionState==='closed'||(age>35000&&p.repairCount>=2)){
-  dropPeer(id);
-  try{await makePeer(id,true);}catch(e){console.warn('重建失效 WebRTC 連線失敗',id,e);}
+ const now=Date.now(),last=radioRepairAt.get(id)||0;
+ if(now-last<8000)return;
+ radioRepairAt.set(id,now);
+ if(!radioInitiator(id)){
+  // Non-initiators never create an offer: request a fresh, deterministic handshake.
+  send({type:'signal',to:id,data:{type:'restart'}});
   return;
  }
- if(negotiating||radioNegotiating.has(id))return;
- radioNegotiating.add(id);
- try{
-  p.repairCount=(p.repairCount||0)+1;
-  p.pc.restartIce();
-  const offer=await p.pc.createOffer({iceRestart:true});
-  await p.pc.setLocalDescription(offer);
-  send({type:'signal',to:id,data:{type:'offer',sdp:p.pc.localDescription}});
- }catch(e){console.warn('ICE restart failed',reason,e);}
- finally{radioNegotiating.delete(id);}
+ const peer=peers.get(id);
+ if(peer?.pc.connectionState==='connected'&&peer.pc.signalingState==='stable')return;
+ const age=now-(peer?.createdAt||now);
+ if(peer && peer.pc.signalingState==='stable' && age<22000 && peer.pc.connectionState!=='failed'){
+  // Keep the initial ICE gathering alive, instead of tearing it down too early.
+  return;
+ }
+ dropPeer(id);
+ radioPendingIce.delete(id);
+ try{await makePeer(id,true);}catch(e){console.warn('重建音訊連線失敗',id,reason,e);}
 }
 function startRadioMeshWatchdog(){
  if(radioMeshWatchdog!==null)return;
  radioMeshWatchdog=setInterval(()=>{
   if(ws?.readyState!==1||!myId)return;
-  for(const m of roster){
-   if(m.id===myId)continue;
-   const p=peers.get(m.id);
-   if(!p){void requestRadioRepair(m.id,'missing');continue;}
-   const age=Date.now()-(p.createdAt||Date.now());
-   if(p.pc.connectionState!=='connected'&&age>13000)void requestRadioRepair(m.id,'connection-timeout');
-   else if(['failed','disconnected'].includes(p.pc.iceConnectionState)||p.pc.connectionState==='failed')void requestRadioRepair(m.id,'unhealthy');
-   if(p.audio?.srcObject&&p.audio.paused)void resumeIncomingAudio();
+  const now=Date.now();
+  for(const member of roster){
+   const id=member.id;if(id===myId)continue;
+   const peer=peers.get(id);
+   if(!peer){void requestRadioRepair(id,'missing-peer');continue;}
+   const age=now-peer.createdAt;
+   if(peer.pc.connectionState!=='connected' && age>20000)void requestRadioRepair(id,'connect-timeout');
+   if(peer.pc.connectionState==='failed'||(peer.pc.iceConnectionState==='disconnected'&&age>20000))void requestRadioRepair(id,'ice-failed');
+   if(peer.audio?.srcObject&&peer.audio.paused)void resumeIncomingAudio();
   }
- },7000);
+  for(const [id,items] of radioEarlySignals){
+   const recent=items.filter(item=>now-item.at<30000&&item.epoch===radioEpoch);
+   if(recent.length)radioEarlySignals.set(id,recent);else radioEarlySignals.delete(id);
+  }
+ },5000);
 }
-function stopRadioMeshWatchdog(){if(radioMeshWatchdog!==null){clearInterval(radioMeshWatchdog);radioMeshWatchdog=null;}radioLastRestart.clear();}
+function stopRadioMeshWatchdog(){if(radioMeshWatchdog!==null)clearInterval(radioMeshWatchdog);radioMeshWatchdog=null;radioRepairAt.clear();}
 
 let radioOutputDevice=localStorage.getItem('ntpc-v22-radio-output-device')||'';
 let radioAudioWarningShown=false;
@@ -22132,7 +22129,7 @@ async function ensureRadioMicReady(){
  })().finally(()=>{radioMicRecovery=null;});
  return radioMicRecovery;
 }
-function closePeers(){stopRadioMeshWatchdog();radioEpoch++;radioEarlySignals.clear();radioSignalQueues.clear();for(const peer of peers.values()){try{peer.pc.close()}catch{}try{peer.audio.pause();peer.audio.srcObject=null;peer.audio.remove()}catch{}}peers.clear();radioPendingIce.clear();radioNegotiating.clear();}
+function closePeers(){stopRadioMeshWatchdog();radioEpoch++;radioEarlySignals.clear();radioSignalQueues.clear();radioBuilds.clear();radioRepairAt.clear();for(const peer of peers.values()){try{peer.pc.close()}catch{}try{peer.audio.pause();peer.audio.srcObject=null;peer.audio.remove()}catch{}}peers.clear();radioPendingIce.clear();radioNegotiating.clear();}
 function updateTracks(){for(const t of stream?.getAudioTracks()||[])t.enabled=!!(speaker&&speaker.id===myId);}
 function disconnect(clear=false){
  if(ws){const old=ws;ws=null;old.onclose=null;try{old.close(1000,'Leaving channel')}catch{}}
@@ -22176,60 +22173,97 @@ async function flushIce(id,p){
  for(const candidate of waiting){try{await p.pc.addIceCandidate(candidate)}catch(e){console.warn('Radio ICE candidate rejected',e);}}
 }
 async function makePeer(id,offerer){
+ if(!id||!myId||id===myId||ws?.readyState!==1)return null;
  if(peers.has(id))return peers.get(id);
- const pc=new RTCPeerConnection({iceServers:radioIceServers,iceCandidatePoolSize:2});
- const a=document.createElement('audio');a.autoplay=true;a.playsInline=true;a.setAttribute('playsinline','');a.preload='auto';a.muted=false;a.volume=volume/100;a.hidden=true;document.body.appendChild(a);void applyRadioOutput(a);
- const p={pc,audio:a,offerer,createdAt:Date.now(),repairCount:0};peers.set(id,p);
- for(const t of stream?.getAudioTracks()||[])pc.addTrack(t,stream);
- pc.ontrack=e=>{
-  if(e.track.kind!=='audio')return;
-  a.srcObject=e.streams[0]||new MediaStream([e.track]);a.muted=false;
-  const restore=()=>{if(peers.get(id)===p)void resumeIncomingAudio();};
-  e.track.addEventListener('unmute',restore);e.track.addEventListener('ended',()=>status('對方音軌已中斷，請按重新連線'));
-  configureReceivingSession();void resumeIncomingAudio();
- };
- pc.onicecandidate=e=>{if(e.candidate)send({type:'signal',to:id,data:{type:'candidate',candidate:e.candidate.toJSON?e.candidate.toJSON():e.candidate}});};
- pc.onconnectionstatechange=()=>{
-  if(peers.get(id)!==p)return;
-  if(pc.connectionState==='connected'){radioPeerFailureCount=0;p.repairCount=0;void resumeIncomingAudio();}
-  if(pc.connectionState==='failed'){
-   radioPeerFailureCount++;
-   status('與部分成員的語音連線中斷，正在嘗試重新連線；如多次失敗可能需要 TURN 中繼');
-   void requestRadioRepair(id,'connection-failed');
+ if(radioBuilds.has(id))return radioBuilds.get(id);
+ const epoch=radioEpoch,socket=ws;
+ const build=(async()=>{
+  if(!stream)return null;
+  const pc=new RTCPeerConnection({iceServers:radioIceServers,iceCandidatePoolSize:2});
+  const a=document.createElement('audio');a.autoplay=true;a.playsInline=true;a.setAttribute('playsinline','');a.preload='auto';a.muted=false;a.volume=volume/100;a.hidden=true;document.body.appendChild(a);void applyRadioOutput(a);
+  const peer={pc,audio:a,offerer,createdAt:Date.now(),epoch,remoteReady:false};
+  // Set the peer entry BEFORE async offer creation, but never accept old sessions.
+  if(epoch!==radioEpoch||socket!==ws){pc.close();a.remove();return null;}
+  peers.set(id,peer);
+  for(const t of stream.getAudioTracks())pc.addTrack(t,stream);
+  pc.ontrack=e=>{
+   if(peers.get(id)!==peer||e.track.kind!=='audio')return;
+   a.srcObject=e.streams[0]||new MediaStream([e.track]);a.muted=false;
+   e.track.addEventListener('unmute',()=>{if(peers.get(id)===peer)void resumeIncomingAudio();});
+   void resumeIncomingAudio();
+  };
+  pc.onicecandidate=e=>{
+   if(e.candidate&&peers.get(id)===peer&&epoch===radioEpoch)
+    send({type:'signal',to:id,data:{type:'candidate',candidate:e.candidate.toJSON()}});
+  };
+  pc.onconnectionstatechange=()=>{
+   if(peers.get(id)!==peer)return;
+   if(pc.connectionState==='connected')void resumeIncomingAudio();
+   else if(pc.connectionState==='failed')void requestRadioRepair(id,'connection-failed');
+  };
+  pc.oniceconnectionstatechange=()=>{
+   if(peers.get(id)===peer&&pc.iceConnectionState==='failed')void requestRadioRepair(id,'ice-failed');
+  };
+  if(offerer){
+   const offer=await pc.createOffer();
+   if(peers.get(id)!==peer||epoch!==radioEpoch||socket!==ws)return peer;
+   await pc.setLocalDescription(offer);
+   if(peers.get(id)!==peer||epoch!==radioEpoch||socket!==ws)return peer;
+   send({type:'signal',to:id,data:{type:'offer',sdp:pc.localDescription}});
   }
- };
- pc.oniceconnectionstatechange=()=>{
-  if(peers.get(id)!==p)return;
-  if(pc.iceConnectionState==='failed')void requestRadioRepair(id,'ice-failed');
- };
- if(offerer){const offer=await pc.createOffer();await pc.setLocalDescription(offer);send({type:'signal',to:id,data:{type:'offer',sdp:pc.localDescription}});}
- return p;
+  return peer;
+ })();
+ radioBuilds.set(id,build);
+ try{return await build;}catch(e){dropPeer(id);throw e;}
+ finally{if(radioBuilds.get(id)===build)radioBuilds.delete(id);}
 }
-function dropPeer(id){const p=peers.get(id);if(!p)return;try{p.pc.close()}catch{}try{p.audio.pause();p.audio.srcObject=null;p.audio.remove()}catch{}peers.delete(id);radioNegotiating.delete(id);}
+function dropPeer(id){
+ const peer=peers.get(id);if(!peer)return;
+ try{peer.pc.close()}catch{}
+ try{peer.audio.pause();peer.audio.srcObject=null;peer.audio.remove()}catch{}
+ peers.delete(id);radioBuilds.delete(id);radioNegotiating.delete(id);
+}
 async function signal(from,data){
  if(!data||!['offer','answer','candidate','restart'].includes(data.type))return;
- if(!roster.some(m=>m.id===from)){queueRadioSignal(from,data);return;} // Wait for authoritative roster before handling same-channel signals
+ if(!myId||!roster.some(m=>m.id===from)){queueRadioSignal(from,data);return;}
  if(data.type==='restart'){
-  if(myId&&myId.localeCompare(from)<0)void requestRadioRepair(from,'remote-request');
+  if(radioInitiator(from)){
+   // Ignore requests while healthy; reset stalled offers on the next repair check.
+   const p=peers.get(from);
+   if(!p||p.pc.connectionState!=='connected'){
+    radioRepairAt.delete(from);
+    await requestRadioRepair(from,'remote-request');
+   }
+  }
   return;
  }
  if(data.type==='candidate'){
   if(!data.candidate)return;
   const p=peers.get(from);
-  if(p?.pc.remoteDescription){try{await p.pc.addIceCandidate(data.candidate)}catch(e){console.warn('Radio ICE',e)}}
-  else{const list=radioPendingIce.get(from)||[];if(list.length<64)list.push(data.candidate);radioPendingIce.set(from,list);}
+  if(p?.pc.remoteDescription){try{await p.pc.addIceCandidate(data.candidate)}catch(e){console.debug('ICE candidate skipped',e);}}
+  else{const list=radioPendingIce.get(from)||[];if(list.length<100)list.push(data.candidate);radioPendingIce.set(from,list);}
   return;
  }
- let p=peers.get(from);
  if(data.type==='offer'){
-  // Never allow both endpoints to start a competing offer.
-  if(p&&p.pc.signalingState==='have-local-offer'){dropPeer(from);p=null;}
+  // An offer is authoritative only from the deterministic initiator.
+  if(radioInitiator(from))return;
+  let p=peers.get(from);
+  if(p?.pc.signalingState==='have-local-offer'||p?.pc.signalingState==='closed'){
+   dropPeer(from);p=null;
+  }
   if(!p)p=await makePeer(from,false);
-  await p.pc.setRemoteDescription(data.sdp);await flushIce(from,p);
+  if(!p||p.epoch!==radioEpoch||peers.get(from)!==p)return;
+  await p.pc.setRemoteDescription(data.sdp);
+  p.remoteReady=true;
+  await flushIce(from,p);
   const answer=await p.pc.createAnswer();await p.pc.setLocalDescription(answer);
-  send({type:'signal',to:from,data:{type:'answer',sdp:p.pc.localDescription}});
- }else if(data.type==='answer'&&p?.pc.signalingState==='have-local-offer'){
-  await p.pc.setRemoteDescription(data.sdp);await flushIce(from,p);
+  if(peers.get(from)===p)send({type:'signal',to:from,data:{type:'answer',sdp:p.pc.localDescription}});
+ }else if(data.type==='answer'){
+  // Late answers from a previous offer must not corrupt a newer connection.
+  const p=peers.get(from);
+  if(!p||p.pc.signalingState!=='have-local-offer')return;
+  await p.pc.setRemoteDescription(data.sdp);p.remoteReady=true;
+  await flushIce(from,p);
  }
 }
 function maybeLoadRadioProfile(m){
@@ -22370,8 +22404,8 @@ function join(ch){
   else if(m.type==='state'){
    soundsFromState(m.speaker,m.emergency);roster=m.roster||[];speaker=m.speaker||null;emergency=m.emergency||null;serverTime=m.now||Date.now();clientTime=Date.now();
    if((hold||miniHold)&&speaker&&speaker.id!==myId){hold=false;miniHold=false;}
-   for(const id of [...peers.keys()])if(!roster.some(u=>u.id===id))dropPeer(id);
-   for(const u of roster)if(u.id!==myId&&!peers.has(u.id)&&myId&&myId.localeCompare(u.id)<0)makePeer(u.id,true).catch(console.warn);
+   for(const id of [...peers.keys()])if(!roster.some(u=>u.id===id)){dropPeer(id);radioPendingIce.delete(id);radioEarlySignals.delete(id);}
+   for(const u of roster)if(u.id!==myId&&!peers.has(u.id)&&radioInitiator(u.id))void makePeer(u.id,true).catch(console.warn);
    flushEarlyRadioSignals();
    update();
   }
