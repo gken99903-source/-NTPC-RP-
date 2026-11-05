@@ -21947,8 +21947,14 @@ async function credential(){
 }
 async function authenticate(){
  const cred=await credential();
- const rsp=await fetch(API+'/api/site-session',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(cred),cache:'no-store'});
- let result;try{result=await rsp.json()}catch{throw Error('無線電伺服器未回傳登入驗證資料');}
+ let rsp;
+ try{
+  rsp=await fetch(API+'/api/site-session',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(cred),cache:'no-store',credentials:'omit'});
+ }catch(error){
+  // A rejected preflight cannot be read by fetch(); present the origin and concrete steps.
+  throw Error('無法連接登入驗證 API（網路或跨網域限制）。目前網站：'+location.origin+'。請先確認 Worker 已部署，並在 Worker 的 RADIO_ALLOWED_ORIGINS 加入目前 HTTPS 網址（若非 ntpc-rp.pages.dev）。原始錯誤：'+(error?.message||'network error'));
+ }
+ let result;try{result=await rsp.json()}catch{throw Error('無線電伺服器未回傳 JSON（HTTP '+rsp.status+'），請檢查 Worker 設定');}
  if(!rsp.ok||!result?.token)throw Error((result?.error||'登入驗證失敗')+` (HTTP ${rsp.status})`);
  access=result.token;myName=result.name;admin=result.admin;return result;
 }
