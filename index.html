@@ -1,3 +1,4 @@
+<!-- V2.2｜本次修正：無線電接收端播放復原、音訊輸出裝置選擇、接收封包診斷及測試音；Worker、發話權限與舊功能不更動。 -->
 <!-- V2.2｜本次修正：警員無線電登入錯誤提示、WebRTC ICE 候選排序及音訊協商、可選 TURN 設定；保留歷史更新紀錄。 -->
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
@@ -3407,7 +3408,7 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
                       <section class="ntpc-v22-r-box"><h4>當前發話</h4><div id="ntpc-v22-r-speaker" class="ntpc-v22-r-speaker">目前無人發話</div>
                       <button id="ntpc-v22-r-ptt" class="ntpc-v22-r-ptt" type="button" disabled>🎙 按住發話</button>
                       <div class="ntpc-v22-r-actions"><button id="ntpc-v22-r-panic" class="ntpc-v22-r-panic" type="button">🚨 10-99（20 秒）</button><button id="ntpc-v22-r-stop-emergency" type="button" hidden>提前結束 10-99</button><button id="ntpc-v22-r-force" type="button" hidden>強制結束一般發話</button></div>
-                      <div class="ntpc-v22-r-audio"><button id="ntpc-v22-r-volminus" type="button" aria-label="音量減少">－</button><span id="ntpc-v22-r-volume-text">80%</span><button id="ntpc-v22-r-volplus" type="button" aria-label="音量增加">＋</button><button id="ntpc-v22-r-sound" type="button">🔊 音效開啟</button><button id="ntpc-v22-r-background" type="button" title="嘗試啟用瀏覽器允許的背景收聽音訊工作階段">啟用背景收聽</button><span class="ntpc-v22-r-mobile-hint" id="ntpc-v22-r-background-hint">手機背景收聽視瀏覽器及系統限制而定。iPhone 建議使用 Safari；鎖屏或切換 App 仍可能中斷。</span></div>
+                      <div class="ntpc-v22-r-audio"><button id="ntpc-v22-r-volminus" type="button" aria-label="音量減少">－</button><span id="ntpc-v22-r-volume-text">80%</span><button id="ntpc-v22-r-volplus" type="button" aria-label="音量增加">＋</button><button id="ntpc-v22-r-sound" type="button">🔊 音效開啟</button><button id="ntpc-v22-r-test-audio" type="button" title="播放本機測試音，確認揚聲器是否正常">🔈 測試接收音效</button><button id="ntpc-v22-r-diagnose" type="button" title="檢查遠端音軌與接收封包">檢查收音狀態</button><select id="ntpc-v22-r-output" aria-label="音訊輸出裝置" title="選擇聲音播放裝置" style="max-width:230px;background:#08213c;color:#d9f5ff;border:1px solid #3275a1;border-radius:9px;padding:8px;min-height:40px"><option value="">系統預設輸出裝置</option></select><button id="ntpc-v22-r-background" type="button" title="嘗試啟用瀏覽器允許的背景收聽音訊工作階段">啟用背景收聽</button><span class="ntpc-v22-r-mobile-hint" id="ntpc-v22-r-background-hint">手機背景收聽視瀏覽器及系統限制而定。iPhone 建議使用 Safari；鎖屏或切換 App 仍可能中斷。</span></div>
                       </section>
                     </div>
                     <div class="ntpc-v22-r-footer"><button id="ntpc-v22-r-rejoin" type="button">重新連線</button><button id="ntpc-v22-r-leave" type="button">手動離開無線電</button><p>僅在進入無線電分頁時建立工作階段；個人通知與案件審核仍使用原本的即時功能。首次啟用麥克風時瀏覽器會詢問權限。</p></div>
@@ -21880,6 +21881,8 @@ let radioIceServers=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.g
 const radioPendingIce=new Map();
 const radioNegotiating=new Set();
 let radioPeerFailureCount=0;
+let radioOutputDevice=localStorage.getItem('ntpc-v22-radio-output-device')||'';
+let radioAudioWarningShown=false;
 const radioProfiles=new Map(); // one bounded read of saved public appearance per roster account
 const radioMemberNodes=new Map(); // stable nodes keep CSS frame animation running while a member speaks
 const playURL={start:'https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/Video%20Project%201.m4a',end:'https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/ScreenRecording_11-05-2026%2002-20-28_1.mov',emergency:'https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/main/10-99.mp3'};
@@ -21903,17 +21906,75 @@ function pushProfile(){
 }
 function configureReceivingSession(){
  // Safari supports the experimental AudioSession type. Other browsers ignore it safely.
- try{if(navigator.audioSession)navigator.audioSession.type='play-and-record';}catch(e){console.debug('AudioSession unavailable',e);}
+ try{if(navigator.audioSession && /iPhone|iPad|iPod/i.test(navigator.userAgent))navigator.audioSession.type='play-and-record';}catch(e){console.debug('AudioSession unavailable',e);}
+}
+async function applyRadioOutput(element){
+ if(!element || typeof element.setSinkId!=='function')return;
+ try{await element.setSinkId(radioOutputDevice||'default');}
+ catch(err){console.warn('音訊輸出裝置不可使用，改用系統預設',err);if(radioOutputDevice){radioOutputDevice='';localStorage.removeItem('ntpc-v22-radio-output-device');const sel=el('ntpc-v22-r-output');if(sel)sel.value='';try{await element.setSinkId('default')}catch{}}}
 }
 async function resumeIncomingAudio(){
  configureReceivingSession();
  let failed=false;
  for(const p of peers.values()){
-  if(!p.audio.srcObject)continue;
-  try{await p.audio.play();}catch(e){failed=true;console.debug('Incoming radio playback requires activation',e);}
+  const a=p.audio;if(!a.srcObject)continue;
+  a.muted=false;a.volume=volume/100;
+  await applyRadioOutput(a);
+  try{await a.play();}catch(e){failed=true;console.warn('無線電接收播放失敗',e);}
  }
+ if(failed&&!radioAudioWarningShown){radioAudioWarningShown=true;notify('瀏覽器阻擋接收音訊，請點擊「測試接收音效」解除音訊播放限制');}
+ if(!failed)radioAudioWarningShown=false;
  return !failed;
 }
+async function refreshRadioOutputDevices(){
+ const sel=el('ntpc-v22-r-output');if(!sel||!navigator.mediaDevices?.enumerateDevices)return;
+ try{
+  const devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='audiooutput');
+  sel.replaceChildren(new Option('系統預設輸出裝置',''));
+  let i=0;for(const d of devices){if(!d.deviceId || d.deviceId==='default')continue;sel.add(new Option(d.label||'揚聲器 '+(++i),d.deviceId));}
+  if([...sel.options].some(o=>o.value===radioOutputDevice))sel.value=radioOutputDevice;
+  else{radioOutputDevice='';sel.value='';}
+  if(typeof HTMLMediaElement.prototype.setSinkId!=='function')sel.title='此瀏覽器不支援網站選擇音訊輸出裝置，請在 Windows 音量混音器調整';
+ }catch(err){console.warn('無法列出音訊輸出裝置',err);}
+}
+async function radioTestAudio(){
+ // Must begin under a user gesture to lift autoplay restrictions.
+ try{
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC)throw Error('此瀏覽器不支援測試音');
+  const ctx=new AC();await ctx.resume();
+  const dest=ctx.createMediaStreamDestination();
+  const osc=ctx.createOscillator(),gain=ctx.createGain();
+  osc.type='sine';osc.frequency.value=660;
+  gain.gain.setValueAtTime(.0001,ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(.20,ctx.currentTime+.03);
+  gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.45);
+  osc.connect(gain);gain.connect(dest);
+  const a=document.createElement('audio');a.autoplay=false;a.muted=false;a.volume=volume/100;a.srcObject=dest.stream;
+  await applyRadioOutput(a);
+  const task=a.play();osc.start();osc.stop(ctx.currentTime+.48);await task;
+  setTimeout(()=>{a.pause();a.srcObject=null;void ctx.close()},850);
+  const ok=await resumeIncomingAudio();
+  notify(ok?'測試音已播放：若聽不到，請選擇正確的輸出裝置或檢查 Windows 音量混音器。':'測試音已啟動，但遠端音訊被瀏覽器阻擋；請允許網站播放聲音。');
+ }catch(e){notify('播放測試音失敗：'+(e?.message||e));}
+}
+async function diagnoseRadioReceive(){
+ if(!peers.size){notify('尚未與其他成員建立音訊連線，請確認對方在線。');return;}
+ const data=[];
+ for(const [id,p] of peers){
+  const a=p.audio,tracks=a.srcObject?.getAudioTracks()||[];
+  let packets=0,bytes=0;
+  try{const stats=await p.pc.getStats();stats.forEach(r=>{if(r.type==='inbound-rtp'&&(r.kind==='audio'||r.mediaType==='audio')){packets+=r.packetsReceived||0;bytes+=r.bytesReceived||0;}});}catch(e){console.warn('音訊統計讀取失敗',e);}
+  data.push({peer:id,connection:p.pc.connectionState,ice:p.pc.iceConnectionState,playing:!a.paused,volume:a.volume,muted:a.muted,tracks:tracks.map(t=>({enabled:t.enabled,muted:t.muted,state:t.readyState})),packets,bytes});
+ }
+ console.table(data.map(x=>({對象:x.peer,連線:x.connection,播放:x.playing,封包:x.packets,位元組:x.bytes,音軌:x.tracks.map(t=>t.state+(t.muted?'/muted':'')).join(',')})));
+ const summary=data.map(x=>x.peer.slice(0,7)+'：'+x.connection+'／接收封包 '+x.packets+'／播放 '+(x.playing?'是':'否')).join('；');
+ status('收音診斷：'+summary);
+ if(data.every(x=>x.bytes===0))notify('音訊接收封包為 0：可能是雙端 WebRTC 連線或遠端傳送問題，請讓對方持續按住發話再檢查。');
+ else if(data.some(x=>x.bytes>0&&(!x.playing||x.muted||x.volume===0)))notify('已有收到音訊封包，但播放端被暫停或靜音；請點擊「測試接收音效」並檢查輸出裝置。');
+ else notify('已收到遠端音訊資料；若還是沒有聲音，請切換「音訊輸出裝置」或檢查 Windows 音量混音器。');
+}
+
 async function enableBackgroundListening(){
  configureReceivingSession();
  const ok=await resumeIncomingAudio();
@@ -22006,10 +22067,16 @@ async function flushIce(id,p){
 async function makePeer(id,offerer){
  if(peers.has(id))return peers.get(id);
  const pc=new RTCPeerConnection({iceServers:radioIceServers,iceCandidatePoolSize:2});
- const a=document.createElement('audio');a.autoplay=true;a.playsInline=true;a.setAttribute('playsinline','');a.preload='auto';a.volume=volume/100;a.hidden=true;document.body.appendChild(a);
+ const a=document.createElement('audio');a.autoplay=true;a.playsInline=true;a.setAttribute('playsinline','');a.preload='auto';a.muted=false;a.volume=volume/100;a.hidden=true;document.body.appendChild(a);void applyRadioOutput(a);
  const p={pc,audio:a};peers.set(id,p);
  for(const t of stream?.getAudioTracks()||[])pc.addTrack(t,stream);
- pc.ontrack=e=>{a.srcObject=e.streams[0]||new MediaStream([e.track]);configureReceivingSession();a.play().catch(err=>{console.warn('無線電接收音訊被瀏覽器阻擋',err);status('已收到音訊，請點擊「啟用背景收聽」允許播放');});};
+ pc.ontrack=e=>{
+  if(e.track.kind!=='audio')return;
+  a.srcObject=e.streams[0]||new MediaStream([e.track]);a.muted=false;
+  const restore=()=>{if(peers.get(id)===p)void resumeIncomingAudio();};
+  e.track.addEventListener('unmute',restore);e.track.addEventListener('ended',()=>status('對方音軌已中斷，請按重新連線'));
+  configureReceivingSession();void resumeIncomingAudio();
+ };
  pc.onicecandidate=e=>{if(e.candidate)send({type:'signal',to:id,data:{type:'candidate',candidate:e.candidate.toJSON?e.candidate.toJSON():e.candidate}});};
  pc.onconnectionstatechange=()=>{
   if(pc.connectionState==='connected'){radioPeerFailureCount=0;void resumeIncomingAudio();}
@@ -22203,7 +22270,7 @@ async function activate(){
  if(location.protocol!=='https:'){status('需要從正式 HTTPS 網站開啟才能使用無線電');return;}
  connecting=true;closedByUser=false;status('正在驗證勤務網站登入狀態…');
  try{
-  await authenticate();await loadIceConfig();status('正在啟用麥克風…');await mic();status('正在加入無線電頻道…');join(channel);
+  await authenticate();await loadIceConfig();status('正在啟用麥克風…');await mic();void refreshRadioOutputDevices();status('正在加入無線電頻道…');join(channel);
  }catch(e){connecting=false;status('無線電連線失敗：'+e.message);console.error('無線電連線失敗',e);}
 }
 function leave(){closedByUser=true;connecting=false;stopTransmitting();disconnect(true);if(miniWindow&&!miniWindow.closed)miniWindow.close();miniWindow=null;status('已手動離開無線電，不影響勤務網站登入。');}
@@ -22258,6 +22325,11 @@ function init(){
  el('ntpc-v22-r-volminus').onclick=()=>setVolume(volume-5);
  el('ntpc-v22-r-volplus').onclick=()=>setVolume(volume+5);
  el('ntpc-v22-r-sound').onclick=e=>{soundEnabled=!soundEnabled;localStorage.setItem('ntpc-v22-radio-sound',soundEnabled?'on':'off');e.currentTarget.textContent=soundEnabled?'🔊 音效開啟':'🔇 音效關閉';};
+ el('ntpc-v22-r-test-audio').onclick=()=>{void radioTestAudio();};
+ el('ntpc-v22-r-diagnose').onclick=()=>{void diagnoseRadioReceive();};
+ el('ntpc-v22-r-output').onchange=async e=>{radioOutputDevice=e.target.value;localStorage.setItem('ntpc-v22-radio-output-device',radioOutputDevice);await resumeIncomingAudio();notify('已切換音訊輸出裝置，請再次播放測試音');};
+ if(navigator.mediaDevices?.addEventListener)navigator.mediaDevices.addEventListener('devicechange',()=>{void refreshRadioOutputDevices();});
+ void refreshRadioOutputDevices();
  el('ntpc-v22-r-background').onclick=()=>{void enableBackgroundListening();};
  // User gesture also unlocks remote audio that browsers may block on join.
  ptt.addEventListener('pointerdown',()=>{void resumeIncomingAudio();});
