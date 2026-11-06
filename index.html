@@ -1,9 +1,10 @@
+<!-- V2.2.5 本次修正：手機 SFU 發送音訊引擎恢復與發送診斷，不更動通話權限或 Worker。 -->
 <!-- V2.2.4｜本次修復：SFU 發送與接收建連流程、ICE 候選長時間收集降級、連線握手確認及超時清理；不調整權限與既有業務功能。 -->
 <!-- V2.2.2｜本次修正：SFU 靜音媒體保活、逾期發布通知重建、接收端重新訂閱；保留 V2.2.1 雙音量與原有網站功能。 -->
 <!-- V2.2.1｜本次修正：語音與無線電音效音量獨立調整並保存於本機。既有 SFU 通話、其他功能及歷史紀錄維持不變。 -->
 <!-- V2.2.1｜本次修正：新增 Cloudflare Realtime SFU 音訊集中轉送（啟用需部署 Worker 並設定 App ID / App Secret），保留 P2P 備援及既有勤務、無線電、頭像與獎懲功能。 -->
 <!-- V2.2.1｜本次修正：無線電加入 Cloudflare Realtime SFU 音訊集中轉送，改為獨立上傳與接收工作階段，保留原有登入、五頻道、PTT、10-99、動態頭像框及獎懲支數統計；（舊版內容：公開個人檔案獎懲統計改按登記項目的實際支數（xN）加總，非貼文數；其餘功能與歷史版本保持不變。 -->
-<!-- V2.2｜本次修正：警員無線電登入錯誤提示、WebRTC ICE 候選排序及音訊協商、可選 TURN 設定；保留歷史更新紀錄。 -->
+<!-- V2.2.6｜SFU 收聽改逐人獨立 Session；訂閱單人失效不再拖垮整個頻道；保留既有功能。原摘要：警員無線電登入錯誤提示、WebRTC ICE 候選排序及音訊協商、可選 TURN 設定；保留歷史更新紀錄。 -->
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
 <head>
@@ -3400,7 +3401,7 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
                 <section id="police-sub-radio" class="hidden space-y-4" aria-label="警務無線電通訊">
                   <div class="ntpc-v22-r-panel">
                     <div class="ntpc-v22-r-head">
-                      <div><div class="ntpc-v22-r-eyebrow">NTPC RP RADIO · V2.2.1</div><h3><i class="fa-solid fa-tower-broadcast"></i> 警務無線電通訊</h3><p>直接使用勤務網站登入狀態。進入分頁時自動驗證連線，不需要測試通行碼。</p></div>
+                      <div><div class="ntpc-v22-r-eyebrow">NTPC RP RADIO · V2.2.6</div><h3><i class="fa-solid fa-tower-broadcast"></i> 警務無線電通訊</h3><p>直接使用勤務網站登入狀態。進入分頁時自動驗證連線，不需要測試通行碼。</p></div>
                       <div class="ntpc-v22-r-conn" id="ntpc-v22-r-status" role="status">等待進入頻道</div>
                     </div>
                     <p id="ntpc-v22-r-media-mode" role="status" style="font-size:12px;color:#9ed7f4;margin:8px 0">正在確認音訊傳輸方式…</p>
@@ -21930,7 +21931,7 @@ let radioMeshWatchdog=null;
 // REALTIME_SFU_APP_ID and REALTIME_SFU_BEARER_TOKEN are configured on the Worker.
 let radioMediaMode='mesh';
 const radioSfu={tx:null,rx:null,txId:'',rxId:'',pubReady:false,rxPlaying:new Map(),rxMidToMember:new Map(),
-  rxSignature:'',rxBusy:false,rxAgain:false,rxTimer:null,rxSince:0,txSince:0,recoveryAt:0,starting:false,run:0,watch:null, keepalive:null,receiverRetry:null,requestedRepairAt:new Map()};
+  rxSignature:'',rxBusy:false,rxAgain:false,rxTimer:null,rxSince:0,rxPeers:new Map(),rxGeneration:0,txSince:0,recoveryAt:0,starting:false,run:0,watch:null, keepalive:null,receiverRetry:null,requestedRepairAt:new Map()};
 const radioSfuName=()=>radioMediaMode==='sfu'?'Cloudflare SFU':'P2P';
 async function sfuApi(action,extra={}){
  const response=await fetch(API+'/api/sfu',{method:'POST',mode:'cors',cache:'no-store',
@@ -22017,11 +22018,26 @@ async function sfuCreateKeepalive(rawTrack){
  if(!out){oscillator.stop();await ctx.close();throw Error('無法建立 SFU 持續音軌');}
  return {ctx,destination,micSource,micGain,oscillator,track:out,rawTrack};
 }
+// On iOS the microphone mixing AudioContext can become suspended even while
+// the SFU RTCPeerConnection stays connected. Re-arm from a direct user gesture.
+function sfuResumePublishAudio(userGesture=false){
+ const k=radioSfu.keepalive;if(!k||k.ctx.state==='closed')return;
+ if(k.ctx.state==='running')return;
+ const p=k.ctx.resume();
+ if(p&&typeof p.catch==='function')void p.catch(error=>{
+  console.warn('SFU publish AudioContext resume blocked',error);
+  if(userGesture)radioMicLabel('手機阻擋音訊啟動，請再次點按發話或重新加入');
+ });
+}
 function sfuSetMicGate(on){
  const k=radioSfu.keepalive;if(!k)return;
  k.rawTrack.enabled=true;
- k.micGain.gain.setValueAtTime(on?1:0,k.ctx.currentTime);
- if(on&&k.ctx.state==='suspended')void k.ctx.resume().catch(console.warn);
+ const shouldOpen=!!on&&k.rawTrack.readyState==='live';
+ k.micGain.gain.setValueAtTime(shouldOpen?1:0,k.ctx.currentTime);
+ if(shouldOpen){
+  sfuResumePublishAudio();
+  if(k.ctx.state!=='running')radioMicLabel('音訊引擎 '+k.ctx.state+'，請點按發話以啟動');
+ }
 }
 async function sfuReplaceKeepaliveMic(rawTrack){
  const k=radioSfu.keepalive;if(!k)return;
@@ -22046,9 +22062,15 @@ function sfuRequestRepair(publisherId){
  radioSfu.requestedRepairAt.set(publisherId,t);
  void sfuApi('repair-publisher',{publisherId}).catch(e=>console.warn('SFU 修復通知未送達',e.message));
 }
+function sfuDropReceiver(id){
+ const item=radioSfu.rxPeers.get(id);
+ if(item){radioSfu.rxPeers.delete(id);try{item.pc?.close()}catch{}}
+ const a=radioSfu.rxPlaying.get(id);
+ if(a){try{a.pause();a.srcObject=null;a.remove()}catch{} radioSfu.rxPlaying.delete(id);}
+}
 function sfuClearAudio(){
- for(const a of radioSfu.rxPlaying.values())try{a.pause();a.srcObject=null;a.remove()}catch{}
- radioSfu.rxPlaying.clear();radioSfu.rxMidToMember.clear();
+ for(const id of [...radioSfu.rxPeers.keys(),...radioSfu.rxPlaying.keys()])sfuDropReceiver(id);
+ radioSfu.rxMidToMember.clear();
 }
 function sfuStop(){
  radioSfu.run++;radioSfu.starting=false;radioSfu.pubReady=false;
@@ -22057,7 +22079,7 @@ function sfuStop(){
  if(radioSfu.receiverRetry){clearTimeout(radioSfu.receiverRetry);radioSfu.receiverRetry=null;}
  sfuDisposeKeepalive();
  if(radioSfu.watch){clearInterval(radioSfu.watch);radioSfu.watch=null;}
- try{radioSfu.tx?.close()}catch{}try{radioSfu.rx?.close()}catch{}
+ try{radioSfu.tx?.close()}catch{}
  radioSfu.tx=null;radioSfu.rx=null;sfuClearAudio();
 }
 function sfuHealthy(pc){return !!pc&&pc.connectionState==='connected';}
@@ -22066,11 +22088,11 @@ function sfuWatch(){
  radioSfu.watch=setInterval(()=>{
   if(radioMediaMode!=='sfu'||ws?.readyState!==1||!myId)return;
   if(radioSfu.tx&&(radioSfu.tx.connectionState==='failed'||(radioSfu.tx.connectionState!=='connected'&&Date.now()-radioSfu.txSince>85000))){void sfuRecover('發送端連線失敗或逾時');return;}
-  if(!radioSfu.rxBusy&&(radioSfu.rx?.connectionState==='failed'||(radioSfu.rx&&radioSfu.rx.connectionState!=='connected'&&Date.now()-radioSfu.rxSince>85000))){
-   radioSfu.rxSignature='';sfuScheduleReceiver(true);return;
+  const k=radioSfu.keepalive;
+  if(k&&radioShouldTransmit()&&k.ctx.state!=='running'){
+   sfuResumePublishAudio();radioMicLabel('手機音訊引擎暫停，請再次點按發話恢復');
   }
-  const desired=sfuDesiredMembers();
-  if(desired.length&&radioSfu.rxSignature!==sfuSignature(desired))sfuScheduleReceiver();
+  sfuScheduleReceiver();
  },6000);
 }
 async function sfuStart(){
@@ -22128,65 +22150,74 @@ function sfuDesiredMembers(){
 function sfuSignature(members){return members.map(m=>m.id+':'+m.pubSessionId).sort().join('|');}
 function sfuScheduleReceiver(force=false){
  if(radioMediaMode!=='sfu'||ws?.readyState!==1||!myId)return;
- if(force)radioSfu.rxSignature='';
+ if(force)for(const item of radioSfu.rxPeers.values())item.retryAt=0;
  if(radioSfu.rxTimer)clearTimeout(radioSfu.rxTimer);
  radioSfu.rxTimer=setTimeout(()=>{radioSfu.rxTimer=null;void sfuBuildReceiver();},450);
 }
-async function sfuBuildReceiver(){
- if(radioSfu.rxBusy){radioSfu.rxAgain=true;return;}
- const desired=sfuDesiredMembers();const target=sfuSignature(desired);
- if(target===radioSfu.rxSignature&&(!desired.length||sfuHealthy(radioSfu.rx)||(radioSfu.rx&&radioSfu.rx.connectionState!=='failed'&&Date.now()-radioSfu.rxSince<85000)))return;
- radioSfu.rxBusy=true;const run=radioSfu.run;
+async function sfuConnectMember(member){
+ const id=member.id, sourceId=member.pubSessionId,run=radioSfu.run;
+ let item=radioSfu.rxPeers.get(id);
+ if(item?.busy)return;
+ sfuDropReceiver(id);
+ item={pc:null,sourceId,busy:true,retryAt:Date.now()+8000,failures:(member._failures||0)};
+ radioSfu.rxPeers.set(id,item);
+ const pc=new RTCPeerConnection({iceServers:radioIceServers});item.pc=pc;
+ const valid=()=>run===radioSfu.run&&radioSfu.rxPeers.get(id)===item&&ws?.readyState===1;
+ pc.ontrack=event=>{
+  if(!valid()||event.track.kind!=='audio')return;
+  const a=document.createElement('audio');a.autoplay=true;a.playsInline=true;a.setAttribute('playsinline','');
+  a.hidden=true;a.volume=volume/100;a.srcObject=new MediaStream([event.track]);
+  const previous=radioSfu.rxPlaying.get(id);
+  if(previous){try{previous.pause();previous.srcObject=null;previous.remove()}catch{}}
+  document.body.appendChild(a);radioSfu.rxPlaying.set(id,a);
+  void applyRadioOutput(a);void a.play().catch(e=>console.warn('SFU 播放遭阻擋',id,e));
+  event.track.addEventListener('unmute',()=>{void a.play().catch(()=>{});});
+ };
+ pc.onconnectionstatechange=()=>{
+  if(!valid())return;
+  if(pc.connectionState==='connected')void resumeIncomingAudio();
+  if(pc.connectionState==='failed'){item.retryAt=Date.now()+4500;item.failed=true;sfuScheduleReceiver();}
+  update();
+ };
  try{
-  try{radioSfu.rx?.close()}catch{}radioSfu.rx=null;sfuClearAudio();radioSfu.rxSignature='';radioSfu.rxId='';
-  if(!desired.length){radioSfu.rxSignature=target;update();return;}
-  const pc=new RTCPeerConnection({iceServers:radioIceServers});radioSfu.rx=pc;radioSfu.rxSince=Date.now();
-  pc.ontrack=event=>{
-   if(radioSfu.rx!==pc||event.track.kind!=='audio')return;
-   const id=radioSfu.rxMidToMember.get(String(event.transceiver.mid));
-   if(!id){console.warn('收到未對應的 SFU 音軌',event.transceiver.mid);return;}
-   const a=document.createElement('audio');a.autoplay=true;a.playsInline=true;a.setAttribute('playsinline','');a.preload='auto';
-   a.hidden=true;a.muted=false;a.volume=volume/100;a.srcObject=new MediaStream([event.track]);
-   document.body.appendChild(a);radioSfu.rxPlaying.set(id,a);
-   void applyRadioOutput(a);void a.play().catch(e=>console.warn('SFU 音訊播放被阻擋',id,e));
-   event.track.addEventListener('unmute',()=>{void a.play().catch(()=>{});});
-  };
-  pc.onconnectionstatechange=()=>{
-   if(radioSfu.rx!==pc)return;
-   if(pc.connectionState==='connected')void resumeIncomingAudio();
-   if(pc.connectionState==='failed')sfuScheduleReceiver(true);
-   update();
-  };
-  const session=await sfuApi('create',{role:'receiver'});if(run!==radioSfu.run||radioSfu.rx!==pc)return;
-  radioSfu.rxId=session.sessionId;
-  const res=await sfuApi('subscribe',{sessionId:session.sessionId,publisherIds:desired.map(m=>m.id)});
-  if(run!==radioSfu.run||radioSfu.rx!==pc)return;
-  for(let i=0;i<desired.length;i++){
-   const result=res.tracks[i];
-   if(result?.mid===undefined||result?.mid===null)throw Error('SFU 訂閱回應缺少 mid');
-   radioSfu.rxMidToMember.set(String(result.mid),res.requested?.[i]?.id||desired[i].id);
-  }
+  const session=await sfuApi('create',{role:'receiver',publisherId:id});if(!valid())return;
+  const res=await sfuApi('subscribe',{sessionId:session.sessionId,publisherId:id});if(!valid())return;
+  if(!res.track||res.track.errorCode||res.track.mid===undefined||!res.sessionDescription?.sdp)throw Error('訂閱結果缺少有效音軌或 SDP');
   await pc.setRemoteDescription(res.sessionDescription);
   await pc.setLocalDescription(await pc.createAnswer());
-  await sfuWaitIce(pc);
-  if(run!==radioSfu.run||radioSfu.rx!==pc)return;
-  await sfuApi('renegotiate',{sessionId:session.sessionId,sessionDescription:pc.localDescription});
-  if(run!==radioSfu.run||radioSfu.rx!==pc)return;
-  await sfuWaitConnected(pc,20000);
-  if(run!==radioSfu.run||radioSfu.rx!==pc)return;
-  radioSfu.rxSignature=target;
+  await sfuWaitIce(pc);if(!valid())return;
+  await sfuApi('renegotiate',{sessionId:session.sessionId,publisherId:id,sessionDescription:pc.localDescription});if(!valid())return;
+  await sfuWaitConnected(pc,20000);if(!valid())return;
+  item.busy=false;item.failed=false;item.failures=0;item.retryAt=0;
   await resumeIncomingAudio();update();
  }catch(error){
-  if(run===radioSfu.run){console.error('SFU receiving',error);status('SFU 訂閱音訊異常：'+error.message);
-   try{radioSfu.rx?.close();}catch{} radioSfu.rx=null;radioSfu.rxId='';
-   sfuClearAudio();radioSfu.rxSignature='';
-   const expired=/not_found_track|track.*(?:inactive|unavailable|not found)|publisher.*(?:disconnected|expired|unavailable)/i.test(String(error.message||''));
-   if(expired)for(const member of desired)sfuRequestRepair(member.id);
-   if(!radioSfu.receiverRetry)radioSfu.receiverRetry=setTimeout(()=>{radioSfu.receiverRetry=null;sfuScheduleReceiver(true);},Math.max(4500,expired?7000:4500));}
- }finally{
-  if(run===radioSfu.run){radioSfu.rxBusy=false;
-   if(radioSfu.rxAgain){radioSfu.rxAgain=false;sfuScheduleReceiver();}}
+  if(valid()){
+   console.warn('SFU 個別訂閱失敗',id,error);
+   item.busy=false;item.failed=true;item.failures++;
+   item.retryAt=Date.now()+Math.min(45000,5000*Math.pow(1.65,Math.min(5,item.failures)));
+   try{pc.close()}catch{}
+   // Request republishing only when the server indicates an expired or missing track.
+   if(/TRACK_UNAVAILABLE|PUBLISHER_NOT_READY|not_found_track|inactive|unavailable|disconnected/i.test(String(error.message)))sfuRequestRepair(id);
+   status('SFU '+(member.name||id)+' 訂閱失敗，其他成員照常收聽；將個別重試');
+  }
+ }finally{if(valid())item.busy=false;}
+}
+async function sfuBuildReceiver(){
+ const desired=sfuDesiredMembers(),ids=new Set(desired.map(m=>m.id));
+ for(const id of [...radioSfu.rxPeers.keys()])if(!ids.has(id))sfuDropReceiver(id);
+ for(const m of desired){
+  const item=radioSfu.rxPeers.get(m.id),now=Date.now();
+  if(item?.sourceId!==m.pubSessionId){sfuDropReceiver(m.id);void sfuConnectMember(m);continue;}
+  if(!item){void sfuConnectMember(m);continue;}
+  if(item.busy)continue;
+  if(item.pc?.connectionState==='connected'&&!item.failed)continue;
+  if(now>=(item.retryAt||0)){
+   const failures=item.failures;
+   sfuDropReceiver(m.id);
+   void sfuConnectMember({...m,_failures:failures});
+  }
  }
+ radioSfu.rxSignature=sfuSignature(desired);update();
 }
 async function sfuRecover(reason){
  if(radioMediaMode!=='sfu'||ws?.readyState!==1||radioSfu.starting)return;
@@ -22196,7 +22227,7 @@ async function sfuRecover(reason){
  sfuStop();void sfuStart();
 }
 async function sfuStats(){
- const tx=radioSfu.tx,rx=radioSfu.rx;
+ const tx=radioSfu.tx,rx=[...radioSfu.rxPeers.values()].map(v=>v.pc).filter(Boolean);
  const summarize=async pc=>{
   if(!pc)return '未建立';let sent=0,received=0;
   (await pc.getStats()).forEach(r=>{
@@ -22204,7 +22235,18 @@ async function sfuStats(){
    if(r.type==='inbound-rtp'&&r.kind==='audio')received+=Number(r.packetsReceived||0);
   });return `${pc.connectionState}（送 ${sent}、收 ${received}）`;
  };
- status('SFU 發送 '+await summarize(tx)+'；接收 '+await summarize(rx)+'；收聽音軌 '+radioSfu.rxPlaying.size+' 支');
+ const k=radioSfu.keepalive;
+ const mic=k?.rawTrack;
+ let level='未取得';
+ if(mic?.readyState==='live'){
+  level='未提供';
+  try{const stats=await tx?.getStats();stats?.forEach(r=>{
+   if(r.type==='media-source'&&r.kind==='audio'&&Number.isFinite(r.audioLevel))level=Math.round(r.audioLevel*100)+'%';
+  });}catch{}
+ }
+ const report='SFU 發送 '+await summarize(tx)+'；接收 '+(await Promise.all(rx.map(summarize))).join('／')+'；收聽 '+radioSfu.rxPlaying.size+' 支；音訊引擎 '+(k?.ctx.state||'未建立')+'；麥克風 '+(mic?.readyState||'未取得')+'／'+(mic?.muted?'無輸入':'有輸入')+'；輸入音量 '+level+'；發話權 '+(radioShouldTransmit()?'有':'無');
+ status(report);
+ if(radioShouldTransmit()&&k?.ctx.state!=='running')notify('手機上傳音訊引擎已暫停。請放開並再次按住發話，或重新整理後重試。');
 }
 
 function queueRadioSignal(from,data){
@@ -22595,7 +22637,9 @@ function startTransmitting(fromMini=false){
   return;
  }
  if(fromMini){if(miniHold)return;miniHold=true;}else{if(hold)return;hold=true;}
- if(radioMediaMode==='sfu')void radioSfu.keepalive?.ctx.resume().catch(console.warn);
+ // Resume synchronously inside the pointer/key gesture. Safari may reject
+ // resume() later in the asynchronous server floor-grant callback.
+ if(radioMediaMode==='sfu')sfuResumePublishAudio(true);
  send({type:'claim'});updateMini();
 }
 function setVolume(v){volume=Math.max(0,Math.min(100,Math.round(Number(v)||0)));localStorage.setItem('ntpc-v22-radio-volume',String(volume));for(const p of peers.values())p.audio.volume=volume/100;for(const a of radioSfu.rxPlaying.values())a.volume=volume/100;const out=el('ntpc-v22-r-volume-text');if(out)out.textContent=volume+'%';updateMini();} function setFxVolume(v){fxVolume=Math.max(0,Math.min(100,Math.round(Number(v)||0)));localStorage.setItem('ntpc-v22-radio-fx-volume',String(fxVolume));for(const a of Object.values(audio))a.volume=fxVolume/100;const out=el('ntpc-v22-r-fx-text');if(out)out.textContent=fxVolume+'%';} function playSound(kind){
@@ -22833,7 +22877,7 @@ function renderRoster(){
 function update(){
  const connected=ws?.readyState===1;
  const modeText=el('ntpc-v22-r-media-mode');if(modeText)modeText.textContent=radioMediaMode==='sfu'?'音訊模式：Cloudflare SFU 集中轉送':'音訊模式：P2P（需在 Worker 設定 Realtime SFU 才能使用集中轉送）';
- const st=el('ntpc-v22-r-status');if(st&&!connecting){st.textContent=connected?(radioMediaMode==='sfu'?('● 信令已連線 · SFU 發送'+(radioSfu.pubReady?'就緒':'建立中')+' · 接收'+(radioSfu.rx?.connectionState||'待命')):'● 已連線（P2P）'):'● 尚未連線';st.dataset.connected=String(connected);}
+ const st=el('ntpc-v22-r-status');if(st&&!connecting){st.textContent=connected?(radioMediaMode==='sfu'?('● 信令已連線 · SFU 發送'+(radioSfu.pubReady?'就緒':'建立中')+' · 接收'+[...radioSfu.rxPeers.values()].filter(x=>x.pc?.connectionState==='connected').length+'/'+sfuDesiredMembers().length):'● 已連線（P2P）'):'● 尚未連線';st.dataset.connected=String(connected);}
  const s=el('ntpc-v22-r-speaker');if(s)s.textContent=speaker?`${speaker.memberId||''}｜${speaker.name} 正在發話${emergency?'（10-99）':''}`:'目前無人發話';
  const ptt=el('ntpc-v22-r-ptt');if(ptt){ptt.disabled=!connected||!!emergency&&emergency.id!==myId||!!speaker&&speaker.id!==myId&&!admin;ptt.textContent=speaker?.id===myId?'🎙 正在發話（放開停止）':'🎙 按住發話';}
  const emStop=el('ntpc-v22-r-stop-emergency');if(emStop)emStop.hidden=emergency?.id!==myId;
@@ -22951,7 +22995,7 @@ function init(){
  void refreshRadioOutputDevices();void refreshRadioInputDevices();
  el('ntpc-v22-r-background').onclick=()=>{void enableBackgroundListening();};
  // User gesture also unlocks remote audio that browsers may block on join.
- ptt.addEventListener('pointerdown',()=>{void resumeIncomingAudio();});
+ ptt.addEventListener('pointerdown',()=>{sfuResumePublishAudio(true);void resumeIncomingAudio();});
  setVolume(volume);setFxVolume(fxVolume);const soundToggle=el('ntpc-v22-r-sound');if(soundToggle)soundToggle.textContent=soundEnabled?'🔊 音效開啟':'🔇 音效關閉';update(); } // User-configured PTT hotkey works while the radio tab has focus (not as an OS-global key).
 document.addEventListener('keydown',e=>{
  if(!el('police-sub-radio')||el('police-sub-radio').classList.contains('hidden'))return;
@@ -22965,7 +23009,7 @@ window.addEventListener('blur',()=>{if(hold)stopTransmitting();});
 async function radioForegroundRecovery(){
  if(document.visibilityState!=='visible'||closedByUser||!radioEverConnected||!currentIdentity())return;
  configureReceivingSession();
- if(ws?.readyState===1){await resumeIncomingAudio();pushProfile();return;}
+ if(ws?.readyState===1){sfuResumePublishAudio();await resumeIncomingAudio();pushProfile();return;}
  if(!connecting)void activate();
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void radioForegroundRecovery();});
