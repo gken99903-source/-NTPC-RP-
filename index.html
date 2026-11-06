@@ -1,3 +1,4 @@
+<!-- V2.2.8｜同帳號同頻道最多兩台裝置：電腦收聽＋手機發話；同裝置重連僅替換舊連線，第三台拒絕加入；管理中心可逐台移除，保留SFU與既有功能。 -->
 <!-- V2.2.5 本次修正：手機 SFU 發送音訊引擎恢復與發送診斷，不更動通話權限或 Worker。 -->
 <!-- V2.2.4｜本次修復：SFU 發送與接收建連流程、ICE 候選長時間收集降級、連線握手確認及超時清理；不調整權限與既有業務功能。 -->
 <!-- V2.2.2｜本次修正：SFU 靜音媒體保活、逾期發布通知重建、接收端重新訂閱；保留 V2.2.1 雙音量與原有網站功能。 -->
@@ -2837,7 +2838,12 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
 #police-sub-radio .ntpc-v22-r-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
 #police-sub-radio .ntpc-v22-r-box{background:#091d35;border:1px solid #2a496a;border-radius:16px;padding:16px;min-width:0}
 #police-sub-radio .ntpc-v22-r-box h4{font-size:17px;font-weight:750;margin:0 0 10px}#police-sub-radio .ntpc-v22-r-info{font-size:12px;color:#93aec9;margin-bottom:12px}
-#police-sub-radio .ntpc-v22-r-list{display:grid;gap:8px}#police-sub-radio .ntpc-v22-radio-member{display:flex;text-align:left;gap:11px;align-items:center;width:100%;background:#0c2b49}
+#police-sub-radio .ntpc-v22-r-list{display:grid;gap:8px}
+#police-sub-radio .ntpc-v22-member-entry{display:flex;align-items:stretch;gap:8px;min-width:0}
+#police-sub-radio .ntpc-v22-member-entry>.ntpc-v22-radio-member{flex:1;min-width:0}
+#police-sub-radio .ntpc-v22-member-kick{flex:0 0 auto;align-self:center;color:#fecdd3!important;border-color:#be5267!important;background:#572037!important;padding:9px 10px!important;font-size:12px!important}
+#police-sub-radio .ntpc-v22-member-kick[hidden]{display:none!important}
+#police-sub-radio .ntpc-v22-radio-member{display:flex;text-align:left;gap:11px;align-items:center;width:100%;background:#0c2b49}
 #police-sub-radio .ntpc-v22-radio-avatar{width:44px;height:44px;flex:0 0 44px;border-radius:50%;background:#135786;border:2px solid #3f9be2;display:grid;place-items:center;position:relative;color:#fff;font-weight:800;font-size:18px;overflow:visible}
 #police-sub-radio .ntpc-v22-radio-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
 #police-sub-radio .ntpc-v22-radio-avatar[data-ntpc-frame=aurora]{border-color:#e4c2fa;box-shadow:0 0 0 3px #8a52c266,0 0 10px #90cfff}
@@ -21915,6 +21921,9 @@ const el=id=>document.getElementById(id);
 let access='',myId='',myName='',admin=false,ws=null,stream=null,channel=1,roster=[],speaker=null,emergency=null,peers=new Map(),hold=false,miniHold=false,miniWindow=null,connecting=false,closedByUser=false,radioProof=null,lastSpeaker=null,lastEmergency=null,serverTime=Date.now(),clientTime=Date.now();
 let volume=Math.max(0,Math.min(100,Number(localStorage.getItem('ntpc-v22-radio-volume')??80)));let fxVolume=Math.max(0,Math.min(100,Number(localStorage.getItem('ntpc-v22-radio-fx-volume')??80)));
 let radioEverConnected=false;
+let radioPresenceTimer=null;
+function stopRadioPresenceTimer(){if(radioPresenceTimer){clearInterval(radioPresenceTimer);radioPresenceTimer=null;}}
+function startRadioPresenceTimer(){stopRadioPresenceTimer();radioPresenceTimer=setInterval(()=>{if(ws?.readyState===1)send({type:'heartbeat'});},25000);}
 let radioIceServers=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
 const radioPendingIce=new Map();
 const radioNegotiating=new Set();
@@ -22337,7 +22346,8 @@ function pushProfile(){
  const avatar=typeof ntpcAvatarValue==='function'?ntpcAvatarValue(u):(u.avatarUrl||'');
  const frame=typeof ntpcV21FrameStyle==='function'?ntpcV21FrameStyle(u.account,u):(u.frameStyle||'none');
  // Broadcast the *saved selection*; never overwrite a user's frame with a radio default.
- send({type:'profile',avatarUrl:String(avatar||'').slice(0,2048),frameStyle:String(frame||'none'),avatarCrop:u.avatarCrop||null});
+ const deviceType=/ipad|tablet/i.test(navigator.userAgent)?'tablet':/iphone|ipod|android.*mobile|mobile/i.test(navigator.userAgent)?'mobile':'desktop';
+ send({type:'profile',deviceType,avatarUrl:String(avatar||'').slice(0,2048),frameStyle:String(frame||'none'),avatarCrop:u.avatarCrop||null});
 }
 function configureReceivingSession(){
  // Safari supports the experimental AudioSession type. Other browsers ignore it safely.
@@ -22619,6 +22629,7 @@ function updateTracks(){
  else for(const t of stream?.getAudioTracks()||[])t.enabled=live;
 }
 function disconnect(clear=false){
+ stopRadioPresenceTimer();
  if(ws){const old=ws;ws=null;old.onclose=null;try{old.close(1000,'Leaving channel')}catch{}}
  closePeers();roster=[];speaker=null;emergency=null;hold=false;miniHold=false;myId='';lastSpeaker=null;lastEmergency=null;
  if(stream){for(const t of stream.getTracks())t.stop();stream=null;}
@@ -22847,15 +22858,27 @@ function renderRoster(){
   maybeLoadRadioProfile(m);
   let row=radioMemberNodes.get(id);
   if(!row){
-   row=document.createElement('button');row.type='button';row.className='ntpc-v22-radio-member ntpc-profile-trigger';
+   row=document.createElement('div');row.className='ntpc-v22-member-entry';
+   const profileButton=document.createElement('button');profileButton.type='button';profileButton.className='ntpc-v22-radio-member ntpc-profile-trigger';
+   const kickButton=document.createElement('button');kickButton.type='button';kickButton.className='ntpc-v22-member-kick';kickButton.textContent='移除';kickButton.title='管理中心：強制移除此成員的無線電連線';
+   kickButton.addEventListener('click',event=>{
+    event.stopPropagation();
+    const targetId=kickButton.dataset.targetId;
+    const m=roster.find(x=>String(x.id)===targetId);
+    if(!admin||!m||targetId===myId)return;
+    if(confirm('確定移除 '+String(m.name||m.memberId)+' 的無線電連線？\n此操作只會移出頻道，不會刪除網站帳號。'))send({type:'kick',targetId});
+   });
    const avatar=document.createElement('span');avatar.className='ntpc-v22-radio-avatar';
    const info=document.createElement('span');info.className='ntpc-v22-radio-member-info';
    const title=document.createElement('span');title.className='ntpc-v22-member-name';title.style.cssText='display:flex;align-items:center;gap:3px;min-width:0';
    const strong=document.createElement('strong');title.append(strong);
-   const small=document.createElement('small');info.append(title,small);row.append(avatar,info);
+   const small=document.createElement('small');info.append(title,small);profileButton.append(avatar,info);row.append(profileButton,kickButton);
    radioMemberNodes.set(id,row);
   }
-  row.dataset.ntpcProfileAccount=m.account||m.memberId||'';
+  row.querySelector('.ntpc-profile-trigger').dataset.ntpcProfileAccount=m.account||m.memberId||'';
+  const kickButton=row.querySelector('.ntpc-v22-member-kick');
+  kickButton.hidden=!admin||id===myId;
+  kickButton.dataset.targetId=id;
   const p=memberProfile(m),signature=JSON.stringify([p.account,p.frame,p.url,p.crop]);
   let avatar=row.querySelector('.ntpc-v22-radio-avatar');
   if(row.dataset.avatarSignature!==signature){avatar=paintRadioMemberAvatar(row,m,p);row.dataset.avatarSignature=signature;}
@@ -22867,7 +22890,8 @@ function renderRoster(){
   const mark=title.querySelector('.ntpc-v22-admin-glyph');
   if(m.admin&&!mark)title.append(makeAdminMark());else if(!m.admin&&mark)mark.remove();
   const small=row.querySelector('.ntpc-v22-radio-member-info small');
-  const desc=m.memberId+' · '+(talking?'正在發話':'在線');if(small.textContent!==desc)small.textContent=desc;
+  const deviceLabel=({desktop:'電腦',mobile:'手機',tablet:'平板'})[m.deviceType]||'裝置';
+  const desc=m.memberId+' · '+deviceLabel+' · '+(talking?'正在發話':'在線');if(small.textContent!==desc)small.textContent=desc;
   // Do not reappend unchanged nodes: moving nodes on every server state restarts CSS animations.
   if(host.children[i]!==row)host.insertBefore(row,host.children[i]||null);
  }
@@ -22889,9 +22913,9 @@ function join(ch){
  if(!access||!stream)return;
  const existing=ws;if(existing){existing.onclose=null;try{existing.close()}catch{}}closePeers();roster=[];speaker=null;emergency=null;lastSpeaker=null;lastEmergency=null;channel=ch;hold=false;miniHold=false;
  const url=new URL(API);const sock='wss://'+url.host+'/ws?ch='+channel+'&token='+encodeURIComponent(access)+'&transport='+radioMediaMode;
- ws=new WebSocket(sock);ws.onopen=()=>{connecting=false;radioEverConnected=true;configureReceivingSession();status('● 已連線 · '+CHANNELS[ch]);pushProfile();void resumeIncomingAudio();update();};
+ ws=new WebSocket(sock);ws.onopen=()=>{startRadioPresenceTimer();connecting=false;radioEverConnected=true;configureReceivingSession();status('● 已連線 · '+CHANNELS[ch]);pushProfile();void resumeIncomingAudio();update();};
  ws.onerror=()=>status('WebSocket 連線失敗：請確認 Worker 已部署、SSO 驗證正確及網路允許 WebSocket');
- ws.onclose=e=>{connecting=false;stopTransmitting();update();status('連線已中斷（'+(e?.code||'未知')+'），請按重新連線');};
+ ws.onclose=e=>{stopRadioPresenceTimer();connecting=false;stopTransmitting();if(e?.code===4003){closedByUser=true;closePeers();status('已被管理中心移出無線電，若需重新加入請手動操作');}else if(e?.code===4008){closedByUser=true;closePeers();status('同帳號已達 2 台裝置上限，請先離開其他裝置');}else status('連線已中斷（'+(e?.code||'未知')+'），請按重新連線');update();};
  ws.onmessage=async event=>{
   let m;try{m=JSON.parse(event.data)}catch{return;}
   if(m.type==='welcome'){myId=m.id;admin=!!m.admin;if(radioMediaMode==='sfu')void sfuStart();else startRadioMeshWatchdog();update();}
@@ -22907,6 +22931,15 @@ function join(ch){
    update();
    if(radioShouldTransmit())void checkRadioSenders();
   }
+  else if(m.type==='device-limit'){
+   closedByUser=true;stopRadioPresenceTimer();stopTransmitting();disconnect(true);
+   status(m.message||'同帳號已達 2 台裝置上限');notify(m.message||'同帳號已達 2 台裝置上限');
+  }
+  else if(m.type==='kicked'){
+   closedByUser=true;stopRadioPresenceTimer();stopTransmitting();disconnect(true);
+   status(m.reason||'管理中心已將你移出無線電');notify(m.reason||'已被移出無線電頻道');
+  }
+  else if(m.type==='action-result'){notify(m.message||'管理操作完成');}
   else if(m.type==='sfu-republish'&&radioMediaMode==='sfu'){void sfuRecover('其他成員發現發布音軌失效');}
   else if(m.type==='signal'&&radioMediaMode!=='sfu')serialRadioSignal(m.from,m.data);
   else if(m.type==='revoked'&&m.id===myId){hold=false;miniHold=false;updateTracks();notify(m.reason||'發話權已被收回');update();}
