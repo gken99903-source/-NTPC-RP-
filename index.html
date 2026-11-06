@@ -1,4 +1,4 @@
-<!-- V2.2.8｜同帳號同頻道最多兩台裝置：電腦收聽＋手機發話；同裝置重連僅替換舊連線，第三台拒絕加入；管理中心可逐台移除，保留SFU與既有功能。 -->
+<!-- V2.2.9｜本次修正：開麥切換冷卻 0.65 秒（管理中心優先與10-99不受限）；避免頻繁發話狀態刷新重複排程 SFU 接收；暫斷連線增加15秒恢復寬限。其餘功能及公開歷史紀錄保留。 -->
 <!-- V2.2.5 本次修正：手機 SFU 發送音訊引擎恢復與發送診斷，不更動通話權限或 Worker。 -->
 <!-- V2.2.4｜本次修復：SFU 發送與接收建連流程、ICE 候選長時間收集降級、連線握手確認及超時清理；不調整權限與既有業務功能。 -->
 <!-- V2.2.2｜本次修正：SFU 靜音媒體保活、逾期發布通知重建、接收端重新訂閱；保留 V2.2.1 雙音量與原有網站功能。 -->
@@ -3407,7 +3407,7 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
                 <section id="police-sub-radio" class="hidden space-y-4" aria-label="警務無線電通訊">
                   <div class="ntpc-v22-r-panel">
                     <div class="ntpc-v22-r-head">
-                      <div><div class="ntpc-v22-r-eyebrow">NTPC RP RADIO · V2.2.6</div><h3><i class="fa-solid fa-tower-broadcast"></i> 警務無線電通訊</h3><p>直接使用勤務網站登入狀態。進入分頁時自動驗證連線，不需要測試通行碼。</p></div>
+                      <div><div class="ntpc-v22-r-eyebrow">NTPC RP RADIO · V2.2.9</div><h3><i class="fa-solid fa-tower-broadcast"></i> 警務無線電通訊</h3><p>直接使用勤務網站登入狀態。進入分頁時自動驗證連線，不需要測試通行碼。</p></div>
                       <div class="ntpc-v22-r-conn" id="ntpc-v22-r-status" role="status">等待進入頻道</div>
                     </div>
                     <p id="ntpc-v22-r-media-mode" role="status" style="font-size:12px;color:#9ed7f4;margin:8px 0">正在確認音訊傳輸方式…</p>
@@ -22184,7 +22184,8 @@ async function sfuConnectMember(member){
  };
  pc.onconnectionstatechange=()=>{
   if(!valid())return;
-  if(pc.connectionState==='connected')void resumeIncomingAudio();
+  if(pc.connectionState==='connected'){item.disconnectedAt=0;void resumeIncomingAudio();}
+  if(pc.connectionState==='disconnected'&&!item.disconnectedAt)item.disconnectedAt=Date.now();
   if(pc.connectionState==='failed'){item.retryAt=Date.now()+4500;item.failed=true;sfuScheduleReceiver();}
   update();
  };
@@ -22220,6 +22221,13 @@ async function sfuBuildReceiver(){
   if(!item){void sfuConnectMember(m);continue;}
   if(item.busy)continue;
   if(item.pc?.connectionState==='connected'&&!item.failed)continue;
+  // A temporary Wi-Fi/cellular handover often reports disconnected before
+  // connectivity recovers. Give the same receiver 15s to recover rather than
+  // closing an otherwise valid Cloudflare Session on the next 6s sweep.
+  if(item.pc?.connectionState==='disconnected'&&!item.failed){
+   item.disconnectedAt ||= now;
+   if(now-item.disconnectedAt<15000)continue;
+  }
   if(now>=(item.retryAt||0)){
    const failures=item.failures;
    sfuDropReceiver(m.id);
@@ -22922,7 +22930,12 @@ function join(ch){
   else if(m.type==='state'){
    soundsFromState(m.speaker,m.emergency);roster=m.roster||[];speaker=m.speaker||null;emergency=m.emergency||null;serverTime=m.now||Date.now();clientTime=Date.now();
    if((hold||miniHold)&&speaker&&speaker.id!==myId){hold=false;miniHold=false;}
-   if(radioMediaMode==='sfu'){sfuScheduleReceiver();}
+   if(radioMediaMode==='sfu'){
+    // Talk/release updates must not repeatedly trigger SFU subscription work.
+    // A separate watchdog checks already established connections.
+    const expected=sfuSignature(sfuDesiredMembers());
+    if(expected!==radioSfu.rxSignature)sfuScheduleReceiver();
+   }
    else{
     for(const id of [...peers.keys()])if(!roster.some(u=>u.id===id)){dropPeer(id);radioPendingIce.delete(id);radioEarlySignals.delete(id);}
     for(const u of roster)if(u.id!==myId&&!peers.has(u.id)&&radioInitiator(u.id))void makePeer(u.id,true).catch(console.warn);
