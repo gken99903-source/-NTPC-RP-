@@ -1,3 +1,4 @@
+<!-- V2.2.1｜本次修正：語音與無線電音效音量獨立調整並保存於本機。既有 SFU 通話、其他功能及歷史紀錄維持不變。 -->
 <!-- V2.2.1｜本次修正：新增 Cloudflare Realtime SFU 音訊集中轉送（啟用需部署 Worker 並設定 App ID / App Secret），保留 P2P 備援及既有勤務、無線電、頭像與獎懲功能。 -->
 <!-- V2.2.1｜本次修正：無線電加入 Cloudflare Realtime SFU 音訊集中轉送，改為獨立上傳與接收工作階段，保留原有登入、五頻道、PTT、10-99、動態頭像框及獎懲支數統計；（舊版內容：公開個人檔案獎懲統計改按登記項目的實際支數（xN）加總，非貼文數；其餘功能與歷史版本保持不變。 -->
 <!-- V2.2｜本次修正：警員無線電登入錯誤提示、WebRTC ICE 候選排序及音訊協商、可選 TURN 設定；保留歷史更新紀錄。 -->
@@ -1406,6 +1407,7 @@ body.ntpc-premium-ui #ntpc-map-admin-toolbar button { min-height:38px; border:1p
 }
 
 #btn-admin-academy, #admin-sub-academy, #academy-code-manage-btn, #academy-code-manage-btn-content {display:none!important;}
+#police-sub-radio .ntpc-v22-volume-group{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid rgba(65,141,195,.5);background:rgba(5,30,58,.5);border-radius:12px}#police-sub-radio .ntpc-v22-volume-label{font-size:13px;color:#b8dbf6;white-space:nowrap}#police-sub-radio .ntpc-v22-volume-group span[id$="-text"]{min-width:40px;text-align:center;font-variant-numeric:tabular-nums}@media(max-width:740px){#police-sub-radio .ntpc-v22-volume-group{width:100%;justify-content:center}}
 </style>
 
 <style id="ntpc-v21-developer-style">
@@ -3410,7 +3412,7 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
                       <section class="ntpc-v22-r-box"><h4>當前發話</h4><div id="ntpc-v22-r-speaker" class="ntpc-v22-r-speaker">目前無人發話</div>
                       <button id="ntpc-v22-r-ptt" class="ntpc-v22-r-ptt" type="button" disabled>🎙 按住發話</button>
                       <div class="ntpc-v22-r-actions"><button id="ntpc-v22-r-panic" class="ntpc-v22-r-panic" type="button">🚨 10-99（20 秒）</button><button id="ntpc-v22-r-stop-emergency" type="button" hidden>提前結束 10-99</button><button id="ntpc-v22-r-force" type="button" hidden>強制結束一般發話</button></div>
-                      <div class="ntpc-v22-r-audio"><button id="ntpc-v22-r-volminus" type="button" aria-label="音量減少">－</button><span id="ntpc-v22-r-volume-text">80%</span><button id="ntpc-v22-r-volplus" type="button" aria-label="音量增加">＋</button><button id="ntpc-v22-r-sound" type="button">🔊 音效開啟</button><button id="ntpc-v22-r-test-audio" type="button" title="播放本機測試音，確認揚聲器是否正常">🔈 測試接收音效</button><button id="ntpc-v22-r-diagnose" type="button" title="檢查遠端音軌與雙向 RTP 封包">檢查雙向音訊</button><select id="ntpc-v22-r-input" aria-label="選擇無線電麥克風" title="選擇無線電發話裝置" style="max-width:240px;background:#08213c;color:#d9f5ff;border:1px solid #3275a1;border-radius:9px;padding:8px;min-height:40px"><option value="">系統預設麥克風</option></select><button id="ntpc-v22-r-test-mic" type="button" title="只在本機取樣 3 秒，不發送聲音給頻道成員">🎤 測試麥克風</button><button id="ntpc-v22-r-reload-mic" type="button" title="重新取得麥克風並替換每位成員的發送音軌">↻ 重載麥克風</button><span id="ntpc-v22-r-mic-health" role="status" aria-live="polite" style="font-size:12px;color:#93d5ff;min-width:160px">麥克風：尚未檢查</span><select id="ntpc-v22-r-output" aria-label="音訊輸出裝置" title="選擇聲音播放裝置" style="max-width:230px;background:#08213c;color:#d9f5ff;border:1px solid #3275a1;border-radius:9px;padding:8px;min-height:40px"><option value="">系統預設輸出裝置</option></select><button id="ntpc-v22-r-background" type="button" title="嘗試啟用瀏覽器允許的背景收聽音訊工作階段">啟用背景收聽</button><span class="ntpc-v22-r-mobile-hint" id="ntpc-v22-r-background-hint">手機背景收聽視瀏覽器及系統限制而定。iPhone 建議使用 Safari；鎖屏或切換 App 仍可能中斷。</span></div>
+                      <div class="ntpc-v22-r-audio"><div class="ntpc-v22-volume-group" aria-label="其他成員語音音量"><span class="ntpc-v22-volume-label">🎙️ 語音音量</span><button id="ntpc-v22-r-volminus" type="button" aria-label="降低語音音量">－</button><span id="ntpc-v22-r-volume-text" aria-live="polite">80%</span><button id="ntpc-v22-r-volplus" type="button" aria-label="提高語音音量">＋</button></div><div class="ntpc-v22-volume-group" aria-label="開麥、尾音與10-99音效音量"><span class="ntpc-v22-volume-label">🔔 無線電音效</span><button id="ntpc-v22-r-fxminus" type="button" aria-label="降低無線電音效音量">－</button><span id="ntpc-v22-r-fx-text" aria-live="polite">80%</span><button id="ntpc-v22-r-fxplus" type="button" aria-label="提高無線電音效音量">＋</button></div><button id="ntpc-v22-r-sound" type="button">🔊 音效開啟</button><button id="ntpc-v22-r-test-audio" type="button" title="播放本機測試音，確認揚聲器是否正常">🔈 測試接收音效</button><button id="ntpc-v22-r-diagnose" type="button" title="檢查遠端音軌與雙向 RTP 封包">檢查雙向音訊</button><select id="ntpc-v22-r-input" aria-label="選擇無線電麥克風" title="選擇無線電發話裝置" style="max-width:240px;background:#08213c;color:#d9f5ff;border:1px solid #3275a1;border-radius:9px;padding:8px;min-height:40px"><option value="">系統預設麥克風</option></select><button id="ntpc-v22-r-test-mic" type="button" title="只在本機取樣 3 秒，不發送聲音給頻道成員">🎤 測試麥克風</button><button id="ntpc-v22-r-reload-mic" type="button" title="重新取得麥克風並替換每位成員的發送音軌">↻ 重載麥克風</button><span id="ntpc-v22-r-mic-health" role="status" aria-live="polite" style="font-size:12px;color:#93d5ff;min-width:160px">麥克風：尚未檢查</span><select id="ntpc-v22-r-output" aria-label="音訊輸出裝置" title="選擇聲音播放裝置" style="max-width:230px;background:#08213c;color:#d9f5ff;border:1px solid #3275a1;border-radius:9px;padding:8px;min-height:40px"><option value="">系統預設輸出裝置</option></select><button id="ntpc-v22-r-background" type="button" title="嘗試啟用瀏覽器允許的背景收聽音訊工作階段">啟用背景收聽</button><span class="ntpc-v22-r-mobile-hint" id="ntpc-v22-r-background-hint">手機背景收聽視瀏覽器及系統限制而定。iPhone 建議使用 Safari；鎖屏或切換 App 仍可能中斷。</span></div>
                       </section>
                     </div>
                     <div class="ntpc-v22-r-footer"><button id="ntpc-v22-r-rejoin" type="button">重新連線</button><button id="ntpc-v22-r-leave" type="button">手動離開無線電</button><p>僅在進入無線電分頁時建立工作階段；個人通知與案件審核仍使用原本的即時功能。首次啟用麥克風時瀏覽器會詢問權限。</p></div>
@@ -21908,7 +21910,7 @@ const API='https://ntpc-rp-v22-radio-test.gken99903.workers.dev';
 const CHANNELS=['','CH-1 主頻道','CH-2 副頻道','CH-3 小頻道','CH-4 小頻道','CH-5 小頻道'];
 const el=id=>document.getElementById(id);
 let access='',myId='',myName='',admin=false,ws=null,stream=null,channel=1,roster=[],speaker=null,emergency=null,peers=new Map(),hold=false,miniHold=false,miniWindow=null,connecting=false,closedByUser=false,radioProof=null,lastSpeaker=null,lastEmergency=null,serverTime=Date.now(),clientTime=Date.now();
-let volume=Math.max(0,Math.min(100,Number(localStorage.getItem('ntpc-v22-radio-volume')||80)));
+let volume=Math.max(0,Math.min(100,Number(localStorage.getItem('ntpc-v22-radio-volume')??80)));let fxVolume=Math.max(0,Math.min(100,Number(localStorage.getItem('ntpc-v22-radio-fx-volume')??80)));
 let radioEverConnected=false;
 let radioIceServers=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
 const radioPendingIce=new Map();
@@ -22466,11 +22468,10 @@ function startTransmitting(fromMini=false){
  if(fromMini){if(miniHold)return;miniHold=true;}else{if(hold)return;hold=true;}
  send({type:'claim'});updateMini();
 }
-function setVolume(v){volume=Math.max(0,Math.min(100,Math.round(Number(v)||0)));localStorage.setItem('ntpc-v22-radio-volume',String(volume));for(const p of peers.values())p.audio.volume=volume/100;for(const a of radioSfu.rxPlaying.values())a.volume=volume/100;for(const a of Object.values(audio))a.volume=volume/100;const out=el('ntpc-v22-r-volume-text');if(out)out.textContent=volume+'%';updateMini();}
-function playSound(kind){
+function setVolume(v){volume=Math.max(0,Math.min(100,Math.round(Number(v)||0)));localStorage.setItem('ntpc-v22-radio-volume',String(volume));for(const p of peers.values())p.audio.volume=volume/100;for(const a of radioSfu.rxPlaying.values())a.volume=volume/100;const out=el('ntpc-v22-r-volume-text');if(out)out.textContent=volume+'%';updateMini();} function setFxVolume(v){fxVolume=Math.max(0,Math.min(100,Math.round(Number(v)||0)));localStorage.setItem('ntpc-v22-radio-fx-volume',String(fxVolume));for(const a of Object.values(audio))a.volume=fxVolume/100;const out=el('ntpc-v22-r-fx-text');if(out)out.textContent=fxVolume+'%';} function playSound(kind){
  if(!soundEnabled)return;
  try{
-  const a=audio[kind]||(audio[kind]=new Audio(playURL[kind]));a.volume=volume/100;a.currentTime=0;const p=a.play();p?.catch(()=>{});
+  const a=audio[kind]||(audio[kind]=new Audio(playURL[kind]));a.volume=fxVolume/100;a.currentTime=0;const p=a.play();p?.catch(()=>{});
  }catch{}
 }
 function soundsFromState(nextSpeaker,nextEmergency){
@@ -22803,8 +22804,7 @@ function init(){
  el('ntpc-v22-r-leave').onclick=leave;
  el('ntpc-v22-r-rejoin').onclick=()=>{closedByUser=false;void activate();};
  el('ntpc-v22-r-volminus').onclick=()=>setVolume(volume-5);
- el('ntpc-v22-r-volplus').onclick=()=>setVolume(volume+5);
- el('ntpc-v22-r-sound').onclick=e=>{soundEnabled=!soundEnabled;localStorage.setItem('ntpc-v22-radio-sound',soundEnabled?'on':'off');e.currentTarget.textContent=soundEnabled?'🔊 音效開啟':'🔇 音效關閉';};
+ el('ntpc-v22-r-volplus').onclick=()=>setVolume(volume+5);  el('ntpc-v22-r-fxminus').onclick=()=>setFxVolume(fxVolume-5);  el('ntpc-v22-r-fxplus').onclick=()=>setFxVolume(fxVolume+5);  el('ntpc-v22-r-sound').onclick=e=>{soundEnabled=!soundEnabled;localStorage.setItem('ntpc-v22-radio-sound',soundEnabled?'on':'off');e.currentTarget.textContent=soundEnabled?'🔊 音效開啟':'🔇 音效關閉';};
  el('ntpc-v22-r-test-audio').onclick=()=>{void radioTestAudio();};
  el('ntpc-v22-r-diagnose').onclick=()=>{void diagnoseRadioReceive();};
  el('ntpc-v22-r-test-mic').onclick=()=>{void radioTestMic();};
@@ -22821,9 +22821,7 @@ function init(){
  el('ntpc-v22-r-background').onclick=()=>{void enableBackgroundListening();};
  // User gesture also unlocks remote audio that browsers may block on join.
  ptt.addEventListener('pointerdown',()=>{void resumeIncomingAudio();});
- setVolume(volume);update();
-}
-// User-configured PTT hotkey works while the radio tab has focus (not as an OS-global key).
+ setVolume(volume);setFxVolume(fxVolume);const soundToggle=el('ntpc-v22-r-sound');if(soundToggle)soundToggle.textContent=soundEnabled?'🔊 音效開啟':'🔇 音效關閉';update(); } // User-configured PTT hotkey works while the radio tab has focus (not as an OS-global key).
 document.addEventListener('keydown',e=>{
  if(!el('police-sub-radio')||el('police-sub-radio').classList.contains('hidden'))return;
  if(e.repeat||e.target.closest?.('input,textarea,select,[contenteditable]'))return;
