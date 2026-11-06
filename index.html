@@ -21938,16 +21938,34 @@ async function sfuApi(action,extra={}){
  if(!response.ok||!data.ok)throw Error('SFU '+action+'：'+String(data.error||'HTTP '+response.status));
  return data;
 }
-async function sfuWaitIce(pc,timeout=12000){
+// A delayed ICE gathering phase is common on mobile networks. Do not leave
+// partially-created RTCPeerConnections behind after an ICE timeout.
+async function sfuWaitIce(pc,timeout=30000){
  if(pc.iceGatheringState==='complete')return;
+ if(pc.signalingState==='closed')throw Error('WebRTC 連線已關閉，無法收集 ICE');
  await new Promise((resolve,reject)=>{
-  const timer=setTimeout(()=>{cleanup();reject(Error('ICE 候選收集逾時，檢查網路或 TURN'))},timeout);
-  const onChange=()=>{if(pc.iceGatheringState==='complete'){cleanup();resolve();}};
-  const cleanup=()=>{clearTimeout(timer);pc.removeEventListener('icegatheringstatechange',onChange);};
+  let done=false;
+  const finish=(error)=>{
+   if(done)return;done=true;
+   clearTimeout(timer);
+   pc.removeEventListener('icegatheringstatechange',onChange);
+   pc.removeEventListener('signalingstatechange',onChange);
+   if(error)reject(error);else resolve();
+  };
+  const onChange=()=>{
+   if(pc.signalingState==='closed')finish(Error('ICE 收集期間 WebRTC 連線已關閉'));
+   else if(pc.iceGatheringState==='complete')finish();
+  };
+  const timer=setTimeout(()=>{
+   const candidates=(pc.localDescription?.sdp||'').match(/^a=candidate:/gm)||[];
+   finish(Error('ICE 收集超過 '+Math.round(timeout/1000)+' 秒（狀態 '+pc.iceGatheringState+'，候選 '+candidates.length+' 個）。請檢查該裝置網路或 ICE 設定'));
+  },timeout);
   pc.addEventListener('icegatheringstatechange',onChange);
+  pc.addEventListener('signalingstatechange',onChange);
   onChange();
  });
 }
+
 // Keep a real RTP audio publication alive during long push-to-talk silence.
 // Cloudflare may GC publications after 30 seconds with no incoming media packets.
 // The near-silent oscillator supplies continuous frames; microphone capture is
@@ -22018,8 +22036,8 @@ function sfuWatch(){
  if(radioSfu.watch)return;
  radioSfu.watch=setInterval(()=>{
   if(radioMediaMode!=='sfu'||ws?.readyState!==1||!myId)return;
-  if(radioSfu.tx&&(radioSfu.tx.connectionState==='failed'||(radioSfu.tx.connectionState!=='connected'&&Date.now()-radioSfu.txSince>20000))){void sfuRecover('發送端連線失敗或逾時');return;}
-  if(!radioSfu.rxBusy&&(radioSfu.rx?.connectionState==='failed'||(radioSfu.rx&&radioSfu.rx.connectionState!=='connected'&&Date.now()-radioSfu.rxSince>22000))){
+  if(radioSfu.tx&&(radioSfu.tx.connectionState==='failed'||(radioSfu.tx.connectionState!=='connected'&&Date.now()-radioSfu.txSince>45000))){void sfuRecover('發送端連線失敗或逾時');return;}
+  if(!radioSfu.rxBusy&&(radioSfu.rx?.connectionState==='failed'||(radioSfu.rx&&radioSfu.rx.connectionState!=='connected'&&Date.now()-radioSfu.rxSince>45000))){
    radioSfu.rxSignature='';sfuScheduleReceiver(true);return;
   }
   const desired=sfuDesiredMembers();
@@ -22055,8 +22073,18 @@ async function sfuStart(){
   radioSfu.pubReady=pc.connectionState==='connected';status('● SFU 麥克風已發布，正在確認音訊傳輸');
   sfuScheduleReceiver();update();
  }catch(error){
-  if(run===radioSfu.run){console.error('SFU audio publish',error);notify('SFU 發送音訊建立失敗：'+error.message);sfuDisposeKeepalive();
-   radioSfu.receiverRetry=setTimeout(()=>{radioSfu.receiverRetry=null;void sfuRecover('發送初始化失敗');},10000);}
+  if(run===radioSfu.run){
+   console.error('SFU audio publish',error);
+   notify('SFU 發送音訊建立失敗：'+error.message);
+   radioSfu.pubReady=false;
+   try{radioSfu.tx?.close();}catch{} radioSfu.tx=null;radioSfu.txId='';
+   sfuDisposeKeepalive();
+   if(radioSfu.receiverRetry)clearTimeout(radioSfu.receiverRetry);
+   radioSfu.receiverRetry=setTimeout(()=>{
+    radioSfu.receiverRetry=null;
+    if(radioMediaMode==='sfu'&&ws?.readyState===1)void sfuRecover('發送初始化失敗');
+   },20000);
+  }
  }finally{if(run===radioSfu.run)radioSfu.starting=false;}
 }
 function sfuDesiredMembers(){
@@ -22072,7 +22100,7 @@ function sfuScheduleReceiver(force=false){
 async function sfuBuildReceiver(){
  if(radioSfu.rxBusy){radioSfu.rxAgain=true;return;}
  const desired=sfuDesiredMembers();const target=sfuSignature(desired);
- if(target===radioSfu.rxSignature&&(!desired.length||sfuHealthy(radioSfu.rx)||(radioSfu.rx&&radioSfu.rx.connectionState!=='failed'&&Date.now()-radioSfu.rxSince<18000)))return;
+ if(target===radioSfu.rxSignature&&(!desired.length||sfuHealthy(radioSfu.rx)||(radioSfu.rx&&radioSfu.rx.connectionState!=='failed'&&Date.now()-radioSfu.rxSince<45000)))return;
  radioSfu.rxBusy=true;const run=radioSfu.run;
  try{
   try{radioSfu.rx?.close()}catch{}radioSfu.rx=null;sfuClearAudio();radioSfu.rxSignature='';radioSfu.rxId='';
@@ -22110,10 +22138,11 @@ async function sfuBuildReceiver(){
   await sfuApi('renegotiate',{sessionId:session.sessionId,sessionDescription:pc.localDescription});
   if(run!==radioSfu.run||radioSfu.rx!==pc)return;
   radioSfu.rxSignature=target;
-  if(radioSfu.receiverRetry){clearTimeout(radioSfu.receiverRetry);radioSfu.receiverRetry=null;}
   await resumeIncomingAudio();update();
  }catch(error){
   if(run===radioSfu.run){console.error('SFU receiving',error);status('SFU 訂閱音訊異常：'+error.message);
+   try{radioSfu.rx?.close();}catch{} radioSfu.rx=null;radioSfu.rxId='';
+   sfuClearAudio();radioSfu.rxSignature='';
    const expired=/not_found_track|track.*(?:inactive|unavailable|not found)|publisher.*(?:disconnected|expired|unavailable)/i.test(String(error.message||''));
    if(expired)for(const member of desired)sfuRequestRepair(member.id);
    if(!radioSfu.receiverRetry)radioSfu.receiverRetry=setTimeout(()=>{radioSfu.receiverRetry=null;sfuScheduleReceiver(true);},Math.max(4500,expired?7000:4500));}
