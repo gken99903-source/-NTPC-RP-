@@ -1,4 +1,4 @@
-<!-- V2.3.0｜本次修正：SFU 接收語音改為獨立 GainNode 音量控制；0% 靜音；新訂閱音軌沿用設定，背景音訊暫停時退回原生播放。Worker 與其他網站功能不變。 -->
+<!-- V2.3.1｜緊急回退：撤銷 V2.3.0 的接收音訊 GainNode 重接線，恢復已驗證基準 V2.2.9 的 SFU 原生音軌播放；保留語音/提示音分開調整、發話冷卻、雙裝置與管理員功能。 -->
 <!-- V2.2.9｜本次修正：開麥切換冷卻 0.65 秒（管理中心優先與10-99不受限）；避免頻繁發話狀態刷新重複排程 SFU 接收；暫斷連線增加15秒恢復寬限。其餘功能及公開歷史紀錄保留。 -->
 <!-- V2.2.5 本次修正：手機 SFU 發送音訊引擎恢復與發送診斷，不更動通話權限或 Worker。 -->
 <!-- V2.2.4｜本次修復：SFU 發送與接收建連流程、ICE 候選長時間收集降級、連線握手確認及超時清理；不調整權限與既有業務功能。 -->
@@ -3408,7 +3408,7 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
                 <section id="police-sub-radio" class="hidden space-y-4" aria-label="警務無線電通訊">
                   <div class="ntpc-v22-r-panel">
                     <div class="ntpc-v22-r-head">
-                      <div><div class="ntpc-v22-r-eyebrow">NTPC RP RADIO · V2.3.0</div><h3><i class="fa-solid fa-tower-broadcast"></i> 警務無線電通訊</h3><p>直接使用勤務網站登入狀態。進入分頁時自動驗證連線，不需要測試通行碼。</p></div>
+                      <div><div class="ntpc-v22-r-eyebrow">NTPC RP RADIO · V2.3.1</div><h3><i class="fa-solid fa-tower-broadcast"></i> 警務無線電通訊</h3><p>直接使用勤務網站登入狀態。進入分頁時自動驗證連線，不需要測試通行碼。</p></div>
                       <div class="ntpc-v22-r-conn" id="ntpc-v22-r-status" role="status">等待進入頻道</div>
                     </div>
                     <p id="ntpc-v22-r-media-mode" role="status" style="font-size:12px;color:#9ed7f4;margin:8px 0">正在確認音訊傳輸方式…</p>
@@ -22072,112 +22072,11 @@ function sfuRequestRepair(publisherId){
  radioSfu.requestedRepairAt.set(publisherId,t);
  void sfuApi('repair-publisher',{publisherId}).catch(e=>console.warn('SFU 修復通知未送達',e.message));
 }
-// V2.3.0: SFU playback volume is processed by Web Audio gain, not only by
-// HTMLMediaElement.volume. Each receiver has a private gain and can be closed
-// without affecting other members. If the context cannot run, fall back to
-// the raw MediaStream and its native volume control.
-let radioVoicePlaybackContext=null;
-const radioVoiceProcessors=new Map();
-function radioVoiceLevel(){return Math.max(0,Math.min(1,volume/100));}
-function radioVoiceCloseProcessor(element){
- const entry=radioVoiceProcessors.get(element);
- if(!entry)return;
- radioVoiceProcessors.delete(element);
- try{entry.source?.disconnect()}catch{}
- try{entry.gain?.disconnect()}catch{}
- try{for(const track of entry.output?.stream?.getTracks?.()||[])track.stop()}catch{}
-}
-function radioVoiceApplyLevel(element){
- if(!element)return;
- const entry=radioVoiceProcessors.get(element);
- if(entry?.gain && entry.context?.state==='running'){
-  // The gain controls the actual samples. Do not multiply attenuation by
-  // setting media-element volume to the same factor again.
-  try{entry.gain.gain.setTargetAtTime(radioVoiceLevel(),entry.context.currentTime,0.012)}catch{entry.gain.gain.value=radioVoiceLevel()}
-  element.volume=1;
-  element.muted=false;
- }else{
-  element.volume=radioVoiceLevel();
-  element.muted=volume===0;
- }
-}
-function radioVoiceSwitchToNative(element){
- const entry=radioVoiceProcessors.get(element);
- if(!entry)return;
- if(entry.processed && entry.rawStream){
-  entry.processed=false;
-  element.srcObject=entry.rawStream;
- }
- radioVoiceApplyLevel(element);
-}
-async function radioVoiceResumeProcessors(){
- const context=radioVoicePlaybackContext;
- if(!context)return;
- if(context.state!=='running'){
-  try{await context.resume()}catch{}
- }
- for(const [element,entry] of radioVoiceProcessors){
-  if(!element.isConnected || !entry.rawStream){radioVoiceCloseProcessor(element);continue;}
-  if(context.state==='running'){
-   if(!entry.processed){entry.processed=true;element.srcObject=entry.output.stream;}
-  }else if(entry.processed){
-   radioVoiceSwitchToNative(element);
-  }
-  radioVoiceApplyLevel(element);
-  if(element.srcObject){void element.play().catch(()=>{});}
- }
-}
-function radioVoicePrepareReceiver(element,rawStream){
- element.srcObject=rawStream;
- element.volume=radioVoiceLevel();
- element.muted=volume===0;
- try{
-  const AC=window.AudioContext||window.webkitAudioContext;
-  if(!AC)return;
-  if(!radioVoicePlaybackContext || radioVoicePlaybackContext.state==='closed'){
-   radioVoicePlaybackContext=new AC();
-   radioVoicePlaybackContext.addEventListener('statechange',()=>{
-    if(radioVoicePlaybackContext?.state==='running'){
-     void radioVoiceResumeProcessors();
-    }else{
-     // A suspended WebAudio context cannot feed the processed stream.
-     // Use the raw audio stream immediately to prevent one-way silence.
-     for(const element of radioVoiceProcessors.keys())radioVoiceSwitchToNative(element);
-    }
-   });
-  }
-  const context=radioVoicePlaybackContext;
-  const source=context.createMediaStreamSource(rawStream);
-  const gain=context.createGain();
-  const output=context.createMediaStreamDestination();
-  source.connect(gain).connect(output);
-  gain.gain.value=radioVoiceLevel();
-  radioVoiceProcessors.set(element,{context,source,gain,output,rawStream,processed:false});
-  // During an autoplay-blocked/suspended context use the native stream; the
-  // next user gesture upgrades to gain processing without losing all sound.
-  if(context.state==='running'){
-   element.srcObject=output.stream;
-   radioVoiceProcessors.get(element).processed=true;
-   radioVoiceApplyLevel(element);
-  }
- }catch(error){
-  console.warn('SFU 語音增益初始化失敗，改用原生音量',error);
-  radioVoiceCloseProcessor(element);
-  element.srcObject=rawStream;
-  radioVoiceApplyLevel(element);
- }
-}
-// A real click/pointer action can unlock AudioContext in Chrome, Safari and
-// mobile browsers. No effect on microphone capture or SFU negotiation.
-document.addEventListener('pointerdown',()=>{void radioVoiceResumeProcessors();},{passive:true});
-document.addEventListener('visibilitychange',()=>{
- if(document.visibilityState==='visible')void radioVoiceResumeProcessors();
-});
 function sfuDropReceiver(id){
  const item=radioSfu.rxPeers.get(id);
  if(item){radioSfu.rxPeers.delete(id);try{item.pc?.close()}catch{}}
  const a=radioSfu.rxPlaying.get(id);
- if(a){radioVoiceCloseProcessor(a);try{a.pause();a.srcObject=null;a.remove()}catch{} radioSfu.rxPlaying.delete(id);}
+ if(a){try{a.pause();a.srcObject=null;a.remove()}catch{} radioSfu.rxPlaying.delete(id);}
 }
 function sfuClearAudio(){
  for(const id of [...radioSfu.rxPeers.keys(),...radioSfu.rxPlaying.keys()])sfuDropReceiver(id);
@@ -22277,9 +22176,9 @@ async function sfuConnectMember(member){
  pc.ontrack=event=>{
   if(!valid()||event.track.kind!=='audio')return;
   const a=document.createElement('audio');a.autoplay=true;a.playsInline=true;a.setAttribute('playsinline','');
-  a.hidden=true;radioVoicePrepareReceiver(a,new MediaStream([event.track]));
+  a.hidden=true;a.volume=volume/100;a.srcObject=new MediaStream([event.track]);
   const previous=radioSfu.rxPlaying.get(id);
-  if(previous){radioVoiceCloseProcessor(previous);try{previous.pause();previous.srcObject=null;previous.remove()}catch{}}
+  if(previous){try{previous.pause();previous.srcObject=null;previous.remove()}catch{}}
   document.body.appendChild(a);radioSfu.rxPlaying.set(id,a);
   void applyRadioOutput(a);void a.play().catch(e=>console.warn('SFU 播放遭阻擋',id,e));
   event.track.addEventListener('unmute',()=>{void a.play().catch(()=>{});});
@@ -22470,11 +22369,10 @@ async function applyRadioOutput(element){
 }
 async function resumeIncomingAudio(){
  configureReceivingSession();
- await radioVoiceResumeProcessors();
  let failed=false;
  for(const p of [...peers.values(),...Array.from(radioSfu.rxPlaying.values(),audio=>({audio}))]){
   const a=p.audio;if(!a.srcObject)continue;
-  if(radioVoiceProcessors.has(a))radioVoiceApplyLevel(a);else{a.muted=volume===0;a.volume=volume/100;}
+  a.muted=false;a.volume=volume/100;
   await applyRadioOutput(a);
   try{await a.play();}catch(e){failed=true;console.warn('無線電接收播放失敗',e);}
  }
@@ -22764,7 +22662,7 @@ function startTransmitting(fromMini=false){
  if(radioMediaMode==='sfu')sfuResumePublishAudio(true);
  send({type:'claim'});updateMini();
 }
-function setVolume(v){volume=Math.max(0,Math.min(100,Math.round(Number(v)||0)));localStorage.setItem('ntpc-v22-radio-volume',String(volume));for(const p of peers.values()){p.audio.volume=volume/100;p.audio.muted=volume===0;}for(const a of radioSfu.rxPlaying.values())radioVoiceApplyLevel(a);const out=el('ntpc-v22-r-volume-text');if(out)out.textContent=volume+'%';updateMini();} function setFxVolume(v){fxVolume=Math.max(0,Math.min(100,Math.round(Number(v)||0)));localStorage.setItem('ntpc-v22-radio-fx-volume',String(fxVolume));for(const a of Object.values(audio))a.volume=fxVolume/100;const out=el('ntpc-v22-r-fx-text');if(out)out.textContent=fxVolume+'%';} function playSound(kind){
+function setVolume(v){volume=Math.max(0,Math.min(100,Math.round(Number(v)||0)));localStorage.setItem('ntpc-v22-radio-volume',String(volume));for(const p of peers.values())p.audio.volume=volume/100;for(const a of radioSfu.rxPlaying.values())a.volume=volume/100;const out=el('ntpc-v22-r-volume-text');if(out)out.textContent=volume+'%';updateMini();} function setFxVolume(v){fxVolume=Math.max(0,Math.min(100,Math.round(Number(v)||0)));localStorage.setItem('ntpc-v22-radio-fx-volume',String(fxVolume));for(const a of Object.values(audio))a.volume=fxVolume/100;const out=el('ntpc-v22-r-fx-text');if(out)out.textContent=fxVolume+'%';} function playSound(kind){
  if(!soundEnabled)return;
  try{
   const a=audio[kind]||(audio[kind]=new Audio(playURL[kind]));a.volume=fxVolume/100;a.currentTime=0;const p=a.play();p?.catch(()=>{});
@@ -22792,7 +22690,7 @@ async function makePeer(id,offerer){
  const build=(async()=>{
   if(!stream)return null;
   const pc=new RTCPeerConnection({iceServers:radioIceServers,iceCandidatePoolSize:2});
-  const a=document.createElement('audio');a.autoplay=true;a.playsInline=true;a.setAttribute('playsinline','');a.preload='auto';a.muted=volume===0;a.volume=volume/100;a.hidden=true;document.body.appendChild(a);void applyRadioOutput(a);
+  const a=document.createElement('audio');a.autoplay=true;a.playsInline=true;a.setAttribute('playsinline','');a.preload='auto';a.muted=false;a.volume=volume/100;a.hidden=true;document.body.appendChild(a);void applyRadioOutput(a);
   const peer={pc,audio:a,offerer,createdAt:Date.now(),epoch,remoteReady:false};
   // Set the peer entry BEFORE async offer creation, but never accept old sessions.
   if(epoch!==radioEpoch||socket!==ws){pc.close();a.remove();return null;}
