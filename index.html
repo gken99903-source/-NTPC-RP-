@@ -1,3 +1,4 @@
+<!-- V2.2.4｜本次修復：SFU 發送與接收建連流程、ICE 候選長時間收集降級、連線握手確認及超時清理；不調整權限與既有業務功能。 -->
 <!-- V2.2.2｜本次修正：SFU 靜音媒體保活、逾期發布通知重建、接收端重新訂閱；保留 V2.2.1 雙音量與原有網站功能。 -->
 <!-- V2.2.1｜本次修正：語音與無線電音效音量獨立調整並保存於本機。既有 SFU 通話、其他功能及歷史紀錄維持不變。 -->
 <!-- V2.2.1｜本次修正：新增 Cloudflare Realtime SFU 音訊集中轉送（啟用需部署 Worker 並設定 App ID / App Secret），保留 P2P 備援及既有勤務、無線電、頭像與獎懲功能。 -->
@@ -21940,6 +21941,9 @@ async function sfuApi(action,extra={}){
 }
 // A delayed ICE gathering phase is common on mobile networks. Do not leave
 // partially-created RTCPeerConnections behind after an ICE timeout.
+// Wait for gathering; browsers can remain in gathering on restricted networks.
+// If candidates are already embedded in local SDP, allow bounded partial gathering
+// rather than abandoning an otherwise usable offer/answer.
 async function sfuWaitIce(pc,timeout=30000){
  if(pc.iceGatheringState==='complete')return;
  if(pc.signalingState==='closed')throw Error('WebRTC 連線已關閉，無法收集 ICE');
@@ -21957,12 +21961,37 @@ async function sfuWaitIce(pc,timeout=30000){
    else if(pc.iceGatheringState==='complete')finish();
   };
   const timer=setTimeout(()=>{
-   const candidates=(pc.localDescription?.sdp||'').match(/^a=candidate:/gm)||[];
-   finish(Error('ICE 收集超過 '+Math.round(timeout/1000)+' 秒（狀態 '+pc.iceGatheringState+'，候選 '+candidates.length+' 個）。請檢查該裝置網路或 ICE 設定'));
+   const sdp=pc.localDescription?.sdp||'';
+   const candidates=(sdp.match(/^a=candidate:/gm)||[]).length;
+   if(candidates>0){
+    console.warn('SFU ICE gathering slow; attempting SDP negotiation with',candidates,'candidate(s)');
+    finish();
+   }else finish(Error('ICE 收集超時且沒有有效候選，請切換網路或確認 UDP/WebRTC 未被封鎖'));
   },timeout);
   pc.addEventListener('icegatheringstatechange',onChange);
   pc.addEventListener('signalingstatechange',onChange);
   onChange();
+ });
+}
+function sfuWaitConnected(pc,timeout=20000){
+ if(pc.connectionState==='connected')return Promise.resolve();
+ return new Promise((resolve,reject)=>{
+  let finished=false;
+  const finish=(error)=>{
+   if(finished)return;finished=true;clearTimeout(timer);
+   pc.removeEventListener('connectionstatechange',check);
+   pc.removeEventListener('iceconnectionstatechange',check);
+   if(error)reject(error);else resolve();
+  };
+  const check=()=>{
+   if(pc.connectionState==='connected')finish();
+   else if(['closed','failed'].includes(pc.connectionState)||pc.iceConnectionState==='failed')
+    finish(Error('SFU WebRTC 連線失敗（'+pc.connectionState+' / '+pc.iceConnectionState+'）'));
+  };
+  const timer=setTimeout(()=>finish(Error('SFU ICE 握手逾時（'+pc.connectionState+' / '+pc.iceConnectionState+'），請確認網路或 TURN 設定')),timeout);
+  pc.addEventListener('connectionstatechange',check);
+  pc.addEventListener('iceconnectionstatechange',check);
+  check();
  });
 }
 
@@ -22036,8 +22065,8 @@ function sfuWatch(){
  if(radioSfu.watch)return;
  radioSfu.watch=setInterval(()=>{
   if(radioMediaMode!=='sfu'||ws?.readyState!==1||!myId)return;
-  if(radioSfu.tx&&(radioSfu.tx.connectionState==='failed'||(radioSfu.tx.connectionState!=='connected'&&Date.now()-radioSfu.txSince>45000))){void sfuRecover('發送端連線失敗或逾時');return;}
-  if(!radioSfu.rxBusy&&(radioSfu.rx?.connectionState==='failed'||(radioSfu.rx&&radioSfu.rx.connectionState!=='connected'&&Date.now()-radioSfu.rxSince>45000))){
+  if(radioSfu.tx&&(radioSfu.tx.connectionState==='failed'||(radioSfu.tx.connectionState!=='connected'&&Date.now()-radioSfu.txSince>85000))){void sfuRecover('發送端連線失敗或逾時');return;}
+  if(!radioSfu.rxBusy&&(radioSfu.rx?.connectionState==='failed'||(radioSfu.rx&&radioSfu.rx.connectionState!=='connected'&&Date.now()-radioSfu.rxSince>85000))){
    radioSfu.rxSignature='';sfuScheduleReceiver(true);return;
   }
   const desired=sfuDesiredMembers();
@@ -22061,16 +22090,22 @@ async function sfuStart(){
    if(pc.connectionState==='failed')void sfuRecover('發送端 ICE 失敗');
    update();
   };
+  status('SFU 發送階段：收集網路候選');
   await pc.setLocalDescription(await pc.createOffer());
   await sfuWaitIce(pc);
   if(run!==radioSfu.run||ws?.readyState!==1)return;
+  status('SFU 發送階段：建立 Session');
   const created=await sfuApi('create',{role:'publisher'});radioSfu.txId=created.sessionId;
   if(run!==radioSfu.run||ws?.readyState!==1)return;
+  status('SFU 發送階段：發布麥克風音軌');
   const offered=await sfuApi('publish',{sessionId:created.sessionId,mid:transceiver.mid,sessionDescription:pc.localDescription});
   if(run!==radioSfu.run||ws?.readyState!==1)return;
   await pc.setRemoteDescription(offered.sessionDescription);
   if(run!==radioSfu.run||ws?.readyState!==1)return;
-  radioSfu.pubReady=pc.connectionState==='connected';status('● SFU 麥克風已發布，正在確認音訊傳輸');
+  status('SFU 發送階段：等待音訊連線');
+  await sfuWaitConnected(pc,20000);
+  if(run!==radioSfu.run||radioSfu.tx!==pc||ws?.readyState!==1)return;
+  radioSfu.pubReady=true;status('● SFU 發送端已完成連線');
   sfuScheduleReceiver();update();
  }catch(error){
   if(run===radioSfu.run){
@@ -22100,7 +22135,7 @@ function sfuScheduleReceiver(force=false){
 async function sfuBuildReceiver(){
  if(radioSfu.rxBusy){radioSfu.rxAgain=true;return;}
  const desired=sfuDesiredMembers();const target=sfuSignature(desired);
- if(target===radioSfu.rxSignature&&(!desired.length||sfuHealthy(radioSfu.rx)||(radioSfu.rx&&radioSfu.rx.connectionState!=='failed'&&Date.now()-radioSfu.rxSince<45000)))return;
+ if(target===radioSfu.rxSignature&&(!desired.length||sfuHealthy(radioSfu.rx)||(radioSfu.rx&&radioSfu.rx.connectionState!=='failed'&&Date.now()-radioSfu.rxSince<85000)))return;
  radioSfu.rxBusy=true;const run=radioSfu.run;
  try{
   try{radioSfu.rx?.close()}catch{}radioSfu.rx=null;sfuClearAudio();radioSfu.rxSignature='';radioSfu.rxId='';
@@ -22136,6 +22171,8 @@ async function sfuBuildReceiver(){
   await sfuWaitIce(pc);
   if(run!==radioSfu.run||radioSfu.rx!==pc)return;
   await sfuApi('renegotiate',{sessionId:session.sessionId,sessionDescription:pc.localDescription});
+  if(run!==radioSfu.run||radioSfu.rx!==pc)return;
+  await sfuWaitConnected(pc,20000);
   if(run!==radioSfu.run||radioSfu.rx!==pc)return;
   radioSfu.rxSignature=target;
   await resumeIncomingAudio();update();
