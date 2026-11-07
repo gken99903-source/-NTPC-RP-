@@ -1,3 +1,4 @@
+<!-- 本次修正：打卡寫入和 UI 刷新錯誤隔離；獎懲編號查詢簡化與 Firebase 索引錯誤提示改善；其餘歷史更新紀錄保留。 -->
 <!-- V2.3.1｜緊急回退：撤銷 V2.3.0 的接收音訊 GainNode 重接線，恢復已驗證基準 V2.2.9 的 SFU 原生音軌播放；保留語音/提示音分開調整、發話冷卻、雙裝置與管理員功能。 -->
 <!-- V2.2.9｜本次修正：開麥切換冷卻 0.65 秒（管理中心優先與10-99不受限）；避免頻繁發話狀態刷新重複排程 SFU 接收；暫斷連線增加15秒恢復寬限。其餘功能及公開歷史紀錄保留。 -->
 <!-- V2.2.5 本次修正：手機 SFU 發送音訊引擎恢復與發送診斷，不更動通話權限或 Worker。 -->
@@ -7957,7 +7958,7 @@ function renderAdminClocks(){
 
 function openAdminClockModal(status){if(!currentUser||currentUser.role!=='admin'){showToast('管理中心打卡僅限最高管理員。','warning','權限不足');return;}document.getElementById('admin-clock-status').value=status;document.getElementById('admin-clock-remark').value='';{const preview=document.getElementById('admin-clock-user-preview');preview.textContent=`${currentUser.name} (${currentUser.account})`;ntpcAvatarPrependToElement(preview,currentUser.account);}document.getElementById('modal-admin-clock').classList.remove('hidden');}
 
-async function submitAdminClock(){if(!currentUser||currentUser.role!=='admin')return;const status=document.getElementById('admin-clock-status').value,remark=document.getElementById('admin-clock-remark').value.trim()||'無',now=Date.now(),id=`ADMCLK-${now}`,obj={id,account:currentUser.account,name:currentUser.name,status,remark,time:formatDateTime(now),timestamp:now};try{await fm.setDoc(fm.doc(db,'adminClocks',id),obj);appData.adminClocks.unshift({docId:id,...obj});closeModal('modal-admin-clock');recalculateDutyStatusCache();renderAdminClocks();renderAdminOverview();showToast('管理中心打卡成功。','success','打卡成功');}catch(e){showToast('管理中心打卡失敗：'+e.message,'error','操作失敗');}}
+async function submitAdminClock(){if(!currentUser||currentUser.role!=='admin')return;const status=document.getElementById('admin-clock-status').value,remark=document.getElementById('admin-clock-remark').value.trim()||'無',now=Date.now(),id=`ADMCLK-${now}`,obj={id,account:currentUser.account,name:currentUser.name,status,remark,time:formatDateTime(now),timestamp:now};try{await fm.setDoc(fm.doc(db,'adminClocks',id),obj);appData.adminClocks.unshift({docId:id,...obj});for(const [label,fn] of [['關閉視窗',()=>closeModal('modal-admin-clock')],['快取',()=>recalculateDutyStatusCache()],['管理打卡紀錄',()=>renderAdminClocks()],['管理總覽',()=>renderAdminOverview()]]){try{fn();}catch(uiError){console.error('管理中心打卡已寫入，但'+label+'刷新失敗',uiError);}}showToast('管理中心打卡成功。','success','打卡成功');}catch(e){showToast('管理中心打卡失敗：'+e.message,'error','操作失敗');}}
 
 async function deleteAdminClock(id){if(!currentUser||currentUser.role!=='admin')return;if(!(await showConfirm('確定刪除此筆管理中心打卡紀錄嗎？','刪除管理中心打卡紀錄','確定刪除')))return;try{await fm.deleteDoc(fm.doc(db,'adminClocks',id));appData.adminClocks=appData.adminClocks.filter(x=>String(x.docId||x.id)!==String(id));recalculateDutyStatusCache();await logAdminAction('刪除管理中心打卡紀錄',id);renderAdminClocks();renderAdminOverview();showSubmitSuccessAnimation('移除成功','管理中心打卡紀錄已成功移除。');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
 
@@ -12669,8 +12670,9 @@ async function republishAnnouncement(id) {
             // 因此不依賴畫面截圖所缺少的複合索引，也不新增任何 Firestore 集合。
             // 只有發布時讀取當日最新的一筆，再用 transaction 檢查待寫入 ID 不存在。
             for(let attempt=0;attempt<12;attempt++){
+                // 只取單一文件名稱倒序最新一筆，避免組合游標查詢觸發不必要的索引錯誤。
                 const q=fm.query(fm.collection(db,'policePunishments'),
-                    fm.orderBy(fm.documentId(),'desc'),fm.startAfter(prefix+'~'),fm.limit(1));
+                    fm.orderBy(fm.documentId(),'desc'),fm.limit(1));
                 const snapshot=await fm.getDocs(q);
                 const latest=String(snapshot.docs[0]?.id||'');
                 const suffix=latest.startsWith(prefix)?latest.slice(prefix.length):'';
@@ -12712,9 +12714,16 @@ async function republishAnnouncement(id) {
                     const date=ntpcPunishmentDateSelection('police');
                     if(date&&now>=date.start&&now<date.end)appData.policePunishments.unshift({docId:id,id,...newPunish});
                 }
-                closeModal('modal-punishment');renderPolicePunishments();updateAccessLocks();
+                for(const [name,fn] of [['關閉視窗',()=>closeModal('modal-punishment')],['獎懲清單',()=>renderPolicePunishments()],['介面權限',()=>updateAccessLocks()]]){
+                    try{fn();}catch(uiError){console.error('獎懲已寫入，但'+name+'更新失敗',uiError);}
+                }
                 showToast('警用獎懲公告已成功發布。','success','發布成功');
-            }catch(e){showToast('雲端寫入失敗：'+(e?.message||e),'error','發布失敗');}
+            }catch(e){
+                console.error('警用獎懲發布失敗',e);
+                const message=String(e?.message||e);
+                if(e?.code==='failed-precondition'&&/index|索引|https?:\/\//i.test(message))showToast('獎懲查詢需要 Firestore 索引，或目前查詢設定不相容。請通知管理員檢查瀏覽器控制台；原始連結不再顯示於通知。','error','發布失敗');
+                else showToast('雲端寫入失敗：'+message.slice(0,280),'error','發布失敗');
+            }
             finally{if(submitButton)submitButton.disabled=false;}
         }
 
@@ -13188,9 +13197,15 @@ async function republishAnnouncement(id) {
                 if(!appData[collectionName].some(row=>String(row.docId||row.id)===clockObj.id))appData[collectionName].unshift({docId:clockObj.id,...clockObj});
                 ntpcV21LazySections.delete(accountVal+':'+dept);
                 closeModal('modal-clock');
-                if(dept==='police')renderPoliceClocks();else renderFireClocks();
-                recalculateDutyStatusCache(); renderAdminOverview();renderMyProfile();
-                showSubmitSuccessAnimation('打卡成功',`${statusVal}打卡已完成。`);
+                // 已成功提交資料庫，不可讓後續畫面刷新例外誤報成「打卡寫入失敗」。
+                const refreshJobs=[
+                    ['打卡清單',()=>dept==='police'?renderPoliceClocks():renderFireClocks()],
+                    ['執勤快取',()=>recalculateDutyStatusCache()],
+                    ['管理總覽',()=>renderAdminOverview()],
+                    ['個人檔案',()=>renderMyProfile()]
+                ];
+                for(const [label,refresh] of refreshJobs){try{refresh();}catch(renderError){console.error('打卡已寫入，但'+label+'刷新失敗：',renderError);}}
+                try{showSubmitSuccessAnimation('打卡成功',`${statusVal}打卡已完成。`);}catch(renderError){console.warn('打卡成功動畫無法顯示',renderError);showToast(`${statusVal}打卡已成功儲存。`,'success','打卡成功');}
             }catch(e){showToast('打卡寫入失敗：'+e.message,'error','操作失敗');}
             finally{window.__clockSubmitting=false;if(btn){btn.disabled=false;btn.classList.remove('is-busy-action');}}
         }
