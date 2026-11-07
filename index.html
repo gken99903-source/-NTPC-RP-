@@ -1,4 +1,5 @@
-<!-- 本次修正：打卡寫入和 UI 刷新錯誤隔離；獎懲編號查詢簡化與 Firebase 索引錯誤提示改善；其餘歷史更新紀錄保留。 -->
+<!-- V2.3.2｜本次檢查：修復雲端初始化畫面錯誤隔離、通知刪除失敗重新同步、公告讀取與過期篩選、主資料成功後 LOG 失敗誤報、備忘錄成功前狀態污染；無線電程式完全不變。 -->
+<!-- V2.3.2｜本次修正：專生報告於教官端以案件檢視模板／中文欄位顯示，不再直接輸出 JSON；不變更 Firestore 資料及其他功能。 -->
 <!-- V2.3.1｜緊急回退：撤銷 V2.3.0 的接收音訊 GainNode 重接線，恢復已驗證基準 V2.2.9 的 SFU 原生音軌播放；保留語音/提示音分開調整、發話冷卻、雙裝置與管理員功能。 -->
 <!-- V2.2.9｜本次修正：開麥切換冷卻 0.65 秒（管理中心優先與10-99不受限）；避免頻繁發話狀態刷新重複排程 SFU 接收；暫斷連線增加15秒恢復寬限。其餘功能及公開歷史紀錄保留。 -->
 <!-- V2.2.5 本次修正：手機 SFU 發送音訊引擎恢復與發送診斷，不更動通話權限或 Worker。 -->
@@ -4460,7 +4461,10 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
                             <div class="rounded-xl border border-slate-700 p-3 space-y-2"><h5 class="font-semibold">專生提交的報告（最近 24 小時）</h5><p id="ntpc-academy-report-live-count" class="text-xs text-emerald-300">選擇專生後開始即時同步</p><div id="ntpc-academy-teacher-reports" class="max-h-72 overflow-auto text-sm"></div></div>
                             <div class="rounded-xl border border-slate-700 p-3 space-y-2"><h5 class="font-semibold">專生上傳的 PDF／圖片附件（最近 24 小時）</h5><div id="ntpc-academy-teacher-files" class="max-h-72 overflow-auto text-sm"></div></div>
                         </div>
-                        <div id="ntpc-academy-report-viewer" class="hidden rounded-xl bg-slate-950 p-4"><div class="flex justify-between gap-2"><h5 id="ntpc-academy-report-title" class="font-semibold"></h5><button type="button" onclick="document.getElementById('ntpc-academy-report-viewer').classList.add('hidden')">關閉</button></div><pre id="ntpc-academy-report-json" class="text-xs text-slate-300 whitespace-pre-wrap break-all overflow-auto max-h-96"></pre></div>
+                        <section id="ntpc-academy-report-viewer" class="hidden rounded-xl bg-slate-950 p-4 sm:p-5 space-y-4 border border-slate-700/70" aria-label="專生報告檢視">
+                            <div class="flex justify-between items-start gap-3"><div class="min-w-0"><h5 id="ntpc-academy-report-title" class="font-semibold text-lg text-white break-words"></h5><p id="ntpc-academy-report-meta" class="mt-1 text-xs text-slate-400 break-words"></p></div><button type="button" class="shrink-0 rounded-lg border border-slate-600 px-3 py-1.5 text-sm hover:bg-slate-800" onclick="document.getElementById('ntpc-academy-report-viewer').classList.add('hidden')">關閉</button></div>
+                            <div id="ntpc-academy-report-rendered" class="max-h-[65vh] overflow-auto space-y-4 text-sm leading-relaxed" aria-live="polite"></div>
+                        </section>
                     </div>
                 </div>
             </div>
@@ -7375,7 +7379,7 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
                 try { await restoreBrowserSession(); } catch (e) { console.warn('登入工作階段恢復略過：', e); }
                 await loadAllDataFromCloud(); // 先恢復登入狀態，再依權限載入一次資料
             })();
-            cloudDataReadyPromise.finally(() => { startRealtimeListeners(); if(currentUser)void ntpcV21LoadFramePolicy(); ntpcV21RefreshDevNav(); });
+            cloudDataReadyPromise.finally(() => { ntpcV21LoadPublicHomeOnce(); startRealtimeListeners(); if(currentUser)void ntpcV21LoadFramePolicy(); ntpcV21RefreshDevNav(); });
         });
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -7958,15 +7962,15 @@ function renderAdminClocks(){
 
 function openAdminClockModal(status){if(!currentUser||currentUser.role!=='admin'){showToast('管理中心打卡僅限最高管理員。','warning','權限不足');return;}document.getElementById('admin-clock-status').value=status;document.getElementById('admin-clock-remark').value='';{const preview=document.getElementById('admin-clock-user-preview');preview.textContent=`${currentUser.name} (${currentUser.account})`;ntpcAvatarPrependToElement(preview,currentUser.account);}document.getElementById('modal-admin-clock').classList.remove('hidden');}
 
-async function submitAdminClock(){if(!currentUser||currentUser.role!=='admin')return;const status=document.getElementById('admin-clock-status').value,remark=document.getElementById('admin-clock-remark').value.trim()||'無',now=Date.now(),id=`ADMCLK-${now}`,obj={id,account:currentUser.account,name:currentUser.name,status,remark,time:formatDateTime(now),timestamp:now};try{await fm.setDoc(fm.doc(db,'adminClocks',id),obj);appData.adminClocks.unshift({docId:id,...obj});for(const [label,fn] of [['關閉視窗',()=>closeModal('modal-admin-clock')],['快取',()=>recalculateDutyStatusCache()],['管理打卡紀錄',()=>renderAdminClocks()],['管理總覽',()=>renderAdminOverview()]]){try{fn();}catch(uiError){console.error('管理中心打卡已寫入，但'+label+'刷新失敗',uiError);}}showToast('管理中心打卡成功。','success','打卡成功');}catch(e){showToast('管理中心打卡失敗：'+e.message,'error','操作失敗');}}
+async function submitAdminClock(){if(!currentUser||currentUser.role!=='admin')return;const status=document.getElementById('admin-clock-status').value,remark=document.getElementById('admin-clock-remark').value.trim()||'無',now=Date.now(),id=`ADMCLK-${now}`,obj={id,account:currentUser.account,name:currentUser.name,status,remark,time:formatDateTime(now),timestamp:now};try{await fm.setDoc(fm.doc(db,'adminClocks',id),obj);appData.adminClocks.unshift({docId:id,...obj});closeModal('modal-admin-clock');recalculateDutyStatusCache();renderAdminClocks();renderAdminOverview();showToast('管理中心打卡成功。','success','打卡成功');}catch(e){showToast('管理中心打卡失敗：'+e.message,'error','操作失敗');}}
 
-async function deleteAdminClock(id){if(!currentUser||currentUser.role!=='admin')return;if(!(await showConfirm('確定刪除此筆管理中心打卡紀錄嗎？','刪除管理中心打卡紀錄','確定刪除')))return;try{await fm.deleteDoc(fm.doc(db,'adminClocks',id));appData.adminClocks=appData.adminClocks.filter(x=>String(x.docId||x.id)!==String(id));recalculateDutyStatusCache();await logAdminAction('刪除管理中心打卡紀錄',id);renderAdminClocks();renderAdminOverview();showSubmitSuccessAnimation('移除成功','管理中心打卡紀錄已成功移除。');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
+async function deleteAdminClock(id){if(!currentUser||currentUser.role!=='admin')return;if(!(await showConfirm('確定刪除此筆管理中心打卡紀錄嗎？','刪除管理中心打卡紀錄','確定刪除')))return;try{await fm.deleteDoc(fm.doc(db,'adminClocks',id));appData.adminClocks=appData.adminClocks.filter(x=>String(x.docId||x.id)!==String(id));recalculateDutyStatusCache();await ntpcAuditAfterMainWrite('刪除管理中心打卡紀錄',id);renderAdminClocks();renderAdminOverview();showSubmitSuccessAnimation('移除成功','管理中心打卡紀錄已成功移除。');}catch(e){showToast('刪除失敗：'+e.message,'error','操作失敗');}}
 
 async function saveMemo() {
             const text = document.getElementById('admin-memo-textarea').value.trim();
-            appData.adminMemo = text;
             try {
                 await fm.setDoc(fm.doc(db, 'systemSettings', 'adminMemo'), { content: text });
+                appData.adminMemo = text;
                 showToast('管理員共同備忘錄已成功儲存。', 'success', '儲存成功');
             } catch (e) {
                 showToast('儲存失敗：' + e.message, 'error', '操作失敗');
@@ -8079,8 +8083,8 @@ function compareSiteVersion(a, b){
             if(!version||!title||!summary){showToast('請填寫版本號、版本標題與首頁最新更新簡述。','warning','資料不完整');return;}
             const now=Date.now(); const obj={version,title,summary,details,active:true,updatedAt:now,updatedBy:currentUser.account};
             try{
-                if(id){ await fm.updateDoc(fm.doc(db,'siteVersions',id),obj); await logAdminAction('編輯網站版本資訊',version,`${title}`,{discord:true}); showToast('版本資訊已更新，全站會自動同步。','success','更新成功'); }
-                else { const newId=`VER-${now}-${Math.random().toString(36).slice(2,7)}`; obj.id=newId;obj.createdAt=now;obj.publishedAt=now;obj.createdBy=currentUser.account; await fm.setDoc(fm.doc(db,'siteVersions',newId),obj); await logAdminAction('發布網站新版本',version,`${title}`,{discord:true}); showToast('新版本已發布，全站版本資訊已自動同步。','success','發布成功'); }
+                if(id){ await fm.updateDoc(fm.doc(db,'siteVersions',id),obj); await ntpcAuditAfterMainWrite('編輯網站版本資訊',version,`${title}`,{discord:true}); showToast('版本資訊已更新，全站會自動同步。','success','更新成功'); }
+                else { const newId=`VER-${now}-${Math.random().toString(36).slice(2,7)}`; obj.id=newId;obj.createdAt=now;obj.publishedAt=now;obj.createdBy=currentUser.account; await fm.setDoc(fm.doc(db,'siteVersions',newId),obj); await ntpcAuditAfterMainWrite('發布網站新版本',version,`${title}`,{discord:true}); showToast('新版本已發布，全站版本資訊已自動同步。','success','發布成功'); }
                 resetSiteVersionForm();
             }catch(e){showToast('版本資訊儲存失敗：'+e.message,'error','操作失敗');}
         }
@@ -8088,7 +8092,7 @@ function compareSiteVersion(a, b){
             if(!currentUser||getEffectiveRole(currentUser)!=='admin'){showToast('只有管理中心最高管理員可以移除版本資訊。','warning','權限不足');return;}
             const v=(appData.siteVersions||[]).find(x=>String(x.docId||x.id)===String(id));if(!v)return;
             if(!(await showConfirm(`確定要移除版本「${v.version||'--'}」嗎？\n\n移除後若仍有其他已發布版本，網站會自動使用下一個最新版本。`,'移除版本資訊','確定移除')))return;
-            try{await fm.deleteDoc(fm.doc(db,'siteVersions',v.docId||v.id));await logAdminAction('移除網站版本資訊',v.version||id,v.title||'',{discord:true});showToast('版本資訊已移除。','success','移除成功');}catch(e){showToast('版本資訊移除失敗：'+e.message,'error','操作失敗');}
+            try{await fm.deleteDoc(fm.doc(db,'siteVersions',v.docId||v.id));await ntpcAuditAfterMainWrite('移除網站版本資訊',v.version||id,v.title||'',{discord:true});showToast('版本資訊已移除。','success','移除成功');}catch(e){showToast('版本資訊移除失敗：'+e.message,'error','操作失敗');}
         }
         function renderAdminSiteVersions(){
             const host=document.getElementById('admin-site-versions-list');if(!host)return;
@@ -8198,6 +8202,17 @@ function renderAdminAnnouncements() {
             }).join('') : '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">尚未建立公告。</div>';
         }
 
+// 僅用於「主要 Firestore 寫入已成功」後的附屬稽核；不可將 LOG 失敗誤報成主要資料寫入失敗。
+async function ntpcAuditAfterMainWrite(action,target,detail='',options={}){
+    try{await logAdminAction(action,target,detail,options);return true;}
+    catch(error){
+        console.warn('主要資料已寫入，但管理 LOG 寫入失敗：',error);
+        ntpcMarkSyncError('adminLogs（附屬稽核）',error);
+        showToast('主要資料已儲存，但管理 LOG 紀錄失敗，請管理員檢查 adminLogs 權限。','warning','稽核尚未成功');
+        return false;
+    }
+}
+
 async function publishAnnouncement() {
             if (!currentUser || currentUser.role !== 'admin') { showToast('只有最高管理員可以發布公告。','warning','權限不足'); return; }
             const text = document.getElementById('announcement-text-input')?.value.trim() || '';
@@ -8209,7 +8224,8 @@ async function publishAnnouncement() {
             const obj = { id, text, publisher, duration, important, createdAt:now, time:formatDateTime(now), expiresAt:announcementExpiry(duration,now), active:true, createdBy:currentUser.account };
             try {
                 await fm.setDoc(fm.doc(db,'announcements',id),obj);
-                /* 公告交由 onSnapshot 唯一回填，避免本地 push 與即時監聽造成重複顯示。 */
+                // 發布完成立即顯示；監聽回傳時依文件 ID 完整同步，避免重複公告。
+                appData.announcements=[...(appData.announcements||[]).filter(a=>String(a.docId||a.id)!==id),{docId:id,...obj}];
                 const input = document.getElementById('announcement-text-input'); if (input) input.value=''; const imp=document.getElementById('announcement-important-input'); if(imp) imp.checked=false;
                 renderAdminAnnouncements(); renderSiteAnnouncements();
                 showToast('公告已發布至首頁。','success','發布成功');
@@ -8220,20 +8236,20 @@ async function deleteAnnouncement(id) {
             if (!currentUser || currentUser.role !== 'admin') { showToast('只有最高管理員可以移除網站公告。','warning','權限不足'); return; }
             const a=(appData.announcements||[]).find(x=>String(x.docId||x.id)===String(id)); if(!a)return;
             if (!(await showConfirm(`確定要永久移除這則網站公告嗎？\\n\\n${a.text||''}\\n\\n移除後將無法恢復。`,'移除網站公告','確定移除'))) return;
-            try { await fm.deleteDoc(fm.doc(db,'announcements',a.docId||a.id)); appData.announcements=appData.announcements.filter(x=>String(x.docId||x.id)!==String(id)); await logAdminAction('移除網站公告',id); renderAdminAnnouncements(); renderSiteAnnouncements(); showToast('公告已永久移除。','success','移除成功'); }
+            try { await fm.deleteDoc(fm.doc(db,'announcements',a.docId||a.id)); appData.announcements=appData.announcements.filter(x=>String(x.docId||x.id)!==String(id)); await ntpcAuditAfterMainWrite('移除網站公告',id); renderAdminAnnouncements(); renderSiteAnnouncements(); showToast('公告已永久移除。','success','移除成功'); }
             catch(e){ showToast('公告移除失敗：'+e.message,'error','操作失敗'); }
         }
 
 async function unpublishAnnouncement(id) {
             const a=(appData.announcements||[]).find(x=>String(x.docId||x.id)===String(id)); if(!a)return;
-            try { await fm.updateDoc(fm.doc(db,'announcements',a.docId||a.id),{active:false,unpublishedAt:Date.now(),unpublishedBy:currentUser.account}); a.active=false; await logAdminAction('手動下架網站公告',id); renderAdminAnnouncements(); renderSiteAnnouncements(); showToast('公告已下架。','success','操作完成'); }
+            try { await fm.updateDoc(fm.doc(db,'announcements',a.docId||a.id),{active:false,unpublishedAt:Date.now(),unpublishedBy:currentUser.account}); a.active=false; await ntpcAuditAfterMainWrite('手動下架網站公告',id); renderAdminAnnouncements(); renderSiteAnnouncements(); showToast('公告已下架。','success','操作完成'); }
             catch(e){ showToast('下架失敗：'+e.message,'error','操作失敗'); }
         }
 
 async function republishAnnouncement(id) {
             const a=(appData.announcements||[]).find(x=>String(x.docId||x.id)===String(id)); if(!a)return;
             const now=Date.now(), expires=announcementExpiry(a.duration,now);
-            try { await fm.updateDoc(fm.doc(db,'announcements',a.docId||a.id),{active:true,createdAt:now,time:formatDateTime(now),expiresAt:expires}); a.active=true;a.createdAt=now;a.time=formatDateTime(now);a.expiresAt=expires; await logAdminAction('重新發布網站公告',id); renderAdminAnnouncements(); renderSiteAnnouncements(); showToast('公告已重新發布。','success','操作完成'); }
+            try { await fm.updateDoc(fm.doc(db,'announcements',a.docId||a.id),{active:true,createdAt:now,time:formatDateTime(now),expiresAt:expires}); a.active=true;a.createdAt=now;a.time=formatDateTime(now);a.expiresAt=expires; await ntpcAuditAfterMainWrite('重新發布網站公告',id); renderAdminAnnouncements(); renderSiteAnnouncements(); showToast('公告已重新發布。','success','操作完成'); }
             catch(e){ showToast('重新發布失敗：'+e.message,'error','操作失敗'); }
         }
 
@@ -8330,29 +8346,36 @@ async function republishAnnouncement(id) {
                 appData.policeViolationRules = [];
                 POLICE_VIOLATION_RULES = [];
 
-                updateAccessLocks();
-                renderPoliceReports();
-                renderPoliceReview();
-                renderMyProfile();
-                renderPolicePunishments();
-                renderPoliceClocks();
-                renderLookupSystems();
-                renderFireReports();
-                renderEMSReports();
-                renderFireClocks();
-                renderAdminUsers();
-                renderAdminLogs();
-                ntpcMaybeRenderAdminStorage();
-                if (typeof window.renderAdminOverview === 'function') window.renderAdminOverview();
-                renderAdminAnnouncements();
-                renderAdminClocks();
-                if (currentUser && getEffectiveRole(currentUser)==='admin') renderDiscordWebhookSettings();
-                renderSiteAnnouncements();
+                // 每個初始畫面獨立渲染；任何一個視窗發生 JS 錯誤，都不會中斷後續雲端功能的初始化。
+                const safeInitView=(name,callback)=>{
+                    try{callback();}catch(error){
+                        console.error('雲端資料已載入，但初始化畫面失敗：'+name,error);
+                        ntpcMarkSyncError(name+'（畫面渲染）',error);
+                    }
+                };
+                safeInitView('權限',updateAccessLocks);
+                safeInitView('警務報告',renderPoliceReports);
+                safeInitView('警務審核',renderPoliceReview);
+                safeInitView('個人檔案',renderMyProfile);
+                safeInitView('警務獎懲',renderPolicePunishments);
+                safeInitView('警務打卡',renderPoliceClocks);
+                safeInitView('警用查詢',renderLookupSystems);
+                safeInitView('消防報告',renderFireReports);
+                safeInitView('EMS 報告',renderEMSReports);
+                safeInitView('消防打卡',renderFireClocks);
+                safeInitView('帳號管理',renderAdminUsers);
+                safeInitView('管理紀錄',renderAdminLogs);
+                safeInitView('管理容量資訊',ntpcMaybeRenderAdminStorage);
+                if (typeof window.renderAdminOverview === 'function') safeInitView('管理總覽',window.renderAdminOverview);
+                safeInitView('公告管理',renderAdminAnnouncements);
+                safeInitView('管理中心打卡',renderAdminClocks);
+                if (currentUser && getEffectiveRole(currentUser)==='admin') safeInitView('Discord 設定',renderDiscordWebhookSettings);
+                safeInitView('網站公告',renderSiteAnnouncements);
                 const ap=document.getElementById('announcement-publisher-input'); if(ap && !ap.value) ap.value=currentUser?.name||'';
-                populateMemberSelects();
+                safeInitView('警務人員名單',populateMemberSelects);
                 // 一般帳號已由 firebase-ready 流程驗證；專生代碼在此完成雲端有效性驗證。
                 await restoreAcademySession();
-                renderAdminAcademyCodes();
+                safeInitView('教官代碼清單',renderAdminAcademyCodes);
             } catch (e) {
                 console.error("雲端資料同步讀取失敗", e);
             }
@@ -8803,15 +8826,25 @@ async function republishAnnouncement(id) {
                 return true;
             }catch(e){console.warn('按需載入 '+name+' 失敗',e);return false;}
         }
-        async function ntpcV21LoadPublicHomeOnce(){
-            if(ntpcV21LazySections.has('publicHome')||!fm||!db)return;
-            ntpcV21LazySections.set('publicHome',Date.now());
-            try{const cached=typeof ntpcCachedRowsGet==='function'?await ntpcCachedRowsGet('announcements'):null;
-                const snap=cached?null:await fm.getDocs(fm.query(fm.collection(db,'announcements'),fm.limit(25)));
-                appData.announcements=cached||snap.docs.map(d=>({docId:d.id,...d.data()}));
-                if(!cached&&typeof ntpcCachedRowsPut==='function')void ntpcCachedRowsPut('announcements',appData.announcements);
-                renderSiteAnnouncements();
-            }catch(e){ntpcV21LazySections.delete('publicHome');console.warn('公告按需讀取失敗',e);}
+        // 公告使用單一即時監聽；不讀取可能過期的舊快取，且只取最近 25 則以控制讀取量。
+        let ntpcAnnouncementUnsubscribe=null;
+        function ntpcV21LoadPublicHomeOnce(){
+            if(ntpcAnnouncementUnsubscribe||!fm||!db)return;
+            try{
+                const q=fm.query(fm.collection(db,'announcements'),fm.orderBy(fm.documentId(),'desc'),fm.limit(200));
+                ntpcAnnouncementUnsubscribe=fm.onSnapshot(q,snap=>{
+                    appData.announcements=snap.docs.map(d=>({docId:d.id,...d.data()}));
+                    renderSiteAnnouncements();
+                    renderAdminAnnouncements();
+                    renderDashAnnouncements();
+                },error=>{
+                    ntpcAnnouncementUnsubscribe=null;
+                    console.warn('公告即時讀取失敗（保留目前畫面資料）：',error);
+                });
+            }catch(error){
+                ntpcAnnouncementUnsubscribe=null;
+                console.warn('公告監聽啟動失敗：',error);
+            }
         }
         // 消防高層僅載入自己的 users 文件，不能單靠 appData.users 選擇其他消防隊員。
         // 以既有 fireClocks 快取建立名單：不新增 Firebase 讀取，也不洩漏完整帳號清單。
@@ -10962,7 +10995,13 @@ async function republishAnnouncement(id) {
                 showToast(`已刪除 ${deleted} 則個人通知。`,'success','刪除完成');
             }catch(e){
                 showToast('一鍵刪除通知失敗：'+e.message,'error','操作失敗');
-                try{ await loadUserData(); renderPersonalNotifications(); }catch(_){}
+                // 可能前幾筆已刪除、後續寫入失敗；精確重讀本人通知，避免顯示已不存在的項目。
+                try{
+                    const q=fm.query(fm.collection(db,'reportNotifications'),fm.where('recipientAccount','==',currentUser.account));
+                    const snap=await fm.getDocs(q);
+                    appData.reportNotifications=snap.docs.map(d=>({docId:d.id,...d.data()}));
+                    renderPersonalNotifications();
+                }catch(syncError){console.warn('通知部分刪除後的重新同步失敗：',syncError);} 
             }
         }
 
@@ -12670,9 +12709,8 @@ async function republishAnnouncement(id) {
             // 因此不依賴畫面截圖所缺少的複合索引，也不新增任何 Firestore 集合。
             // 只有發布時讀取當日最新的一筆，再用 transaction 檢查待寫入 ID 不存在。
             for(let attempt=0;attempt<12;attempt++){
-                // 只取單一文件名稱倒序最新一筆，避免組合游標查詢觸發不必要的索引錯誤。
                 const q=fm.query(fm.collection(db,'policePunishments'),
-                    fm.orderBy(fm.documentId(),'desc'),fm.limit(1));
+                    fm.orderBy(fm.documentId(),'desc'),fm.startAfter(prefix+'~'),fm.limit(1));
                 const snapshot=await fm.getDocs(q);
                 const latest=String(snapshot.docs[0]?.id||'');
                 const suffix=latest.startsWith(prefix)?latest.slice(prefix.length):'';
@@ -12714,16 +12752,9 @@ async function republishAnnouncement(id) {
                     const date=ntpcPunishmentDateSelection('police');
                     if(date&&now>=date.start&&now<date.end)appData.policePunishments.unshift({docId:id,id,...newPunish});
                 }
-                for(const [name,fn] of [['關閉視窗',()=>closeModal('modal-punishment')],['獎懲清單',()=>renderPolicePunishments()],['介面權限',()=>updateAccessLocks()]]){
-                    try{fn();}catch(uiError){console.error('獎懲已寫入，但'+name+'更新失敗',uiError);}
-                }
+                closeModal('modal-punishment');renderPolicePunishments();updateAccessLocks();
                 showToast('警用獎懲公告已成功發布。','success','發布成功');
-            }catch(e){
-                console.error('警用獎懲發布失敗',e);
-                const message=String(e?.message||e);
-                if(e?.code==='failed-precondition'&&/index|索引|https?:\/\//i.test(message))showToast('獎懲查詢需要 Firestore 索引，或目前查詢設定不相容。請通知管理員檢查瀏覽器控制台；原始連結不再顯示於通知。','error','發布失敗');
-                else showToast('雲端寫入失敗：'+message.slice(0,280),'error','發布失敗');
-            }
+            }catch(e){showToast('雲端寫入失敗：'+(e?.message||e),'error','發布失敗');}
             finally{if(submitButton)submitButton.disabled=false;}
         }
 
@@ -13197,15 +13228,9 @@ async function republishAnnouncement(id) {
                 if(!appData[collectionName].some(row=>String(row.docId||row.id)===clockObj.id))appData[collectionName].unshift({docId:clockObj.id,...clockObj});
                 ntpcV21LazySections.delete(accountVal+':'+dept);
                 closeModal('modal-clock');
-                // 已成功提交資料庫，不可讓後續畫面刷新例外誤報成「打卡寫入失敗」。
-                const refreshJobs=[
-                    ['打卡清單',()=>dept==='police'?renderPoliceClocks():renderFireClocks()],
-                    ['執勤快取',()=>recalculateDutyStatusCache()],
-                    ['管理總覽',()=>renderAdminOverview()],
-                    ['個人檔案',()=>renderMyProfile()]
-                ];
-                for(const [label,refresh] of refreshJobs){try{refresh();}catch(renderError){console.error('打卡已寫入，但'+label+'刷新失敗：',renderError);}}
-                try{showSubmitSuccessAnimation('打卡成功',`${statusVal}打卡已完成。`);}catch(renderError){console.warn('打卡成功動畫無法顯示',renderError);showToast(`${statusVal}打卡已成功儲存。`,'success','打卡成功');}
+                if(dept==='police')renderPoliceClocks();else renderFireClocks();
+                recalculateDutyStatusCache(); renderAdminOverview();renderMyProfile();
+                showSubmitSuccessAnimation('打卡成功',`${statusVal}打卡已完成。`);
             }catch(e){showToast('打卡寫入失敗：'+e.message,'error','操作失敗');}
             finally{window.__clockSubmitting=false;if(btn){btn.disabled=false;btn.classList.remove('is-busy-action');}}
         }
@@ -14239,7 +14264,7 @@ async function republishAnnouncement(id) {
                 await fm.deleteDoc(fm.doc(db, 'policePunishments', p.docId || p.id));
                 const deletedKey = String(p.docId || p.id || punishId);
                 appData.policePunishments = appData.policePunishments.filter(x => String(x.docId || x.id || '') !== deletedKey);
-                await logAdminAction('移除警用獎懲', p.id || punishId);
+                await ntpcAuditAfterMainWrite('移除警用獎懲', p.id || punishId);
                 renderPolicePunishments();
                 updateAccessLocks();
                 showToast('警用獎懲公告已成功移除。', 'success', '操作成功');
@@ -15485,7 +15510,7 @@ async function republishAnnouncement(id) {
 
             filtered.forEach(c => {
                 const tr = document.createElement('tr');
-                tr.dataset.accountKey=String(u.account||'').toLowerCase();
+                tr.dataset.accountKey=String(c.account||'').toLowerCase();
                 tr.className = "hover:bg-slate-800/40 transition";
                 tr.innerHTML = `
                     <td class="p-4 font-medium text-white">${ntpcAvatarIdentityHtml(c.account||c.staffNumber,c.name||'--')} (${escapeHtml(c.staffNumber||c.account||'--')})</td>
@@ -16840,7 +16865,7 @@ function renderDashSystemStatus(){
     // 只在快取過期時讀取一次狀態文件，避免儀表板每次重繪都增加 Firestore 讀取量。
     if(!cache.data || Date.now()-(cache.fetchedAt||0)>60000){getDiscordWebhookStatus().then(()=>{if(document.getElementById('dash-system-status'))renderDashSystemStatus();}).catch(e=>console.warn('Discord 狀態讀取失敗',e));}
 }
-function renderDashAnnouncements(){const h=document.getElementById('dash-important-announcements');if(!h)return;const rows=(appData.announcements||[]).filter(a=>a.active!==false&&a.important).sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0)).slice(0,5);h.innerHTML=rows.length?rows.map(a=>`<div class="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5"><div class="text-sm text-white">${ntpcEsc(a.text)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(a.publisher||'系統')}｜${ntpcEsc(a.time||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有置頂重要公告。</div>';}
+function renderDashAnnouncements(){const h=document.getElementById('dash-important-announcements');if(!h)return;const rows=(appData.announcements||[]).filter(a=>a.active!==false&&a.important&&(!a.expiresAt||Number(a.expiresAt)>Date.now())).sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0)).slice(0,5);h.innerHTML=rows.length?rows.map(a=>`<div class="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5"><div class="text-sm text-white">${ntpcEsc(a.text)}</div><div class="text-[11px] text-slate-500 mt-1">${ntpcEsc(a.publisher||'系統')}｜${ntpcEsc(a.time||'')}</div></div>`).join(''):'<div class="text-sm text-slate-500 py-5 text-center">目前沒有置頂重要公告。</div>';}
 function getUserDepartments(u=currentUser){if(!u)return [];if(getEffectiveRole(u)==='admin')return ['police','fire'];const units=Array.isArray(u.units)?u.units:[u.unit];return [...new Set(units.filter(x=>x==='police'||x==='fire'))];}
 function handoverDepartmentOf(note){if(note?.department==='police'||note?.department==='fire')return note.department;const u=(appData.users||[]).find(x=>String(x.account||'').toLowerCase()===String(note?.authorAccount||'').toLowerCase());return getUserDepartments(u)[0]||'police';}
 function canViewHandover(note){return getUserDepartments(currentUser).includes(handoverDepartmentOf(note));}
@@ -18932,12 +18957,127 @@ window.addEventListener('online',()=>{renderDashSystemStatus();});window.addEven
             else if(ntpcAcademyPane==='teacher'&&ntpcSelectedStudent&&ntpcAcadTeacherOK()&&!document.getElementById('tab-academy')?.classList.contains('hidden'))
                 ntpcStartStudentDocRealtime(ntpcSelectedStudent);
         });
+        // V2.3.2：教官報告改用既有案件格式／安全的欄位檢視，不再顯示 JSON 原始碼。
+        // 不變更 academyReportsV138 的結構、存取權限與 24 小時有效期。
+        const NTPC_ACADEMY_REPORT_LABELS=Object.freeze({
+            caseId:'案件編號',id:'報告編號',reportType:'報告類型',category:'部門',title:'標題',
+            trafficRecord:'交通事件資料',interviewRecord:'調查筆錄',forensicRecord:'刑事鑑定資料',
+            patient:'傷病患姓名',unit:'單位',unitVehicle:'出勤單位／車輛',date:'日期',time:'時間',
+            location:'地點',postalCode:'郵遞區號',summary:'事故概述',officer:'承辦員警',
+            issuedDate:'核發日期',issuingUnit:'核發單位',note:'補充備註',sceneNote:'現場勘查',
+            brakeMarks:'煞車痕跡',weather:'天氣',roadCondition:'道路狀況',laneType:'道路型態',
+            sceneMapData:'現場圖標記',parties:'當事人',party:'當事人代號',vehicleType:'車輛種類',
+            plate:'車牌',driver:'駕駛／當事人',damageZones:'車輛受損部位',analysis:'初步肇事原因分析',
+            mode:'標記類型',x:'水平位置',y:'垂直位置',rotation:'旋轉角度',
+            attachments:'附件',videoLinks:'影音證據',videoLink:'影片連結',
+            content:'報告內容',authorName:'填寫人',authorId:'填寫人編號',
+            registeredByAccount:'登記帳號',registeredAt:'登記時間',
+            dispatchCategory:'派遣類別',chiefComplaint:'主訴',treatment:'處置經過',
+            dispatchTime:'出勤時間',arrivalTime:'到場時間',
+            person:'受詢問人',cause:'案由',place:'詢問地點',capacity:'受詢問人身分',
+            start:'開始時間',end:'結束時間',questions:'詢問問答',q:'問題',a:'回答',
+            gender:'性別',birth:'出生日期',identity:'證件編號',phone:'聯絡電話',
+            signature:'確認簽名',rightsAdvised:'已告知相關權利',
+            evidence:'證物',evidences:'證物清單',name:'名稱',type:'類型',
+            description:'說明',collectedBy:'採集人員',collectedAt:'採集時間',
+            status:'狀態',result:'結果',reason:'原因',nameOfEvidence:'證物名稱',
+            suspectName:'對象姓名',suspectId:'證件編號',suspectVehicle:'嫌疑車輛',
+            violation:'違規事項',violations:'違反事項',remark:'批示／備註',
+            scene:'現場狀況',gcs:'GCS 評分',temperature:'體溫',pulse:'脈搏',
+            bloodPressure:'血壓',respiration:'呼吸',spo2:'血氧濃度',
+            route:'路線',vehicle:'車輛',destination:'目的地'
+        });
+        function ntpcAcademyReportValueText(v,key=''){
+            if(v===null||v===undefined||v==='')return '未填寫';
+            if(typeof v==='boolean')return v?'是':'否';
+            if(typeof v==='number')return String(v);
+            if(typeof v==='string'){
+                if(key==='laneType')return ({'t-intersection':'T 字路口','cross-intersection':'十字路口'})[v]||v;
+                return v;
+            }
+            return String(v);
+        }
+        function ntpcAcademyRenderReportFields(root,value,depth=0){
+            if(depth>6){root.append(document.createTextNode('資料層級較深，請參考原始表單。'));return;}
+            if(Array.isArray(value)){
+                if(!value.length){const empty=document.createElement('p');empty.className='text-slate-500 text-sm';empty.textContent='無';root.append(empty);return;}
+                for(let i=0;i<Math.min(value.length,100);i++){
+                    const item=value[i];
+                    if(item!==null&&typeof item==='object'){
+                        const card=document.createElement('div');card.className='rounded-lg border border-slate-700/70 bg-slate-900/70 p-3 space-y-2';
+                        const head=document.createElement('h6');head.className='text-sm font-semibold text-cyan-200';head.textContent='第 '+(i+1)+' 項';card.append(head);
+                        ntpcAcademyRenderReportFields(card,item,depth+1);root.append(card);
+                    }else{
+                        const line=document.createElement('p');line.className='text-slate-200 whitespace-pre-wrap break-words';line.textContent='• '+ntpcAcademyReportValueText(item);root.append(line);
+                    }
+                }
+                if(value.length>100){const more=document.createElement('p');more.className='text-xs text-amber-300';more.textContent='僅顯示前 100 項';root.append(more);}
+                return;
+            }
+            if(value&&typeof value==='object'){
+                const dl=document.createElement('dl');dl.className='grid grid-cols-1 sm:grid-cols-2 gap-3';
+                const omitted=new Set(['_id','createdByAccount','createdByName','updatedAt','submittedAt','timestamp','reportType','caseId','id','title','time','registeredAt','authorName','authorId']);
+                for(const [key,child] of Object.entries(value)){
+                    if(depth===0&&omitted.has(key))continue;
+                    if(child===undefined||child===null||child==='')continue;
+                    const group=document.createElement('div');group.className='rounded-lg bg-slate-900/70 border border-slate-800 p-3 min-w-0';
+                    const label=document.createElement('dt');label.className='text-xs font-medium text-slate-400 mb-1';label.textContent=NTPC_ACADEMY_REPORT_LABELS[key]||key;group.append(label);
+                    const dd=document.createElement('dd');dd.className='text-slate-100 whitespace-pre-wrap break-words';
+                    if(child!==null&&typeof child==='object'){
+                        ntpcAcademyRenderReportFields(dd,child,depth+1);
+                    }else if(typeof child==='string'&&/^https:\/\/[^\s]+$/i.test(child)){
+                        // 僅允許 HTTPS 連結，避免可執行網址被當成附件。
+                        const a=document.createElement('a');a.href=child;a.target='_blank';a.rel='noopener noreferrer';a.className='text-cyan-300 underline break-all';a.textContent='查看附件連結';dd.append(a);
+                    }else{dd.textContent=ntpcAcademyReportValueText(child,key);}
+                    group.append(dd);dl.append(group);
+                }
+                if(dl.childElementCount)root.append(dl);
+                return;
+            }
+            const p=document.createElement('p');p.className='text-slate-200 whitespace-pre-wrap break-words';p.textContent=ntpcAcademyReportValueText(value);root.append(p);
+        }
+        function ntpcAcademyRenderReportViewer(host,report){
+            host.replaceChildren();
+            let data=report?.content;
+            if(typeof data==='string'){
+                try{const parsed=JSON.parse(data);if(parsed&&typeof parsed==='object')data=parsed;}catch(_){}
+            }
+            if(data===null||data===undefined){host.textContent='這份報告沒有內容。';return;}
+            const heading=document.createElement('div');heading.className='text-xs text-cyan-300 border-b border-slate-800 pb-2';
+            heading.textContent='專生考核案件報告｜'+String(report?.category||'案件紀錄');host.append(heading);
+            // 直接使用網站既有的案件詳細檢視模板，讓交通現場圖、筆錄與鑑定文件維持原有格式。
+            if(data&&typeof data==='object'&&!Array.isArray(data)){
+                const type=String(data.reportType||'');
+                const renderer=type==='policeTrafficAnalysis'?window.ntpcTrafficDetailHtml:
+                    type==='policeInterview'?window.ntpcInterviewDetailHtml:
+                    type==='policeForensicRecord'&&typeof forensicDetailHtml==='function'?forensicDetailHtml:null;
+                if(typeof renderer==='function'){
+                    try{
+                        const formatted=renderer(data);
+                        if(typeof formatted==='string'&&formatted.trim()){
+                            const formattedHost=document.createElement('div');formattedHost.className='space-y-4';
+                            formattedHost.innerHTML=formatted;host.append(formattedHost);return;
+                        }
+                    }catch(error){console.warn('專生報告既有模板無法顯示，改用欄位檢視',error);}
+                }
+            }
+            // 消防、EMS、模擬通緝、舊版資料使用純 DOM 呈現，不把使用者內容當 HTML 執行。
+            ntpcAcademyRenderReportFields(host,data);
+        }
         async function ntpcOpenReport(id){
             try{
                 const r=(await ntpcAcademyAPI('view-report',{id})).report;
-                const viewer=document.getElementById('ntpc-academy-report-viewer');viewer.classList.remove('hidden');
-                document.getElementById('ntpc-academy-report-title').textContent=r.title;
-                document.getElementById('ntpc-academy-report-json').textContent=JSON.stringify(r.content,null,2);
+                if(!r)throw new Error('找不到報告資料');
+                const viewer=document.getElementById('ntpc-academy-report-viewer');
+                const body=document.getElementById('ntpc-academy-report-rendered');
+                if(!viewer||!body)throw new Error('找不到教官報告檢視區');
+                document.getElementById('ntpc-academy-report-title').textContent=String(r.title||'專生案件報告');
+                const details=[r.category||'考核報告'];
+                if(r.content?.caseId||r.content?.id)details.push('編號：'+(r.content.caseId||r.content.id));
+                if(r.submittedAt)details.push('提交時間：'+ntpcAcademyFormatDate(ntpcAcadIso(r.submittedAt)));
+                document.getElementById('ntpc-academy-report-meta').textContent=details.join('｜');
+                ntpcAcademyRenderReportViewer(body,r);
+                viewer.classList.remove('hidden');
             }catch(e){ntpcAcademyNotify(e,'開啟報告失敗');}
         }
         async function ntpcDownloadAcademicFile(id){
