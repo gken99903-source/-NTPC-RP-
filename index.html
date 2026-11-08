@@ -12705,18 +12705,18 @@ async function republishAnnouncement(id) {
 
         async function ntpcSaveUniquePunishment(payload){
             const date=ntpcTodayTaipei().date.replaceAll('-',''),prefix='PUN-'+date;
-            // 單欄文件 ID 排序 + 游標：不再對同一 __name__ 使用雙向 where 與 orderBy，
-            // 因此不依賴畫面截圖所缺少的複合索引，也不新增任何 Firestore 集合。
-            // 只有發布時讀取當日最新的一筆，再用 transaction 檢查待寫入 ID 不存在。
+            // 只按既有 timestamp 單欄排序，避開 __name__ DESC 所需的額外索引。
+            // 查一次最新獎懲；候選編號如被同時發布者使用，交易檢查後依序遞增重試。
+            const q=fm.query(fm.collection(db,'policePunishments'),
+                fm.orderBy('timestamp','desc'),fm.limit(1));
+            const snapshot=await fm.getDocs(q);
+            const latest=String(snapshot.docs[0]?.id||'');
+            const suffix=latest.startsWith(prefix)?latest.slice(prefix.length):'';
+            const serial=/^\d+$/.test(suffix)?Number(suffix):0;
+            if(!Number.isSafeInteger(serial)||serial>=999999999)throw new Error('獎懲流水號已達上限，請洽管理員。');
             for(let attempt=0;attempt<12;attempt++){
-                const q=fm.query(fm.collection(db,'policePunishments'),
-                    fm.orderBy(fm.documentId(),'desc'),fm.startAfter(prefix+'~'),fm.limit(1));
-                const snapshot=await fm.getDocs(q);
-                const latest=String(snapshot.docs[0]?.id||'');
-                const suffix=latest.startsWith(prefix)?latest.slice(prefix.length):'';
-                const serial=/^\d+$/.test(suffix)?Number(suffix):0;
-                if(!Number.isSafeInteger(serial)||serial>=999999999)throw new Error('獎懲流水號已達上限，請洽管理員。');
-                const id=prefix+String(serial+1).padStart(3,'0'),ref=fm.doc(db,'policePunishments',id);
+                if(serial+attempt>=999999999)throw new Error('獎懲流水號已達上限，請洽管理員。');
+                const id=prefix+String(serial+attempt+1).padStart(3,'0'),ref=fm.doc(db,'policePunishments',id);
                 try{
                     await fm.runTransaction(db,async tx=>{
                         const existing=await tx.get(ref);
