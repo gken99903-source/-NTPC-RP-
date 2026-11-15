@@ -7443,7 +7443,16 @@ body.ntpc-public-profile-open > :not(#ntpc-v2-profile-modal) *::after {
                 try { await restoreBrowserSession(); } catch (e) { console.warn('登入工作階段恢復略過：', e); }
                 await loadAllDataFromCloud(); // 先恢復登入狀態，再依權限載入一次資料
             })();
-            cloudDataReadyPromise.finally(() => { ntpcV21LoadPublicHomeOnce(); startRealtimeListeners(); if(currentUser)void ntpcV21LoadFramePolicy(); ntpcV21RefreshDevNav(); });
+            cloudDataReadyPromise.finally(() => {
+                ntpcV21LoadPublicHomeOnce();startRealtimeListeners();
+                if(currentUser){
+                    updateUserBadge();updateAccessLocks();
+                    // 首頁導覽曾在記住登入資料尚未還原時先渲染；雲端載入完成後再依最新帳號權限刷新嘉蕭入口。
+                    if(typeof window.ntpcV127RefreshHome==='function')window.ntpcV127RefreshHome();
+                    void ntpcV21LoadFramePolicy();
+                }
+                ntpcV21RefreshDevNav();
+            });
         });
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -9629,8 +9638,11 @@ async function republishAnnouncement(id) {
             const now=Date.now();const memberSel=document.getElementById('fire-punish-member');
             const payload={memberName:v('fire-punish-name'),memberId:v('fire-punish-staff'),memberAccount:memberSel.value||'',type:v('fire-punish-type'),items,item:items.join('、'),department:v('fire-punish-unit'),authorName:v('fire-punish-author'),authorPos:v('fire-punish-position'),authorAccount:currentUser.account,reason:v('fire-punish-reason'),time:formatDateTime(now)};
             try{
-                const id=ntpcFirePunishEditId||`FPN-${now}-${Math.random().toString(36).slice(2,7)}`;
-                const doc=fm.doc(db,'firePunishments',id);
+                // 新增使用 Firestore 自動文件 ID，直接寫入、不執行複合索引查詢，也避免隨機 ID 碰撞覆蓋舊資料。
+                const doc=ntpcFirePunishEditId
+                    ?fm.doc(db,'firePunishments',ntpcFirePunishEditId)
+                    :fm.doc(fm.collection(db,'firePunishments'));
+                const id=ntpcFirePunishEditId||doc.id;
                 if(ntpcFirePunishEditId)await fm.updateDoc(doc,{...payload,updatedAt:now,updatedBy:currentUser.account});
                 else await fm.setDoc(doc,{...payload,id,timestamp:now});
                 if(ntpcFirePunishmentLoaded){const existing=ntpcFirePunishments.find(x=>x.docId===id);if(existing)Object.assign(existing,payload);else ntpcFirePunishments.unshift({...payload,docId:id,id,timestamp:now});ntpcRenderFirePunishments();}
