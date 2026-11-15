@@ -1,4 +1,4 @@
-<!-- 進場動畫更新：網站初次載入顯示新北 RP 標誌並淡出；登入視窗保留自適應進場動畫與原登入流程。 -->
+<!-- 首頁個人卡片改為最近 5 筆本人報告，退件優先並可編輯；已審核報告可檢視。網站與登入進場動畫保留。 -->
 <!-- V2.3.2｜本次修正：專生報告於教官端以案件檢視模板／中文欄位顯示，不再直接輸出 JSON；不變更 Firestore 資料及其他功能。 -->
 <!-- V2.3.1｜緊急回退：撤銷 V2.3.0 的接收音訊 GainNode 重接線，恢復已驗證基準 V2.2.9 的 SFU 原生音軌播放；保留語音/提示音分開調整、發話冷卻、雙裝置與管理員功能。 -->
 <!-- V2.2.9｜本次修正：開麥切換冷卻 0.65 秒（管理中心優先與10-99不受限）；避免頻繁發話狀態刷新重複排程 SFU 接收；暫斷連線增加15秒恢復寬限。其餘功能及公開歷史紀錄保留。 -->
@@ -12745,26 +12745,41 @@ async function republishAnnouncement(id) {
 
         async function ntpcSaveUniquePunishment(payload){
             const date=ntpcTodayTaipei().date.replaceAll('-',''),prefix='PUN-'+date;
-            // 單欄文件 ID 排序 + 游標：不再對同一 __name__ 使用雙向 where 與 orderBy，
-            // 因此不依賴畫面截圖所缺少的複合索引，也不新增任何 Firestore 集合。
-            // 只有發布時讀取當日最新的一筆，再用 transaction 檢查待寫入 ID 不存在。
+            const saveCandidate=async id=>{
+                const ref=fm.doc(db,'policePunishments',id);
+                await fm.runTransaction(db,async tx=>{
+                    const existing=await tx.get(ref);
+                    if(existing.exists())throw new Error('PUN_ID_COLLISION');
+                    tx.set(ref,{...payload,id});
+                });
+                return id;
+            };
+            // 正常情況依文件 ID 取當日最新流水號；若雲端要求複合索引，改用交易直接建立唯一 ID，
+            // 讓發布不依賴 Firebase 主控台索引設定，也不新增集合或修改既有資料。
             for(let attempt=0;attempt<12;attempt++){
                 const q=fm.query(fm.collection(db,'policePunishments'),
                     fm.orderBy(fm.documentId(),'desc'),fm.startAfter(prefix+'~'),fm.limit(1));
-                const snapshot=await fm.getDocs(q);
+                let snapshot;
+                try{snapshot=await fm.getDocs(q);}
+                catch(error){
+                    const message=String(error?.message||error),code=String(error?.code||'');
+                    const missingIndex=/requires an index/i.test(message)||(code==='failed-precondition'&&/index/i.test(message));
+                    if(!missingIndex)throw error;
+                    for(let fallback=0;fallback<8;fallback++){
+                        const salt=(Date.now()+Math.floor(Math.random()*1000000)+fallback)%999999999;
+                        const id=prefix+String(salt||fallback+1).padStart(3,'0');
+                        try{return await saveCandidate(id);}
+                        catch(candidateError){if(String(candidateError?.message||'').includes('PUN_ID_COLLISION'))continue;throw candidateError;}
+                    }
+                    throw new Error('無法配置唯一獎懲編號，請重新發布。');
+                }
                 const latest=String(snapshot.docs[0]?.id||'');
                 const suffix=latest.startsWith(prefix)?latest.slice(prefix.length):'';
                 const serial=/^\d+$/.test(suffix)?Number(suffix):0;
                 if(!Number.isSafeInteger(serial)||serial>=999999999)throw new Error('獎懲流水號已達上限，請洽管理員。');
-                const id=prefix+String(serial+1).padStart(3,'0'),ref=fm.doc(db,'policePunishments',id);
-                try{
-                    await fm.runTransaction(db,async tx=>{
-                        const existing=await tx.get(ref);
-                        if(existing.exists())throw new Error('PUN_ID_COLLISION');
-                        tx.set(ref,{...payload,id});
-                    });
-                    return id;
-                }catch(error){
+                const id=prefix+String(serial+1).padStart(3,'0');
+                try{return await saveCandidate(id);}
+                catch(error){
                     if(String(error?.message||'').includes('PUN_ID_COLLISION'))continue;
                     throw error;
                 }
@@ -21470,22 +21485,46 @@ function localHours(){
     return [Number.isFinite(h1)?h1.toFixed(1)+' h':'—',Number.isFinite(h2)?h2.toFixed(1)+' h':'—'];
   }catch{return ['—','—'];}
 }
-function renderPersonalCard(){
-  const d=statusDuty(),h=localHours();
-  display('ntpc-v127-duty-state',d.text);
-  const duty=el('ntpc-v127-duty-state');if(duty)duty.style.color=d.color;
-  display('ntpc-v127-week',h?h[0]:'—'); display('ntpc-v127-month',h?h[1]:'—');
-  const acc=userAccount();
-  if(reportCache&&reportCache.account===acc){
-    display('ntpc-v127-pending',reportCache.pending);
-    display('ntpc-v127-rejected',reportCache.rejected);
-    display('ntpc-v127-personal-status',reportCache.partial?'查詢完成（部分集合無權限；結果可能不完整）':'已從個人案件查詢更新，僅計算自己的待審／退件');
-  }else{
-    display('ntpc-v127-pending','—'); display('ntpc-v127-rejected','—');
-    display('ntpc-v127-personal-status',acc?'按「查詢我的報告」才會讀取個人待審／退件':'登入後可查詢個人案件');
+function reportTimestamp(r){
+  const status=String(r?.reviewStatus||'').trim().toLowerCase();
+  const values=status==='rejected'?[r.reviewedAt,r.updatedAt,r.submittedAt,r.timestamp,r.createdAt]:[r.submittedAt,r.timestamp,r.createdAt,r.updatedAt,r.reviewedAt];
+  for(const value of values){
+    if(value===undefined||value===null||value==='')continue;
+    try{
+      if(typeof value.toMillis==='function')return value.toMillis();
+      if(value instanceof Date)return value.getTime();
+      if(typeof value==='number'&&Number.isFinite(value))return value;
+      const parsed=Date.parse(String(value));if(Number.isFinite(parsed))return parsed;
+    }catch{}
   }
-  const query=el('ntpc-v127-query-personal'); if(query){query.disabled=!currentUser||reportBusy; query.textContent=reportBusy?'正在查詢…':'查詢我的報告';}
+  const fromTime=Date.parse(String(r?.time||''));return Number.isFinite(fromTime)?fromTime:0;
 }
+function reportOwner(r,type){
+  return String(type.startsWith('jx-')?(r.authorAccount||''):(r.registeredByAccount||r.createdByAccount||r.authorAccount||r.authorId||'')).trim().toLowerCase();
+}
+function renderPersonalReports(){
+  const host=el('ntpc-v127-personal-reports-list');if(!host)return;
+  const acc=userAccount(),cached=reportCache&&reportCache.account===acc;
+  const query=el('ntpc-v127-query-personal');if(query){query.disabled=!currentUser||reportBusy;query.textContent=reportBusy?'正在查詢…':'重新整理我的報告';}
+  if(!currentUser){host.innerHTML='<div class="rounded-xl border border-slate-800 bg-slate-950/50 p-5 text-center text-slate-400">登入後即可查看自己的報告。</div>';display('ntpc-v127-personal-status','僅查詢目前登入帳號的報告');return;}
+  if(reportBusy){host.innerHTML='<div class="rounded-xl border border-sky-500/20 bg-slate-950/50 p-5 text-center text-sky-200"><i class="fa-solid fa-spinner fa-spin mr-2"></i>正在查詢你的報告…</div>';display('ntpc-v127-personal-status','正在依本人帳號查詢');return;}
+  if(!cached){host.innerHTML='<div class="rounded-xl border border-slate-800 bg-slate-950/50 p-5 text-center text-slate-400">按「重新整理我的報告」載入最新紀錄。</div>';display('ntpc-v127-personal-status','按鈕查詢，不會在開啟首頁時額外讀取');return;}
+  const rows=(reportCache.reports||[]).slice(0,5);
+  if(!rows.length)host.innerHTML='<div class="rounded-xl border border-slate-800 bg-slate-950/50 p-5 text-center text-slate-400">目前沒有查到你的報告。</div>';
+  else host.innerHTML=rows.map((r,index)=>{
+    const status=String(r.reviewStatus||'').toLowerCase()==='rejected'?'rejected':String(r.reviewStatus||'').toLowerCase()==='pending'?'pending':'approved';
+    const label=status==='rejected'?'退件｜點擊編輯':status==='pending'?'審核中｜點擊查看':'審核完成｜點擊查看';
+    const tone=status==='rejected'?'border-red-500/40 bg-red-950/25 text-red-200':status==='pending'?'border-amber-500/30 bg-amber-950/20 text-amber-200':'border-emerald-500/30 bg-emerald-950/15 text-emerald-200';
+    const kind={police:'警察案件',fire:'消防案件',ems:'EMS 報告','jx-medical':'嘉蕭 EMS 報告','jx-funeral':'嘉蕭生命禮儀報告'}[r.__v127Type]||'勤務報告';
+    const key=r.caseId||r.id||r.docId||'';
+    const title=r.title||r.patient||r.details?.patientName||r.details?.deceasedName||kind;
+    const when=reportTimestamp(r);const dateText=when?formatDateTime(when):(r.time||'日期未記錄');
+    const detail=status==='rejected'?(r.rejectionReason||r.reviewNote?'退件原因：'+(r.rejectionReason||r.reviewNote):'點擊此筆報告補正並重新送審'):status==='pending'?'已送出，等待審核':'已審核完成';
+    return `<button type="button" data-v127-report-index="${index}" class="w-full rounded-xl border ${tone} p-4 text-left transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-sky-400"><span class="flex items-start justify-between gap-3"><span class="min-w-0"><span class="block truncate font-bold text-white">${escapeHtml(String(title))}</span><span class="mt-1 block text-xs text-slate-400">${escapeHtml(kind)}${key?'｜'+escapeHtml(String(key)):''}</span></span><span class="shrink-0 rounded-full border border-current/20 px-2.5 py-1 text-[11px] font-semibold">${label}</span></span><span class="mt-2 block truncate text-xs ${status==='rejected'?'text-red-200/90':'text-slate-400'}">${escapeHtml(String(detail))}</span><span class="mt-2 block text-[11px] text-slate-500">${escapeHtml(String(dateText))}</span></button>`;
+  }).join('');
+  display('ntpc-v127-personal-status',reportCache.partial?'部分報告無法讀取；以下顯示已成功取得的本人紀錄':'依本人帳號查詢，退件優先，最多顯示 5 筆');
+}
+function renderPersonalCard(){renderPersonalReports();}
 function manageCard(){
   // Only for management center members; keep pending count as 'not loaded' when review collections are absent.
   const items=[
@@ -21523,26 +21562,70 @@ async function queryPersonalReports(){
   if(reportCache&&reportCache.account===account&&Date.now()-reportFetchedAt<60000){renderHome();return;}
   if(!db||!fm){display('ntpc-v127-personal-status','資料庫尚未連線');return;}
   const jobs=[];
-  if(needUnit('police'))jobs.push(['policePendingReports','registeredByAccount']);
-  if(needUnit('fire')){jobs.push(['firePendingReports','registeredByAccount']);jobs.push(['emsPendingReports','registeredByAccount']);}
-  if(canAccessJiaxiao()){
-    jobs.push(['jiaxiaoMedicalPendingReports','authorAccount']);
-    jobs.push(['jiaxiaoFuneralPendingReports','authorAccount']);
+  const add=(collection,field,type,source,dataKey)=>jobs.push({collection,field,type,source,dataKey});
+  if(needUnit('police')){add('policePendingReports','registeredByAccount','police','pending','policePendingReports');add('policeReports','registeredByAccount','police','approved','policeReports');}
+  if(needUnit('fire')){
+    add('firePendingReports','registeredByAccount','fire','pending','firePendingReports');add('fireReports','registeredByAccount','fire','approved','fireReports');
+    add('emsPendingReports','registeredByAccount','ems','pending','emsPendingReports');add('emsReports','registeredByAccount','ems','approved','emsReports');
   }
-  // No accessible department: do not issue an unrelated Firestore query.
-  if(!jobs.length){reportCache={account,pending:0,rejected:0,partial:false};reportFetchedAt=Date.now();renderHome();return;}
-  reportBusy=true;renderPersonalCard();
-  const results=await Promise.all(jobs.map(async([col,field])=>{
+  if(canAccessJiaxiao()){
+    add('jiaxiaoMedicalPendingReports','authorAccount','jx-medical','pending','jiaxiaoMedicalPendingReports');add('jiaxiaoMedicalReports','authorAccount','jx-medical','approved','jiaxiaoMedicalReports');
+    add('jiaxiaoFuneralPendingReports','authorAccount','jx-funeral','pending','jiaxiaoFuneralPendingReports');add('jiaxiaoFuneralReports','authorAccount','jx-funeral','approved','jiaxiaoFuneralReports');
+  }
+  if(!jobs.length){reportCache={account,reports:[],partial:false};reportFetchedAt=Date.now();renderHome();return;}
+  reportBusy=true;renderHome();
+  const results=await Promise.all(jobs.map(async job=>{
     try{
-      const snap=await fm.getDocs(fm.query(fm.collection(db,col),fm.where(field,'==',currentUser.account),fm.limit(200)));
-      return {ok:true,rows:snap.docs.map(d=>d.data()),partial:snap.size===200};
-    }catch(err){console.warn('個人報告統計查詢失敗：'+col,err);return {ok:false,rows:[],partial:true};}
+      const snap=await fm.getDocs(fm.query(fm.collection(db,job.collection),fm.where(job.field,'==',currentUser.account),fm.limit(200)));
+      return {job,ok:true,rows:snap.docs.map(d=>({...d.data(),docId:d.id})),limited:snap.size===200};
+    }catch(err){console.warn('個人報告清單查詢失敗：'+job.collection,err);return {job,ok:false,rows:[]};}
   }));
-  // Ignore responses if current user logged out/switched before request completed.
   if(account!==userAccount()){reportBusy=false;return;}
-  let pending=0,rejected=0;let complete=true;
-  for(const r of results){if(!r.ok||r.partial)complete=false;for(const item of r.rows){const status=String(item.reviewStatus||'').trim().toLowerCase();if(status==='pending')pending++;else if(status==='rejected')rejected++;}}
-  reportCache={account,pending:complete?pending:pending+'+',rejected:complete?rejected:rejected+'+',partial:!complete}; reportFetchedAt=Date.now();reportBusy=false;renderHome();
+  let partial=false;const collected=[];const seen=new Set();
+  for(const result of results){
+    const {job,rows}=result;if(!result.ok||result.limited)partial=true;
+    const existing=Array.isArray(appData[job.dataKey])?appData[job.dataKey]:[];
+    const merged=[...rows,...existing];
+    const unique=[];
+    for(const r of merged){const identity=String(r.docId||r.caseId||r.id||'');if(!identity||unique.some(x=>String(x.docId||x.caseId||x.id||'')===identity))continue;unique.push(r);}
+    appData[job.dataKey]=unique;
+    for(const row of rows){
+      if(reportOwner(row,job.type)!==account)continue;
+      const report={...row,__v127Type:job.type,__v127Source:job.source};
+      const identity=job.type+'|'+String(row.caseId||row.id||row.docId||'');
+      if(seen.has(identity))continue;seen.add(identity);
+      if(job.source==='approved'&&!report.reviewStatus)report.reviewStatus='approved';
+      collected.push(report);
+    }
+  }
+  collected.sort((a,b)=>{
+    const ar=String(a.reviewStatus||'').toLowerCase()==='rejected',br=String(b.reviewStatus||'').toLowerCase()==='rejected';
+    if(ar!==br)return ar?-1:1;
+    return reportTimestamp(b)-reportTimestamp(a);
+  });
+  reportCache={account,reports:collected,partial};reportFetchedAt=Date.now();reportBusy=false;renderHome();
+}
+function openPersonalReport(r){
+  if(!r||!currentUser||reportOwner(r,r.__v127Type)!==userAccount())return;
+  const key=String(r.caseId||r.id||r.docId||''),status=String(r.reviewStatus||'approved').toLowerCase(),type=r.__v127Type;
+  if(!key)return;
+  if(type==='police'){
+    if(status==='rejected')openEditReportModal('police-pending-report',key);
+    else if(status==='pending')viewPendingPoliceReportDetail(key);
+    else viewReportDetail('police',key);
+  }else if(type==='fire'){
+    if(status==='rejected')openEditReportModal('fire-pending-report',key);
+    else if(status==='pending')viewPendingFireReportDetail(key);
+    else viewReportDetail('fire',key);
+  }else if(type==='ems'){
+    if(status==='rejected')openEMSReportModal(key);
+    else if(status==='pending')viewPendingEMSReportDetail(key);
+    else viewEMSReportDetail(key);
+  }else if(type==='jx-medical'||type==='jx-funeral'){
+    const jxType=type==='jx-medical'?'medical':'funeral';
+    if(status==='rejected')openJXReport(jxType,key);
+    else viewJXReport(jxType,encodeURIComponent(key),status==='pending');
+  }
 }
 function init(){
   if(el('ntpc-v127-home-top'))return;
@@ -21562,7 +21645,7 @@ function init(){
   const manager=document.createElement('section');manager.id='ntpc-v127-manager-card';manager.className='ntpc-v127-work';
   manager.innerHTML='<div class="flex flex-wrap items-center justify-between gap-2 mb-4"><h3 class="text-base font-bold text-white"><i class="fa-solid fa-inbox text-purple-400 mr-2"></i>管理中心待處理工作箱</h3><span class="text-[11px] text-slate-400">依已載入雲端資料統計</span></div><div id="ntpc-v127-management-rows" class="space-y-2"></div><div id="ntpc-v127-manage-footnote" class="ntpc-v127-extra-note mt-3"></div>';
   const personal=document.createElement('section');personal.id='ntpc-v127-personal-card';personal.className='ntpc-v127-work hidden';
-  personal.innerHTML='<div class="flex items-center justify-between gap-2 mb-4"><h3 class="text-base font-bold text-white"><i class="fa-solid fa-id-badge text-cyan-300 mr-2"></i>我的勤務資訊</h3><span class="text-[11px] text-slate-400">僅顯示本人</span></div><div class="space-y-2"><div class="ntpc-v127-work-row"><span class="ntpc-v127-work-label"><i class="fa-solid fa-circle-dot"></i>目前值班狀態</span><strong id="ntpc-v127-duty-state">—</strong></div><div class="ntpc-v127-work-row"><span class="ntpc-v127-work-label"><i class="fa-solid fa-calendar-week"></i>本週值班時數</span><strong id="ntpc-v127-week">—</strong></div><div class="ntpc-v127-work-row"><span class="ntpc-v127-work-label"><i class="fa-solid fa-calendar-days"></i>本月值班時數</span><strong id="ntpc-v127-month">—</strong></div><div class="ntpc-v127-work-row"><span class="ntpc-v127-work-label"><i class="fa-solid fa-file-circle-question"></i>待審報告</span><strong id="ntpc-v127-pending">—</strong></div><div class="ntpc-v127-work-row"><span class="ntpc-v127-work-label"><i class="fa-solid fa-file-circle-xmark"></i>退件未補報告</span><strong id="ntpc-v127-rejected">—</strong></div></div><button type="button" id="ntpc-v127-query-personal" class="mt-4 w-full rounded-xl border border-sky-500/30 bg-blue-600/20 hover:bg-blue-600/35 text-sky-100 py-2.5 text-sm font-bold">查詢我的報告</button><p class="ntpc-v127-extra-note mt-3" id="ntpc-v127-personal-status">報告依按鈕查詢，避免額外讀取。</p>';
+  personal.innerHTML='<div class="flex items-center justify-between gap-2 mb-4"><h3 class="text-base font-bold text-white"><i class="fa-solid fa-file-lines text-cyan-300 mr-2"></i>我的報告</h3><span class="text-[11px] text-slate-400">最多 5 筆｜退件優先</span></div><div id="ntpc-v127-personal-reports-list" class="space-y-2"></div><button type="button" id="ntpc-v127-query-personal" class="mt-4 w-full rounded-xl border border-sky-500/30 bg-blue-600/20 hover:bg-blue-600/35 text-sky-100 py-2.5 text-sm font-bold">重新整理我的報告</button><p class="ntpc-v127-extra-note mt-3" id="ntpc-v127-personal-status">按鈕查詢，不會在開啟首頁時額外讀取。</p>';
   cards.append(manager,personal);
   const update=home.querySelector('.bg-emerald-500\\/5');if(update)update.classList.add('ntpc-v127-home-update');
   el('ntpc-v127-sidebar')?.addEventListener('click',ev=>{
@@ -21575,6 +21658,7 @@ function init(){
     renderHome();
   });
   el('ntpc-v127-query-personal')?.addEventListener('click',queryPersonalReports);
+  el('ntpc-v127-personal-reports-list')?.addEventListener('click',ev=>{const button=ev.target.closest('[data-v127-report-index]');if(!button)return;const index=Number(button.dataset.v127ReportIndex);const report=reportCache?.account===userAccount()?reportCache.reports?.[index]:null;openPersonalReport(report);});
   // UI-only refresh, no cloud calls: existing Firestore listeners remain unchanged.
   window.setInterval(()=>{if(!document.hidden&&!el('tab-home')?.classList.contains('hidden'))renderHome();},30000);
   const originalSwitchTab=window.switchTab;
