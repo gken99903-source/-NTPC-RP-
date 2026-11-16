@@ -4502,10 +4502,96 @@ button.bg-blue-600:hover,button.bg-indigo-600:hover,button.bg-emerald-600:hover,
   100% {opacity:0;visibility:hidden;pointer-events:none;}
 }
 </style>
+
+<style id="ntpc-v161-desktop-letter-motion-parity">
+/* V161：只讓桌機 NTPC 字母進場節奏與手機一致；不啟用高耗能模糊，保留獨立橫式舞台。 */
+@media (min-width:701px) and (prefers-reduced-motion:no-preference) {
+  #ntpc-launch .ntpc-launch-letters span {
+    filter:none !important;
+    animation-name:ntpc-mobile-letter-show !important;
+    animation-duration:.55s !important;
+    animation-timing-function:cubic-bezier(.18,.8,.24,1) !important;
+  }
+  #ntpc-launch .ntpc-launch-letters span:nth-child(1){animation-delay:.07s !important;}
+  #ntpc-launch .ntpc-launch-letters span:nth-child(2){animation-delay:.16s !important;}
+  #ntpc-launch .ntpc-launch-letters span:nth-child(3){animation-delay:.25s !important;}
+  #ntpc-launch .ntpc-launch-letters span:nth-child(4){animation-delay:.34s !important;}
+}
+</style>
+
+<style id="ntpc-v162-launch-timing-and-review-gate">
+/* V162：開場先暫停一秒，真正繪製後才播放；80% 等待自動登入的首頁報告結果。 */
+#ntpc-launch.ntpc-launch-managed {animation:none !important;visibility:visible;pointer-events:auto;}
+#ntpc-launch.ntpc-launch-managed.ntpc-launch-paused,
+#ntpc-launch.ntpc-launch-managed.ntpc-launch-paused *,
+#ntpc-launch.ntpc-launch-managed.ntpc-launch-paused::before,
+#ntpc-launch.ntpc-launch-managed.ntpc-launch-paused::after,
+#ntpc-launch.ntpc-launch-managed.ntpc-launch-paused *::before,
+#ntpc-launch.ntpc-launch-managed.ntpc-launch-paused *::after {animation-play-state:paused !important;}
+#ntpc-launch.ntpc-launch-managed .ntpc-launch-timeline span {
+  animation:none !important;transform:scaleX(0);transition:transform 3.45s linear;
+}
+/* 原桌機字母繼承透明的 -webkit-text-fill-color，導致動畫其實有播卻看不到字。 */
+@media (min-width:701px) {
+  #ntpc-launch.ntpc-launch-managed .ntpc-launch-letters {
+    background-image:none !important;
+    -webkit-background-clip:border-box !important;
+    background-clip:border-box !important;
+    -webkit-text-fill-color:#edcf95 !important;
+    color:#edcf95 !important;
+  }
+  #ntpc-launch.ntpc-launch-managed .ntpc-launch-letters span {
+    -webkit-text-fill-color:#edcf95 !important;
+    color:#edcf95 !important;
+  }
+}
+#ntpc-launch.ntpc-launch-managed.ntpc-launch-waiting .ntpc-launch-stage {
+  border-color:rgba(246,204,124,.72) !important;
+}
+#ntpc-launch.ntpc-launch-managed.ntpc-launch-waiting .ntpc-launch-stage::before {
+  background:linear-gradient(130deg,rgba(255,222,153,.20),transparent 25%,transparent 67%,rgba(250,198,104,.19)) !important;
+  box-shadow:inset 0 0 0 2px rgba(250,207,129,.30);
+  animation:ntpc-v162-gold-edge 1.8s ease-in-out infinite !important;
+  will-change:opacity;
+}
+@keyframes ntpc-v162-gold-edge {0%,100%{opacity:.28}50%{opacity:1}}
+#ntpc-launch-skip {
+  display:none;position:absolute;z-index:10;
+  right:clamp(17px,4vw,44px);bottom:clamp(22px,5vh,42px);
+  min-width:74px;min-height:36px;padding:7px 14px;
+  border:1px solid rgba(245,207,140,.55);border-radius:999px;
+  background:rgba(28,26,25,.86);color:#ffe5b5;
+  font:600 12px/1.2 Inter,-apple-system,system-ui,sans-serif;
+  letter-spacing:.06em;opacity:.40;cursor:pointer;
+  transition:opacity .16s ease,background .16s ease;
+}
+#ntpc-launch.ntpc-launch-managed.ntpc-launch-waiting #ntpc-launch-skip {display:block;}
+#ntpc-launch-skip:hover,#ntpc-launch-skip:focus-visible {opacity:.82;background:#3a3123;}
+#ntpc-launch-skip:focus-visible {outline:2px solid #f1d19b;outline-offset:3px;}
+#ntpc-launch.ntpc-launch-managed.ntpc-launch-dismiss {
+  animation:ntpc-v162-dismiss .42s ease-in forwards !important;pointer-events:none !important;
+}
+@keyframes ntpc-v162-dismiss {from{opacity:1;visibility:visible}to{opacity:0;visibility:hidden}}
+@media (prefers-reduced-motion:reduce) {
+  #ntpc-launch.ntpc-launch-managed.ntpc-launch-dismiss {animation-duration:.15s !important;}
+  #ntpc-launch.ntpc-launch-managed .ntpc-launch-timeline span {transition-duration:.01s !important;}
+  #ntpc-launch.ntpc-launch-managed.ntpc-launch-waiting .ntpc-launch-stage::before {animation-duration:3s !important;}
+  /* 桌機減少動態效果時也顯示 NTPC，再由 Logo 接手；不能跳過整段字樣。 */
+}
+@media (min-width:701px) and (prefers-reduced-motion:reduce) {
+    #ntpc-launch.ntpc-launch-managed .ntpc-launch-word {display:flex !important;animation:ntpc-v162-reduced-word 4.45s steps(1,end) both !important;}
+    #ntpc-launch.ntpc-launch-managed .ntpc-launch-letters span {opacity:1 !important;filter:none !important;transform:none !important;animation:none !important;-webkit-text-fill-color:#edcf95 !important;}
+    #ntpc-launch.ntpc-launch-managed .ntpc-launch-letters {background-image:none !important;-webkit-text-fill-color:#edcf95 !important;}
+    #ntpc-launch.ntpc-launch-managed .ntpc-launch-undertext {opacity:1 !important;animation:none !important;}
+    #ntpc-launch.ntpc-launch-managed .ntpc-launch-logo-phase {animation:ntpc-v162-reduced-logo 4.45s steps(1,end) both !important;}
+}
+@keyframes ntpc-v162-reduced-word {0%,46%{opacity:1;visibility:visible}47%,100%{opacity:0;visibility:hidden}}
+@keyframes ntpc-v162-reduced-logo {0%,46%{opacity:0;visibility:hidden}47%,100%{opacity:1;visibility:visible}}
+</style>
 </head>
 <body class="ntpc-premium-ui bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
 <!-- NTPC 2026 新開場：全程 CSS 動畫；桌機橫式、手機自適應；不載入影片。 -->
-<div id="ntpc-launch" role="presentation" aria-hidden="true">
+<div id="ntpc-launch" class="ntpc-launch-managed ntpc-launch-paused" role="dialog" aria-label="NTPC 網站載入畫面">
   <div class="ntpc-launch-halo" aria-hidden="true"></div>
   <div class="ntpc-launch-stage">
     <div class="ntpc-launch-beam" aria-hidden="true"></div>
@@ -4523,7 +4609,79 @@ button.bg-blue-600:hover,button.bg-indigo-600:hover,button.bg-emerald-600:hover,
     </div>
     <div class="ntpc-launch-timeline" aria-hidden="true"><span></span></div>
   </div>
+  <button id="ntpc-launch-skip" type="button" aria-label="略過報告讀取等待">Skip</button>
 </div>
+<script id="ntpc-v162-launch-controller">
+/* 只有開場／自動登入判斷；不呼叫 Firestore，不更動勤務或報告查詢邏輯。 */
+(function(){
+  'use strict';
+  const root=document.getElementById('ntpc-launch');
+  if(!root)return;
+  const bar=root.querySelector('.ntpc-launch-timeline span');
+  const skip=document.getElementById('ntpc-launch-skip');
+  const hasAutoLogin=(()=>{
+    try {return !!(localStorage.getItem('ntpcrp_remembered_login_v149')||sessionStorage.getItem('ntpcrp_session'));}
+    catch(_) {return false;}
+  })();
+  let authSettled=!hasAutoLogin, signedIn=false, reportSettled=false;
+  let started=false, reached80=false, ended=false;
+  let timer80=null,timerOut=null;
+  function dismiss(){
+    if(ended)return;
+    ended=true;
+    clearTimeout(timer80);clearTimeout(timerOut);
+    root.classList.remove('ntpc-launch-waiting');
+    root.classList.add('ntpc-launch-dismiss');
+    setTimeout(()=>root.remove(),500);
+  }
+  function maybeFinish(){
+    if(!reached80||ended)return;
+    if(hasAutoLogin&&(!authSettled||(signedIn&&!reportSettled)))return;
+    root.classList.remove('ntpc-launch-waiting');
+    if(bar){bar.style.transitionDuration='.38s';bar.style.transform='scaleX(1)';}
+    timerOut=setTimeout(dismiss,430);
+  }
+  function on80(){
+    if(ended)return;
+    reached80=true;
+    if(hasAutoLogin&&(!authSettled||(signedIn&&!reportSettled))){
+      root.classList.add('ntpc-launch-waiting');
+    }else maybeFinish();
+  }
+  function play(){
+    if(started||ended||!root.isConnected)return;
+    started=true;
+    root.classList.remove('ntpc-launch-paused');
+    if(bar)bar.style.transform='scaleX(.8)';
+    timer80=setTimeout(on80,3700);
+  }
+  function schedule(){
+    if(ended)return;
+    if(document.visibilityState==='hidden'){
+      document.addEventListener('visibilitychange',()=>{
+        if(document.visibilityState==='visible')schedule();
+      },{once:true});
+      return;
+    }
+    // DOM 內容完整後等待兩幀讓桌機完成首繪，再停留一秒才開始字母動畫。
+    requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(play,1000)));
+  }
+  window.addEventListener('ntpc-launch-auth-settled',event=>{
+    authSettled=true;
+    signedIn=Boolean(event.detail?.signedIn);
+    if(!signedIn)reportSettled=true;
+    maybeFinish();
+  });
+  window.addEventListener('ntpc-launch-report-settled',event=>{
+    // 舊帳號的延遲查詢不可結束新帳號的開場。
+    if(!event.detail?.account)return;
+    reportSettled=true;
+    maybeFinish();
+  });
+  skip.addEventListener('click',()=>{if(reached80&&root.classList.contains('ntpc-launch-waiting'))dismiss();});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
+})();
+</script>
 
     <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
     <div id="fire-duty-details-modal" class="hidden fixed inset-0 z-[170] bg-slate-950/80 backdrop-blur-sm p-4 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="fire-duty-details-title">
@@ -9024,6 +9182,7 @@ button.bg-blue-600:hover,button.bg-indigo-600:hover,button.bg-emerald-600:hover,
             // 雲端同步與登入工作階段分開處理；即使某個集合讀取失敗，也不影響 10 分鐘內刷新恢復登入。
             cloudDataReadyPromise = (async () => {
                 try { await restoreBrowserSession(); } catch (e) { console.warn('登入工作階段恢復略過：', e); }
+                finally { window.dispatchEvent(new CustomEvent('ntpc-launch-auth-settled',{detail:{signedIn:!!currentUser}})); }
                 await loadAllDataFromCloud(); // 先恢復登入狀態，再依權限載入一次資料
             })();
             cloudDataReadyPromise.finally(() => { startRealtimeListeners(); if(currentUser){void ntpcV21LoadFramePolicy();window.ntpcV127HourlySync?.();} ntpcV21RefreshDevNav();if(typeof ntpcV127RefreshHome==='function')ntpcV127RefreshHome(); });
@@ -25450,7 +25609,9 @@ async function refresh(force=false){
     state.rows=[...uniq.values()].filter(r=>['rejected','approved','pending'].includes(r.__homeStatus));
     state.errors=results.filter(r=>!r.ok).map(r=>r.error);
     state.partial=results.some(r=>r.partial);
-    state.at=Date.now();state.loaded=true;render();return !state.errors.length;
+    state.at=Date.now();state.loaded=true;render();
+    window.dispatchEvent(new CustomEvent('ntpc-launch-report-settled',{detail:{account:who,ok:!state.errors.length}}));
+    return !state.errors.length;
   })().finally(()=>{if(token===state.request){state.busy=false;state.promise=null;render();}});
   state.promise=promise;return promise;
 }
