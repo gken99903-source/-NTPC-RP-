@@ -59,6 +59,11 @@ function valid(action,p){
  }else if(action==='panel_update'){
    if(!snowflake(p.channel_id)||!len(p.title,60)||!len(p.description,1000)||typeof p.locked!=='boolean')return '票務設定格式不正確';
    if(!Array.isArray(p.role_ids)||p.role_ids.length<1||p.role_ids.length>5||!p.role_ids.every(snowflake))return '客服身分組須指定 1～5 個';
+ }else if(action==='panel_delete'||action==='site_panel_delete'){
+   // Only a concrete, previously published panel message can be removed.
+   // The Bot independently checks its own SQLite registration and exact Discord message ID.
+   if(!snowflake(p.channel_id)||!snowflake(p.message_id)||Object.keys(p).some(k=>!['channel_id','message_id'].includes(k)))
+     return '請選擇已同步的面板及原訊息編號，不能依任意頻道 ID 刪除';
  } else if(action==='money_create'||action==='money_update'){
    if(!['加錢','扣錢'].includes(p.kind)||!['週','月初','月底'].includes(p.cycle)||!Number.isSafeInteger(p.amount)||p.amount<1||p.amount>1000000000)return '金額或週期不合法';
    if(Number(Boolean(p.target_id))+Number(Boolean(p.role_id))!==1||!(snowflake(p.target_id||p.role_id)))return '只能指定一個成員或身分組';
