@@ -2998,42 +2998,9 @@ body.ntpc-v127-layout .ntpc-v127-nav-item.is-active {
   #tab-home .ntpc-v128-features:hover,
   #tab-home .ntpc-v127-home-update:hover {border-color:rgba(203,224,255,.53) !important;box-shadow:0 21px 50px rgba(6,25,74,.39),inset 0 1px rgba(244,249,255,.16) !important;}
 }
-/* 不依賴 JS／網路的電影感載入畫面：1.1 秒自動消失，永不阻擋點擊。 */
-#ntpc-glass-intro {
-  position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;
-  pointer-events:none;user-select:none;overflow:hidden;
-  background:radial-gradient(circle at 50% 50%,#132e66 0%,#091c40 46%,#040d22 100%);
-  -webkit-animation:ntpc-glass-intro-out .42s ease-in .70s forwards;
-  animation:ntpc-glass-intro-out .42s ease-in .70s forwards;
-}
-#ntpc-glass-intro::before {
-  content:"";position:absolute;width:32vmin;height:32vmin;left:50%;top:50%;
-  border-radius:50%;transform:translate(-50%,-50%) scale(.08);
-  background:radial-gradient(circle,rgba(150,197,255,.29),rgba(75,128,232,.11) 56%,transparent 70%);
-  -webkit-animation:ntpc-glass-intro-bloom 1.08s cubic-bezier(.13,.7,.24,1) both;
-  animation:ntpc-glass-intro-bloom 1.08s cubic-bezier(.13,.7,.24,1) both;
-}
-.ntpc-glass-intro-brand {position:relative;display:flex;flex-direction:column;align-items:center;gap:11px;text-align:center;color:#eef6ff;
-  -webkit-animation:ntpc-glass-intro-brand .80s cubic-bezier(.16,.77,.23,1) both;
-  animation:ntpc-glass-intro-brand .80s cubic-bezier(.16,.77,.23,1) both;}
-.ntpc-glass-intro-logo {width:76px;height:76px;object-fit:cover;border-radius:50%;border:1px solid rgba(199,227,255,.72);
-  box-shadow:0 0 0 9px rgba(135,182,255,.09),0 0 38px rgba(92,157,255,.38);}
-.ntpc-glass-intro-brand strong {font-size:18px;letter-spacing:.15em;text-shadow:0 6px 27px rgba(0,0,0,.27);}
-.ntpc-glass-intro-brand small {font-size:10px;letter-spacing:.24em;color:#c0d8ff;}
-@-webkit-keyframes ntpc-glass-intro-out {0%{opacity:1;visibility:visible}99%{visibility:visible}100%{opacity:0;visibility:hidden}}
-@keyframes ntpc-glass-intro-out {0%{opacity:1;visibility:visible}99%{visibility:visible}100%{opacity:0;visibility:hidden}}
-@-webkit-keyframes ntpc-glass-intro-bloom {0%{opacity:.1;transform:translate(-50%,-50%) scale(.08)}58%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(10)}}
-@keyframes ntpc-glass-intro-bloom {0%{opacity:.1;transform:translate(-50%,-50%) scale(.08)}58%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(10)}}
-@-webkit-keyframes ntpc-glass-intro-brand {0%{opacity:0;transform:translateY(12px) scale(.86)}35%{opacity:1}75%{opacity:1}100%{opacity:.68;transform:translateY(0) scale(1.05)}}
-@keyframes ntpc-glass-intro-brand {0%{opacity:0;transform:translateY(12px) scale(.86)}35%{opacity:1}75%{opacity:1}100%{opacity:.68;transform:translateY(0) scale(1.05)}}
 @media (max-width:700px) {
   /* 手機省電：縮小模糊半徑、仍沿用原本手機選單位置。 */
   #tab-home .ntpc-v127-work,#tab-home .ntpc-v128-features,#tab-home .ntpc-v128-quick-wrap,#tab-home .ntpc-v127-home-update {backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);}
-  .ntpc-glass-intro-logo{width:66px;height:66px;}
-}
-@media (prefers-reduced-motion:reduce) {
-  #ntpc-glass-intro{display:none !important;}
-  #ntpc-glass-intro *,#ntpc-glass-intro::before{animation:none !important;-webkit-animation:none !important;}
 }
 </style>
 
@@ -3057,10 +3024,6 @@ body.ntpc-v127-layout .ntpc-v127-nav-item.is-active{background:linear-gradient(1
 #tab-home .ntpc-v128-feature,#tab-home .ntpc-v128-all-features .ntpc-v128-feature{background:rgba(27,29,32,.67)!important;border-color:rgba(218,220,222,.21)!important;box-shadow:inset 0 1px rgba(255,255,255,.05)!important}
 #tab-home .ntpc-v128-feature:hover{background:rgba(67,68,72,.59)!important;border-color:rgba(236,239,242,.44)!important}
 #tab-dashboard .dashboard-card,#tab-dashboard > .bg-slate-900{background:linear-gradient(145deg,rgba(74,76,82,.26),rgba(21,23,27,.80))!important;border-color:rgba(214,217,219,.22)!important;box-shadow:var(--ntpc-glass-shadow)!important}
-#ntpc-glass-intro{background:radial-gradient(circle at 50% 50%,#343638 0%,#151619 48%,#060708 100%)!important}
-#ntpc-glass-intro::before{background:radial-gradient(circle,rgba(220,221,224,.29),rgba(126,129,135,.13) 56%,transparent 72%)!important}
-.ntpc-glass-intro-logo{border-color:rgba(227,229,232,.65)!important;box-shadow:0 0 0 9px rgba(199,200,205,.08),0 0 38px rgba(230,231,235,.22)!important}
-.ntpc-glass-intro-brand small{color:#c5c6c9!important}
 /* 表單、列表、按鈕統一使用中性層級；不變動欄位尺寸或位置 */
 body.ntpc-v127-layout :is(main,section,article,aside,nav) :is(.bg-slate-950,.bg-slate-900,.bg-slate-800):not(#police-sub-radio *){background-color:rgba(13,14,16,.90)!important}
 body.ntpc-v127-layout :is(.bg-slate-950,.bg-slate-900,.bg-slate-800):not(#police-sub-radio *){background-color:#17191c!important}
@@ -3786,13 +3749,222 @@ body i.fa-wrench:not(#police-sub-radio i):not(#ntpc-v22-radio-integration i)::be
 body i.fa-xmark:not(#police-sub-radio i):not(#ntpc-v22-radio-integration i)::before{-webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%206l12%2012%20M18%206L6%2018%22%2F%3E%3C%2Fsvg%3E")!important;mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%206l12%2012%20M18%206L6%2018%22%2F%3E%3C%2Fsvg%3E")!important}
 
 </style>
+
+<style id="ntpc-v233-liquid-glass-and-intro">
+/* 2026/11/16：純視覺覆寫，不更動登入、Firestore、勤務/無線電事件。 */
+:root {
+  --ntpc-liquid-edge:rgba(247,248,250,.23);
+  --ntpc-liquid-surface:linear-gradient(145deg,rgba(91,95,103,.28) 0%,rgba(30,32,37,.76) 46%,rgba(17,19,22,.79) 100%);
+  --ntpc-liquid-shadow:0 16px 42px rgba(0,0,0,.34),inset 0 1px rgba(255,255,255,.14),inset 0 -1px rgba(255,255,255,.035);
+}
+html.dark body.ntpc-premium-ui {
+  background-color:#0a0b0d!important;
+  color:#eceef0;
+}
+/* 導覽與頂端工具列：隨背景透光，與內容各自成層。 */
+body.ntpc-premium-ui > header,
+body.ntpc-premium-ui.ntpc-v127-layout .ntpc-v127-aside,
+body.ntpc-premium-ui #desktop-more-menu,
+body.ntpc-premium-ui #mobile-more-menu {
+  background:linear-gradient(150deg,rgba(74,78,85,.39),rgba(17,19,22,.87) 60%,rgba(12,14,17,.90))!important;
+  border-color:rgba(240,242,246,.22)!important;
+  box-shadow:0 14px 40px rgba(0,0,0,.32),inset 0 1px rgba(255,255,255,.15)!important;
+  -webkit-backdrop-filter:blur(22px) saturate(124%);
+  backdrop-filter:blur(22px) saturate(124%);
+}
+body.ntpc-premium-ui.ntpc-v127-layout .ntpc-v127-aside-footer,
+body.ntpc-premium-ui.ntpc-v127-layout .ntpc-v127-nav-item.is-active,
+body.ntpc-premium-ui #site-announcement-bar.ntpc-v127-announcement {
+  background:linear-gradient(125deg,rgba(154,158,164,.30),rgba(51,53,59,.56) 45%,rgba(23,25,29,.70))!important;
+  border-color:rgba(242,245,249,.32)!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.17),0 7px 23px rgba(0,0,0,.23)!important;
+  -webkit-backdrop-filter:blur(16px) saturate(115%);
+  backdrop-filter:blur(16px) saturate(115%);
+}
+/* 原有首頁及 Dashboard 卡片：增加真正的玻璃模糊，不更動網格／尺寸。 */
+body.ntpc-premium-ui #tab-home :is(.ntpc-v127-work,.ntpc-v128-quick-wrap,.ntpc-v127-home-update,.ntpc-v128-features,.ntpc-v128-all-features,.ntpc-v127-home-hero),
+body.ntpc-premium-ui #tab-home > section[aria-labelledby="home-police-updates-title"],
+body.ntpc-premium-ui #ntpc-home-review-card,
+body.ntpc-premium-ui #tab-dashboard .dashboard-card {
+  background:var(--ntpc-liquid-surface)!important;
+  border-color:var(--ntpc-liquid-edge)!important;
+  box-shadow:var(--ntpc-liquid-shadow)!important;
+  -webkit-backdrop-filter:blur(19px) saturate(118%);
+  backdrop-filter:blur(19px) saturate(118%);
+}
+/* 灰色系模組卡片／彈窗：僅在中性原底色上加玻璃材質，警告與部門色不受影響。 */
+body.ntpc-premium-ui :is(main,section,article,[role="dialog"]) :is(div,section,article,form):is(.bg-slate-900,.bg-slate-950,.bg-slate-800):is(.rounded-xl,.rounded-2xl,.rounded-3xl,.rounded-lg):not(#police-sub-radio):not(#police-sub-radio *),
+body.ntpc-premium-ui [role="dialog"]:is(.bg-slate-900,.bg-slate-950,.bg-slate-800),
+body.ntpc-premium-ui [role="dialog"] > :is(.bg-slate-900,.bg-slate-950,.bg-slate-800) {
+  background:var(--ntpc-liquid-surface)!important;
+  border-color:var(--ntpc-liquid-edge)!important;
+  box-shadow:var(--ntpc-liquid-shadow);
+  -webkit-backdrop-filter:blur(16px) saturate(118%);
+  backdrop-filter:blur(16px) saturate(118%);
+}
+/* 表單需保持可讀性，不能做成透明到看不見的玻璃。 */
+body.ntpc-premium-ui :is(input,textarea,select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(#police-sub-radio *),
+body.ntpc-premium-ui :is(button.bg-slate-700,button.bg-slate-800,button.bg-slate-900):not(#police-sub-radio *) {
+  background-image:linear-gradient(150deg,rgba(107,110,118,.15),rgba(17,18,21,.27))!important;
+  border-color:rgba(229,232,237,.20)!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.075),0 3px 11px rgba(0,0,0,.12);
+}
+body.ntpc-premium-ui :is(input,textarea,select):focus-visible {
+  outline:2px solid rgba(226,230,236,.63)!important;
+  outline-offset:1px;
+}
+body.ntpc-premium-ui .app-toast,
+body.ntpc-premium-ui .app-confirm-card,
+body.ntpc-premium-ui .submit-success-card {
+  background:linear-gradient(145deg,rgba(82,85,92,.58),rgba(17,19,23,.90))!important;
+  border:1px solid rgba(244,246,249,.29)!important;
+  box-shadow:0 18px 48px rgba(0,0,0,.43),inset 0 1px rgba(255,255,255,.14)!important;
+  -webkit-backdrop-filter:blur(24px) saturate(130%);
+  backdrop-filter:blur(24px) saturate(130%);
+}
+@media (max-width:700px) {
+  body.ntpc-premium-ui > header,
+  body.ntpc-premium-ui .ntpc-v127-aside,
+  body.ntpc-premium-ui #mobile-more-menu,
+  body.ntpc-premium-ui #tab-home :is(.ntpc-v127-work,.ntpc-v128-features,.ntpc-v128-quick-wrap,.ntpc-v127-home-update) {
+    -webkit-backdrop-filter:blur(11px) saturate(113%);
+    backdrop-filter:blur(11px) saturate(113%);
+  }
+}
+/* 全新程序化開場；不依賴 MP4 / JS / 第三方動畫庫。4.5 秒後自行隱藏。 */
+#ntpc-launch {
+  position:fixed;inset:0;z-index:2147483000;
+  display:grid;place-items:center;isolation:isolate;
+  overflow:hidden;user-select:none;pointer-events:auto;
+  background:radial-gradient(ellipse 67% 75% at 50% 43%,#353840 0%,#15171c 50%,#08090c 100%);
+  animation:ntpc-launch-finish .48s cubic-bezier(.35,0,.75,1) 3.99s forwards;
+}
+#ntpc-launch::before {
+  content:"";position:absolute;inset:-32%;pointer-events:none;
+  background:conic-gradient(from 18deg at 50% 50%,transparent 0deg,rgba(225,232,242,.11) 32deg,transparent 68deg,transparent 215deg,rgba(175,188,204,.10) 275deg,transparent 300deg);
+  filter:blur(44px);animation:ntpc-launch-ambient 8s linear infinite;
+}
+#ntpc-launch::after {
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.24;
+  background-image:linear-gradient(90deg,rgba(245,247,250,.025) 1px,transparent 1px),linear-gradient(0deg,rgba(245,247,250,.02) 1px,transparent 1px);
+  background-size:42px 42px;
+}
+.ntpc-launch-halo {position:absolute;width:min(80vw,850px);height:min(60vw,520px);border-radius:50%;pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(194,204,220,.20),rgba(100,113,133,.08) 44%,transparent 72%);
+  filter:blur(50px);animation:ntpc-launch-halo 3.8s ease-in-out both;
+}
+.ntpc-launch-stage {
+  position:relative;z-index:1;display:grid;place-items:center;overflow:hidden;
+  width:min(76vw,900px);aspect-ratio:16/8.5;max-height:72dvh;min-height:260px;
+  border-radius:clamp(22px,3vw,38px);border:1px solid rgba(238,242,248,.29);
+  background:linear-gradient(143deg,rgba(200,210,224,.17) 0%,rgba(88,95,111,.16) 25%,rgba(16,19,25,.45) 74%,rgba(197,205,221,.09) 100%);
+  box-shadow:0 36px 100px rgba(0,0,0,.46),inset 0 1px rgba(255,255,255,.30),inset 0 -1px rgba(255,255,255,.09);
+  -webkit-backdrop-filter:blur(32px) saturate(124%);backdrop-filter:blur(32px) saturate(124%);
+  animation:ntpc-launch-stage-show .58s cubic-bezier(.17,.75,.25,1) both;
+}
+.ntpc-launch-stage::before {content:"";position:absolute;inset:1px;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(128deg,rgba(255,255,255,.16),transparent 24%,transparent 72%,rgba(255,255,255,.05));
+}
+.ntpc-launch-stage::after {content:"";position:absolute;left:13%;right:13%;bottom:17%;height:1px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(234,239,246,.16),transparent);
+}
+.ntpc-launch-beam {position:absolute;inset:-80% auto -80% -20%;width:28%;transform:skewX(-23deg) translateX(-160%);pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(245,247,253,.23) 48%,transparent);
+  filter:blur(15px);animation:ntpc-launch-sweep 1.55s ease-in-out .48s both;
+}
+.ntpc-launch-word {position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:clamp(8px,1.4vw,17px);white-space:nowrap;animation:ntpc-launch-word-exit .34s cubic-bezier(.55,0,1,.45) 2.07s forwards;
+}
+.ntpc-launch-letters {display:flex;justify-content:center;align-items:center;gap:clamp(2px,1.3vw,16px);line-height:1;
+  font-family:Inter,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  font-weight:800;font-size:clamp(76px,11.2vw,156px);letter-spacing:.02em;color:#f4f6fa;
+  text-shadow:0 3px 3px rgba(255,255,255,.24),0 16px 53px rgba(205,216,230,.29);
+}
+.ntpc-launch-letters span {display:block;opacity:0;filter:blur(16px);transform:translate3d(0,30px,0) scale(.86);
+  animation:ntpc-launch-letter-in .72s cubic-bezier(.12,.8,.18,1.02) forwards;
+}
+.ntpc-launch-letters span:nth-child(1){animation-delay:.28s}
+.ntpc-launch-letters span:nth-child(2){animation-delay:.40s}
+.ntpc-launch-letters span:nth-child(3){animation-delay:.52s}
+.ntpc-launch-letters span:nth-child(4){animation-delay:.64s}
+.ntpc-launch-undertext {font-size:clamp(9px,1.1vw,13px);font-weight:600;letter-spacing:clamp(.12em,.65vw,.43em);color:#c7cbd4;
+  opacity:0;animation:ntpc-launch-caption-in .45s ease .98s forwards;
+}
+.ntpc-launch-logo-phase {position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:clamp(10px,1.3vw,16px);opacity:0;transform:translateY(18px) scale(.90);filter:blur(16px);
+  animation:ntpc-launch-logo-in .68s cubic-bezier(.16,.82,.2,1) 2.32s forwards;
+}
+.ntpc-launch-seal {position:relative;display:grid;place-items:center;width:clamp(100px,12vw,146px);aspect-ratio:1;border-radius:50%;
+  overflow:hidden;border:1px solid rgba(251,253,255,.58);
+  background:radial-gradient(circle at 28% 20%,rgba(253,253,255,.30),rgba(74,79,88,.76) 62%,rgba(22,24,27,.94));
+  box-shadow:0 0 0 9px rgba(215,222,232,.065),0 0 0 25px rgba(225,229,236,.022),0 16px 50px rgba(0,0,0,.4),inset 0 1px rgba(255,255,255,.24);
+}
+.ntpc-launch-seal img {position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.ntpc-launch-fallback{font:bold 22px Inter,-apple-system,system-ui,sans-serif;letter-spacing:.13em;color:#fff;}
+.ntpc-launch-logo-phase strong {font-size:clamp(19px,2.2vw,30px);font-weight:750;letter-spacing:.14em;color:#f4f5f8;
+  text-shadow:0 10px 34px rgba(0,0,0,.36);
+}
+.ntpc-launch-logo-phase small {font-size:clamp(10px,1vw,13px);letter-spacing:.26em;color:#bec4d0;}
+.ntpc-launch-timeline {position:absolute;left:10%;right:10%;bottom:9%;height:2px;overflow:hidden;
+  background:rgba(229,234,241,.12);border-radius:999px;
+}
+.ntpc-launch-timeline span {display:block;width:100%;height:100%;transform:scaleX(0);transform-origin:left;
+  background:linear-gradient(90deg,rgba(186,196,210,.45),#f1f3f6,rgba(186,196,210,.66));
+  box-shadow:0 0 12px rgba(235,241,247,.48);animation:ntpc-launch-progress 3.85s linear .10s forwards;
+}
+@keyframes ntpc-launch-finish {0%{opacity:1;visibility:visible}99%{visibility:visible}100%{opacity:0;visibility:hidden}}
+@keyframes ntpc-launch-ambient {from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes ntpc-launch-halo {0%{opacity:.14;transform:scale(.65)}42%{opacity:1}100%{opacity:.40;transform:scale(1.32)}}
+@keyframes ntpc-launch-stage-show {from{opacity:0;transform:translateY(13px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes ntpc-launch-sweep {0%{transform:skewX(-23deg) translateX(-160%)}100%{transform:skewX(-23deg) translateX(620%)}}
+@keyframes ntpc-launch-letter-in {to{opacity:1;filter:blur(0);transform:translate3d(0,0,0) scale(1)}}
+@keyframes ntpc-launch-caption-in {to{opacity:1}}
+@keyframes ntpc-launch-word-exit {to{opacity:0;filter:blur(14px);transform:translateY(-11px) scale(1.055);visibility:hidden}}
+@keyframes ntpc-launch-logo-in {to{opacity:1;filter:blur(0);transform:translateY(0) scale(1)}}
+@keyframes ntpc-launch-progress {to{transform:scaleX(1)}}
+/* 桌機固定為橫向寬版舞台，不再使用直式影片的外框。 */
+@media (min-width:701px) and (max-height:620px) {
+  .ntpc-launch-stage {width:min(74vw,820px);height:72dvh;min-height:0;aspect-ratio:auto;}
+  .ntpc-launch-letters {font-size:min(17vh,124px)}
+  .ntpc-launch-seal {width:min(20vh,110px)}
+}
+/* 手機改為貼合手機 viewport 的直式視覺設計。 */
+@media (max-width:700px) {
+  .ntpc-launch-stage {width:min(91vw,440px);max-height:73dvh;min-height:0;aspect-ratio:5/6.2;border-radius:28px;}
+  .ntpc-launch-letters {font-size:clamp(49px,15.3vw,92px);gap:clamp(2px,1vw,9px);}
+  .ntpc-launch-undertext {font-size:clamp(8px,2vw,11px);letter-spacing:.13em;}
+  .ntpc-launch-seal {width:clamp(96px,28vw,133px)}
+  .ntpc-launch-logo-phase strong {font-size:clamp(19px,5.3vw,26px)}
+  .ntpc-launch-logo-phase small {font-size:11px;letter-spacing:.14em}
+}
+@media (prefers-reduced-motion:reduce) {
+  #ntpc-launch {animation:ntpc-launch-finish .15s ease .26s forwards;}
+  #ntpc-launch :is(.ntpc-launch-word,.ntpc-launch-beam,.ntpc-launch-timeline) {display:none;}
+  #ntpc-launch .ntpc-launch-logo-phase {animation:none;opacity:1;filter:none;transform:none;}
+  #ntpc-launch .ntpc-launch-stage {animation:none;}
+  #ntpc-launch::before {animation:none;}
+}
+</style>
 </head>
 <body class="ntpc-premium-ui bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
-<div id="ntpc-glass-intro" aria-hidden="true">
-  <div class="ntpc-glass-intro-brand">
-    <img class="ntpc-glass-intro-logo" src="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/A3258911-D5A9-4109-9055-AA54BD1933E5.png" alt="" decoding="async">
-    <strong>新北市 RP 3.0</strong>
-    <small>GLASSY DASHBOARD</small>
+<!-- NTPC 2026 新開場：全程 CSS 動畫；桌機橫式、手機自適應；不載入影片。 -->
+<div id="ntpc-launch" role="presentation" aria-hidden="true">
+  <div class="ntpc-launch-halo" aria-hidden="true"></div>
+  <div class="ntpc-launch-stage">
+    <div class="ntpc-launch-beam" aria-hidden="true"></div>
+    <div class="ntpc-launch-word" aria-hidden="true">
+      <div class="ntpc-launch-letters"><span>N</span><span>T</span><span>P</span><span>C</span></div>
+      <div class="ntpc-launch-undertext">NEW TAIPEI CITY ROLEPLAY</div>
+    </div>
+    <div class="ntpc-launch-logo-phase" aria-hidden="true">
+      <div class="ntpc-launch-seal">
+        <span class="ntpc-launch-fallback">NTPC</span>
+        <img src="https://raw.githubusercontent.com/gken99903-source/-NTPC-RP-/refs/heads/main/A3258911-D5A9-4109-9055-AA54BD1933E5.png" alt="" decoding="async" fetchpriority="high">
+      </div>
+      <strong>新北市 RP 3.0</strong>
+      <small>公職服務整合系統</small>
+    </div>
+    <div class="ntpc-launch-timeline" aria-hidden="true"><span></span></div>
   </div>
 </div>
 
