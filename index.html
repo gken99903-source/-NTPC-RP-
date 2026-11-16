@@ -4420,6 +4420,88 @@ button.bg-blue-600:hover,button.bg-indigo-600:hover,button.bg-emerald-600:hover,
 #fire-content-container .mobile-action-group > button i{color:inherit !important;}
 </style>
 
+<style id="ntpc-v160-mobile-ntpc-intro-fix">
+/* V160：只修復手機開場 NTPC 字樣。保留電腦動畫與所有網站功能。 */
+/* 一般手機：去除高成本文字模糊，縮短字母進場延遲，讓 NTPC 立即可見。 */
+@media (max-width:700px) and (prefers-reduced-motion:no-preference) {
+  /* 金色背景裁切套在 flex 父層時，手機 Chromium/部分 Safari 的 transform 字母可能被繪製成透明。 */
+  #ntpc-launch .ntpc-launch-letters {
+    font-size:clamp(42px,14.7vw,80px);max-width:100%;
+    background-image:none !important;
+    -webkit-background-clip:border-box !important;
+    background-clip:border-box !important;
+    -webkit-text-fill-color:#edcf95 !important;
+    color:#edcf95 !important;
+  }
+  #ntpc-launch .ntpc-launch-letters span {-webkit-text-fill-color:#edcf95 !important;color:#edcf95 !important;}
+  #ntpc-launch .ntpc-launch-letters span {
+    filter:none !important;
+    animation-name:ntpc-mobile-letter-show !important;
+    animation-duration:.55s !important;
+    animation-timing-function:cubic-bezier(.18,.8,.24,1) !important;
+  }
+  #ntpc-launch .ntpc-launch-letters span:nth-child(1){animation-delay:.07s !important;}
+  #ntpc-launch .ntpc-launch-letters span:nth-child(2){animation-delay:.16s !important;}
+  #ntpc-launch .ntpc-launch-letters span:nth-child(3){animation-delay:.25s !important;}
+  #ntpc-launch .ntpc-launch-letters span:nth-child(4){animation-delay:.34s !important;}
+}
+@keyframes ntpc-mobile-letter-show {
+  from {opacity:0;transform:translateY(13px) scale(.95);}
+  to {opacity:1;transform:translateY(0) scale(1);}
+}
+/* iOS/Android 啟用「減少動態效果」時，原版會 display:none 掉整段 NTPC，
+   且提早關閉開場。現在改為無位移、無模糊的靜態雙階段切換。 */
+@media (max-width:700px) and (prefers-reduced-motion:reduce) {
+  #ntpc-launch {
+    animation:ntpc-mobile-reduced-dismiss 4.45s steps(1,end) both !important;
+  }
+  #ntpc-launch .ntpc-launch-word {
+    display:flex !important;
+    opacity:1;
+    visibility:visible;
+    filter:none !important;
+    transform:none !important;
+    animation:ntpc-mobile-reduced-word 4.45s steps(1,end) both !important;
+  }
+  #ntpc-launch .ntpc-launch-letters {
+    font-size:clamp(42px,14.7vw,80px);max-width:100%;
+    background-image:none !important;
+    -webkit-background-clip:border-box !important;
+    background-clip:border-box !important;
+    -webkit-text-fill-color:#edcf95 !important;
+    color:#edcf95 !important;
+  }
+  #ntpc-launch .ntpc-launch-letters span {
+    opacity:1 !important;
+    filter:none !important;
+    transform:none !important;
+    animation:none !important;
+  }
+  #ntpc-launch .ntpc-launch-undertext {opacity:1 !important;animation:none !important;}
+  #ntpc-launch .ntpc-launch-logo-phase {
+    display:flex !important;
+    opacity:0;
+    visibility:hidden;
+    filter:none !important;
+    transform:none !important;
+    animation:ntpc-mobile-reduced-logo 4.45s steps(1,end) both !important;
+  }
+  #ntpc-launch .ntpc-launch-beam,
+  #ntpc-launch .ntpc-launch-halo {display:none !important;}
+}
+@keyframes ntpc-mobile-reduced-word {
+  0%,46% {opacity:1;visibility:visible;}
+  47%,100% {opacity:0;visibility:hidden;}
+}
+@keyframes ntpc-mobile-reduced-logo {
+  0%,46% {opacity:0;visibility:hidden;}
+  47%,100% {opacity:1;visibility:visible;}
+}
+@keyframes ntpc-mobile-reduced-dismiss {
+  0%,98% {opacity:1;visibility:visible;pointer-events:auto;}
+  100% {opacity:0;visibility:hidden;pointer-events:none;}
+}
+</style>
 </head>
 <body class="ntpc-premium-ui bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
 <!-- NTPC 2026 新開場：全程 CSS 動畫；桌機橫式、手機自適應；不載入影片。 -->
