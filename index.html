@@ -3945,6 +3945,54 @@ body.ntpc-premium-ui .submit-success-card {
   #ntpc-launch::before {animation:none;}
 }
 </style>
+
+<style id="ntpc-desktop-performance">
+/* 2026/11/16 桌機效能修正：保留 Liquid Glass 灰階漸層、高光和陰影，取消大量即時背景模糊的合成負荷。
+   僅 CSS；原有 Firestore / 警消 / 服務 / 無線電 JS 不變。手機維持原玻璃模糊。 */
+@media (min-width:701px) {
+  /* 先前對每個巢狀圓角卡片套用 blur(16px~24px)，造成重複合成圖層與滾動重繪。
+     改用已存在的半透明漸層及高光描邊模擬玻璃，避免大型背景採樣。 */
+  body.ntpc-premium-ui :is(div, section, article, aside, nav, header, main, footer, dialog, form):not(#police-sub-radio):not(#police-sub-radio *) {
+    -webkit-backdrop-filter:none !important;
+    backdrop-filter:none !important;
+  }
+  /* 多層卡片陰影簡化，但不修改尺寸、位置、互動狀態或原有部門警示色。 */
+  body.ntpc-premium-ui :is(main,section,article,[role="dialog"])
+    :is(div,section,article,form):is(.bg-slate-900,.bg-slate-950,.bg-slate-800)
+    :is(.rounded-xl,.rounded-2xl,.rounded-3xl,.rounded-lg):not(#police-sub-radio):not(#police-sub-radio *) {
+    box-shadow:0 6px 20px rgba(0,0,0,.20),inset 0 1px rgba(255,255,255,.10) !important;
+  }
+  /* 開場只使用 opacity / transform 的低成本動畫，不在每一幀計算大面積旋轉模糊。 */
+  #ntpc-launch::before {content:none !important;animation:none !important;filter:none !important;}
+  .ntpc-launch-halo {filter:none !important;animation:none !important;opacity:.48;}
+  .ntpc-launch-beam {filter:none !important;opacity:.16;}
+  .ntpc-launch-letters span {
+    filter:none !important;
+    animation-name:ntpc-launch-letter-in-lite !important;
+  }
+  .ntpc-launch-word {animation-name:ntpc-launch-word-exit-lite !important;}
+  .ntpc-launch-logo-phase {
+    filter:none !important;
+    animation-name:ntpc-launch-logo-in-lite !important;
+  }
+}
+@keyframes ntpc-launch-letter-in-lite {
+  from{opacity:0;transform:translate3d(0,30px,0) scale(.92)}
+  to{opacity:1;transform:translate3d(0,0,0) scale(1)}
+}
+@keyframes ntpc-launch-word-exit-lite {
+  to{opacity:0;transform:translateY(-11px) scale(1.035);visibility:hidden}
+}
+@keyframes ntpc-launch-logo-in-lite {
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@media (min-width:701px) and (prefers-reduced-motion:reduce) {
+  #ntpc-launch .ntpc-launch-letters span,
+  #ntpc-launch .ntpc-launch-word,
+  #ntpc-launch .ntpc-launch-logo-phase {animation:none !important;}
+  #ntpc-launch .ntpc-launch-logo-phase {opacity:1;transform:none;filter:none;}
+}
+</style>
 </head>
 <body class="ntpc-premium-ui bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
 <!-- NTPC 2026 新開場：全程 CSS 動畫；桌機橫式、手機自適應；不載入影片。 -->
