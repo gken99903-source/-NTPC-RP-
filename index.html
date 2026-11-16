@@ -227,6 +227,7 @@ __                                                                              
           document.getElementById('ntpc-bot-panel-title').value=p.title||'';
           document.getElementById('ntpc-bot-panel-desc').value=p.description||'';
           document.getElementById('ntpc-bot-panel-roles').value=(p.role_ids||[]).join(',');
+          document.getElementById('ntpc-bot-panel-open-message').value=String(p.forward_message||'');
           document.getElementById('ntpc-bot-panel-lock').checked=!!p.locked;
         }
         function ntpcBotConsolePanelSelect(){
@@ -363,6 +364,8 @@ __                                                                              
         function siteTicketLoadPanel(){
           const cid=siteTicketText('site-ticket-panels-list'),p=(ntpcBotConsoleState?.site_ticket_panels||[]).find(x=>x.channel_id===cid);
           for(const [id,key,fallback] of [['site-ticket-panel-channel','channel_id',''],['site-ticket-panel-title','title',''],['site-ticket-panel-desc','description',''],['site-ticket-panel-placeholder','placeholder','選擇要申辦的主題']])siteTicketEl(id).value=p?.[key]||fallback;
+          siteTicketEl('site-ticket-panel-mode').value=p?.display_mode==='buttons'?'buttons':'select';
+          siteTicketEl('site-ticket-panel-open-message').value=String(p?.open_message||'');
           const chosen=new Set(p?.topic_ids||[]);
           for(const ch of document.querySelectorAll('.site-ticket-panel-topic-checkbox'))ch.checked=chosen.has(ch.value);
           siteTicketPreview();
@@ -371,7 +374,28 @@ __                                                                              
           const title=siteTicketText('site-ticket-panel-title')||'新北 RP｜部門申請中心',desc=siteTicketText('site-ticket-panel-desc')||'選擇要辦理的業務',placeholder=siteTicketText('site-ticket-panel-placeholder')||'選擇要申辦的主題';
           if(siteTicketEl('site-ticket-preview-title'))siteTicketEl('site-ticket-preview-title').textContent=title;
           if(siteTicketEl('site-ticket-preview-desc'))siteTicketEl('site-ticket-preview-desc').textContent=desc;
-          if(siteTicketEl('site-ticket-preview-dropdown'))siteTicketEl('site-ticket-preview-dropdown').textContent=placeholder+' ﹀';
+          const mode=siteTicketEl('site-ticket-panel-mode')?.value==='buttons'?'buttons':'select';
+          const actions=siteTicketEl('site-ticket-preview-actions');
+          if(actions){
+            actions.replaceChildren();
+            actions.className=mode==='buttons'?'grid grid-cols-2 gap-2 max-h-52 overflow-y-auto':'min-w-0';
+            if(mode==='buttons'){
+              const ids=[...document.querySelectorAll('#site-ticket-panel-topics input:checked')].map(box=>box.value);
+              const topics=ntpcBotConsoleState?.site_ticket_topics||[];
+              for(const id of ids){
+                const topic=topics.find(x=>x.id===id);
+                if(!topic)continue;
+                const button=document.createElement('div');button.className='rounded-lg bg-indigo-600/80 border border-indigo-400/30 px-3 py-2 text-xs text-white text-center break-words';
+                button.textContent=topic.name;actions.append(button);
+              }
+              if(!actions.children.length){const empty=document.createElement('div');empty.className='text-xs text-slate-400 col-span-2';empty.textContent='請先勾選右上方要提供的主題';actions.append(empty);}
+            }else{
+              const dropdown=document.createElement('div');dropdown.className='bg-slate-800 rounded-lg p-3 text-sm text-slate-300';dropdown.textContent=placeholder+' ﹀';actions.append(dropdown);
+            }
+          }
+          const message=siteTicketEl('site-ticket-panel-open-message')?.value.trim()||'';
+          const openPreview=siteTicketEl('site-ticket-preview-open-message');
+          if(openPreview)openPreview.textContent=message?message.replaceAll('{user}','@申請人').replaceAll('{topic}','主題名稱').replaceAll('{panel}',title):'（未設定：沿用該主題的開單說明）';
         }
         async function siteTicketQueue(action,payload){
           if(!ntpcCanConfigureIntegrations(currentUser))return;
@@ -400,9 +424,11 @@ __                                                                              
         }
         function siteTicketPublishPanel(){
           const channel_id=siteTicketText('site-ticket-panel-channel'),title=siteTicketText('site-ticket-panel-title'),description=siteTicketText('site-ticket-panel-desc'),placeholder=siteTicketText('site-ticket-panel-placeholder');
+          const display_mode=siteTicketText('site-ticket-panel-mode'),open_message=siteTicketText('site-ticket-panel-open-message');
           const topic_ids=[...document.querySelectorAll('.site-ticket-panel-topic-checkbox:checked')].map(el=>el.value);
           if(!ntpcBotConsoleSnowflake(channel_id)||!title||!description||!placeholder||topic_ids.length<1||topic_ids.length>20)return showToast('請確認目標頻道 ID、面板內容及 1～20 個主題','warning');
-          siteTicketQueue('site_panel_publish',{channel_id,title,description,placeholder,topic_ids});
+          if(!['select','buttons'].includes(display_mode)||open_message.length>1500)return showToast('請確認顯示方式與開單後訊息（最多 1500 字）','warning');
+          siteTicketQueue('site_panel_publish',{channel_id,title,description,placeholder,topic_ids,display_mode,open_message});
         }
         document.addEventListener('DOMContentLoaded',()=>{if(siteTicketEl('site-ticket-questions')&&!siteTicketEl('site-ticket-questions').children.length)siteTicketNewTopic();},{once:true});
 
@@ -590,8 +616,9 @@ __                                                                              
           const val=id=>String(document.getElementById(id)?.value||'').trim();
           let payload={};
           if(action==='panel_update'){
-            payload={channel_id:val('ntpc-bot-panel-channel-id')||val('ntpc-bot-panel-list'),title:val('ntpc-bot-panel-title'),description:val('ntpc-bot-panel-desc'),role_ids:val('ntpc-bot-panel-roles').split(/[，,\s]+/).filter(Boolean),locked:!!document.getElementById('ntpc-bot-panel-lock')?.checked};
+            payload={channel_id:val('ntpc-bot-panel-channel-id')||val('ntpc-bot-panel-list'),title:val('ntpc-bot-panel-title'),description:val('ntpc-bot-panel-desc'),role_ids:val('ntpc-bot-panel-roles').split(/[，,\s]+/).filter(Boolean),locked:!!document.getElementById('ntpc-bot-panel-lock')?.checked,forward_message:val('ntpc-bot-panel-open-message')};
             if(!ntpcBotConsoleSnowflake(payload.channel_id)||!payload.title||payload.title.length>60||!payload.description||payload.description.length>1000||payload.role_ids.length<1||payload.role_ids.length>5||!payload.role_ids.every(ntpcBotConsoleSnowflake))return ntpcBotConsoleInvalid('請檢查票務頻道 ID、標題（1～60字）、說明（1～1000字）、客服身分組（1～5 個有效 ID）。');
+            if(payload.forward_message.length>2000)return ntpcBotConsoleInvalid('開單後自動訊息最多 2000 字。');
           }else if(action==='money_create'||action==='money_update'){
             payload={kind:val('ntpc-bot-money-op'),cycle:val('ntpc-bot-money-cycle'),amount:Number(val('ntpc-bot-money-amount'))};
             const targetField=val('ntpc-bot-money-target-type');
@@ -4023,6 +4050,224 @@ body.ntpc-premium-ui .submit-success-card {
   body.ntpc-v127-layout>header #user-badge-name{max-width:min(20vw,72px)!important;}
 }
 </style>
+
+<style id="ntpc-v140-gray-gold-theme">
+/* V140：僅調整網站主題為灰＋金色；不修改業務邏輯。 */
+:root{
+  --ntpc-gold-1:#f5ddb0;
+  --ntpc-gold-2:#d6b06a;
+  --ntpc-gold-3:#9b7739;
+  --ntpc-gold-4:#6d5327;
+  --ntpc-gray-1:#0f1012;
+  --ntpc-gray-2:#17181c;
+  --ntpc-gray-3:#22242a;
+  --ntpc-gray-4:#2e3139;
+}
+body.ntpc-v127-layout{
+  background:
+    radial-gradient(ellipse at 48% -10%, rgba(214,176,106,.18), transparent 40%),
+    radial-gradient(ellipse at 100% 76%, rgba(140,112,57,.12), transparent 54%),
+    linear-gradient(180deg,#0f1012,#131418 40%,#0e0f12 100%) !important;
+}
+.ntpc-v127-aside{
+  background:linear-gradient(180deg,#1a1b1f 0%,#15161a 42%,#101115 100%)!important;
+  border-right:1px solid rgba(214,176,106,.20)!important;
+  box-shadow:8px 0 38px rgba(0,0,0,.34)!important;
+}
+.ntpc-v127-aside >div:first-child{border-bottom:1px solid rgba(214,176,106,.14)!important;}
+.ntpc-v127-aside >div:first-child img,
+#ntpc-header-avatar,
+.ntpc-v128-header-avatar{
+  box-shadow:0 0 0 2px rgba(214,176,106,.24),0 0 18px rgba(214,176,106,.16)!important;
+  border-color:rgba(214,176,106,.32)!important;
+}
+.ntpc-v127-aside >div:first-child .font-black,
+#logo-home-btn h1,
+.ntpc-v127-header-greeting>div:first-child{
+  background-image:linear-gradient(100deg,#f7f4ee 0%,#e7d3a7 28%,#d6b06a 58%,#b98a45 100%)!important;
+  -webkit-background-clip:text!important;
+  background-clip:text!important;
+  color:transparent!important;
+  filter:drop-shadow(0 0 8px rgba(214,176,106,.10));
+}
+.ntpc-v127-nav-item i,
+.ntpc-v127-work-label i,
+.ntpc-v128-features-head i,
+.ntpc-v128-timeline-row strong,
+#mobile-more-menu-btn i:first-child,
+#nav-home i,
+#nav-dashboard i,
+#nav-notifications i,
+#nav-profile i,
+#nav-faq i{color:var(--ntpc-gold-2)!important;}
+.ntpc-v127-nav-item:hover,
+.mobile-nav-btn:hover,
+#mobile-more-menu-btn:hover,
+#desktop-more-menu-btn:hover,
+.nav-btn:hover{
+  background:rgba(214,176,106,.11)!important;
+  border-color:rgba(214,176,106,.18)!important;
+}
+.ntpc-v127-nav-item.is-active,
+#nav-home,
+.mobile-nav-btn[data-tab="home"],
+#mobile-nav-home{
+  background:linear-gradient(100deg,#8a6935,#d0a85d)!important;
+  color:#fff7ea!important;
+  border-color:rgba(244,223,174,.40)!important;
+  box-shadow:0 6px 22px rgba(118,89,38,.28)!important;
+}
+.ntpc-v127-nav-item.is-active i,
+#nav-home i{color:#fff7ea!important;}
+body.ntpc-v127-layout>header{
+  background:linear-gradient(105deg,rgba(19,20,23,.97),rgba(21,22,26,.97) 43%,rgba(47,39,23,.93))!important;
+  box-shadow:0 5px 24px rgba(0,0,0,.32)!important;
+  border-bottom-color:rgba(214,176,106,.16)!important;
+}
+.ntpc-v127-header-greeting>div:last-child{color:#d7c19b!important;}
+.ntpc-v128-header-icon,
+#user-badge,
+#desktop-more-menu,
+#mobile-menu{
+  border-color:rgba(214,176,106,.18)!important;
+  background:rgba(28,29,34,.78)!important;
+}
+.ntpc-v128-header-icon{color:#ead9b5!important;}
+.ntpc-v128-header-icon:hover{background:rgba(214,176,106,.18)!important;border-color:rgba(214,176,106,.34)!important;color:#fff8ea!important;}
+#site-announcement-bar.ntpc-v127-announcement{
+  background:linear-gradient(90deg,rgba(42,37,28,.95),rgba(28,29,33,.92))!important;
+  border:1px solid rgba(214,176,106,.36)!important;
+  box-shadow:inset 0 1px rgba(255,240,211,.08),0 8px 24px rgba(0,0,0,.20)!important;
+}
+#site-announcement-bar.ntpc-v127-announcement>div:first-child{color:#eadab8!important;}
+.ntpc-v127-home-hero,
+.ntpc-v127-work,
+.ntpc-v127-home-update,
+.ntpc-home-review-card,
+.ntpc-v128-features,
+.ntpc-v128-timeline,
+.ntpc-v128-all-features,
+.ntpc-v128-bottom > section,
+:is(.rounded-3xl,.rounded-[28px]).border,
+.bg-slate-900\/80,
+.bg-slate-900\/90{
+  border-color:rgba(214,176,106,.22)!important;
+  background:linear-gradient(145deg,rgba(31,32,37,.96),rgba(19,20,24,.96))!important;
+  box-shadow:0 10px 35px rgba(0,0,0,.26), inset 0 0 0 1px rgba(255,236,198,.03)!important;
+}
+.ntpc-v127-home-hero #home-site-version-badge,
+.ntpc-home-review-refresh,
+.ntpc-v128-feature,
+.ntpc-v127-work-row,
+.ntpc-v128-shortcut-copy,
+.tab-shortcut-btn{
+  border-color:rgba(214,176,106,.18)!important;
+  background:rgba(18,19,23,.82)!important;
+}
+.ntpc-v127-work-row strong,
+.text-emerald-400,
+.text-sky-300,
+.text-blue-400,
+.text-indigo-300,
+.text-cyan-300{
+  color:var(--ntpc-gold-2)!important;
+}
+.text-slate-300,.text-slate-200{color:#ece7dc!important;}
+.text-slate-400,.text-slate-500{color:#c1b6a2!important;}
+#login-modal-open-btn,
+button.bg-blue-600,
+button.bg-indigo-600,
+button.bg-emerald-600,
+button.bg-blue-500,
+button.bg-indigo-500,
+.tab-shortcut-btn.bg-blue-500,
+.bg-blue-600.hover\:bg-blue-500,
+.bg-indigo-600.hover\:bg-indigo-500{
+  background:linear-gradient(100deg,#8d6d38,#d8b26c)!important;
+  color:#fff8eb!important;
+  box-shadow:0 10px 24px rgba(118,89,38,.28)!important;
+  border:1px solid rgba(246,226,187,.22)!important;
+}
+#login-modal-open-btn:hover,
+button.bg-blue-600:hover,
+button.bg-indigo-600:hover,
+button.bg-emerald-600:hover,
+button.bg-blue-500:hover,
+button.bg-indigo-500:hover{
+  background:linear-gradient(100deg,#a37d41,#e2be79)!important;
+}
+button.bg-slate-700,
+button.bg-slate-800,
+.bg-slate-800,
+.bg-slate-950,
+input.bg-slate-950,
+textarea.bg-slate-950,
+select.bg-slate-950{
+  background-color:#131418!important;
+  border-color:rgba(214,176,106,.16)!important;
+}
+input:focus,textarea:focus,select:focus{
+  border-color:rgba(214,176,106,.42)!important;
+  box-shadow:0 0 0 1px rgba(214,176,106,.22)!important;
+}
+#desktop-more-menu .more-menu-item i,
+#mobile-more-menu .mobile-nav-btn i{color:var(--ntpc-gold-2)!important;}
+</style>
+
+
+<style id="ntpc-v141-gold-launch-accent">
+/* 只改 NTPC 程式開場的視覺配色：靜態金色高光，保留原本桌機省效能動畫。 */
+#ntpc-launch {
+  background:radial-gradient(ellipse 69% 70% at 50% 42%,#393530 0%,#1a1a1c 49%,#0b0b0d 100%);
+}
+#ntpc-launch::before {
+  background:conic-gradient(from 18deg at 50% 50%,transparent 0deg,rgba(218,176,103,.11) 32deg,transparent 68deg,transparent 215deg,rgba(192,149,80,.08) 275deg,transparent 300deg);
+}
+#ntpc-launch::after {
+  opacity:.20;
+  background-image:linear-gradient(90deg,rgba(244,215,163,.035) 1px,transparent 1px),linear-gradient(0deg,rgba(244,215,163,.025) 1px,transparent 1px);
+}
+#ntpc-launch .ntpc-launch-halo {
+  background:radial-gradient(ellipse at center,rgba(219,172,91,.17),rgba(108,82,50,.08) 44%,transparent 72%);
+}
+#ntpc-launch .ntpc-launch-stage {
+  border-color:rgba(224,187,113,.36);
+  background:linear-gradient(143deg,rgba(228,196,138,.16) 0%,rgba(103,91,75,.16) 25%,rgba(20,19,20,.50) 74%,rgba(212,178,114,.09) 100%);
+  box-shadow:0 30px 85px rgba(0,0,0,.46),inset 0 1px rgba(250,231,194,.35),inset 0 -1px rgba(214,169,98,.11);
+}
+#ntpc-launch .ntpc-launch-stage::before {
+  background:linear-gradient(128deg,rgba(255,232,187,.17),transparent 24%,transparent 72%,rgba(222,170,87,.07));
+}
+#ntpc-launch .ntpc-launch-stage::after {
+  background:linear-gradient(90deg,transparent,rgba(229,188,114,.30),transparent);
+}
+#ntpc-launch .ntpc-launch-beam {
+  background:linear-gradient(90deg,transparent,rgba(246,210,144,.25) 48%,transparent);
+}
+#ntpc-launch .ntpc-launch-letters {
+  color:#eddbb9;
+  background-image:linear-gradient(135deg,#fff7e7 6%,#f1dcaf 34%,#d7ac62 67%,#f3d89d 91%);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  text-shadow:none;
+  filter:none;
+}
+#ntpc-launch .ntpc-launch-undertext { color:#d5bf96; }
+#ntpc-launch .ntpc-launch-seal {
+  border-color:rgba(245,213,151,.68);
+  background:radial-gradient(circle at 28% 20%,rgba(242,207,143,.30),rgba(82,72,60,.76) 62%,rgba(22,21,20,.94));
+  box-shadow:0 0 0 8px rgba(210,163,82,.085),0 0 0 23px rgba(212,167,92,.027),0 16px 48px rgba(0,0,0,.41),inset 0 1px rgba(255,238,201,.32);
+}
+#ntpc-launch .ntpc-launch-fallback {color:#f3d9a8;}
+#ntpc-launch .ntpc-launch-logo-phase strong {color:#f3e1bf;}
+#ntpc-launch .ntpc-launch-logo-phase small {color:#cfb991;}
+#ntpc-launch .ntpc-launch-timeline {background:rgba(210,170,105,.16);}
+#ntpc-launch .ntpc-launch-timeline span {
+  background:linear-gradient(90deg,rgba(192,145,79,.42),#f4da9f,rgba(201,150,73,.80));
+  box-shadow:0 0 10px rgba(226,174,82,.27);
+}
+</style>
+
 </head>
 <body class="ntpc-premium-ui bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
 <!-- NTPC 2026 新開場：全程 CSS 動畫；桌機橫式、手機自適應；不載入影片。 -->
@@ -6292,13 +6537,19 @@ body.ntpc-premium-ui .submit-success-card {
                           <label class="block text-xs text-slate-400">Discord 發送頻道 ID</label><input id="site-ticket-panel-channel" placeholder="填入想要發布面板的頻道數字 ID" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-mono">
                           <label class="block text-xs text-slate-400">面板標題</label><input id="site-ticket-panel-title" maxlength="100" placeholder="新北 RP｜部門申請中心" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" oninput="siteTicketPreview()">
                           <label class="block text-xs text-slate-400">面板說明（給申請人看的介紹）</label><textarea id="site-ticket-panel-desc" rows="3" maxlength="1500" placeholder="選擇想申請的部門；部分主題可能需要先回答問題" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" oninput="siteTicketPreview()"></textarea>
-                          <label class="block text-xs text-slate-400">主題選單提示文字</label><input id="site-ticket-panel-placeholder" maxlength="100" value="選擇要申辦的主題" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" oninput="siteTicketPreview()">
+                          <label class="block text-xs text-slate-400">主題顯示方式（每張面板獨立設定）</label>
+                          <select id="site-ticket-panel-mode" onchange="siteTicketPreview()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white"><option value="select">下拉選單（預設）</option><option value="buttons">按鈕（每列最多 5 個）</option></select>
+                          <label class="block text-xs text-slate-400">下拉選單提示文字（按鈕模式不使用）</label><input id="site-ticket-panel-placeholder" maxlength="100" value="選擇要申辦的主題" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" oninput="siteTicketPreview()">
+                          <label class="block text-xs text-slate-400">開單後文字（只影響此面板建立的客服單）</label>
+                          <textarea id="site-ticket-panel-open-message" rows="5" maxlength="1500" placeholder="選用；留空則使用各主題原本的開單說明" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" oninput="siteTicketPreview()"></textarea>
+                          <p class="text-[11px] leading-relaxed text-slate-400">可填入 {user}（申請人）、{topic}（主題名稱）、{panel}（面板標題）。每張已發布的網站專用面板都能從上方清單載入後個別編輯；不修改 /setup 票務。</p>
                           <button type="button" onclick="siteTicketPublishPanel()" class="w-full rounded-lg px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">發送／更新指定頻道面板</button>
                           <p class="text-xs text-amber-300">若該頻道已有網站專用面板，Bot 會修改原訊息，不重複發送；不會覆蓋 /setup 的面板。</p>
                         </div>
                         <div class="space-y-3"><label class="block text-sm font-semibold text-slate-200">面板提供的主題（最多 20 種）</label><div id="site-ticket-panel-topics" class="rounded-xl border border-slate-700 bg-slate-950 p-3 space-y-2 max-h-72 overflow-y-auto text-sm">先儲存主題，再同步 Bot 資料。</div>
-                          <label class="block text-xs text-slate-400">公開面板預覽</label><div class="rounded-xl bg-slate-950 border border-indigo-500/40 p-4 space-y-2"><div id="site-ticket-preview-title" class="font-semibold text-white">新北 RP｜部門申請中心</div><div id="site-ticket-preview-desc" class="text-sm text-slate-300 whitespace-pre-wrap">選擇要辦理的業務</div><div id="site-ticket-preview-dropdown" class="bg-slate-800 rounded-lg p-3 text-sm text-slate-300">選擇要申辦的主題 ﹀</div></div>
-                          <p class="text-xs text-slate-500">網站預覽僅顯示外觀；Discord 端使用原生下拉選單，只有主題設定問題時才會開啟表單。</p>
+                          <label class="block text-xs text-slate-400">公開面板預覽</label><div class="rounded-xl bg-slate-950 border border-indigo-500/40 p-4 space-y-2"><div id="site-ticket-preview-title" class="font-semibold text-white">新北 RP｜部門申請中心</div><div id="site-ticket-preview-desc" class="text-sm text-slate-300 whitespace-pre-wrap">選擇要辦理的業務</div><div id="site-ticket-preview-actions" class="min-w-0"><div class="bg-slate-800 rounded-lg p-3 text-sm text-slate-300">選擇要申辦的主題 ﹀</div></div></div>
+                          <label class="block text-xs text-slate-400">開單後文字預覽</label><div id="site-ticket-preview-open-message" class="rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm text-slate-300 whitespace-pre-wrap break-words">（未設定：沿用該主題的開單說明）</div>
+                          <p class="text-xs text-slate-500">網站預覽僅顯示外觀；Discord 使用原生下拉選單或按鈕。已有設定事前問題的主題仍會先顯示表單。</p>
                         </div>
                       </div>
                       <p id="site-ticket-action-status" class="text-xs text-slate-400">修改先送至 Cloudflare 操作佇列，需 Bot 執行完成才生效；完成後按「同步最新設定」確認。</p>
@@ -6319,6 +6570,7 @@ body.ntpc-premium-ui .submit-success-card {
                         <select id="ntpc-bot-panel-list" onchange="ntpcBotConsolePanelSelect()" class="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white"><option value="">先同步 Bot 設定</option></select>
                         <label class="block text-xs text-slate-400">面板標題</label><input id="ntpc-bot-panel-title" maxlength="60" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="客服面板標題">
                         <label class="block text-xs text-slate-400">面板說明</label><textarea id="ntpc-bot-panel-desc" rows="4" maxlength="1000" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="可修改面板原本的文字"></textarea>
+                        <label class="block text-xs text-slate-400">開單後自動發送的文字（此面板獨立設定）</label><textarea id="ntpc-bot-panel-open-message" rows="4" maxlength="2000" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="建立客服頻道後自動發出的文字；留空代表不另外發送"></textarea>
                         <label class="block text-xs text-slate-400">客服身分組 ID（1～5 個，以半形逗號分隔）</label><input id="ntpc-bot-panel-roles" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="角色ID,角色ID">
                         <label class="flex items-center gap-2 text-amber-200 text-sm"><input type="checkbox" id="ntpc-bot-panel-lock" class="accent-amber-500">上鎖此票務面板，不允許再開新單</label>
                         <button type="button" onclick="ntpcBotConsoleSubmit('panel_update')" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm">儲存並同步 Discord 面板</button>
