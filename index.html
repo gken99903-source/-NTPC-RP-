@@ -5324,13 +5324,35 @@ body.ntpc-v127-layout :is(#tab-police,#tab-fire,#tab-admin,#tab-dashboard,#tab-a
 
 
 <style id="ntpc-v181-chibi-cat-skin">
-/* V181: full-body chibi cat instead of a CSS mannequin. All existing service and radio logic untouched. */
-#ntpc-mascot-stage{height:214px!important;}
-#ntpc-mascot{width:154px!important;height:172px!important;bottom:10px!important;}
-#ntpc-mascot .ntpc-mascot-body{position:absolute;inset:0;display:block!important;transform-origin:center 86%;}
+/* V182: keep the Q-version mascot, add synced gait, clear idle/sit/sleep states, and per-tab expressions. */
+#ntpc-mascot-stage{height:176px!important;}
+#ntpc-mascot{--walk-cycle:.32s;--mascot-accent:#d6b06a;width:124px!important;height:139px!important;bottom:8px!important;}
+#ntpc-mascot .ntpc-mascot-body{position:absolute;inset:0;display:block!important;transform-origin:center 86%;--dir:1;}
+#ntpc-mascot.facing-left .ntpc-mascot-body{--dir:-1;}
 #ntpc-mascot .ntpc-mascot-character{position:absolute;inset:0;width:100%!important;height:100%!important;overflow:visible!important;}
 #ntpc-mascot .ntpc-mascot-art{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 9px 10px rgba(0,0,0,.24));user-select:none;-webkit-user-drag:none;pointer-events:none;}
-#ntpc-mascot .ntpc-mascot-shadow{width:78px;height:10px;bottom:1px;filter:blur(4px);opacity:.38;}
+#ntpc-mascot .ntpc-mascot-face{position:absolute;left:50%;top:44px;width:38px;height:22px;transform:translateX(-50%);z-index:5;pointer-events:none;}
+#ntpc-mascot .ntpc-mascot-eye{position:absolute;top:2px;width:8px;height:8px;background:#141820;border-radius:50%;box-shadow:0 1px 0 rgba(255,255,255,.18) inset;transition:all .18s ease;}
+#ntpc-mascot .ntpc-mascot-eye.left{left:5px;}#ntpc-mascot .ntpc-mascot-eye.right{right:5px;}
+#ntpc-mascot .ntpc-mascot-mouth{position:absolute;left:50%;bottom:2px;width:14px;height:7px;border:2px solid #141820;border-top:0;border-radius:0 0 18px 18px;transform:translateX(-50%);transition:all .18s ease;}
+#ntpc-mascot .ntpc-mascot-blush{position:absolute;top:11px;width:9px;height:5px;border-radius:999px;background:rgba(245,157,170,.28);filter:blur(.3px);opacity:.65;}
+#ntpc-mascot .ntpc-mascot-blush.left{left:-1px;}#ntpc-mascot .ntpc-mascot-blush.right{right:-1px;}
+#ntpc-mascot[data-mood='serious'] .ntpc-mascot-eye{height:6px;border-radius:999px;transform:skewX(-12deg);} 
+#ntpc-mascot[data-mood='serious'] .ntpc-mascot-mouth{width:12px;height:0;border-width:2px 0 0 0;border-top:2px solid #141820;border-radius:0;bottom:5px;}
+#ntpc-mascot[data-mood='alert'] .ntpc-mascot-eye{width:9px;height:9px;box-shadow:0 0 0 2px rgba(255,255,255,.12) inset;}
+#ntpc-mascot[data-mood='alert'] .ntpc-mascot-mouth{width:8px;height:8px;border-radius:50%;border:2px solid #141820;bottom:0;background:transparent;}
+#ntpc-mascot[data-mood='curious'] .ntpc-mascot-eye.left{height:8px;}#ntpc-mascot[data-mood='curious'] .ntpc-mascot-eye.right{height:5px;top:4px;}
+#ntpc-mascot[data-mood='curious'] .ntpc-mascot-mouth{width:15px;bottom:1px;transform:translateX(-50%) rotate(8deg);}
+#ntpc-mascot[data-mood='sleepy'] .ntpc-mascot-eye{height:2px;top:5px;border-radius:999px;background:#20252c;}
+#ntpc-mascot[data-mood='sleepy'] .ntpc-mascot-mouth{width:10px;height:5px;border-color:#20252c;bottom:1px;}
+#ntpc-mascot[data-mood='proud'] .ntpc-mascot-eye{height:7px;box-shadow:0 0 0 1px rgba(255,255,255,.09) inset;} 
+#ntpc-mascot[data-mood='proud'] .ntpc-mascot-mouth{width:16px;height:8px;bottom:2px;}
+#ntpc-mascot[data-mood='gentle'] .ntpc-mascot-mouth,#ntpc-mascot[data-mood='happy'] .ntpc-mascot-mouth{width:16px;height:8px;}
+#ntpc-mascot .ntpc-mascot-sleep-mark{position:absolute;left:50%;top:12px;transform:translateX(26px) rotate(-8deg);font-size:11px;font-weight:800;letter-spacing:.02em;color:#cbe7ff;opacity:0;pointer-events:none;text-shadow:0 2px 8px rgba(0,0,0,.22);z-index:9;transition:opacity .18s ease;}
+#ntpc-mascot.is-sleeping .ntpc-mascot-sleep-mark{opacity:1;animation:ntpcSleepFloat 1.6s ease-in-out infinite;}
+#ntpc-mascot .ntpc-mascot-step-paw{position:absolute;bottom:15px;width:16px;height:10px;border-radius:999px;background:linear-gradient(180deg,#f6f4f4,#d8d3d3);border:1px solid rgba(24,26,32,.08);box-shadow:0 2px 6px rgba(0,0,0,.12);z-index:1;opacity:.94;pointer-events:none;transform-origin:center 35%;transition:transform .2s ease, opacity .2s ease;}
+#ntpc-mascot .ntpc-mascot-step-paw.left{left:34px;}#ntpc-mascot .ntpc-mascot-step-paw.right{right:34px;}
+#ntpc-mascot .ntpc-mascot-shadow{width:64px;height:9px;bottom:1px;filter:blur(4px);opacity:.34;transition:transform .25s ease,opacity .25s ease;}
 #ntpc-mascot .ntpc-mascot-hat{position:absolute;z-index:6;top:32px;left:50%;transform:translateX(-50%) rotate(-5deg);width:72px;height:29px;min-width:0;padding:0;border-radius:13px 13px 4px 4px;background:linear-gradient(180deg,#263a53,#101925);border:1px solid rgba(244,221,173,.42);box-shadow:0 4px 5px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.12);color:#f9db90;font-size:12px;display:flex;align-items:center;justify-content:center;pointer-events:none;}
 #ntpc-mascot .ntpc-mascot-hat::after{content:'';position:absolute;left:0;right:-8px;bottom:-7px;height:10px;background:linear-gradient(180deg,#1c293b,#111821);border-radius:3px 8px 12px 12px;border-bottom:2px solid rgba(255,222,148,.62);box-shadow:0 3px 5px rgba(0,0,0,.19);}
 #ntpc-mascot .ntpc-mascot-hat i{position:relative;z-index:1;filter:drop-shadow(0 1px rgba(0,0,0,.3));}
@@ -5349,24 +5371,142 @@ body.ntpc-v127-layout :is(#tab-police,#tab-fire,#tab-admin,#tab-dashboard,#tab-a
 #ntpc-mascot .ntpc-mascot-status{position:absolute;z-index:7;top:auto;bottom:17px;left:50%;transform:translateX(-50%);background:rgba(10,12,16,.85);border:1px solid rgba(214,176,106,.30);color:#f7f4ed;font-size:10px;padding:3px 9px;letter-spacing:.03em;pointer-events:none;}
 #ntpc-mascot .ntpc-mascot-gear-label{display:none;}
 #ntpc-mascot .ntpc-speech{bottom:157px;left:50%;min-width:170px;max-width:min(295px,calc(100vw - 25px));}
+#ntpc-mascot.is-idle .ntpc-mascot-body{animation:ntpcChibiIdle 2.2s ease-in-out infinite!important;}
+#ntpc-mascot.is-running .ntpc-mascot-body{animation:ntpcChibiRun var(--walk-cycle) linear infinite!important;}
+#ntpc-mascot.is-running .ntpc-mascot-step-paw.left{animation:ntpcChibiPawLeft var(--walk-cycle) linear infinite;}
+#ntpc-mascot.is-running .ntpc-mascot-step-paw.right{animation:ntpcChibiPawRight var(--walk-cycle) linear infinite;}
+#ntpc-mascot.is-sitting .ntpc-mascot-body{animation:ntpcChibiSit 2.1s ease-in-out infinite!important;}
+#ntpc-mascot.is-sitting .ntpc-mascot-step-paw{opacity:.88;}
+#ntpc-mascot.is-sitting .ntpc-mascot-step-paw.left{transform:translateY(-2px) translateX(3px) scale(1.06,.92);} 
+#ntpc-mascot.is-sitting .ntpc-mascot-step-paw.right{transform:translateY(-2px) translateX(-3px) scale(1.06,.92);} 
+#ntpc-mascot.is-sleeping .ntpc-mascot-body{animation:ntpcChibiSleep 1.9s ease-in-out infinite!important;}
+#ntpc-mascot.is-sleeping .ntpc-mascot-step-paw{opacity:.76;}
+#ntpc-mascot.is-sleeping .ntpc-mascot-step-paw.left{transform:translateY(-2px) translateX(4px) scale(1.08,.9);} 
+#ntpc-mascot.is-sleeping .ntpc-mascot-step-paw.right{transform:translateY(-2px) translateX(-4px) scale(1.08,.9);} 
 #ntpc-mascot.is-jumping .ntpc-mascot-body{animation:ntpcChibiHop .65s cubic-bezier(.2,.72,.3,1) 1!important;}
 #ntpc-mascot.is-reacting .ntpc-mascot-body{animation:ntpcChibiWiggle .52s ease-in-out 1!important;}
-#ntpc-mascot.is-running .ntpc-mascot-body{animation:ntpcChibiWaddle .36s ease-in-out infinite alternate!important;}
-#ntpc-mascot.is-sleeping .ntpc-mascot-body{animation:ntpcChibiDoze 1.9s ease-in-out infinite!important;}
+#ntpc-mascot.is-jumping .ntpc-mascot-shadow{transform:scale(.78);opacity:.22;}
+#ntpc-mascot.is-sitting .ntpc-mascot-shadow{transform:scale(1.05);opacity:.30;}
+#ntpc-mascot.is-sleeping .ntpc-mascot-shadow{transform:scale(1.1);opacity:.26;}
 #ntpc-mascot .ntpc-mascot-actions{right:10px;top:3px;z-index:12;}
-@keyframes ntpcChibiWaddle{from{transform:rotate(-2deg) translateY(0)}to{transform:rotate(2deg) translateY(-3px)}}
-@keyframes ntpcChibiHop{0%{transform:translateY(0) scale(1)}36%{transform:translateY(-25px) scale(1.03)}70%{transform:translateY(0) scale(.96,1.04)}100%{transform:translateY(0) scale(1)}}
-@keyframes ntpcChibiWiggle{0%,100%{transform:rotate(0) scale(1)}22%{transform:rotate(-6deg) scale(1.03)}55%{transform:rotate(7deg) scale(1.06)}78%{transform:rotate(-3deg) scale(1)}}
-@keyframes ntpcChibiDoze{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(2px) scale(.99)}}
-@media(max-width:640px){#ntpc-mascot-stage{height:182px!important;}#ntpc-mascot{width:124px!important;height:139px!important;bottom:6px!important;}#ntpc-mascot .ntpc-mascot-hat{top:26px;width:58px;height:23px;font-size:10px;}#ntpc-mascot[data-hat='helmet'] .ntpc-mascot-hat{top:24px;width:65px;height:26px;}#ntpc-mascot[data-hat='crown'] .ntpc-mascot-hat{top:21px;width:55px;height:27px;}#ntpc-mascot[data-hat='medic'] .ntpc-mascot-hat{top:25px;width:53px;height:23px;}#ntpc-mascot[data-hat='graduate'] .ntpc-mascot-hat{top:24px;width:56px;height:20px;}#ntpc-mascot[data-hat='headset'] .ntpc-mascot-hat{top:20px;width:70px;height:35px;}#ntpc-mascot .ntpc-mascot-gear{width:29px;height:29px;min-width:29px;top:78px;right:2px;font-size:13px;}#ntpc-mascot .ntpc-mascot-status{bottom:11px;font-size:9px;}#ntpc-mascot .ntpc-speech{bottom:129px;}}
-#ntpc-mascot.is-near-left .ntpc-speech{left:2px;right:auto;transform:translateY(4px);}
-#ntpc-mascot.is-near-left .ntpc-speech.is-visible{transform:translateY(0);}
-#ntpc-mascot.is-near-left .ntpc-speech::after{left:32px;}
-#ntpc-mascot.is-near-right .ntpc-speech{left:auto;right:2px;transform:translateY(4px);}
-#ntpc-mascot.is-near-right .ntpc-speech.is-visible{transform:translateY(0);}
-#ntpc-mascot.is-near-right .ntpc-speech::after{left:auto;right:32px;transform:rotate(45deg);}
-@media(prefers-reduced-motion:reduce){#ntpc-mascot.is-jumping .ntpc-mascot-body,#ntpc-mascot.is-reacting .ntpc-mascot-body,#ntpc-mascot.is-running .ntpc-mascot-body,#ntpc-mascot.is-sleeping .ntpc-mascot-body{animation:none!important;}}
+@keyframes ntpcChibiIdle{0%,100%{transform:scaleX(var(--dir)) translateY(0)}50%{transform:scaleX(var(--dir)) translateY(-2px)}}
+@keyframes ntpcChibiRun{0%{transform:scaleX(var(--dir)) translateY(0) rotate(-2deg)}25%{transform:scaleX(var(--dir)) translateY(-1px) rotate(0deg)}50%{transform:scaleX(var(--dir)) translateY(-3px) rotate(2deg)}75%{transform:scaleX(var(--dir)) translateY(-1px) rotate(0deg)}100%{transform:scaleX(var(--dir)) translateY(0) rotate(-2deg)}}
+@keyframes ntpcChibiSit{0%,100%{transform:scaleX(var(--dir)) translateY(7px) scaleY(.94)}50%{transform:scaleX(var(--dir)) translateY(6px) scaleY(.95)}}
+@keyframes ntpcChibiSleep{0%,100%{transform:scaleX(var(--dir)) translateY(10px) scale(.97,.9) rotate(-1deg)}50%{transform:scaleX(var(--dir)) translateY(12px) scale(.95,.88) rotate(1deg)}}
+@keyframes ntpcChibiHop{0%{transform:scaleX(var(--dir)) translateY(0) scale(1)}36%{transform:scaleX(var(--dir)) translateY(-25px) scale(1.03)}70%{transform:scaleX(var(--dir)) translateY(0) scale(.96,1.04)}100%{transform:scaleX(var(--dir)) translateY(0) scale(1)}}
+@keyframes ntpcChibiWiggle{0%,100%{transform:scaleX(var(--dir)) rotate(0) scale(1)}22%{transform:scaleX(var(--dir)) rotate(-6deg) scale(1.03)}55%{transform:scaleX(var(--dir)) rotate(7deg) scale(1.06)}78%{transform:scaleX(var(--dir)) rotate(-3deg) scale(1)}}
+@keyframes ntpcChibiPawLeft{0%,100%{transform:translateY(0) rotate(0deg) scale(1)}50%{transform:translateY(-4px) rotate(-16deg) scale(1.02)}}
+@keyframes ntpcChibiPawRight{0%,100%{transform:translateY(-4px) rotate(16deg) scale(1.02)}50%{transform:translateY(0) rotate(0deg) scale(1)}}
+@keyframes ntpcSleepFloat{0%,100%{transform:translateX(26px) translateY(0) rotate(-8deg);opacity:.88}50%{transform:translateX(28px) translateY(-5px) rotate(-4deg);opacity:1}}
+@media(max-width:1024px){#ntpc-mascot-stage{height:164px!important;}#ntpc-mascot{width:112px!important;height:126px!important;bottom:6px!important;}#ntpc-mascot .ntpc-mascot-face{top:40px;width:34px;height:20px;}#ntpc-mascot .ntpc-mascot-eye{width:7px;height:7px;}#ntpc-mascot .ntpc-mascot-mouth{width:12px;height:6px;}#ntpc-mascot .ntpc-mascot-hat{top:27px;width:56px;height:22px;font-size:10px;}#ntpc-mascot[data-hat='helmet'] .ntpc-mascot-hat{top:25px;width:63px;height:24px;}#ntpc-mascot[data-hat='crown'] .ntpc-mascot-hat{top:22px;width:53px;height:25px;}#ntpc-mascot[data-hat='medic'] .ntpc-mascot-hat{top:25px;width:51px;height:22px;}#ntpc-mascot[data-hat='graduate'] .ntpc-mascot-hat{top:24px;width:54px;height:19px;}#ntpc-mascot[data-hat='headset'] .ntpc-mascot-hat{top:20px;width:66px;height:31px;}#ntpc-mascot .ntpc-mascot-gear{width:28px;height:28px;min-width:28px;top:79px;right:3px;font-size:12px;}#ntpc-mascot .ntpc-mascot-status{bottom:12px;font-size:9px;padding:3px 8px;}#ntpc-mascot .ntpc-speech{bottom:120px;min-width:160px;}#ntpc-mascot .ntpc-mascot-step-paw{bottom:13px;width:14px;height:9px;}#ntpc-mascot .ntpc-mascot-step-paw.left{left:31px;}#ntpc-mascot .ntpc-mascot-step-paw.right{right:31px;}}
+@media(max-width:640px){#ntpc-mascot-stage{height:146px!important;}#ntpc-mascot{width:92px!important;height:104px!important;bottom:4px!important;}#ntpc-mascot .ntpc-mascot-face{top:33px;width:28px;height:16px;}#ntpc-mascot .ntpc-mascot-eye{width:6px;height:6px;}#ntpc-mascot .ntpc-mascot-eye.left{left:4px;}#ntpc-mascot .ntpc-mascot-eye.right{right:4px;}#ntpc-mascot .ntpc-mascot-mouth{width:9px;height:4px;border-width:1.6px;}#ntpc-mascot .ntpc-mascot-blush{width:7px;height:4px;top:9px;}#ntpc-mascot .ntpc-mascot-hat{top:22px;width:46px;height:18px;font-size:9px;}#ntpc-mascot[data-hat='helmet'] .ntpc-mascot-hat{top:21px;width:50px;height:20px;}#ntpc-mascot[data-hat='crown'] .ntpc-mascot-hat{top:18px;width:43px;height:22px;}#ntpc-mascot[data-hat='medic'] .ntpc-mascot-hat{top:21px;width:42px;height:18px;}#ntpc-mascot[data-hat='graduate'] .ntpc-mascot-hat{top:20px;width:44px;height:16px;}#ntpc-mascot[data-hat='headset'] .ntpc-mascot-hat{top:17px;width:56px;height:26px;border-width:4px;}#ntpc-mascot .ntpc-mascot-gear{width:22px;height:22px;min-width:22px;top:64px;right:2px;font-size:10px;border-radius:9px;}#ntpc-mascot .ntpc-mascot-status{bottom:9px;font-size:8px;padding:2px 7px;}#ntpc-mascot .ntpc-speech{bottom:98px;min-width:140px;max-width:min(220px,calc(100vw - 22px));font-size:11px;padding:10px 12px;}#ntpc-mascot .ntpc-mascot-actions{right:4px;top:1px;}#ntpc-mascot .ntpc-mascot-action-btn{width:26px;height:26px;font-size:11px;}#ntpc-mascot .ntpc-mascot-step-paw{bottom:11px;width:11px;height:7px;}#ntpc-mascot .ntpc-mascot-step-paw.left{left:25px;}#ntpc-mascot .ntpc-mascot-step-paw.right{right:25px;}#ntpc-mascot .ntpc-mascot-sleep-mark{font-size:9px;transform:translateX(20px) rotate(-8deg);}}
+#ntpc-mascot.is-near-left .ntpc-speech{left:2px;right:auto;transform:translateY(4px);}#ntpc-mascot.is-near-left .ntpc-speech.is-visible{transform:translateY(0);}#ntpc-mascot.is-near-left .ntpc-speech::after{left:32px;}#ntpc-mascot.is-near-right .ntpc-speech{left:auto;right:2px;transform:translateY(4px);}#ntpc-mascot.is-near-right .ntpc-speech.is-visible{transform:translateY(0);}#ntpc-mascot.is-near-right .ntpc-speech::after{left:auto;right:32px;transform:rotate(45deg);}
+@media(prefers-reduced-motion:reduce){#ntpc-mascot.is-idle .ntpc-mascot-body,#ntpc-mascot.is-jumping .ntpc-mascot-body,#ntpc-mascot.is-reacting .ntpc-mascot-body,#ntpc-mascot.is-running .ntpc-mascot-body,#ntpc-mascot.is-sitting .ntpc-mascot-body,#ntpc-mascot.is-sleeping .ntpc-mascot-body,#ntpc-mascot.is-running .ntpc-mascot-step-paw,#ntpc-mascot.is-sleeping .ntpc-mascot-sleep-mark{animation:none!important;}}
 </style>
+
+<style id="ntpc-v183-mascot-hat-fit">
+/* V183: 只處理吉祥物擋臉、常駐標籤與裝備過大的問題，保留全站與其他互動。 */
+#ntpc-mascot .ntpc-mascot-hat {
+  top:13px !important;
+  left:50% !important;
+  width:44px !important;
+  min-width:0 !important;
+  height:19px !important;
+  padding:0 !important;
+  transform:translateX(-50%) rotate(-4deg) !important;
+  border-radius:9px 9px 3px 3px !important;
+  font-size:10px !important;
+  box-shadow:0 2px 4px rgba(0,0,0,.24) !important;
+}
+#ntpc-mascot .ntpc-mascot-hat::after {
+  left:-2px !important;
+  right:-5px !important;
+  bottom:-4px !important;
+  height:5px !important;
+  border-radius:2px 4px 8px 8px !important;
+  border-bottom-width:1px !important;
+  box-shadow:0 2px 3px rgba(0,0,0,.18) !important;
+}
+#ntpc-mascot[data-hat='none'] .ntpc-mascot-hat{display:none !important;}
+#ntpc-mascot[data-hat='helmet'] .ntpc-mascot-hat {
+  top:12px !important;
+  width:48px !important;
+  height:22px !important;
+  border-radius:23px 23px 3px 3px !important;
+}
+#ntpc-mascot[data-hat='helmet'] .ntpc-mascot-hat::after{
+  left:-5px !important; right:-5px !important; bottom:-3px !important;
+  height:6px !important; border-bottom-width:2px !important; border-radius:999px !important;
+}
+#ntpc-mascot[data-hat='crown'] .ntpc-mascot-hat{
+  top:9px !important; width:42px !important; height:23px !important;
+  transform:translateX(-50%) !important;
+  border-radius:0 !important;
+}
+#ntpc-mascot[data-hat='crown'] .ntpc-mascot-hat::after{display:none !important;}
+#ntpc-mascot[data-hat='graduate'] .ntpc-mascot-hat{
+  top:13px !important; width:43px !important; height:14px !important;
+  transform:translateX(-50%) rotate(-5deg) !important;
+  border-radius:2px !important;
+}
+#ntpc-mascot[data-hat='graduate'] .ntpc-mascot-hat::after{
+  left:-9px !important; right:-9px !important; bottom:11px !important;
+  height:5px !important; border-radius:2px !important;
+}
+#ntpc-mascot[data-hat='medic'] .ntpc-mascot-hat{
+  top:14px !important; width:44px !important; height:19px !important;
+  border-radius:19px 19px 3px 3px !important;
+}
+#ntpc-mascot[data-hat='headset'] .ntpc-mascot-hat{
+  top:10px !important; width:52px !important; height:24px !important;
+  transform:translateX(-50%) !important;
+  border:3px solid #80c6e1 !important;
+  border-bottom:0 !important;
+  border-radius:40px 40px 0 0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+#ntpc-mascot[data-hat='headset'] .ntpc-mascot-hat::after{
+  left:-3px !important;right:auto !important;bottom:0 !important;
+  width:8px !important;height:14px !important;border:2px solid #80c6e1 !important;
+  border-radius:4px !important;
+}
+/* 分頁狀態不再蓋在貓咪的肚子上；保留文字資料以供後續功能使用。 */
+#ntpc-mascot .ntpc-mascot-status,
+#ntpc-mascot .ntpc-mascot-gear-label{display:none !important;}
+#ntpc-mascot .ntpc-mascot-gear{
+  right:6px !important;
+  top:84px !important;
+  width:23px !important;
+  min-width:23px !important;
+  height:23px !important;
+  padding:0 !important;
+  border-radius:9px !important;
+  font-size:11px !important;
+  opacity:.94 !important;
+}
+@media(max-width:1024px){
+  #ntpc-mascot .ntpc-mascot-hat{top:12px !important;width:40px !important;height:17px !important;font-size:9px !important;}
+  #ntpc-mascot[data-hat='helmet'] .ntpc-mascot-hat{top:11px !important;width:44px !important;height:20px !important;}
+  #ntpc-mascot[data-hat='crown'] .ntpc-mascot-hat{top:8px !important;width:39px !important;height:21px !important;}
+  #ntpc-mascot[data-hat='graduate'] .ntpc-mascot-hat{top:12px !important;width:39px !important;height:13px !important;}
+  #ntpc-mascot[data-hat='medic'] .ntpc-mascot-hat{top:13px !important;width:40px !important;height:18px !important;}
+  #ntpc-mascot[data-hat='headset'] .ntpc-mascot-hat{top:9px !important;width:47px !important;height:22px !important;}
+  #ntpc-mascot .ntpc-mascot-gear{right:5px !important;top:74px !important;width:21px !important;min-width:21px !important;height:21px !important;font-size:10px !important;}
+}
+@media(max-width:640px){
+  #ntpc-mascot .ntpc-mascot-hat{top:9px !important;width:32px !important;height:14px !important;font-size:8px !important;}
+  #ntpc-mascot .ntpc-mascot-hat::after{height:4px !important;bottom:-3px !important;}
+  #ntpc-mascot[data-hat='helmet'] .ntpc-mascot-hat{top:8px !important;width:36px !important;height:17px !important;}
+  #ntpc-mascot[data-hat='crown'] .ntpc-mascot-hat{top:6px !important;width:32px !important;height:18px !important;}
+  #ntpc-mascot[data-hat='graduate'] .ntpc-mascot-hat{top:9px !important;width:33px !important;height:12px !important;}
+  #ntpc-mascot[data-hat='graduate'] .ntpc-mascot-hat::after{bottom:9px !important;left:-6px !important;right:-6px !important;height:4px !important;}
+  #ntpc-mascot[data-hat='medic'] .ntpc-mascot-hat{top:10px !important;width:33px !important;height:15px !important;}
+  #ntpc-mascot[data-hat='headset'] .ntpc-mascot-hat{top:7px !important;width:39px !important;height:19px !important;border-width:2px !important;}
+  #ntpc-mascot .ntpc-mascot-gear{right:4px !important;top:60px !important;width:17px !important;min-width:17px !important;height:17px !important;border-radius:7px !important;font-size:9px !important;}
+}
+</style>
+
 </head>
 <body class="ntpc-premium-ui bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
 <!-- NTPC 2026 新開場：全程 CSS 動畫；桌機橫式、手機自適應；不載入影片。 -->
@@ -26542,43 +26682,51 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   const gear=document.getElementById('ntpc-mascot-gear');
   const gearLabel=document.getElementById('ntpc-mascot-gear-label');
   const radioChannel=document.getElementById('ntpc-v22-r-channel');
-  const state={hidden:false, weatherLabel:'天氣讀取中…', talking:false, moveTimer:null, talkTimer:null, wakeTimer:null, position:18};
+  const state={hidden:false,weatherLabel:'天氣讀取中…',talking:false,moveTimer:null,talkTimer:null,wakeTimer:null,poseTimer:null,position:18,pose:'idle'};
   const WEATHER_CODE_MAP={0:'晴朗',1:'大致晴',2:'局部多雲',3:'陰天',45:'有霧',48:'霧凇',51:'毛毛雨',53:'小雨',55:'細雨',61:'小雨',63:'降雨',65:'大雨',71:'小雪',73:'降雪',75:'大雪',80:'陣雨',81:'較強陣雨',82:'強陣雨',95:'雷雨'};
   const OUTFITS={
-    home:{hat:'fa-house',gear:'fa-star',label:'首頁',gearText:'待機',accent:'#d6b06a'},
-    dashboard:{hat:'fa-gauge-high',gear:'fa-bolt',label:'勤務',gearText:'指揮',accent:'#d6b06a'},
-    police:{hat:'fa-shield-halved',gear:'fa-walkie-talkie',label:'警務',gearText:'待命',accent:'#7fb2ff'},
-    fire:{hat:'fa-helmet-safety',gear:'fa-fire-extinguisher',label:'消防',gearText:'出勤',accent:'#ff8a63'},
-    notifications:{hat:'fa-bell',gear:'fa-envelope-open-text',label:'通知',gearText:'提醒',accent:'#8ad6b5'},
-    profile:{hat:'fa-id-card',gear:'fa-user-pen',label:'資料',gearText:'個人',accent:'#b6a7ff'},
-    academy:{hat:'fa-graduation-cap',gear:'fa-book-open',label:'專生',gearText:'學習',accent:'#9fd0ff'},
-    jiaxiao:{hat:'fa-stethoscope',gear:'fa-truck-medical',label:'嘉蕭',gearText:'醫療',accent:'#f3a7cb'},
-    admin:{hat:'fa-crown',gear:'fa-gear',label:'管理',gearText:'中心',accent:'#f0d295'},
-    faq:{hat:'fa-circle-question',gear:'fa-lightbulb',label:'說明',gearText:'指引',accent:'#a8d3ba'},
-    'update-log':{hat:'fa-clock-rotate-left',gear:'fa-pen-to-square',label:'更新',gearText:'紀錄',accent:'#a0b4ff'},
-    developer:{hat:'fa-code',gear:'fa-laptop-code',label:'開發',gearText:'DEV',accent:'#9de0ff'}
+    home:{hat:'fa-house',gear:'fa-star',label:'首頁',gearText:'待機',accent:'#d6b06a',mood:'happy'},
+    dashboard:{hat:'fa-gauge-high',gear:'fa-bolt',label:'勤務',gearText:'指揮',accent:'#d6b06a',mood:'focused'},
+    police:{hat:'fa-shield-halved',gear:'fa-walkie-talkie',label:'警務',gearText:'待命',accent:'#7fb2ff',mood:'serious'},
+    fire:{hat:'fa-helmet-safety',gear:'fa-fire-extinguisher',label:'消防',gearText:'出勤',accent:'#ff8a63',mood:'alert'},
+    notifications:{hat:'fa-bell',gear:'fa-envelope-open-text',label:'通知',gearText:'提醒',accent:'#8ad6b5',mood:'curious'},
+    profile:{hat:'fa-id-card',gear:'fa-user-pen',label:'資料',gearText:'個人',accent:'#b6a7ff',mood:'gentle'},
+    academy:{hat:'fa-graduation-cap',gear:'fa-book-open',label:'專生',gearText:'學習',accent:'#9fd0ff',mood:'focused'},
+    jiaxiao:{hat:'fa-stethoscope',gear:'fa-truck-medical',label:'嘉蕭',gearText:'醫療',accent:'#f3a7cb',mood:'gentle'},
+    admin:{hat:'fa-crown',gear:'fa-gear',label:'管理',gearText:'中心',accent:'#f0d295',mood:'proud'},
+    faq:{hat:'fa-circle-question',gear:'fa-lightbulb',label:'說明',gearText:'指引',accent:'#a8d3ba',mood:'curious'},
+    'update-log':{hat:'fa-clock-rotate-left',gear:'fa-pen-to-square',label:'更新',gearText:'紀錄',accent:'#a0b4ff',mood:'focused'},
+    developer:{hat:'fa-code',gear:'fa-laptop-code',label:'開發',gearText:'DEV',accent:'#9de0ff',mood:'curious'}
   };
   const RADIO_OUTFITS={
-    '1':{hat:'fa-shield-halved',gear:'fa-walkie-talkie',label:'CH-1',gearText:'主頻',accent:'#7fb2ff'},
-    '2':{hat:'fa-headset',gear:'fa-clipboard-list',label:'CH-2',gearText:'副頻',accent:'#8fd9ff'},
-    '3':{hat:'fa-helmet-safety',gear:'fa-tower-broadcast',label:'CH-3',gearText:'小頻',accent:'#76c8e8'},
-    '4':{hat:'fa-car-side',gear:'fa-lightbulb',label:'CH-4',gearText:'支援',accent:'#7fc7c3'},
-    '5':{hat:'fa-user-secret',gear:'fa-note-sticky',label:'CH-5',gearText:'特務',accent:'#caa6ff'}
+    '1':{hat:'fa-shield-halved',gear:'fa-walkie-talkie',label:'CH-1',gearText:'主頻',accent:'#7fb2ff',mood:'serious'},
+    '2':{hat:'fa-headset',gear:'fa-clipboard-list',label:'CH-2',gearText:'副頻',accent:'#8fd9ff',mood:'focused'},
+    '3':{hat:'fa-helmet-safety',gear:'fa-tower-broadcast',label:'CH-3',gearText:'小頻',accent:'#76c8e8',mood:'alert'},
+    '4':{hat:'fa-car-side',gear:'fa-lightbulb',label:'CH-4',gearText:'支援',accent:'#7fc7c3',mood:'curious'},
+    '5':{hat:'fa-user-secret',gear:'fa-note-sticky',label:'CH-5',gearText:'特務',accent:'#caa6ff',mood:'serious'}
   };
   function timeGreeting(){ const h=new Date().getHours(); if(h<11) return '早安'; if(h<17) return '午安'; return '晚安'; }
   async function fetchWeather(){ try{ const res=await fetch('https://api.open-meteo.com/v1/forecast?latitude=25.012&longitude=121.465&current=temperature_2m,weather_code&timezone=Asia%2FTaipei'); if(!res.ok) throw new Error('weather'); const data=await res.json(); const cur=data&&data.current?data.current:null; if(cur){ state.weatherLabel='新北天氣：'+(WEATHER_CODE_MAP[cur.weather_code]||'天氣穩定')+'，約 '+Math.round(cur.temperature_2m)+'°C'; } }catch(e){ state.weatherLabel='今天的新北看起來還不錯'; } }
   fetchWeather();
   function randomLine(){ const lines=['賴打好帥','你還記得來網站?',timeGreeting()+'，今天也要順順的。',state.weatherLabel,'想睡覺 Zzz','你知道很多人很愛走心嗎?','冷知識：新北市 RP 初始創辦人離開了，賴打是 2.0～3.0 創辦！','想擁有類似網站？！前往賴打小窩了解！']; return lines[Math.floor(Math.random()*lines.length)]; }
   function petReaction(){ const arr=['好癢好癢～','呼嚕呼嚕。','別一直戳我啦。','今天心情不錯，摸一下可以。','欸，你有看到我尾巴在晃嗎？']; return arr[Math.floor(Math.random()*arr.length)]; }
+  function currentX(){ return parseFloat(mascot.style.left)||18; }
   function showSpeech(msg, ttl=4600){
     if(state.hidden) return;
     const x=currentX(), bubbleWidth=Math.min(295,window.innerWidth-24), center=x+mascot.offsetWidth/2;
     mascot.classList.toggle('is-near-left',center-bubbleWidth/2<12);
     mascot.classList.toggle('is-near-right',center+bubbleWidth/2>window.innerWidth-12);
     speech.textContent=msg; speech.classList.add('is-visible');
-    clearTimeout(state.wakeTimer);state.talking=true;
-    state.wakeTimer=setTimeout(()=>{speech.classList.remove('is-visible');state.talking=false;},ttl);
+    clearTimeout(state.wakeTimer); state.talking=true;
+    state.wakeTimer=setTimeout(()=>{ speech.classList.remove('is-visible'); state.talking=false; }, ttl);
   }
+  function clearPoseTimeout(){ clearTimeout(state.poseTimer); state.poseTimer=null; }
+  function removePoseClasses(){ mascot.classList.remove('is-idle','is-running','is-sitting','is-sleeping'); }
+  function setPose(pose, duration=0){
+    clearPoseTimeout(); state.pose=pose; removePoseClasses(); mascot.classList.add('is-'+pose);
+    if(duration>0) state.poseTimer=setTimeout(()=>setPose('idle'), duration);
+  }
+  function transientClass(name, ttl){ mascot.classList.add(name); setTimeout(()=>mascot.classList.remove(name), ttl); }
   function getCurrentTab(){ const visible=[...document.querySelectorAll('[id^="tab-"]')].find(el=>!el.classList.contains('hidden')); return visible ? visible.id.replace('tab-','') : 'home'; }
   function applyOutfit(outfit){
     if(!outfit) return;
@@ -26587,18 +26735,40 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     gear.innerHTML='<i class="fa-solid '+outfit.gear+'"></i>';
     const key=outfit.hat;
     mascot.dataset.hat=(key==='fa-house'?'none':key==='fa-helmet-safety'?'helmet':key==='fa-crown'?'crown':key==='fa-graduation-cap'?'graduate':key==='fa-stethoscope'?'medic':key==='fa-headset'?'headset':'cap');
+    mascot.dataset.mood=outfit.mood||'happy';
     statusEl.textContent=outfit.label||'待機';
     gearLabel.textContent=outfit.gearText||'待機';
   }
   function updateMascotOutfit(tabId){ const tab=tabId||getCurrentTab(); if(tab==='police' && radioChannel && !document.getElementById('police-sub-radio')?.classList.contains('hidden')){ applyOutfit(RADIO_OUTFITS[String(radioChannel.value||'1')]||OUTFITS.police); } else { applyOutfit(OUTFITS[tab]||OUTFITS.home); } }
   function viewportMaxX(){ return Math.max(18, window.innerWidth - mascot.offsetWidth - 18); }
-  function currentX(){ return parseFloat(mascot.style.left)||18; }
-  function moveMascot(manual=false){ if(state.hidden) return; const maxX=viewportMaxX(); const next=Math.round(18 + Math.random()*(maxX-18)); const from=currentX(); mascot.classList.toggle('facing-left', next < from); mascot.classList.add('is-running'); const dist=Math.abs(next-from); const duration=Math.min(8.5, Math.max(3.6, dist/110*2.6)); mascot.style.transitionDuration=duration+'s, .9s, .24s'; mascot.style.left=next+'px'; state.position=next; setTimeout(()=>{ mascot.classList.remove('is-running'); if(!manual && Math.random()<.24){ mascot.classList.add('is-jumping'); setTimeout(()=>mascot.classList.remove('is-jumping'),840);} if(!state.talking && Math.random()<.42) showSpeech(randomLine(),5200); if(Math.random()<.18){ mascot.classList.add('is-sleeping'); showSpeech('想睡覺 Zzz',3600); setTimeout(()=>mascot.classList.remove('is-sleeping'),3600);} }, Math.max(400, duration*1000 - 180)); }
-  function scheduleMove(){ clearInterval(state.moveTimer); state.moveTimer=setInterval(()=>moveMascot(false), 17000 + Math.random()*9000); }
-  function scheduleTalk(){ clearInterval(state.talkTimer); state.talkTimer=setInterval(()=>{ if(!state.talking && !state.hidden) showSpeech(randomLine(), 5200); }, 24000 + Math.random()*12000); }
-  mascot.addEventListener('click', e=>{ if(e.target.closest('button')) return; mascot.classList.add('is-reacting'); showSpeech(petReaction(), 3400); setTimeout(()=>mascot.classList.remove('is-reacting'),520); });
+  function chooseRestPose(){
+    const r=Math.random();
+    if(r<0.18){ setPose('sleeping', 3800); showSpeech('想睡覺 Zzz', 3400); }
+    else if(r<0.44){ setPose('sitting', 2600 + Math.random()*1200); if(!state.talking && Math.random()<0.55) showSpeech('我先坐一下。', 2200); }
+    else { setPose('idle'); if(!state.talking && Math.random()<0.5) showSpeech(randomLine(), 5200); }
+  }
+  function moveMascot(manual=false){
+    if(state.hidden) return;
+    const maxX=viewportMaxX(); const next=Math.round(18 + Math.random()*(maxX-18)); const from=currentX();
+    mascot.classList.toggle('facing-left', next < from);
+    const dist=Math.abs(next-from); if(dist<18){ chooseRestPose(); return; }
+    const duration=Math.min(6.6, Math.max(2.2, dist/145*2.0));
+    const speedPx=dist/duration;
+    const walkCycle=Math.max(0.20, Math.min(0.42, 55/Math.max(speedPx, 120)));
+    mascot.style.setProperty('--walk-cycle', walkCycle.toFixed(3)+'s');
+    mascot.style.transitionDuration=duration+'s, .9s, .24s';
+    setPose('running');
+    mascot.style.left=next+'px'; state.position=next;
+    setTimeout(()=>{
+      if(!manual && Math.random()<.18){ transientClass('is-jumping', 700); }
+      chooseRestPose();
+    }, Math.max(420, duration*1000 - 60));
+  }
+  function scheduleMove(){ clearInterval(state.moveTimer); state.moveTimer=setInterval(()=>moveMascot(false), 14500 + Math.random()*7000); }
+  function scheduleTalk(){ clearInterval(state.talkTimer); state.talkTimer=setInterval(()=>{ if(!state.talking && !state.hidden && state.pose!=='running') showSpeech(randomLine(), 5200); }, 24000 + Math.random()*12000); }
+  mascot.addEventListener('click', e=>{ if(e.target.closest('button')) return; if(state.pose==='sleeping') setPose('idle'); transientClass('is-reacting', 520); showSpeech(petReaction(), 3400); });
   mascot.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); mascot.click(); } });
-  petBtn?.addEventListener('click', e=>{ e.stopPropagation(); mascot.classList.add('is-reacting'); showSpeech('搔癢模式啟動～ 好癢！', 3200); setTimeout(()=>mascot.classList.remove('is-reacting'),520); });
+  petBtn?.addEventListener('click', e=>{ e.stopPropagation(); if(state.pose==='sleeping') setPose('idle'); transientClass('is-reacting', 520); showSpeech('搔癢模式啟動～ 好癢！', 3200); });
   hideBtn?.addEventListener('click', e=>{ e.stopPropagation(); state.hidden=true; stage.style.display='none'; });
   radioChannel?.addEventListener('change', ()=>{ updateMascotOutfit('police'); showSpeech('收到，已切換到 '+((radioChannel.options[radioChannel.selectedIndex]||{}).textContent||'新頻道')+'。', 3000); });
   const radioPanel=document.getElementById('police-sub-radio');
@@ -26609,6 +26779,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
   window.addEventListener('resize', ()=>{ if(state.hidden) return; mascot.style.left=Math.min(viewportMaxX(), state.position)+'px'; });
   setTimeout(()=>updateMascotOutfit(getCurrentTab()), 200);
+  setPose('idle');
   setTimeout(()=>showSpeech(timeGreeting()+'，今天也要順順的。', 4200), 2800);
   setTimeout(()=>moveMascot(true), 5200);
   scheduleMove(); scheduleTalk();
