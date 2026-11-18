@@ -5507,6 +5507,48 @@ body.ntpc-v127-layout :is(#tab-police,#tab-fire,#tab-admin,#tab-dashboard,#tab-a
 }
 </style>
 
+
+<style id="ntpc-v190-login-verify-style">
+/* NTPC 3.0：精品黑金登入成功驗證動畫。只在實際手動登入成功時呼叫。 */
+#ntpc-login-verify[hidden]{display:none!important}
+#ntpc-login-verify{
+  position:fixed;inset:0;z-index:2147481000;display:grid;place-items:center;
+  padding:24px;background:radial-gradient(ellipse at 50% 43%,rgba(80,64,37,.19),transparent 48%),rgba(7,8,11,.94);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  color:#f5f0e6;font-family:inherit;opacity:0;transition:opacity .24s ease;
+  pointer-events:auto;
+}
+#ntpc-login-verify.is-visible{opacity:1}
+#ntpc-login-verify .ntpc-verify-panel{position:relative;width:min(100%,340px);text-align:center;display:flex;flex-direction:column;align-items:center;gap:0;transform:translateY(8px);transition:transform .28s cubic-bezier(.2,.75,.3,1)}
+#ntpc-login-verify.is-visible .ntpc-verify-panel{transform:translateY(0)}
+#ntpc-login-verify .ntpc-verify-overline{font-size:10px;letter-spacing:.3em;color:#d7b777;font-weight:700;opacity:.85;margin-bottom:26px}
+#ntpc-login-verify .ntpc-verify-medallion{width:118px;height:118px;border:1px solid rgba(218,182,112,.18);border-radius:50%;position:relative;display:grid;place-items:center;box-shadow:0 0 0 8px rgba(214,176,106,.025),inset 0 1px 0 rgba(247,228,183,.05);background:radial-gradient(circle at 50% 40%,rgba(214,176,106,.06),rgba(16,18,22,.5) 70%);}
+#ntpc-login-verify .ntpc-verify-medallion::before{content:"";position:absolute;inset:5px;border-radius:inherit;border:1px solid rgba(214,176,106,.10);pointer-events:none}
+#ntpc-login-verify .ntpc-verify-stage{position:absolute;inset:0;display:grid;place-items:center;transition:opacity .25s ease,transform .28s cubic-bezier(.2,.7,.2,1);opacity:0;transform:scale(.78);pointer-events:none}
+#ntpc-login-verify[data-phase='dots'] .ntpc-verify-dots,
+#ntpc-login-verify[data-phase='lock'] .ntpc-verify-lock,
+#ntpc-login-verify[data-phase='check'] .ntpc-verify-check{opacity:1;transform:scale(1)}
+#ntpc-login-verify .ntpc-verify-dots{display:flex;align-items:center;justify-content:center;gap:8px}
+#ntpc-login-verify .ntpc-verify-dot{height:7px;width:7px;border-radius:999px;background:#d6b06a;box-shadow:0 0 9px rgba(214,176,106,.23);animation:ntpcVerifyDotWave .65s ease-in-out infinite alternate}
+#ntpc-login-verify .ntpc-verify-dot:nth-child(2){animation-delay:.12s}
+#ntpc-login-verify .ntpc-verify-dot:nth-child(3){animation-delay:.24s}
+#ntpc-login-verify .ntpc-verify-dot:nth-child(4){animation-delay:.36s}
+#ntpc-login-verify .ntpc-verify-dot:nth-child(5){animation-delay:.48s}
+#ntpc-login-verify .ntpc-verify-lock svg{width:56px;height:56px;overflow:visible}
+#ntpc-login-verify .ntpc-verify-lock .ntpc-verify-shackle{transition:transform .48s cubic-bezier(.2,.7,.2,1);transform-origin:39px 30px}
+#ntpc-login-verify[data-unlocked='true'] .ntpc-verify-shackle{transform:translate(6px,-6px) rotate(22deg)}
+#ntpc-login-verify .ntpc-verify-check-mark{width:76px;height:76px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(145deg,#f0d391,#c79d51);color:#161719;box-shadow:0 10px 32px rgba(145,109,46,.15);}
+#ntpc-login-verify .ntpc-verify-check-mark svg{width:37px;height:37px;stroke-width:3.1;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke:currentColor;stroke-dasharray:54;stroke-dashoffset:54;transition:stroke-dashoffset .48s .10s ease}
+#ntpc-login-verify[data-phase='check'] .ntpc-verify-check-mark svg{stroke-dashoffset:0}
+#ntpc-login-verify .ntpc-verify-title{font-size:19px;font-weight:650;letter-spacing:.055em;margin:23px 0 0;min-height:27px;transition:opacity .18s ease}
+#ntpc-login-verify .ntpc-verify-subtitle{font-size:12px;letter-spacing:.11em;margin-top:9px;color:#b9b6b0;min-height:18px}
+#ntpc-login-verify .ntpc-verify-hairline{height:1px;width:48px;margin-top:25px;background:linear-gradient(90deg,transparent,#d1ac64,transparent);opacity:.65}
+#ntpc-login-verify.is-leaving{opacity:0;pointer-events:none}
+@keyframes ntpcVerifyDotWave{from{opacity:.4;transform:translateY(2px) scale(.75)}to{opacity:1;transform:translateY(-3px) scale(1.08)}}
+@media(max-width:640px){#ntpc-login-verify .ntpc-verify-medallion{width:106px;height:106px}#ntpc-login-verify .ntpc-verify-title{font-size:17px}#ntpc-login-verify .ntpc-verify-overline{font-size:9px;letter-spacing:.26em}}
+@media(prefers-reduced-motion:reduce){#ntpc-login-verify,#ntpc-login-verify *{animation:none!important;transition:none!important}#ntpc-login-verify .ntpc-verify-check-mark svg{stroke-dashoffset:0!important}}
+</style>
+
 </head>
 <body class="ntpc-premium-ui bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
 <!-- NTPC 2026 新開場：全程 CSS 動畫；桌機橫式、手機自適應；不載入影片。 -->
@@ -14662,7 +14704,7 @@ async function republishAnnouncement(id) {
                 ntpcLocalRemove(NTPC_REMEMBER_KEY);
                 if(saved)void ntpcRevokeRememberedLogin(saved).catch(e=>console.warn('清除舊登入憑證失敗',e));
             }
-        }catch(e){console.warn('裝置 15 天登入設定失敗',e);showToast('本次已登入，但裝置記住 15 天失敗：'+(e?.message||e),'warning','記住登入未啟用');}resetManualReadFlags();if(typeof ntpcV22RadioEnableAutoJoin==='function')ntpcV22RadioEnableAutoJoin();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();switchTab('home');window.ntpcV127HourlySync?.();}
+        }catch(e){console.warn('裝置 15 天登入設定失敗',e);showToast('本次已登入，但裝置記住 15 天失敗：'+(e?.message||e),'warning','記住登入未啟用');}resetManualReadFlags();if(typeof ntpcV22RadioEnableAutoJoin==='function')ntpcV22RadioEnableAutoJoin();startUserPresenceHeartbeat();if(currentUser.role==='admin')startAdminPresenceRefresh();showToast(`歡迎回來，${currentUser.name} (${currentUser.account})！`,'success','登入成功');startRealtimeListeners();syncERLCAlertListener();switchTab('home');window.ntpcV127HourlySync?.();window.ntpcShowLoginVerifiedAnimation?.();}
         async function logout(){if(typeof ntpcV22RadioLeave==='function')ntpcV22RadioLeave();if(typeof ntpcCacheClearOwn==='function')await ntpcCacheClearOwn(false);const remembered=ntpcGetRememberedLogin();ntpcLocalRemove(NTPC_REMEMBER_KEY);safeSessionRemove('ntpcrp_session');if(remembered)void ntpcRevokeRememberedLogin(remembered).catch(e=>console.warn('雲端登入憑證撤銷稍後再試',e));ntpcBotAdminLogout();ntpcV21FramePolicy=ntpcV21DefaultFramePolicy();ntpcV21FramePolicyLoaded=false;ntpcV21FramePolicyFetchedAt=0;ntpcMapDisconnectAll();ntpcDispatchStop(true);resetManualReadFlags();ntpcV21AdminSectionsLoaded.clear();ntpcV21LazySections.clear();ntpcV21StatsCache.clear();ntpcV21OnlineRows=null;ntpcV21UsersCursor=null;ntpcV21UsersNoMore=false;ntpcPunishPublicRoster.clear();ntpcPunishManualRoster.clear();ntpcPunishPublicRosterFetched=0;ntpcPunishPublicRosterOwner='';stopUserPresenceHeartbeat(true);clearInterval(window.__profileSessionTimer);window.__profileSessionTimer=null;currentUser=null;if(typeof ntpcSettingsResetDevice==='function')ntpcSettingsResetDevice();stopAdminPresenceRefresh();stopRealtimeListeners();stopERLCAlertListener();ntpcOwnDutySummary.rows=[];ntpcOwnDutySummary.account='';ntpcOwnDutySummary.loadedAt=0;ntpcOwnDutySummary.generation++;window.__ntpcOwnDutyRows=null;window.__ntpcOwnDutyState=null;closePoliceDutyDetails();closeFireDutyDetails();sessionStorage.removeItem('ntpcrp_session');['users','policeReports','policePendingReports','fireReports','firePendingReports','emsReports','emsPendingReports','reportNotifications','dutyHandoverNotes','policeClocks','fireClocks','jiaxiaoClocks','jiaxiaoMedicalReports','jiaxiaoMedicalPendingReports','jiaxiaoFuneralReports','jiaxiaoFuneralPendingReports','adminClocks','policePunishments','citizenRecords','vehicleRecords','wantedPendingRecords','wantedRecords','adminLogs','loginSessions','feedbackReports','faqIssues','blockedDevices','loginFailures','academyCodes','policeViolationRules'].forEach(k=>{appData[k]=[];});updateUserBadge();updateAccessLocks();renderSiteAnnouncements();showToast('已成功登出系統。','success','已登出');switchTab('home');}
 
         function updateUserBadge() {
@@ -26783,6 +26825,62 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   setTimeout(()=>showSpeech(timeGreeting()+'，今天也要順順的。', 4200), 2800);
   setTimeout(()=>moveMascot(true), 5200);
   scheduleMove(); scheduleTalk();
+})();
+</script>
+
+
+<!-- 登入驗證動畫：只在現有帳密驗證成功後展示，不參與驗證流程。 -->
+<div id="ntpc-login-verify" hidden data-phase="dots" role="status" aria-live="polite" aria-label="登入驗證成功動畫">
+  <div class="ntpc-verify-panel">
+    <div class="ntpc-verify-overline">NTPC RP 3.0 · SECURE ACCESS</div>
+    <div class="ntpc-verify-medallion" aria-hidden="true">
+      <div class="ntpc-verify-stage ntpc-verify-dots">
+        <span class="ntpc-verify-dot"></span><span class="ntpc-verify-dot"></span><span class="ntpc-verify-dot"></span><span class="ntpc-verify-dot"></span><span class="ntpc-verify-dot"></span>
+      </div>
+      <div class="ntpc-verify-stage ntpc-verify-lock">
+        <svg viewBox="0 0 72 72" aria-hidden="true">
+          <path class="ntpc-verify-shackle" d="M23 33V22a13 13 0 0 1 26 0v11" stroke="#e2c184" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <rect x="19" y="31" width="34" height="32" rx="8" fill="#d6b06a"/>
+          <circle cx="36" cy="45" r="4" fill="#1a1c1f"/>
+          <rect x="34.5" y="47" width="3" height="7" rx="1.5" fill="#1a1c1f"/>
+        </svg>
+      </div>
+      <div class="ntpc-verify-stage ntpc-verify-check">
+        <span class="ntpc-verify-check-mark"><svg viewBox="0 0 42 42"><path d="M8 21l9 9L34 12"/></svg></span>
+      </div>
+    </div>
+    <h2 class="ntpc-verify-title" id="ntpc-verify-title">身分確認中</h2>
+    <p class="ntpc-verify-subtitle" id="ntpc-verify-subtitle">NTPC RP</p>
+    <div class="ntpc-verify-hairline" aria-hidden="true"></div>
+  </div>
+</div>
+<script id="ntpc-v190-login-verify-controller">
+(function(){
+  'use strict';
+  const root=document.getElementById('ntpc-login-verify');
+  if(!root)return;
+  const title=document.getElementById('ntpc-verify-title');
+  const subtitle=document.getElementById('ntpc-verify-subtitle');
+  let pending=[];
+  const pause=(fn,ms)=>pending.push(setTimeout(fn,ms));
+  function resetTimers(){pending.forEach(clearTimeout);pending=[];}
+  function hide(){root.classList.add('is-leaving');pause(()=>{root.hidden=true;root.classList.remove('is-visible','is-leaving');root.dataset.unlocked='false';},260);}
+  window.ntpcShowLoginVerifiedAnimation=function(){
+    resetTimers();
+    root.hidden=false;root.dataset.phase='dots';root.dataset.unlocked='false';root.classList.remove('is-leaving');
+    title.textContent='身分確認中';subtitle.textContent='NTPC RP';
+    // Only shown after the real login has succeeded; no Firestore queries are added.
+    requestAnimationFrame(()=>requestAnimationFrame(()=>root.classList.add('is-visible')));
+    const reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduced){root.dataset.phase='check';title.textContent='登入成功';subtitle.textContent='歡迎回到新北 RP';pause(hide,720);return;}
+    pause(()=>{root.dataset.phase='lock';title.textContent='身分已驗證';subtitle.textContent='正在開啟系統';},530);
+    pause(()=>{root.dataset.unlocked='true';},970);
+    pause(()=>{root.dataset.phase='check';title.textContent='登入成功';subtitle.textContent='歡迎回到新北 RP';},1310);
+    pause(hide,2280);
+  };
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden && !root.hidden){resetTimers();root.hidden=true;root.classList.remove('is-visible','is-leaving');}
+  });
 })();
 </script>
 
