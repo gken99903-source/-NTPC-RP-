@@ -5549,6 +5549,25 @@ body.ntpc-v127-layout :is(#tab-police,#tab-fire,#tab-admin,#tab-dashboard,#tab-a
 @media(prefers-reduced-motion:reduce){#ntpc-login-verify,#ntpc-login-verify *{animation:none!important;transition:none!important}#ntpc-login-verify .ntpc-verify-check-mark svg{stroke-dashoffset:0!important}}
 </style>
 
+<style id="ntpc-v183-ems-detail-scroll-fix">
+/* V183: EMS detail's inner panel is the only scroll surface; shared premium modal CSS had overridden overflow-y-auto. */
+#modal-ems-detail:not(.hidden){overflow:hidden!important;overscroll-behavior:contain;z-index:95!important;}
+#modal-ems-detail > div{
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  max-height:min(92dvh,calc(100dvh - 24px))!important;
+  min-height:0;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  scroll-behavior:auto;
+}
+html.ntpc-ems-detail-scroll-lock,body.ntpc-ems-detail-scroll-lock{
+  overflow:hidden!important;
+  overscroll-behavior:none!important;
+}
+@media (max-width:640px){#modal-ems-detail{padding:12px!important;}#modal-ems-detail > div{max-height:calc(100dvh - 24px)!important;padding-bottom:max(28px,env(safe-area-inset-bottom))!important;}}
+</style>
 </head>
 <body class="ntpc-premium-ui bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
 <!-- NTPC 2026 新開場：全程 CSS 動畫；桌機橫式、手機自適應；不載入影片。 -->
@@ -8186,7 +8205,7 @@ body.ntpc-v127-layout :is(#tab-police,#tab-fire,#tab-admin,#tab-dashboard,#tab-a
     <div id="modal-fire-punishment" class="fixed inset-0 z-[65] hidden bg-slate-950/85 flex items-center justify-center p-3" role="dialog" aria-modal="true" aria-label="消防獎懲登記">
       <form id="fire-punish-form" class="bg-slate-900 border border-amber-500/25 rounded-2xl w-full max-w-xl p-5 space-y-4 max-h-[92dvh] overflow-y-auto">
         <div class="flex justify-between items-center"><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-award text-amber-400 mr-2"></i><span id="fire-punish-form-title">發布消防獎懲</span></h3><button type="button" id="fire-punish-cancel-top" class="text-slate-300 p-2" aria-label="關閉">✕</button></div>
-        <label class="block text-sm text-slate-300">被獎懲隊員（可選清單或填入資料）<select id="fire-punish-member" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"><option value="">請選擇隊員</option></select></label>
+        <label class="block text-sm text-slate-300">被獎懲隊員（可選清單或填入資料）<select id="fire-punish-member" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"><option value="">請選擇隊員</option></select><span id="fire-punish-roster-status" role="status" aria-live="polite" class="block mt-1 text-xs text-slate-400">開啟後將讀取消防公開成員名單；無名單時仍可手動填寫</span></label>
         <div class="grid grid-cols-2 gap-3"><label class="text-sm text-slate-300">隊員姓名<input id="fire-punish-name" maxlength="60" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"></label><label class="text-sm text-slate-300">管理編號<input id="fire-punish-staff" maxlength="32" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"></label></div>
         <div class="grid grid-cols-2 gap-3"><label class="text-sm text-slate-300">獎懲類型<select id="fire-punish-type" class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white"><option value="reward">獎勵</option><option value="punishment">懲處</option></select></label><label class="text-sm text-slate-300">發布單位<input id="fire-punish-unit" required class="mt-1 w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white" value="新北市政府消防局"></label></div>
         <div><label class="block text-sm text-slate-300 mb-2">獎懲項目（可複選）</label><div id="fire-punish-items" class="grid grid-cols-2 sm:grid-cols-3 gap-2 rounded-xl bg-slate-950 p-3 border border-slate-800"></div></div>
@@ -12512,11 +12531,91 @@ async function republishAnnouncement(id) {
             document.getElementById('fire-punish-name').value=opt.dataset.name||'';
             document.getElementById('fire-punish-staff').value=opt.dataset.staff||'';
         }
+        // V183: only fetch the safe public roster after an authorized user opens fire awards.
+        // Never query all private users, never trigger a background load on login.
+        const ntpcFirePunishPublicRoster=new Map();
+        let ntpcFirePunishRosterOwner='',ntpcFirePunishRosterLoadedAt=0,ntpcFirePunishRosterRequest=null;
         function ntpcFirePunishmentRoster(){
-            const map=new Map(), add=(acc,name,staff)=>{const key=String(acc||staff||'').trim();if(!key)return;if(!map.has(key))map.set(key,{account:String(acc||''),name:String(name||''),staff:String(staff||'')});};
-            (appData.users||[]).filter(u=>{const un=Array.isArray(u.units)?u.units:[u.unit];return un.includes('fire');}).forEach(u=>add(u.account,u.name,u.staffNumber));
+            const map=new Map();
+            const add=(acc,name,staff)=>{
+                const account=String(acc||'').trim(), number=String(staff||'').trim();
+                const key=(account||number).toLowerCase();if(!key)return;
+                const item={account,name:String(name||''),staff:number};
+                const old=map.get(key);
+                if(!old)map.set(key,item);
+                else map.set(key,{account:old.account||item.account,name:item.name||old.name,staff:item.staff||old.staff});
+            };
             (appData.fireClocks||[]).forEach(c=>add(c.account||c.userAccount,c.name,c.staffNumber||c.memberNumber||c.number));
-            return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'zh-TW'));
+            ntpcFirePunishPublicRoster.forEach(u=>add(u.account,u.name,u.staff));
+            (appData.users||[]).filter(u=>{const un=Array.isArray(u.units)?u.units:[u.unit];return un.includes('fire');}).forEach(u=>add(u.account,u.name,u.staffNumber));
+            return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'zh-TW')||a.account.localeCompare(b.account));
+        }
+        function ntpcFirePunishmentRosterStatus(message){
+            const el=document.getElementById('fire-punish-roster-status');if(el)el.textContent=message;
+        }
+        function ntpcFillFirePunishmentRoster(){
+            const select=document.getElementById('fire-punish-member');if(!select)return;
+            const previous=String(select.value||select.dataset.editAccount||'').trim().toLowerCase();
+            const rows=ntpcFirePunishmentRoster();
+            select.replaceChildren(new Option('請選擇隊員（也可自行填寫）',''));
+            rows.forEach(u=>{
+                const option=new Option(`${u.name||u.account||u.staff}（${u.staff||u.account}）`,u.account||u.staff);
+                option.dataset.name=u.name;option.dataset.staff=u.staff;select.add(option);
+            });
+            const matching=rows.find(u=>String(u.account||u.staff).toLowerCase()===previous);
+            if(matching)select.value=matching.account||matching.staff;
+            return rows.length;
+        }
+        async function ntpcLoadFirePunishmentRoster(force=false){
+            if(!currentUser||!ntpcCanPublishFirePunishment()||!fm||!db)return;
+            const owner=String(currentUser.account||'').trim().toLowerCase();
+            if(owner!==ntpcFirePunishRosterOwner){
+                ntpcFirePunishPublicRoster.clear();ntpcFirePunishRosterLoadedAt=0;
+                ntpcFirePunishRosterOwner=owner;
+            }
+            if(ntpcFirePunishRosterRequest)return ntpcFirePunishRosterRequest;
+            if(!force&&ntpcFirePunishRosterLoadedAt&&Date.now()-ntpcFirePunishRosterLoadedAt<10*60*1000){
+                ntpcFirePunishmentRosterStatus(`已載入 ${ntpcFillFirePunishmentRoster()} 位消防成員（快取${ntpcFirePunishPublicRoster.size?'':'；僅含近期勤務或已載入帳號'}）`);return;
+            }
+            ntpcFirePunishmentRosterStatus('正在讀取消防公開成員名單…');
+            ntpcFirePunishRosterRequest=(async()=>{
+                let cursor=null,pages=0,hasMore=false,publicRows=new Map(),failed=false;
+                try{
+                    do{
+                        const clauses=[fm.where('units','array-contains','fire'),fm.limit(150)];
+                        if(cursor)clauses.push(fm.startAfter(cursor));
+                        const snap=await fm.getDocs(fm.query(fm.collection(db,'staffPublicProfiles'),...clauses));
+                        if(!currentUser||String(currentUser.account||'').trim().toLowerCase()!==owner)return;
+                        snap.docs.forEach(doc=>{
+                            const d=doc.data()||{};
+                            if(d.revoked===true||d.redirectTo)return;
+                            const account=String(d.account||doc.id||'').trim();
+                            if(!account)return;
+                            publicRows.set(account.toLowerCase(),{account,name:String(d.name||account),staff:String(d.staffNumber||'')});
+                        });
+                        cursor=snap.docs.at(-1)||null;pages++;hasMore=snap.size===150;
+                    }while(hasMore&&pages<5);
+                    ntpcFirePunishPublicRoster.clear();publicRows.forEach((v,k)=>ntpcFirePunishPublicRoster.set(k,v));
+                    ntpcFirePunishRosterLoadedAt=Date.now();
+                }catch(error){
+                    failed=true;
+                    console.warn('消防獎懲公開名冊讀取失敗：',error);
+                }
+                if(!currentUser||String(currentUser.account||'').trim().toLowerCase()!==owner)return;
+                // Older accounts may lack a public profile. Reuse the existing, authorized,
+                // date-bounded fire duty loader only if the public roster is empty.
+                if(!publicRows.size&&typeof ntpcV21LoadSectionOnDemand==='function'){
+                    ntpcFirePunishmentRosterStatus('公開名單尚無資料，正在嘗試近期消防打卡名單…');
+                    try{await ntpcV21LoadSectionOnDemand('fire');}catch(e){console.warn('近期消防打卡備援載入失敗：',e);}
+                }
+                if(!currentUser||String(currentUser.account||'').trim().toLowerCase()!==owner)return;
+                const count=ntpcFillFirePunishmentRoster();
+                const detail=failed?'公開名冊讀取失敗，請確認權限或自行填寫':
+                    hasMore?'名冊超過查詢上限，缺漏者請手動輸入':
+                    !publicRows.size?'尚無公開名冊，僅顯示已載入成員；其餘請手動填寫':'';
+                ntpcFirePunishmentRosterStatus(count?`已載入 ${count} 位消防成員${detail?'；'+detail:''}`:`沒有可顯示的消防成員；${detail||'請手動填寫姓名與編號'}`);
+            })().finally(()=>{ntpcFirePunishRosterRequest=null;});
+            return ntpcFirePunishRosterRequest;
         }
         function ntpcFirePunishmentOptions(){
             const type=document.getElementById('fire-punish-type').value,wrap=document.getElementById('fire-punish-items');
@@ -12533,14 +12632,15 @@ async function republishAnnouncement(id) {
             ntpcFirePunishEditId=row?.docId||'';
             const form=document.getElementById('fire-punish-form');form.reset();
             document.getElementById('fire-punish-form-title').textContent=row?'編輯消防獎懲':'發布消防獎懲';
-            const select=document.getElementById('fire-punish-member');select.replaceChildren(new Option('請選擇隊員（也可自行填寫）',''));
-            ntpcFirePunishmentRoster().forEach(u=>{const opt=new Option(`${u.name||u.account}（${u.staff||u.account}）`,u.account||u.staff);opt.dataset.name=u.name;opt.dataset.staff=u.staff;select.add(opt);});
+            const select=document.getElementById('fire-punish-member');select.dataset.editAccount=String(row?.memberAccount||'');
+            ntpcFillFirePunishmentRoster();
             const values={'fire-punish-name':row?.memberName||'','fire-punish-staff':row?.memberId||'','fire-punish-type':row?.type||'reward','fire-punish-unit':row?.department||'新北市政府消防局','fire-punish-author':row?.authorName||currentUser?.name||'','fire-punish-position':row?.authorPos||'','fire-punish-reason':row?.reason||''};
             Object.entries(values).forEach(([k,v])=>{document.getElementById(k).value=v;});
             ntpcFirePunishmentOptions();
             const selected=new Set(normalizeSelectedItems(row?.items||[]));
             document.querySelectorAll('#fire-punish-items input').forEach(el=>el.checked=selected.has(el.value));
             document.getElementById('modal-fire-punishment').classList.remove('hidden');
+            void ntpcLoadFirePunishmentRoster();
         }
         function ntpcLoadFirePunishments(more=false,force=false){return ntpcLoadPunishments('fire',more,force);}
         function ntpcRenderFirePunishments(){
@@ -16874,6 +16974,71 @@ async function republishAnnouncement(id) {
             }catch(e){ntpcMarkSyncError('通緝審核',e);showToast('通緝審核失敗：'+e.message,'error','操作失敗');}
         }
 
+        // V184：待審案件「寄件人（RP 名稱）」讀取帳號註冊時的 name，而不是重複 authorId 編號。
+        // 舊案件沒有 RP 名稱欄位：先看本機帳號／公開名片快取，再依寄件帳號限量單筆讀取。
+        const ntpcPoliceReviewRpNameCache = new Map();
+        function ntpcPoliceReviewKnownRpName(account){
+            const id=String(account||'').trim(),key=id.toLowerCase();
+            if(!key)return '';
+            const u=String(currentUser?.account||'').trim().toLowerCase()===key?currentUser:ntpcAvatarUserByAccount(id);
+            const local=String(u?.name||'').trim();
+            if(local && local.toLowerCase()!==key)return local;
+            const card=ntpcV2ProfileCache.get(key)?.data;
+            const cardName=String(card?.name||'').trim();
+            if(card && !card.revoked && !card.profileUnavailable && cardName && cardName.toLowerCase()!==key)return cardName;
+            return ntpcPoliceReviewRpNameCache.get(key)?.name||'';
+        }
+        async function ntpcPoliceReviewLookupRpName(account){
+            const id=String(account||'').trim(),key=id.toLowerCase();
+            if(!key||id.startsWith('ACADEMY:'))return '';
+            const ready=ntpcPoliceReviewKnownRpName(id);
+            if(ready)return ready;
+            const cached=ntpcPoliceReviewRpNameCache.get(key);
+            if(cached?.promise)return cached.promise;
+            if(cached && Date.now()-cached.at<300000)return cached.name||'';
+            const pending=(async()=>{
+                try {
+                    const p=await ntpcV2GetProfile(id);
+                    const name=String(p?.name||'').trim();
+                    if(p && !p.revoked && !p.profileUnavailable && name && name.toLowerCase()!==key)return name;
+                } catch(e){ console.debug('待審案件公開 RP 名稱未載入',id,e?.code||e?.message||e); }
+                // 只有公開名片沒有 RP 名稱時，才精準讀取 users/<帳號>，不查整個 users 集合。
+                if(!fm||!db)return '';
+                try {
+                    const doc=await fm.getDoc(fm.doc(db,'users',id));
+                    if(doc.exists()){
+                        const u=doc.data()||{};
+                        if(String(u.account||doc.id).trim().toLowerCase()===key){
+                            const name=String(u.name||'').trim();
+                            if(name && name.toLowerCase()!==key)return name;
+                        }
+                    }
+                } catch(e){ console.debug('待審案件 RP 名稱單筆查詢失敗',id,e?.code||e?.message||e); }
+                return '';
+            })();
+            ntpcPoliceReviewRpNameCache.set(key,{promise:pending,name:'',at:Date.now()});
+            const name=await pending;
+            ntpcPoliceReviewRpNameCache.set(key,{promise:null,name,at:Date.now()});
+            return name;
+        }
+        function ntpcPoliceReviewRpNameMarkup(r){
+            const account=String(r.registeredByAccount||r.createdByAccount||'').trim();
+            const known=ntpcPoliceReviewKnownRpName(account);
+            return `<span class="ntpc-review-rp-name" data-ntpc-review-rp-account="${escapeHtml(account)}">${escapeHtml(known||(account?'讀取中…':'未提供 RP 名稱'))}</span>`;
+        }
+        function ntpcPoliceReviewFillRpNames(host){
+            host.querySelectorAll('.ntpc-review-rp-name').forEach(node=>{
+                const account=node.getAttribute('data-ntpc-review-rp-account')||'';
+                const name=ntpcPoliceReviewKnownRpName(account);
+                if(name){node.textContent=name;return;}
+                if(!account){node.textContent='未提供 RP 名稱';return;}
+                void ntpcPoliceReviewLookupRpName(account).then(resolved=>{
+                    if(node.isConnected && node.getAttribute('data-ntpc-review-rp-account')===account){
+                        node.textContent=resolved||'未提供 RP 名稱';
+                    }
+                });
+            });
+        }
         function renderPoliceReview(){
             const host=document.getElementById('police-review-list'), count=document.getElementById('police-review-count'), rejectedHost=document.getElementById('police-rejected-list'), rejectedCount=document.getElementById('police-rejected-count'); if(!host)return;
             if(!canReviewPoliceReports()){host.innerHTML='';if(rejectedHost)rejectedHost.innerHTML='';if(count)count.textContent='待審 0 件';if(rejectedCount)rejectedCount.textContent='退件 0 件';return;}
@@ -16884,10 +17049,11 @@ async function republishAnnouncement(id) {
             if(count)count.textContent=`待審 ${pending.length+wantedPending.length} 件`;
             // 待審與退件獨立顯示；退件筆數不會觸發待審徽章。
             const wantedPendingHtml=wantedPending.map(r=>`<div class="bg-slate-900 border border-rose-500/25 rounded-2xl p-6 shadow-xl space-y-4"><div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-300 border border-rose-500/20">通緝申請</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">待審核</span><h4 class="text-base font-bold text-white">${escapeHtml(r.name||'未命名')}</h4></div><span class="text-xs text-slate-400">${escapeHtml(formatDateTime(r.submittedAt||r.timestamp))}</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">證件末五碼</span><span class="font-mono text-amber-300">${escapeHtml(r.id5||'--')}</span></div><div><span class="text-slate-500 block">發布帳號</span><span class="font-mono text-cyan-400">${ntpcAvatarIdentityHtml(r.createdByAccount,r.createdByAccount||'--')}</span></div><div><span class="text-slate-500 block">發布單位</span><span class="font-medium text-slate-200">${escapeHtml(r.publishUnit||r.department||'--')}</span></div><div><span class="text-slate-500 block">違反條例</span><span class="font-medium text-rose-300">${escapeHtml(r.law||'--')}</span></div></div><div class="text-sm text-slate-300"><span class="text-xs text-slate-500 block mb-1">通緝原因</span>${escapeHtml(r.reason||'--')}</div><div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800"><button type="button" onclick="viewPendingWantedDetail('${escapeHtml(r.docId||r.id)}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]">檢視完整資料</button><button type="button" onclick="approveWantedPending('${escapeHtml(r.docId||r.id)}')" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs min-h-[44px]">審核通過</button><button type="button" onclick="openRejectWantedPending('${escapeHtml(r.docId||r.id)}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]">退件</button></div></div>`).join('');
-            const pendingHtml=pending.map(r=>`<div class="bg-slate-900 border border-blue-500/20 rounded-2xl p-6 shadow-xl space-y-4"><div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">${r.caseId||'--'}</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">待審核</span>${r.reportType==='policeInterview'?'<span class="px-2 py-1 rounded-md bg-cyan-500/10 text-cyan-300 text-xs">調查筆錄</span>':r.reportType==='policeTrafficAnalysis'?'<span class="px-2 py-1 rounded-md bg-amber-500/10 text-amber-300 text-xs">交通事件處理表</span>':''}<h4 class="text-base font-bold text-white">${escapeHtml(r.title||'未命名案件')}</h4></div><span class="text-xs text-slate-400">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">寄件人</span><span class="font-medium text-slate-200 inline-flex items-center gap-2">${ntpcAvatarMarkup(ntpcAvatarReportAccount(r),'ntpc-avatar-sm')}${escapeHtml(r.authorName||'--')} (${escapeHtml(r.authorId||'--')})</span></div><div><span class="text-slate-500 block">寄件帳號</span><span class="font-mono text-cyan-400">${ntpcAvatarIdentityHtml(r.registeredByAccount,r.registeredByAccount||'--')}</span></div></div><p class="text-sm text-slate-300 line-clamp-4">${r.content||''}</p><div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800"><button type="button" onclick="viewPendingPoliceReportDetail('${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-eye mr-1"></i>檢視完整案件</button><button type="button" onclick="approvePolicePendingReport('${r.caseId}')" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-check mr-1"></i>審核完畢並送出</button><button type="button" onclick="openRejectPolicePending('${r.caseId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-rotate-left mr-1"></i>退件</button></div></div>`).join('');
+            const pendingHtml=pending.map(r=>`<div class="bg-slate-900 border border-blue-500/20 rounded-2xl p-6 shadow-xl space-y-4"><div class="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-4"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">${r.caseId||'--'}</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">待審核</span>${r.reportType==='policeInterview'?'<span class="px-2 py-1 rounded-md bg-cyan-500/10 text-cyan-300 text-xs">調查筆錄</span>':r.reportType==='policeTrafficAnalysis'?'<span class="px-2 py-1 rounded-md bg-amber-500/10 text-amber-300 text-xs">交通事件處理表</span>':''}<h4 class="text-base font-bold text-white">${escapeHtml(r.title||'未命名案件')}</h4></div><span class="text-xs text-slate-400">${r.time||'--'}</span></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/60"><div><span class="text-slate-500 block">寄件人</span><span class="font-medium text-slate-200 inline-flex items-center gap-2">${ntpcAvatarMarkup(ntpcAvatarReportAccount(r),'ntpc-avatar-sm')}${escapeHtml(r.authorName||'--')} (${ntpcPoliceReviewRpNameMarkup(r)})</span></div><div><span class="text-slate-500 block">寄件帳號</span><span class="font-mono text-cyan-400">${ntpcAvatarIdentityHtml(r.registeredByAccount,r.registeredByAccount||'--')}</span></div></div><p class="text-sm text-slate-300 line-clamp-4">${r.content||''}</p><div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800"><button type="button" onclick="viewPendingPoliceReportDetail('${r.caseId}')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-eye mr-1"></i>檢視完整案件</button><button type="button" onclick="approvePolicePendingReport('${r.caseId}')" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-check mr-1"></i>審核完畢並送出</button><button type="button" onclick="openRejectPolicePending('${r.caseId}')" class="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-rotate-left mr-1"></i>退件</button></div></div>`).join('');
             const rejectedHtml=rejected.map(r=>`<div class="bg-slate-900 border border-red-500/20 rounded-2xl p-5 shadow-xl space-y-3"><div class="flex flex-wrap items-center justify-between gap-2"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-mono bg-blue-500/10 text-blue-400">${r.caseId||'--'}</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-300">已退件</span><span class="text-sm font-bold text-white">${escapeHtml(r.title||'未命名案件')}</span>${r.reportType==='policeTrafficAnalysis'?'<span class="text-xs text-amber-300">交通事件處理表</span>':''}</div><span class="text-xs text-slate-500">${formatDateTime(r.reviewedAt||r.updatedAt)}</span></div><div class="text-sm text-red-200 whitespace-pre-wrap">退件原因：${escapeHtml(r.rejectionReason||'未提供退件原因')}</div>${ntpcReviewBadgeHtml(r)}<div class="flex flex-wrap gap-2"><button type="button" onclick="viewPendingPoliceReportDetail('${r.caseId}')" class="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-eye mr-1"></i>檢視完整案件</button>${canEditReviewStatus('police')?`<button type="button" onclick="openEditReviewStatus('police','${r.caseId}','rejected')" class="px-3 py-2 bg-blue-600/20 text-blue-300 rounded-lg text-xs min-h-[44px]"><i class="fa-solid fa-pen-to-square mr-1"></i>更改審核狀態</button>`:''}</div></div>`).join('');
             const wantedRejectedHtml=wantedRejected.map(r=>`<div class="bg-slate-900 border border-red-500/20 rounded-2xl p-5 shadow-xl space-y-3"><div class="flex flex-wrap items-center justify-between gap-2"><div class="flex flex-wrap gap-2 items-center"><span class="px-3 py-1 rounded-full text-xs font-mono bg-rose-500/10 text-rose-300">通緝申請</span><span class="px-3 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-300">已退件</span><span class="text-sm font-bold text-white">${escapeHtml(r.name||'未命名')}</span></div><span class="text-xs text-slate-500">${escapeHtml(formatDateTime(r.reviewedAt||r.updatedAt))}</span></div><div class="text-sm text-red-200 whitespace-pre-wrap">退件原因：${escapeHtml(r.rejectionReason||'未提供退件原因')}</div><div class="text-xs text-slate-400">發布單位：${escapeHtml(r.publishUnit||r.department||'--')}｜發布帳號：${ntpcAvatarIdentityHtml(r.createdByAccount,r.createdByAccount||'--')}</div></div>`).join('');
             host.innerHTML=(wantedPendingHtml?`<div>${wantedPendingHtml}</div>`:'')+(pendingHtml?`<div class="${wantedPendingHtml?'pt-5':''}">${pendingHtml}</div>`:'')||'<div class="rounded-xl border border-slate-800 bg-slate-900 p-6 text-center text-slate-400">目前沒有待審核案件。</div>';
+            ntpcPoliceReviewFillRpNames(host);
             if(rejectedCount)rejectedCount.textContent=`退件 ${rejected.length+wantedRejected.length} 件`;
             if(rejectedHost){
                 const allRejected=(rejectedHtml?`<div class="space-y-3"><h5 class="text-sm font-semibold text-rose-200">警務案件</h5>${rejectedHtml}</div>`:'')+(wantedRejectedHtml?`<div class="space-y-3"><h5 class="text-sm font-semibold text-rose-200">通緝申請</h5>${wantedRejectedHtml}</div>`:'');
@@ -26884,5 +27050,18 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+<script id="ntpc-v183-ems-scroll-lock">
+(function(){
+  const modal=document.getElementById('modal-ems-detail');if(!modal)return;
+  const html=document.documentElement,body=document.body;
+  function sync(){
+    const open=!modal.classList.contains('hidden');
+    html.classList.toggle('ntpc-ems-detail-scroll-lock',open);
+    body.classList.toggle('ntpc-ems-detail-scroll-lock',open);
+  }
+  new MutationObserver(sync).observe(modal,{attributes:true,attributeFilter:['class']});
+  sync();
+})();
+</script>
 </body>
 </html>
